@@ -104,7 +104,8 @@
   --token-color-accent: #FFD600;  /* banana yellow */
 
   /* Shape */
-  --token-radius-button: 4px;
+  /* Keep default equal to Tailwind radius-md for zero-diff */
+  --token-radius-button: var(--radius-md);
 
   /* Breakpoints (for future mapping, no override) */
   --token-breakpoint-xs: 576px;
