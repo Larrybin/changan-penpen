@@ -76,6 +76,40 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* =============================================
+   * Design Tokens (read-only for now)
+   * NOTE: Added for consistency; not yet wired to
+   * existing color/spacing/typography variables.
+   * This patch does NOT change visual behavior.
+   * ============================================= */
+  /* Spacing (8px baseline) */
+  --token-spacing-small: 0.5rem; /* 8px */
+  --token-spacing-medium: 1rem; /* 16px */
+  --token-spacing-large: 2rem; /* 32px */
+
+  /* Typography */
+  --token-font-size-base: 1rem; /* 16px */
+  --token-font-family-sans: var(--font-geist-sans);
+  --token-font-weight-normal: 400;
+  --token-font-weight-bold: 700;
+  --token-text-title: 3rem; /* 48px */
+  --token-leading-title: 3.5rem; /* 56px */
+  --token-text-subtitle: 1.5rem; /* 24px */
+  --token-leading-subtitle: 2rem; /* 32px */
+
+  /* Colors (brand tokens) */
+  --token-color-primary: #1A1F36; /* blue-black */
+  --token-color-bg: #FFFFFF;      /* white */
+  --token-color-accent: #FFD600;  /* banana yellow */
+
+  /* Shape */
+  --token-radius-button: 4px;
+
+  /* Breakpoints (for future mapping, no override) */
+  --token-breakpoint-xs: 576px;
+  --token-breakpoint-md: 768px;
+  --token-breakpoint-lg: 992px;
 }
 
 .dark {
