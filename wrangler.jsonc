@@ -30,12 +30,6 @@
             "preview_bucket_name": "next-cf-app-dev-bucket"
         }
     ],
-    "vectorize": [
-        {
-            "binding": "VECTORIZE",
-            "index_name": "next-cf-app-index"
-        }
-    ],
     "ai": {
         "binding": "AI"
     }
