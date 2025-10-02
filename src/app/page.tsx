@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/modules/auth/utils/auth-utils";
+import MarketingLandingPage from "@/modules/marketing/landing.page";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-    const session = await getSession();
-    redirect(session ? "/dashboard" : "/login");
+    return <MarketingLandingPage />;
 }
