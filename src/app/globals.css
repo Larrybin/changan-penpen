@@ -154,3 +154,51 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ Component-scoped tokens (no behavior change):
+ Expose semantic variables on data-slot elements so that
+ components can later consume them via var() without
+ touching individual pages.
+*/
+@layer base {
+  /* Button tokens */
+  [data-slot="button"] {
+    /* Colors */
+    --button-bg: var(--token-color-primary, var(--primary));
+    --button-fg: var(--primary-foreground);
+    --button-hover-bg: color-mix(in oklch, var(--button-bg) 90%, transparent);
+
+    /* Sizing & spacing (8px baseline) */
+    --button-radius: var(--token-radius-button, var(--radius-md));
+    --button-gap: 0.5rem;           /* 8px; matches gap-2 */
+    --button-px: 1rem;              /* 16px; matches px-4 */
+    --button-py: 0.5rem;            /* 8px;  matches py-2 */
+
+    /* Interactions */
+    --button-press-scale: 0.99;     /* active:scale-[var(--button-press-scale)] */
+    --button-transition: 200ms;     /* transition duration */
+  }
+
+  /* Card tokens */
+  [data-slot="card"] {
+    --card-radius: var(--radius-xl);  /* matches rounded-xl */
+    --card-gap: 1.5rem;               /* matches gap-6 */
+    --card-px: 1.5rem;                /* matches px-6 */
+    --card-py: 1.5rem;                /* matches py-6 */
+    --card-bg: var(--card);
+    --card-fg: var(--card-foreground);
+  }
+  [data-slot="card-header"] {
+    --card-header-gap: 0.375rem;      /* matches gap-1.5 */
+    --card-header-px: 1.5rem;         /* matches px-6 */
+    --card-header-pb: 1.5rem;         /* matches pb-6 */
+  }
+  [data-slot="card-content"] {
+    --card-content-px: 1.5rem;        /* matches px-6 */
+  }
+  [data-slot="card-footer"] {
+    --card-footer-px: 1.5rem;         /* matches px-6 */
+    --card-footer-pt: 1.5rem;         /* matches pt-6 when has border-t */
+  }
+}
