@@ -53,7 +53,7 @@ export default function Playground() {
                         <div className="flex items-center justify-between text-xs text-yellow-200/80 mb-1">
                             <span>Editing Instructions</span>
                             <a
-                                className="text-yellow-300 hover:underline"
+                                className="text-primary hover:underline"
                                 href="#"
                                 onClick={(e) => e.preventDefault()}
                             >
