@@ -89,7 +89,7 @@ export function SignupForm({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="w-full"
+                                    className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
                                     onClick={signInWithGoogle}
                                 >
                                     <svg
