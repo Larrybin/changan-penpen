@@ -12,7 +12,7 @@ export default async function TodoListPage() {
         <>
             <div className="flex justify-between items-center mb-8 w-full">
                 <div>
-                    <h1 className="text-3xl font-bold">Todos</h1>
+                    <h1 className="text-title font-bold">Todos</h1>
                     <p className="text-gray-600 mt-1">
                         Manage your tasks and stay organized
                     </p>
