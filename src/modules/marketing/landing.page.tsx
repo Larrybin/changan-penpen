@@ -1,4 +1,5 @@
 import PublicHeader from "./components/public-header";
+import type React from "react";
 import Playground from "./components/playground";
 import PublicFooter from "./components/public-footer";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,10 @@ import Link from "next/link";
 
 export default function MarketingLandingPage() {
     return (
-        <div className="bg-black text-yellow-50">
+        <div
+            className="bg-black text-yellow-50"
+            style={{ "--card-header-gap": "0.5rem" } as React.CSSProperties}
+        >
             <PublicHeader />
 
             <main>

@@ -206,3 +206,17 @@
     --card-footer-pt: 1.5rem;         /* matches pt-6 when has border-t */
   }
 }
+
+/* Typography helpers backed by tokens (opt-in) */
+@layer base {
+  .text-title {
+    font-size: var(--token-text-title);
+    line-height: var(--token-leading-title);
+    font-weight: var(--token-font-weight-bold);
+  }
+  .text-subtitle {
+    font-size: var(--token-text-subtitle);
+    line-height: var(--token-leading-subtitle);
+    font-weight: var(--token-font-weight-normal);
+  }
+}
