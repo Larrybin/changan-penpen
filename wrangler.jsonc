@@ -46,12 +46,48 @@
                 // Local preview defaults; production will infer from request origin
                 "CREEM_SUCCESS_URL": "http://localhost:3000/billing/success",
                 "CREEM_CANCEL_URL": "http://localhost:3000/billing/cancel"
+            },
+            "d1_databases": [
+                {
+                    "binding": "next_cf_app",
+                    "database_name": "next-cf-app",
+                    "database_id": "0a4563c7-3ffb-4805-a564-681f81562d31",
+                    "migrations_dir": "./src/drizzle"
+                }
+            ],
+            "r2_buckets": [
+                {
+                    "bucket_name": "next-cf-app-bucket",
+                    "binding": "next_cf_app_bucket",
+                    "preview_bucket_name": "next-cf-app-dev-bucket"
+                }
+            ],
+            "ai": {
+                "binding": "AI"
             }
         },
         "production": {
             "vars": {
                 // Change to production API if different
                 "CREEM_API_URL": "https://api.creem.dev"
+            },
+            "d1_databases": [
+                {
+                    "binding": "next_cf_app",
+                    "database_name": "next-cf-app",
+                    "database_id": "0a4563c7-3ffb-4805-a564-681f81562d31",
+                    "migrations_dir": "./src/drizzle"
+                }
+            ],
+            "r2_buckets": [
+                {
+                    "bucket_name": "next-cf-app-bucket",
+                    "binding": "next_cf_app_bucket",
+                    "preview_bucket_name": "next-cf-app-dev-bucket"
+                }
+            ],
+            "ai": {
+                "binding": "AI"
             }
         }
     }
