@@ -13,7 +13,7 @@ export default async function Dashboard() {
     return (
         <div className="container mx-auto py-12 px-4">
             <div className="text-center mb-12">
-                <h1 className="text-title font-bold mb-4">
+                <h1 className="text-title-sm font-bold mb-4">
                     Welcome to TodoApp
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -74,7 +74,7 @@ export default async function Dashboard() {
                             <CheckSquare className="h-6 w-6 text-blue-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Task Management</h3>
-                        <p className="text-gray-600 text-sm">
+                        <p className="text-muted-foreground text-sm">
                             Create, edit, and delete todos with ease
                         </p>
                     </div>
@@ -83,7 +83,7 @@ export default async function Dashboard() {
                             <List className="h-6 w-6 text-green-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Categories</h3>
-                        <p className="text-gray-600 text-sm">
+                        <p className="text-muted-foreground text-sm">
                             Organize your todos with custom categories
                         </p>
                     </div>
@@ -92,7 +92,7 @@ export default async function Dashboard() {
                             <Plus className="h-6 w-6 text-purple-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Rich Features</h3>
-                        <p className="text-gray-600 text-sm">
+                        <p className="text-muted-foreground text-sm">
                             Priorities, due dates, images, and more
                         </p>
                     </div>

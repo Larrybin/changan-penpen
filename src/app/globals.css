@@ -99,6 +99,8 @@
   --token-font-weight-bold: 700;
   --token-text-title: 3rem; /* 48px */
   --token-leading-title: 3.5rem; /* 56px */
+  --token-text-title-sm: 2rem; /* 32px */
+  --token-leading-title-sm: 2.5rem; /* 40px */
   --token-text-subtitle: 1.5rem; /* 24px */
   --token-leading-subtitle: 2rem; /* 32px */
 
@@ -182,6 +184,11 @@
   .text-title {
     font-size: var(--token-text-title);
     line-height: var(--token-leading-title);
+    font-weight: var(--token-font-weight-bold);
+  }
+  .text-title-sm {
+    font-size: var(--token-text-title-sm);
+    line-height: var(--token-leading-title-sm);
     font-weight: var(--token-font-weight-bold);
   }
   .text-subtitle {

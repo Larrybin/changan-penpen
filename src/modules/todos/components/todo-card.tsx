@@ -34,7 +34,7 @@ const priorityColors = {
 };
 
 const statusColors = {
-    [TodoStatus.PENDING]: "bg-gray-100 text-gray-800 border-gray-200",
+    [TodoStatus.PENDING]: "bg-gray-100 text-foreground border-gray-200",
     [TodoStatus.IN_PROGRESS]: "bg-blue-100 text-blue-800 border-blue-200",
     [TodoStatus.COMPLETED]: "bg-green-100 text-green-800 border-green-200",
     [TodoStatus.ARCHIVED]: "bg-purple-100 text-purple-800 border-purple-200",
@@ -68,13 +68,13 @@ export function TodoCard({ todo }: TodoCardProps) {
                         </div>
                         <div className="flex-1 min-w-0">
                             <h3
-                                className={`font-semibold text-lg leading-tight ${todo.completed ? "line-through text-gray-500" : ""}`}
+                                className={`font-semibold text-lg leading-tight ${todo.completed ? "line-through text-muted-foreground" : ""}`}
                             >
                                 {todo.title}
                             </h3>
                             {todo.description && (
                                 <p
-                                    className={`text-sm mt-1 ${todo.completed ? "text-gray-400" : "text-gray-600"}`}
+                                    className={`text-sm mt-1 ${todo.completed ? "text-muted-foreground" : "text-muted-foreground"}`}
                                 >
                                     {todo.description}
                                 </p>
@@ -129,7 +129,7 @@ export function TodoCard({ todo }: TodoCardProps) {
 
                 {todo.dueDate && (
                     <div
-                        className={`flex items-center text-sm ${isOverdue ? "text-red-600" : "text-gray-500"}`}
+                        className={`flex items-center text-sm ${isOverdue ? "text-red-600" : "text-muted-foreground"}`}
                     >
                         <Calendar className="h-4 w-4 mr-1" />
                         Due: {formatDate(todo.dueDate)}
