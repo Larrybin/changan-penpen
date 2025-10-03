@@ -46,15 +46,11 @@ export async function GET() {
                 { status: 502, headers: { "Content-Type": "application/json" } },
             );
         }
-        // 标准化字段：data.portalUrl，同时保留旧字段以兼容既有前端；附带 meta.raw 便于调试
+        // 标准化字段：data.portalUrl；附带 meta.raw 便于调试（已移除 legacy 字段）
         const payload = {
             success: true,
             data: { portalUrl: url },
             error: null as string | null,
-            // legacy fields for backward compatibility
-            url: json?.url,
-            portal_url: json?.portal_url,
-            billing_url: json?.billing_url,
             meta: { raw: json },
         };
         return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });

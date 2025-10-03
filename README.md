@@ -116,6 +116,39 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 CLOUDFLARE_R2_URL=your-r2-bucket-url
 ```
 
+### 4.1 API Response Contracts (Creem)
+
+We standardized the response shape for our Creem endpoints and removed legacy fields.
+
+- Create Checkout: `POST /api/creem/create-checkout`
+  - Response (200):
+  ```json
+  {
+    "success": true,
+    "data": { "checkoutUrl": "https://..." },
+    "error": null,
+    "meta": { "raw": { "checkout_url": "https://..." } }
+  }
+  ```
+  - On error: `{ "success": false, "error": "...", "data": null }`
+
+- Customer Portal: `GET /api/creem/customer-portal`
+  - Response (200):
+  ```json
+  {
+    "success": true,
+    "data": { "portalUrl": "https://..." },
+    "error": null,
+    "meta": { "raw": { /* upstream response */ } }
+  }
+  ```
+  - On error: `{ "success": false, "error": "...", "data": null }`
+
+Notes:
+- Legacy keys like `checkout_url`, `url`, `portal_url`, `billing_url` have been removed. Use the normalized fields under `data.*`.
+- `meta.raw` contains the upstream payload for debugging and auditing.
+
+
 ### 5. Authentication Setup
 
 **Better Auth Secret:**

@@ -15,7 +15,7 @@ export default function BillingActions() {
                 body: JSON.stringify({ tierId, productType }),
             });
             const json: any = await resp.json();
-            const normalized = json?.data?.checkoutUrl || json?.checkout_url;
+            const normalized = json?.data?.checkoutUrl as string | undefined;
             if (!resp.ok || !normalized) {
                 throw new Error(json?.error || "Failed to create checkout");
             }
@@ -35,7 +35,7 @@ export default function BillingActions() {
             if (!resp.ok) {
                 throw new Error(typeof json === "string" ? json : json?.error || "Failed to get portal link");
             }
-            const url = (json?.data?.portalUrl || json?.url || json?.portal_url || json?.billing_url) as string | undefined;
+            const url = json?.data?.portalUrl as string | undefined;
             if (!url) throw new Error("Portal URL missing");
             window.location.href = url;
         } catch (e: any) {

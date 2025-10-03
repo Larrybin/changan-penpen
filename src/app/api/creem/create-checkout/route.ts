@@ -118,8 +118,8 @@ export async function POST(request: Request) {
                 { status: 502, headers: { "Content-Type": "application/json" } },
             );
         }
-        // 标准化字段：data.checkoutUrl，同时保留 legacy 字段 checkout_url；附带 meta.raw 便于调试
-        return new Response(JSON.stringify({ success: true, data: { checkoutUrl }, error: null, checkout_url: checkoutUrl, meta: { raw: json } }), {
+        // 标准化字段：data.checkoutUrl；附带 meta.raw 便于调试（已移除 legacy 字段）
+        return new Response(JSON.stringify({ success: true, data: { checkoutUrl }, error: null, meta: { raw: json } }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
         });
