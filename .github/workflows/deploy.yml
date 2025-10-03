@@ -86,6 +86,9 @@ jobs:
             CLOUDFLARE_R2_URL
             CREEM_API_KEY
             CREEM_WEBHOOK_SECRET
+            CREEM_API_URL
+            CREEM_SUCCESS_URL
+            CREEM_CANCEL_URL
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -93,6 +96,9 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+          CREEM_API_URL: ${{ secrets.CREEM_API_URL }}
+          CREEM_SUCCESS_URL: ${{ secrets.CREEM_SUCCESS_URL }}
+          CREEM_CANCEL_URL: ${{ secrets.CREEM_CANCEL_URL }}
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
@@ -185,6 +191,9 @@ jobs:
             CLOUDFLARE_R2_URL
             CREEM_API_KEY
             CREEM_WEBHOOK_SECRET
+            CREEM_API_URL
+            CREEM_SUCCESS_URL
+            CREEM_CANCEL_URL
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -192,6 +201,9 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+          CREEM_API_URL: ${{ secrets.CREEM_API_URL }}
+          CREEM_SUCCESS_URL: ${{ secrets.CREEM_SUCCESS_URL }}
+          CREEM_CANCEL_URL: ${{ secrets.CREEM_CANCEL_URL }}
 
       - name: Wait for deployment
         run: sleep 10
