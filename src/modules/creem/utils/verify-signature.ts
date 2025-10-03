@@ -42,7 +42,10 @@ export async function verifyCreemWebhookSignature(
         const { hex, b64 } = await hmacSha256(payload, secret);
         const header = (signature || "").trim();
 
-        if (header && (timingSafeEqual(header, hex) || timingSafeEqual(header, b64))) {
+        if (
+            header &&
+            (timingSafeEqual(header, hex) || timingSafeEqual(header, b64))
+        ) {
             return true;
         }
 

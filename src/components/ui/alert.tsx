@@ -2,26 +2,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const alertVariants = cva(
-    "w-full rounded-md border p-4 text-sm",
-    {
-        variants: {
-            variant: {
-                info: "bg-[var(--color-info-subtle)] text-[var(--color-info-foreground)] border-[var(--color-info-border)]",
-                success:
-                    "bg-[var(--color-success-subtle)] text-[var(--color-success-foreground)] border-[var(--color-success-border)]",
-                warning:
-                    "bg-[var(--color-warning-subtle)] text-[var(--color-warning-foreground)] border-[var(--color-warning-border)]",
-                danger:
-                    "bg-[var(--color-danger-subtle)] text-red-700 border-[var(--color-danger-border)]",
-                muted: "bg-muted text-muted-foreground border-border",
-            },
-        },
-        defaultVariants: {
-            variant: "info",
+const alertVariants = cva("w-full rounded-md border p-4 text-sm", {
+    variants: {
+        variant: {
+            info: "bg-[var(--color-info-subtle)] text-[var(--color-info-foreground)] border-[var(--color-info-border)]",
+            success:
+                "bg-[var(--color-success-subtle)] text-[var(--color-success-foreground)] border-[var(--color-success-border)]",
+            warning:
+                "bg-[var(--color-warning-subtle)] text-[var(--color-warning-foreground)] border-[var(--color-warning-border)]",
+            danger: "bg-[var(--color-danger-subtle)] text-red-700 border-[var(--color-danger-border)]",
+            muted: "bg-muted text-muted-foreground border-border",
         },
     },
-);
+    defaultVariants: {
+        variant: "info",
+    },
+});
 
 function Alert({
     className,
@@ -62,4 +58,3 @@ function AlertDescription({
 }
 
 export { Alert, AlertTitle, AlertDescription, alertVariants };
-

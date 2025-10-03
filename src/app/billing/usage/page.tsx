@@ -25,16 +25,25 @@ export default async function UsagePage() {
     const rows = await getUsageDaily(session.user.id, fromDate, toDate);
 
     // 按日期→feature 分组
-    const byDate: Record<string, { feature: string; total: number; unit: string }[]> = {};
+    const byDate: Record<
+        string,
+        { feature: string; total: number; unit: string }[]
+    > = {};
     for (const r of rows) {
         byDate[r.date] ||= [];
-        byDate[r.date].push({ feature: r.feature, total: r.totalAmount, unit: r.unit });
+        byDate[r.date].push({
+            feature: r.feature,
+            total: r.totalAmount,
+            unit: r.unit,
+        });
     }
     const sortedDates = Object.keys(byDate).sort();
 
     return (
         <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
-            <h1 className="text-title-sm font-bold mb-6">用量统计（最近 30 天）</h1>
+            <h1 className="text-title-sm font-bold mb-6">
+                用量统计（最近 30 天）
+            </h1>
             <div className="space-y-4">
                 {sortedDates.length === 0 ? (
                     <p className="text-muted-foreground">暂无用量。</p>
@@ -56,4 +65,3 @@ export default async function UsagePage() {
         </div>
     );
 }
-

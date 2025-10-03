@@ -31,13 +31,22 @@ export async function recordUsage(input: UsageRecordInput) {
     const existing = await db
         .select({ id: usageDaily.id, totalAmount: usageDaily.totalAmount })
         .from(usageDaily)
-        .where(and(eq(usageDaily.userId, input.userId), eq(usageDaily.date, date), eq(usageDaily.feature, input.feature)))
+        .where(
+            and(
+                eq(usageDaily.userId, input.userId),
+                eq(usageDaily.date, date),
+                eq(usageDaily.feature, input.feature),
+            ),
+        )
         .limit(1);
 
     if (existing.length > 0) {
         await db
             .update(usageDaily)
-            .set({ totalAmount: existing[0].totalAmount + input.amount, updatedAt: nowIso })
+            .set({
+                totalAmount: existing[0].totalAmount + input.amount,
+                updatedAt: nowIso,
+            })
             .where(eq(usageDaily.id, existing[0].id));
     } else {
         await db.insert(usageDaily).values({
@@ -77,17 +86,27 @@ export async function decrementCredits(userId: string, amount: number) {
     return left;
 }
 
-export async function getUsageDaily(userId: string, fromDateInclusive: string, toDateInclusive: string) {
+export async function getUsageDaily(
+    userId: string,
+    fromDateInclusive: string,
+    toDateInclusive: string,
+) {
     const db = await getDb();
     // 简化处理：直接查询区间的聚合表
     const rows = await db
-        .select({ date: usageDaily.date, feature: usageDaily.feature, totalAmount: usageDaily.totalAmount, unit: usageDaily.unit })
+        .select({
+            date: usageDaily.date,
+            feature: usageDaily.feature,
+            totalAmount: usageDaily.totalAmount,
+            unit: usageDaily.unit,
+        })
         .from(usageDaily)
         .where(and(eq(usageDaily.userId, userId)))
         .orderBy(usageDaily.date);
 
     // 由于 drizzle 在 D1 上的复杂 where between 写法兼容性差异，这里先在应用层过滤
-    const res = rows.filter((r) => r.date >= fromDateInclusive && r.date <= toDateInclusive);
+    const res = rows.filter(
+        (r) => r.date >= fromDateInclusive && r.date <= toDateInclusive,
+    );
     return res;
 }
-

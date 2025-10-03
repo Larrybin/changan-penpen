@@ -27,7 +27,9 @@ export default async function TodoListPage() {
 
             {todos.length === 0 ? (
                 <div className="text-center py-12 w-full">
-                    <div className="text-muted-foreground text-6xl mb-4">📝</div>
+                    <div className="text-muted-foreground text-6xl mb-4">
+                        📝
+                    </div>
                     <h3 className="text-xl font-semibold text-muted-foreground mb-2">
                         No todos yet
                     </h3>

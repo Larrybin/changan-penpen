@@ -39,7 +39,9 @@ export default async function EditTodoPage({ id }: EditTodoPageProps) {
                     </Button>
                 </Link>
                 <h1 className="text-title-sm font-bold">Edit Todo</h1>
-                <p className="text-muted-foreground mt-1">Update your task details</p>
+                <p className="text-muted-foreground mt-1">
+                    Update your task details
+                </p>
             </div>
 
             <TodoForm user={user} categories={categories} initialData={todo} />

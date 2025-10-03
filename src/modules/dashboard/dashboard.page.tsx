@@ -33,7 +33,11 @@ export default async function Dashboard() {
             if (rows.length > 0) {
                 credits = rows[0].credits ?? 0;
                 const subs = await db
-                    .select({ status: subscriptions.status, productId: subscriptions.creemProductId, updatedAt: subscriptions.updatedAt })
+                    .select({
+                        status: subscriptions.status,
+                        productId: subscriptions.creemProductId,
+                        updatedAt: subscriptions.updatedAt,
+                    })
                     .from(subscriptions)
                     .where(eq(subscriptions.customerId, rows[0].id))
                     .orderBy(desc(subscriptions.updatedAt))
@@ -49,7 +53,10 @@ export default async function Dashboard() {
                         expired: "已过期",
                     };
                     subStatus = statusMap[rawStatus] || rawStatus;
-                    planName = SUBSCRIPTION_TIERS.find((t) => t.productId === subs[0].productId)?.name || "-";
+                    planName =
+                        SUBSCRIPTION_TIERS.find(
+                            (t) => t.productId === subs[0].productId,
+                        )?.name || "-";
                 } else {
                     subStatus = "未订阅";
                 }
@@ -65,7 +72,9 @@ export default async function Dashboard() {
     return (
         <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
             <div className="text-center mb-12">
-                <h1 className="text-title-sm font-bold mb-4">Welcome to TodoApp</h1>
+                <h1 className="text-title-sm font-bold mb-4">
+                    Welcome to TodoApp
+                </h1>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                     A simple and elegant todo application built with Next.js 15,
                     TailwindCSS, and shadcn/ui components.
@@ -106,13 +115,18 @@ export default async function Dashboard() {
                     <CardContent>
                         <div className="space-y-3">
                             <div className="text-sm text-muted-foreground">
-                                当前订阅：<span className="font-medium">{planName}</span>（{subStatus}）
+                                当前订阅：
+                                <span className="font-medium">{planName}</span>
+                                （{subStatus}）
                             </div>
                             <div className="text-sm text-muted-foreground">
-                                剩余积分：<span className="font-medium">{credits}</span>
+                                剩余积分：
+                                <span className="font-medium">{credits}</span>
                             </div>
                             <Link href="/billing">
-                                <Button className="w-full mt-2">前往套餐页</Button>
+                                <Button className="w-full mt-2">
+                                    前往套餐页
+                                </Button>
                             </Link>
                         </div>
                     </CardContent>
@@ -147,21 +161,27 @@ export default async function Dashboard() {
                             <CheckSquare className="h-6 w-6 text-blue-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Task Management</h3>
-                        <p className="text-muted-foreground text-sm">Create, edit, and delete todos with ease</p>
+                        <p className="text-muted-foreground text-sm">
+                            Create, edit, and delete todos with ease
+                        </p>
                     </div>
                     <div className="text-center">
                         <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
                             <List className="h-6 w-6 text-green-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Categories</h3>
-                        <p className="text-muted-foreground text-sm">Organize your todos with custom categories</p>
+                        <p className="text-muted-foreground text-sm">
+                            Organize your todos with custom categories
+                        </p>
                     </div>
                     <div className="text-center">
                         <div className="bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
                             <Plus className="h-6 w-6 text-purple-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Rich Features</h3>
-                        <p className="text-muted-foreground text-sm">Priorities, due dates, images, and more</p>
+                        <p className="text-muted-foreground text-sm">
+                            Priorities, due dates, images, and more
+                        </p>
                     </div>
                 </div>
             </div>
@@ -170,4 +190,3 @@ export default async function Dashboard() {
 }
 
 // 直接引入客户端组件：Server 组件可以渲染 Client 边界，无需 dynamic
-

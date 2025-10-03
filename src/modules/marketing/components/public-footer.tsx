@@ -17,10 +17,14 @@ export default function PublicFooter() {
                     <h4 className="font-semibold mb-2">Support</h4>
                     <ul className="space-y-1 text-sm text-foreground/80">
                         <li>
-                            <Link href="#" className="hover:text-accent">About</Link>
+                            <Link href="#" className="hover:text-accent">
+                                About
+                            </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-accent">Contact</Link>
+                            <Link href="#" className="hover:text-accent">
+                                Contact
+                            </Link>
                         </li>
                     </ul>
                 </div>
@@ -28,10 +32,14 @@ export default function PublicFooter() {
                     <h4 className="font-semibold mb-2">Legal</h4>
                     <ul className="space-y-1 text-sm text-foreground/80">
                         <li>
-                            <Link href="#" className="hover:text-accent">Privacy</Link>
+                            <Link href="#" className="hover:text-accent">
+                                Privacy
+                            </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-accent">Terms</Link>
+                            <Link href="#" className="hover:text-accent">
+                                Terms
+                            </Link>
                         </li>
                     </ul>
                 </div>
