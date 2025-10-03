@@ -11,7 +11,7 @@ import {
 
 export default async function Dashboard() {
     return (
-        <div className="container mx-auto py-12 px-4">
+        <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
             <div className="text-center mb-12">
                 <h1 className="text-title-sm font-bold mb-4">
                     Welcome to TodoApp
@@ -22,7 +22,7 @@ export default async function Dashboard() {
                 </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-[var(--grid-gap-section)] max-w-4xl mx-auto">
                 <Card className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                         <CardTitle className="flex items-center">

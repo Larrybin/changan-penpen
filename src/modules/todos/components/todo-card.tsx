@@ -27,17 +27,23 @@ interface TodoCardProps {
 }
 
 const priorityColors = {
-    [TodoPriority.LOW]: "bg-green-100 text-green-800 border-green-200",
-    [TodoPriority.MEDIUM]: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    [TodoPriority.HIGH]: "bg-orange-100 text-orange-800 border-orange-200",
-    [TodoPriority.URGENT]: "bg-red-100 text-red-800 border-red-200",
+    [TodoPriority.LOW]:
+        "bg-[var(--color-success-subtle)] text-[var(--color-success-foreground)] border-[var(--color-success-border)]",
+    [TodoPriority.MEDIUM]:
+        "bg-[var(--color-warning-subtle)] text-[var(--color-warning-foreground)] border-[var(--color-warning-border)]",
+    [TodoPriority.HIGH]:
+        "bg-[var(--color-warning-subtle)] text-[var(--color-warning-foreground)] border-[var(--color-warning-border)]",
+    [TodoPriority.URGENT]:
+        "bg-[var(--color-danger-subtle)] text-red-700 border-[var(--color-danger-border)]",
 };
 
 const statusColors = {
-    [TodoStatus.PENDING]: "bg-gray-100 text-foreground border-gray-200",
-    [TodoStatus.IN_PROGRESS]: "bg-blue-100 text-blue-800 border-blue-200",
-    [TodoStatus.COMPLETED]: "bg-green-100 text-green-800 border-green-200",
-    [TodoStatus.ARCHIVED]: "bg-purple-100 text-purple-800 border-purple-200",
+    [TodoStatus.PENDING]: "bg-muted text-foreground border-border",
+    [TodoStatus.IN_PROGRESS]:
+        "bg-[var(--color-info-subtle)] text-[var(--color-info-foreground)] border-[var(--color-info-border)]",
+    [TodoStatus.COMPLETED]:
+        "bg-[var(--color-success-subtle)] text-[var(--color-success-foreground)] border-[var(--color-success-border)]",
+    [TodoStatus.ARCHIVED]: "bg-muted text-muted-foreground border-border",
 };
 
 export function TodoCard({ todo }: TodoCardProps) {

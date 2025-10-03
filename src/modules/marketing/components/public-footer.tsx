@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function PublicFooter() {
     return (
         <footer className="border-t border-border bg-background text-foreground">
-            <div className="mx-auto w-full max-w-6xl px-4 py-10 grid gap-8 md:grid-cols-3">
+            <div className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10 grid gap-[var(--grid-gap-section)] md:grid-cols-3">
                 <div>
                     <div className="flex items-center gap-2 text-primary mb-2">
                         <span className="text-lg">🍌</span>

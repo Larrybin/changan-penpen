@@ -128,6 +128,27 @@
   --token-color-bg: #FFFFFF;      /* white */
   --token-color-accent: #FFD600;  /* banana yellow */
 
+  /* Semantic status colors */
+  --color-success: #16a34a;             /* green-600 */
+  --color-success-foreground: #065f46;  /* green-800-ish */
+  --color-success-subtle: #dcfce7;      /* green-100 */
+  --color-success-border: #86efac;      /* green-300 */
+
+  --color-warning: #f59e0b;             /* amber-500 */
+  --color-warning-foreground: #78350f;  /* amber-900-ish */
+  --color-warning-subtle: #fef9c3;      /* amber-100 */
+  --color-warning-border: #fde68a;      /* amber-300 */
+
+  --color-info: #2563eb;                /* blue-600 */
+  --color-info-foreground: #1e3a8a;     /* blue-900-ish */
+  --color-info-subtle: #dbeafe;         /* blue-100 */
+  --color-info-border: #93c5fd;         /* blue-300 */
+
+  /* Optional danger subtle using existing destructive */
+  --color-danger: #dc2626;              /* red-600 */
+  --color-danger-subtle: #fee2e2;       /* red-100 */
+  --color-danger-border: #fca5a5;       /* red-300 */
+
   /* Shape */
   /* Keep default equal to Tailwind radius-md for zero-diff */
   --token-radius-button: var(--radius-md);
@@ -136,6 +157,15 @@
   --token-breakpoint-xs: 576px;
   --token-breakpoint-md: 768px;
   --token-breakpoint-lg: 992px;
+
+  /* Layout & elevation tokens */
+  --container-max-w: 72rem;  /* ~max-w-6xl */
+  --container-px: 1rem;      /* px-4 equivalent on md base */
+  --grid-gap-section: 2rem;  /* gap-8 */
+  --z-nav: 50;
+  --z-dropdown: 40;
+  --z-modal: 60;
+  --z-toast: 70;
 }
 
 /* No dark-mode CSS variables */

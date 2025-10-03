@@ -27,7 +27,7 @@ export default function Playground() {
                 </div>
             </div>
 
-            <div className="grid lg-narrow:grid-cols-2 gap-6">
+            <div className="grid lg-narrow:grid-cols-2 gap-[var(--grid-gap-section)]">
                 <div className="space-y-4">
                     <div>
                         <div className="flex items-center justify-between text-xs text-yellow-200/80 mb-1">

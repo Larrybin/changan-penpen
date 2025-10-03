@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 
 export default function PublicHeader() {
     return (
-        <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur text-foreground">
-            <div className="mx-auto w-full max-w-6xl px-4 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-[var(--z-nav)] w-full border-b border-border bg-background/80 backdrop-blur text-foreground">
+            <div className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-3 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 text-primary">
                     <span className="text-xl">🍌</span>
                     <span className="font-semibold tracking-wide">Banana Generator</span>
