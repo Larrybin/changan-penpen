@@ -109,8 +109,16 @@ export async function POST(request: Request) {
                 headers: { "Content-Type": "application/json" },
             });
         }
-        const data = await resp.json();
-        return new Response(JSON.stringify({ success: true, data: { checkoutUrl: data.checkout_url }, error: null }), {
+        type CreateCheckoutResponse = { checkout_url?: string };
+        const json = (await resp.json()) as unknown as CreateCheckoutResponse;
+        const checkoutUrl = json?.checkout_url;
+        if (!checkoutUrl || typeof checkoutUrl !== "string") {
+            return new Response(
+                JSON.stringify({ success: false, error: "Invalid response from Creem: missing checkout_url", data: null }),
+                { status: 502, headers: { "Content-Type": "application/json" } },
+            );
+        }
+        return new Response(JSON.stringify({ success: true, data: { checkoutUrl }, error: null }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
         });
@@ -122,4 +130,3 @@ export async function POST(request: Request) {
         });
     }
 }
-
