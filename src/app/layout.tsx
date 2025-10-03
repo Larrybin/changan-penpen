@@ -37,7 +37,28 @@ export default function RootLayout({
                 className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased bg-gray-50 min-h-screen`}
             >
                 <main>{children}</main>
-                <Toaster position="bottom-right" />
+                <Toaster
+                    position="bottom-right"
+                    toastOptions={{
+                        className:
+                            "border rounded-md shadow-sm text-sm bg-[var(--color-info-subtle)] text-[var(--color-info-foreground)] border-[var(--color-info-border)]",
+                        duration: 3000,
+                        success: {
+                            className:
+                                "border rounded-md shadow-sm text-sm bg-[var(--color-success-subtle)] text-[var(--color-success-foreground)] border-[var(--color-success-border)]",
+                            duration: 2500,
+                        },
+                        error: {
+                            className:
+                                "border rounded-md shadow-sm text-sm bg-[var(--color-danger-subtle)] text-red-700 border-[var(--color-danger-border)]",
+                            duration: 3500,
+                        },
+                        loading: {
+                            className:
+                                "border rounded-md shadow-sm text-sm bg-[var(--color-info-subtle)] text-[var(--color-info-foreground)] border-[var(--color-info-border)]",
+                        },
+                    }}
+                />
             </body>
         </html>
     );
