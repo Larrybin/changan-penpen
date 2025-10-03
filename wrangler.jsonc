@@ -11,10 +11,7 @@
     "vars": {
         // Non-secret runtime variables (override per-environment below if needed)
         // Use test API by default; change production in the env block if needed
-        "CREEM_API_URL": "https://api.creem.dev",
-        // Optional default redirects when not inferred from request origin
-        "CREEM_SUCCESS_URL": "http://localhost:3000/billing/success",
-        "CREEM_CANCEL_URL": "http://localhost:3000/billing/cancel"
+        "CREEM_API_URL": "https://api.creem.dev"
     },
     "assets": {
         "binding": "ASSETS",
@@ -45,7 +42,10 @@
         "preview": {
             "vars": {
                 "CREEM_API_URL": "https://api.creem.dev",
-                "CREEM_LOG_WEBHOOK_SIGNATURE": "1"
+                "CREEM_LOG_WEBHOOK_SIGNATURE": "1",
+                // Local preview defaults; production will infer from request origin
+                "CREEM_SUCCESS_URL": "http://localhost:3000/billing/success",
+                "CREEM_CANCEL_URL": "http://localhost:3000/billing/cancel"
             }
         },
         "production": {

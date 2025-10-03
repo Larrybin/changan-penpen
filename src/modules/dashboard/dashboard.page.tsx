@@ -1,5 +1,4 @@
 import { CheckSquare, List, Plus, CreditCard } from "lucide-react";
-import BillingActions from "@/modules/creem/components/billing-actions";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +9,49 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 
+import { getSession } from "@/modules/auth/utils/auth-utils";
+import { getDb } from "@/db";
+import { customers, subscriptions } from "@/db";
+import { eq, desc } from "drizzle-orm";
+import { SUBSCRIPTION_TIERS } from "@/modules/creem/config/subscriptions";
+
 export default async function Dashboard() {
+    const session = await getSession();
+    let credits = 0;
+    let subStatus = "未订阅";
+    let planName = "-";
+
+    if (session?.user) {
+        const db = await getDb();
+        const rows = await db
+            .select({ id: customers.id, credits: customers.credits })
+            .from(customers)
+            .where(eq(customers.userId, session.user.id))
+            .limit(1);
+
+        if (rows.length > 0) {
+            credits = rows[0].credits ?? 0;
+            const subs = await db
+                .select({ status: subscriptions.status, productId: subscriptions.creemProductId, updatedAt: subscriptions.updatedAt })
+                .from(subscriptions)
+                .where(eq(subscriptions.customerId, rows[0].id))
+                .orderBy(desc(subscriptions.updatedAt))
+                .limit(1);
+
+            if (subs.length > 0) {
+                const rawStatus = subs[0].status || "unknown";
+                const statusMap: Record<string, string> = {
+                    active: "已订阅",
+                    paid: "已订阅",
+                    trialing: "试用中",
+                    canceled: "已取消",
+                    expired: "已过期",
+                };
+                subStatus = statusMap[rawStatus] || rawStatus;
+                planName = SUBSCRIPTION_TIERS.find((t) => t.productId === subs[0].productId)?.name || "-";
+            }
+        }
+    }
     return (
         <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
             <div className="text-center mb-12">
@@ -55,7 +96,17 @@ export default async function Dashboard() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <BillingActions />
+                        <div className="space-y-3">
+                            <div className="text-sm text-muted-foreground">
+                                当前订阅：<span className="font-medium">{planName}</span>（{subStatus}）
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                                剩余积分：<span className="font-medium">{credits}</span>
+                            </div>
+                            <Link href="/billing">
+                                <Button className="w-full mt-2">前往套餐页</Button>
+                            </Link>
+                        </div>
                     </CardContent>
                 </Card>
 
