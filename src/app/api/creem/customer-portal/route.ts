@@ -37,10 +37,18 @@ export async function GET() {
             const t = await resp.text();
             return new Response(`Failed to get portal link: ${t}`, { status: 500 });
         }
-        const data = await resp.json();
-        return new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
+        type BillingPortalResponse = { url?: string; portal_url?: string; billing_url?: string };
+        const json = (await resp.json()) as unknown as BillingPortalResponse;
+        const url = json?.url || json?.portal_url || json?.billing_url;
+        if (!url || typeof url !== "string") {
+            return new Response(
+                JSON.stringify({ error: "Invalid response from Creem: missing portal url" }),
+                { status: 502, headers: { "Content-Type": "application/json" } },
+            );
+        }
+        // 透传 Creem 返回，前端已兼容多字段名称
+        return new Response(JSON.stringify(json), { status: 200, headers: { "Content-Type": "application/json" } });
     } catch (error) {
         return new Response("Internal Server Error", { status: 500 });
     }
 }
-
