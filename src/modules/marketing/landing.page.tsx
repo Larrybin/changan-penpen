@@ -10,10 +10,15 @@ import Link from "next/link";
 export default function MarketingLandingPage() {
     return (
         <div
-            className="bg-black text-yellow-50"
+            className="bg-background text-foreground"
             style={{
                 "--card-header-gap": "0.5rem",
                 "--token-font-family-sans": "var(--font-inter)",
+                // Marketing palette override via tokens
+                "--background": "#000000",
+                "--foreground": "#fefce8",
+                "--border": "#facc15",
+                "--primary": "var(--token-color-accent)",
                 // Button tokens for default variant
                 "--button-bg": "var(--token-color-accent)",
                 "--button-fg": "#000",

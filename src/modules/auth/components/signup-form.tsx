@@ -177,7 +177,7 @@ export function SignupForm({
                                     Already have an account?{" "}
                                     <Link
                                         href={authRoutes.login}
-                                        className="underline underline-offset-4"
+                                        className="text-primary underline underline-offset-4"
                                     >
                                         Sign in
                                     </Link>

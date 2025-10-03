@@ -146,7 +146,7 @@ export function LoginForm({
                                         />
                                         <a
                                             href="#"
-                                            className="ml-auto text-sm underline-offset-4 hover:underline"
+                                        className="ml-auto text-sm text-primary underline-offset-4 hover:underline"
                                         >
                                             Forgot your password?
                                         </a>
@@ -170,7 +170,7 @@ export function LoginForm({
                                     Don&apos;t have an account?{" "}
                                     <Link
                                         href={authRoutes.signup}
-                                        className="underline underline-offset-4"
+                                        className="text-primary underline underline-offset-4"
                                     >
                                         Sign up
                                     </Link>
