@@ -4,6 +4,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Custom breakpoints (gradual adoption). Do not override defaults. */
+  --breakpoint-xs: 576px;        /* new: xs */
+  --breakpoint-lg-narrow: 992px; /* new: lg-narrow */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
