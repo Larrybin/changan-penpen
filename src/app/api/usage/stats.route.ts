@@ -11,16 +11,24 @@ export async function GET(request: Request) {
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session?.user) {
-            return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+                JSON.stringify({ success: false, error: "Unauthorized" }),
+                {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
         }
 
         const url = new URL(request.url);
-        const days = Math.min(90, Math.max(1, Number(url.searchParams.get("days") || 30)));
+        const days = Math.min(
+            90,
+            Math.max(1, Number(url.searchParams.get("days") || 30)),
+        );
         const end = new Date();
-        const start = new Date(end.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+        const start = new Date(
+            end.getTime() - (days - 1) * 24 * 60 * 60 * 1000,
+        );
         const fromDate = formatDate(start);
         const toDate = formatDate(end);
 
@@ -37,4 +45,3 @@ export async function GET(request: Request) {
         });
     }
 }
-

@@ -15,10 +15,13 @@ export async function POST(request: Request) {
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session?.user) {
-            return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+                JSON.stringify({ success: false, error: "Unauthorized" }),
+                {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
         }
 
         const body = (await request.json()) as Body;
@@ -26,10 +29,16 @@ export async function POST(request: Request) {
         const amount = Number(body.amount ?? 0);
         const unit = (body.unit || "").trim();
         if (!feature || !unit || !Number.isFinite(amount)) {
-            return new Response(JSON.stringify({ success: false, error: "Invalid feature/amount/unit" }), {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Invalid feature/amount/unit",
+                }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
         }
 
         const result = await recordUsage({
@@ -38,11 +47,17 @@ export async function POST(request: Request) {
             amount,
             unit,
             metadata: body.metadata,
-            consumeCredits: body.consumeCredits && body.consumeCredits > 0 ? body.consumeCredits : undefined,
+            consumeCredits:
+                body.consumeCredits && body.consumeCredits > 0
+                    ? body.consumeCredits
+                    : undefined,
         });
 
         return new Response(
-            JSON.stringify({ success: true, data: { date: result.date, credits: result.newCredits ?? null } }),
+            JSON.stringify({
+                success: true,
+                data: { date: result.date, credits: result.newCredits ?? null },
+            }),
             { status: 200, headers: { "Content-Type": "application/json" } },
         );
     } catch (error) {
@@ -53,4 +68,3 @@ export async function POST(request: Request) {
         });
     }
 }
-

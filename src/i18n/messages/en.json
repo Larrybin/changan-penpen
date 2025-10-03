@@ -1,0 +1,16 @@
+{
+    "Common": {
+        "appName": "Next.js Cloudflare App",
+        "welcome": "Welcome",
+        "language": "Language"
+    },
+    "Nav": {
+        "home": "Home",
+        "dashboard": "Dashboard",
+        "billing": "Billing"
+    },
+    "Auth": {
+        "login": "Login",
+        "signup": "Sign up"
+    }
+}

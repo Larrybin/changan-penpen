@@ -36,4 +36,3 @@ export type CreemWebhookEvent = {
     eventType: string;
     object: any;
 };
-

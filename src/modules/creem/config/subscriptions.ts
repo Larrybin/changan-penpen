@@ -114,4 +114,3 @@ export const CREDITS_TIERS: ProductTier[] = [
         discountCode: "",
     },
 ];
-

@@ -9,12 +9,18 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { CREDITS_TIERS, SUBSCRIPTION_TIERS } from "@/modules/creem/config/subscriptions";
+import {
+    CREDITS_TIERS,
+    SUBSCRIPTION_TIERS,
+} from "@/modules/creem/config/subscriptions";
 
 export default function PricingGrid() {
     const [loading, setLoading] = useState<string | null>(null);
 
-    async function startCheckout(tierId: string, productType: "subscription" | "credits") {
+    async function startCheckout(
+        tierId: string,
+        productType: "subscription" | "credits",
+    ) {
         try {
             setLoading(`${tierId}-${productType}`);
             const resp = await fetch("/api/creem/create-checkout", {
@@ -41,7 +47,11 @@ export default function PricingGrid() {
             const resp = await fetch("/api/creem/customer-portal");
             const json: any = await resp.json();
             if (!resp.ok) {
-                throw new Error(typeof json === "string" ? json : json?.error || "获取账单门户失败");
+                throw new Error(
+                    typeof json === "string"
+                        ? json
+                        : json?.error || "获取账单门户失败",
+                );
             }
             const url = json?.data?.portalUrl as string | undefined;
             if (!url) throw new Error("门户链接缺失");
@@ -61,16 +71,25 @@ export default function PricingGrid() {
                     onClick={openCustomerPortal}
                     disabled={loading !== null}
                 >
-                    {loading === "portal" ? "打开中..." : "管理订阅（账单门户）"}
+                    {loading === "portal"
+                        ? "打开中..."
+                        : "管理订阅（账单门户）"}
                 </Button>
             </div>
 
             {/* 订阅套餐 */}
             <section>
-                <h2 className="text-subtitle font-semibold mb-6 text-center">订阅套餐</h2>
+                <h2 className="text-subtitle font-semibold mb-6 text-center">
+                    订阅套餐
+                </h2>
                 <div className="grid gap-6 md:grid-cols-3">
                     {SUBSCRIPTION_TIERS.map((tier) => (
-                        <Card key={tier.id} className={tier.featured ? "border-primary" : undefined}>
+                        <Card
+                            key={tier.id}
+                            className={
+                                tier.featured ? "border-primary" : undefined
+                            }
+                        >
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
                                     <span>{tier.name}</span>
@@ -81,7 +100,9 @@ export default function PricingGrid() {
                                     ) : null}
                                 </CardTitle>
                                 <CardDescription>
-                                    <div className="text-2xl font-bold">{tier.priceMonthly}</div>
+                                    <div className="text-2xl font-bold">
+                                        {tier.priceMonthly}
+                                    </div>
                                     <div className="mt-2 text-sm text-muted-foreground">
                                         {tier.description}
                                     </div>
@@ -96,9 +117,13 @@ export default function PricingGrid() {
                                 <Button
                                     className="w-full"
                                     disabled={loading !== null}
-                                    onClick={() => startCheckout(tier.id, "subscription")}
+                                    onClick={() =>
+                                        startCheckout(tier.id, "subscription")
+                                    }
                                 >
-                                    {loading === `${tier.id}-subscription` ? "处理中..." : "订阅"}
+                                    {loading === `${tier.id}-subscription`
+                                        ? "处理中..."
+                                        : "订阅"}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -108,10 +133,17 @@ export default function PricingGrid() {
 
             {/* 积分套餐 */}
             <section>
-                <h2 className="text-subtitle font-semibold mb-6 text-center">积分套餐</h2>
+                <h2 className="text-subtitle font-semibold mb-6 text-center">
+                    积分套餐
+                </h2>
                 <div className="grid gap-6 md:grid-cols-3">
                     {CREDITS_TIERS.map((tier) => (
-                        <Card key={tier.id} className={tier.featured ? "border-primary" : undefined}>
+                        <Card
+                            key={tier.id}
+                            className={
+                                tier.featured ? "border-primary" : undefined
+                            }
+                        >
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
                                     <span>{tier.name}</span>
@@ -122,7 +154,9 @@ export default function PricingGrid() {
                                     ) : null}
                                 </CardTitle>
                                 <CardDescription>
-                                    <div className="text-2xl font-bold">{tier.priceMonthly}</div>
+                                    <div className="text-2xl font-bold">
+                                        {tier.priceMonthly}
+                                    </div>
                                     <div className="mt-2 text-sm text-muted-foreground">
                                         {tier.description}
                                     </div>
@@ -138,9 +172,13 @@ export default function PricingGrid() {
                                 <Button
                                     className="w-full"
                                     disabled={loading !== null}
-                                    onClick={() => startCheckout(tier.id, "credits")}
+                                    onClick={() =>
+                                        startCheckout(tier.id, "credits")
+                                    }
                                 >
-                                    {loading === `${tier.id}-credits` ? "处理中..." : "购买积分"}
+                                    {loading === `${tier.id}-credits`
+                                        ? "处理中..."
+                                        : "购买积分"}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -150,4 +188,3 @@ export default function PricingGrid() {
         </div>
     );
 }
-

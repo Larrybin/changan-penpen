@@ -69,7 +69,9 @@ export default function Playground() {
                     </div>
 
                     <div>
-                        <p className="text-xs text-yellow-200/80 mb-2">Aspect Ratio</p>
+                        <p className="text-xs text-yellow-200/80 mb-2">
+                            Aspect Ratio
+                        </p>
                         <div className="flex gap-2">
                             {["1:1", "4:3", "3:2", "9:16", "16:9"].map((r) => (
                                 <button

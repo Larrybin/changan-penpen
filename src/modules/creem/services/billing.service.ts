@@ -1,9 +1,19 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { customers, subscriptions, creditsHistory } from "@/modules/creem/schemas/billing.schema";
-import type { CreemCustomer, CreemSubscription } from "@/modules/creem/models/creem.types";
+import {
+    customers,
+    subscriptions,
+    creditsHistory,
+} from "@/modules/creem/schemas/billing.schema";
+import type {
+    CreemCustomer,
+    CreemSubscription,
+} from "@/modules/creem/models/creem.types";
 
-export async function createOrUpdateCustomer(creemCustomer: CreemCustomer, userId: string) {
+export async function createOrUpdateCustomer(
+    creemCustomer: CreemCustomer,
+    userId: string,
+) {
     const db = await getDb();
     const byCreem = await db
         .select()
@@ -57,12 +67,20 @@ export async function createOrUpdateCustomer(creemCustomer: CreemCustomer, userI
     const inserted = await db
         .select({ id: customers.id })
         .from(customers)
-        .where(and(eq(customers.userId, userId), eq(customers.creemCustomerId, creemCustomer.id)))
+        .where(
+            and(
+                eq(customers.userId, userId),
+                eq(customers.creemCustomerId, creemCustomer.id),
+            ),
+        )
         .limit(1);
     return inserted[0].id;
 }
 
-export async function createOrUpdateSubscription(creemSubscription: CreemSubscription, customerId: number) {
+export async function createOrUpdateSubscription(
+    creemSubscription: CreemSubscription,
+    customerId: number,
+) {
     const db = await getDb();
     const existing = await db
         .select()
@@ -71,9 +89,10 @@ export async function createOrUpdateSubscription(creemSubscription: CreemSubscri
         .limit(1);
     const now = new Date().toISOString();
 
-    const productId = typeof creemSubscription.product === "string"
-        ? creemSubscription.product
-        : creemSubscription.product?.id;
+    const productId =
+        typeof creemSubscription.product === "string"
+            ? creemSubscription.product
+            : creemSubscription.product?.id;
 
     const payload = {
         customerId,
@@ -82,12 +101,17 @@ export async function createOrUpdateSubscription(creemSubscription: CreemSubscri
         currentPeriodStart: creemSubscription.current_period_start_date,
         currentPeriodEnd: creemSubscription.current_period_end_date,
         canceledAt: creemSubscription.canceled_at || null,
-        metadata: creemSubscription.metadata ? JSON.stringify(creemSubscription.metadata) : null,
+        metadata: creemSubscription.metadata
+            ? JSON.stringify(creemSubscription.metadata)
+            : null,
         updatedAt: now,
     } as const;
 
     if (existing.length > 0) {
-        await db.update(subscriptions).set(payload).where(eq(subscriptions.id, existing[0].id));
+        await db
+            .update(subscriptions)
+            .set(payload)
+            .where(eq(subscriptions.id, existing[0].id));
         return existing[0].id;
     }
 
@@ -162,4 +186,3 @@ export async function getCustomerIdByUserId(userId: string) {
         .limit(1);
     return rows[0]?.id ?? null;
 }
-

@@ -10,12 +10,18 @@ export async function POST(req: Request) {
     try {
         const { priceId, quantity }: Body = await req.json();
         if (!priceId) {
-            return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
+            return NextResponse.json(
+                { error: "Missing priceId" },
+                { status: 400 },
+            );
         }
 
         const secret = process.env.STRIPE_SECRET_KEY;
         if (!secret) {
-            return NextResponse.json({ error: "Missing STRIPE_SECRET_KEY" }, { status: 500 });
+            return NextResponse.json(
+                { error: "Missing STRIPE_SECRET_KEY" },
+                { status: 500 },
+            );
         }
 
         const origin = new URL(req.url).origin;
@@ -46,11 +52,17 @@ export async function POST(req: Request) {
             } catch {
                 // noop
             }
-            return NextResponse.json({ error: `Stripe error: ${message}` }, { status: 502 });
+            return NextResponse.json(
+                { error: `Stripe error: ${message}` },
+                { status: 502 },
+            );
         }
 
         const data = JSON.parse(text);
-        return NextResponse.json({ id: data.id, url: data.url }, { status: 200 });
+        return NextResponse.json(
+            { id: data.id, url: data.url },
+            { status: 200 },
+        );
     } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
         return NextResponse.json({ error: message }, { status: 500 });
@@ -60,4 +72,3 @@ export async function POST(req: Request) {
 export function GET() {
     return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
 }
-

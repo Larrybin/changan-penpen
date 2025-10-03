@@ -3,7 +3,9 @@ import { user } from "@/modules/auth/schemas/auth.schema";
 
 export const customers = sqliteTable("customers", {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => user.id, { onDelete: "cascade" }),
     creemCustomerId: text("creem_customer_id"),
     email: text("email"),
     name: text("name"),
@@ -15,7 +17,9 @@ export const customers = sqliteTable("customers", {
 
 export const subscriptions = sqliteTable("subscriptions", {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+    customerId: integer("customer_id")
+        .notNull()
+        .references(() => customers.id, { onDelete: "cascade" }),
     creemSubscriptionId: text("creem_subscription_id").notNull(),
     creemProductId: text("creem_product_id"),
     status: text("status"),
@@ -29,11 +33,12 @@ export const subscriptions = sqliteTable("subscriptions", {
 
 export const creditsHistory = sqliteTable("credits_history", {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+    customerId: integer("customer_id")
+        .notNull()
+        .references(() => customers.id, { onDelete: "cascade" }),
     amount: integer("amount").notNull(),
     type: text("type").notNull(),
     description: text("description"),
     creemOrderId: text("creem_order_id"),
     createdAt: text("created_at").notNull(),
 });
-

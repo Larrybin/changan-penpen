@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 export default function BillingActions() {
     const [loading, setLoading] = useState<string | null>(null);
 
-    async function startCheckout(tierId: string, productType: "subscription" | "credits") {
+    async function startCheckout(
+        tierId: string,
+        productType: "subscription" | "credits",
+    ) {
         try {
             setLoading(`${tierId}-${productType}`);
             const resp = await fetch("/api/creem/create-checkout", {
@@ -33,7 +36,11 @@ export default function BillingActions() {
             const resp = await fetch("/api/creem/customer-portal");
             const json: any = await resp.json();
             if (!resp.ok) {
-                throw new Error(typeof json === "string" ? json : json?.error || "Failed to get portal link");
+                throw new Error(
+                    typeof json === "string"
+                        ? json
+                        : json?.error || "Failed to get portal link",
+                );
             }
             const url = json?.data?.portalUrl as string | undefined;
             if (!url) throw new Error("Portal URL missing");
@@ -52,7 +59,9 @@ export default function BillingActions() {
                 onClick={() => startCheckout("tier-6-credits", "credits")}
                 disabled={loading !== null}
             >
-                {loading === "tier-6-credits-credits" ? "Processing..." : "购买 6 积分（示例）"}
+                {loading === "tier-6-credits-credits"
+                    ? "Processing..."
+                    : "购买 6 积分（示例）"}
             </Button>
             <Button
                 className="w-full"
@@ -60,7 +69,9 @@ export default function BillingActions() {
                 onClick={() => startCheckout("tier-pro", "subscription")}
                 disabled={loading !== null}
             >
-                {loading === "tier-pro-subscription" ? "Processing..." : "订阅 Pro（示例）"}
+                {loading === "tier-pro-subscription"
+                    ? "Processing..."
+                    : "订阅 Pro（示例）"}
             </Button>
             <Button
                 className="w-full"

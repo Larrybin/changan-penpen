@@ -1,6 +1,9 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { headers } from "next/headers";
-import { SUBSCRIPTION_TIERS, CREDITS_TIERS } from "@/modules/creem/config/subscriptions";
+import {
+    SUBSCRIPTION_TIERS,
+    CREDITS_TIERS,
+} from "@/modules/creem/config/subscriptions";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 
 type Body = {
@@ -15,10 +18,17 @@ export async function POST(request: Request) {
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session?.user) {
-            return new Response(JSON.stringify({ success: false, error: "Unauthorized", data: null }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Unauthorized",
+                    data: null,
+                }),
+                {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
         }
 
         const { env } = await getCloudflareContext();
@@ -28,13 +38,21 @@ export async function POST(request: Request) {
         // 必要环境变量校验（缺失则直接失败，避免上游 503）
         if (!env.CREEM_API_URL || !env.CREEM_API_KEY) {
             return new Response(
-                JSON.stringify({ success: false, error: "Missing CREEM_API_URL or CREEM_API_KEY", data: null }),
-                { status: 500, headers: { "Content-Type": "application/json" } },
+                JSON.stringify({
+                    success: false,
+                    error: "Missing CREEM_API_URL or CREEM_API_KEY",
+                    data: null,
+                }),
+                {
+                    status: 500,
+                    headers: { "Content-Type": "application/json" },
+                },
             );
         }
 
         const normalizedType = (body.productType || "").toLowerCase();
-        const isCredits = normalizedType === "credits" || normalizedType.includes("credits");
+        const isCredits =
+            normalizedType === "credits" || normalizedType.includes("credits");
         const isSubscription = normalizedType === "subscription";
 
         const allCreditTiers = CREDITS_TIERS;
@@ -60,10 +78,13 @@ export async function POST(request: Request) {
             }
             if (!productId) {
                 if (isSubscription) {
-                    const tier = allSubTiers.find((t) => t.featured) || allSubTiers[0];
+                    const tier =
+                        allSubTiers.find((t) => t.featured) || allSubTiers[0];
                     productId = tier?.productId;
                 } else {
-                    const tier = allCreditTiers.find((t) => t.featured) || allCreditTiers[0];
+                    const tier =
+                        allCreditTiers.find((t) => t.featured) ||
+                        allCreditTiers[0];
                     productId = tier?.productId;
                     creditsAmount = tier?.creditAmount;
                 }
@@ -72,18 +93,34 @@ export async function POST(request: Request) {
 
         if (!productId || !allowed.has(productId)) {
             return new Response(
-                JSON.stringify({ success: false, error: "Invalid or missing productId/tierId", data: null }),
-                { status: 400, headers: { "Content-Type": "application/json" } },
+                JSON.stringify({
+                    success: false,
+                    error: "Invalid or missing productId/tierId",
+                    data: null,
+                }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" },
+                },
             );
         }
 
-        const productType: "subscription" | "credits" = isSubscription ? "subscription" : "credits";
+        const productType: "subscription" | "credits" = isSubscription
+            ? "subscription"
+            : "credits";
         const email = session.user.email;
         if (!email) {
-            return new Response(JSON.stringify({ success: false, error: "User email required", data: null }), {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "User email required",
+                    data: null,
+                }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
         }
 
         const requestBody: Record<string, any> = {
@@ -96,16 +133,19 @@ export async function POST(request: Request) {
             },
         };
 
-        const successUrl = env.CREEM_SUCCESS_URL || (origin ? `${origin}/billing/success` : undefined);
-        const cancelUrl = env.CREEM_CANCEL_URL || (origin ? `${origin}/billing/cancel` : undefined);
+        const successUrl =
+            env.CREEM_SUCCESS_URL ||
+            (origin ? `${origin}/billing/success` : undefined);
+        const cancelUrl =
+            env.CREEM_CANCEL_URL ||
+            (origin ? `${origin}/billing/cancel` : undefined);
         if (successUrl) requestBody.success_url = successUrl;
         if (cancelUrl) requestBody.cancel_url = cancelUrl;
         if (body.discountCode) requestBody.discount_code = body.discountCode;
 
         // 上游请求：增加超时、重试（指数退避 + 抖动）与错误归因
-        const { ok, status, data, text, attempts, contentType } = await fetchWithRetry(
-            `${env.CREEM_API_URL}/checkouts`,
-            {
+        const { ok, status, data, text, attempts, contentType } =
+            await fetchWithRetry(`${env.CREEM_API_URL}/checkouts`, {
                 method: "POST",
                 headers: {
                     "x-api-key": env.CREEM_API_KEY,
@@ -113,13 +153,13 @@ export async function POST(request: Request) {
                     Accept: "application/json",
                 },
                 body: JSON.stringify(requestBody),
-            },
-        );
+            });
 
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
             const isAuthErr = status === 401 || status === 403;
-            const isClientErr = status === 400 || status === 404 || status === 422;
+            const isClientErr =
+                status === 400 || status === 404 || status === 422;
             const mapped = isAuthErr ? 401 : isClientErr ? 400 : 502;
             return new Response(
                 JSON.stringify({
@@ -133,7 +173,10 @@ export async function POST(request: Request) {
                         upstreamBodySnippet: snippet,
                     },
                 }),
-                { status: mapped, headers: { "Content-Type": "application/json" } },
+                {
+                    status: mapped,
+                    headers: { "Content-Type": "application/json" },
+                },
             );
         }
 
@@ -142,21 +185,40 @@ export async function POST(request: Request) {
         const checkoutUrl = json?.checkout_url;
         if (!checkoutUrl || typeof checkoutUrl !== "string") {
             return new Response(
-                JSON.stringify({ success: false, error: "Invalid response from Creem: missing checkout_url", data: null }),
-                { status: 502, headers: { "Content-Type": "application/json" } },
+                JSON.stringify({
+                    success: false,
+                    error: "Invalid response from Creem: missing checkout_url",
+                    data: null,
+                }),
+                {
+                    status: 502,
+                    headers: { "Content-Type": "application/json" },
+                },
             );
         }
         // 标准化字段：data.checkoutUrl；附带 meta.raw 便于调试（已移除 legacy 字段）
-        return new Response(JSON.stringify({ success: true, data: { checkoutUrl }, error: null, meta: { raw: json } }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+            JSON.stringify({
+                success: true,
+                data: { checkoutUrl },
+                error: null,
+                meta: { raw: json },
+            }),
+            {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            },
+        );
     } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        return new Response(JSON.stringify({ success: false, error: message, data: null }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        });
+        const message =
+            error instanceof Error ? error.message : "Unknown error";
+        return new Response(
+            JSON.stringify({ success: false, error: message, data: null }),
+            {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+            },
+        );
     }
 }
 
@@ -165,7 +227,14 @@ async function fetchWithRetry(
     url: string,
     init: RequestInit,
     options?: { attempts?: number; timeoutMs?: number },
-): Promise<{ ok: boolean; status: number; data?: unknown; text?: string; attempts: number; contentType?: string | null }> {
+): Promise<{
+    ok: boolean;
+    status: number;
+    data?: unknown;
+    text?: string;
+    attempts: number;
+    contentType?: string | null;
+}> {
     const maxAttempts = Math.max(1, options?.attempts ?? 3);
     const timeoutMs = Math.max(1000, options?.timeoutMs ?? 8000);
 
@@ -177,16 +246,29 @@ async function fetchWithRetry(
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
-            const resp = await fetch(url, { ...init, signal: controller.signal });
+            const resp = await fetch(url, {
+                ...init,
+                signal: controller.signal,
+            });
             clearTimeout(timer);
 
             lastStatus = resp.status;
             lastContentType = resp.headers.get("content-type") || undefined;
 
-            const isJson = (lastContentType || "").toLowerCase().includes("application/json");
+            const isJson = (lastContentType || "")
+                .toLowerCase()
+                .includes("application/json");
             if (resp.ok) {
-                const data = isJson ? await resp.json() : JSON.parse(await resp.text()).catch(() => ({}));
-                return { ok: true, status: resp.status, data, attempts: attempt, contentType: lastContentType || null };
+                const data = isJson
+                    ? await resp.json()
+                    : JSON.parse(await resp.text()).catch(() => ({}));
+                return {
+                    ok: true,
+                    status: resp.status,
+                    data,
+                    attempts: attempt,
+                    contentType: lastContentType || null,
+                };
             }
 
             // 读取文本用于诊断；对 5xx/429 进行重试
@@ -201,7 +283,13 @@ async function fetchWithRetry(
                 }
             }
 
-            return { ok: false, status: resp.status, text: txt, attempts: attempt, contentType: lastContentType || null };
+            return {
+                ok: false,
+                status: resp.status,
+                text: txt,
+                attempts: attempt,
+                contentType: lastContentType || null,
+            };
         } catch (err) {
             clearTimeout(timer);
             // 网络/超时错误：重试
@@ -211,11 +299,23 @@ async function fetchWithRetry(
                 continue;
             }
             const msg = err instanceof Error ? err.message : String(err);
-            return { ok: false, status: lastStatus || 0, text: msg, attempts: attempt, contentType: lastContentType || null };
+            return {
+                ok: false,
+                status: lastStatus || 0,
+                text: msg,
+                attempts: attempt,
+                contentType: lastContentType || null,
+            };
         }
     }
 
-    return { ok: false, status: lastStatus || 0, text: lastText, attempts: maxAttempts, contentType: lastContentType || null };
+    return {
+        ok: false,
+        status: lastStatus || 0,
+        text: lastText,
+        attempts: maxAttempts,
+        contentType: lastContentType || null,
+    };
 }
 
 function sleep(ms: number) {

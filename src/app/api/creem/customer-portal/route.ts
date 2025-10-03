@@ -21,15 +21,24 @@ export async function GET() {
             .limit(1);
         const creemCustomerId = row[0]?.creemCustomerId;
         if (!creemCustomerId) {
-            return new Response("No subscription/customer found", { status: 404 });
+            return new Response("No subscription/customer found", {
+                status: 404,
+            });
         }
 
         const { env } = await getCloudflareContext();
         if (!env.CREEM_API_URL || !env.CREEM_API_KEY) {
-            return new Response(JSON.stringify({ success: false, error: "Missing CREEM_API_URL or CREEM_API_KEY", data: null }), {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Missing CREEM_API_URL or CREEM_API_KEY",
+                    data: null,
+                }),
+                {
+                    status: 500,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
         }
 
         const { ok, status, text, data } = await fetchWithRetry(
@@ -47,21 +56,41 @@ export async function GET() {
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
             const isAuthErr = status === 401 || status === 403;
-            const isClientErr = status === 400 || status === 404 || status === 422;
+            const isClientErr =
+                status === 400 || status === 404 || status === 422;
             const mapped = isAuthErr ? 401 : isClientErr ? 400 : 502;
             return new Response(
-                JSON.stringify({ success: false, error: "Failed to get portal link", meta: { status, upstreamBodySnippet: snippet }, data: null }),
-                { status: mapped, headers: { "Content-Type": "application/json" } },
+                JSON.stringify({
+                    success: false,
+                    error: "Failed to get portal link",
+                    meta: { status, upstreamBodySnippet: snippet },
+                    data: null,
+                }),
+                {
+                    status: mapped,
+                    headers: { "Content-Type": "application/json" },
+                },
             );
         }
 
-        type BillingPortalResponse = { url?: string; portal_url?: string; billing_url?: string };
+        type BillingPortalResponse = {
+            url?: string;
+            portal_url?: string;
+            billing_url?: string;
+        };
         const json = data as BillingPortalResponse;
         const url = json?.url || json?.portal_url || json?.billing_url;
         if (!url || typeof url !== "string") {
             return new Response(
-                JSON.stringify({ success: false, error: "Invalid response from Creem: missing portal url", data: null }),
-                { status: 502, headers: { "Content-Type": "application/json" } },
+                JSON.stringify({
+                    success: false,
+                    error: "Invalid response from Creem: missing portal url",
+                    data: null,
+                }),
+                {
+                    status: 502,
+                    headers: { "Content-Type": "application/json" },
+                },
             );
         }
         // 标准化字段：data.portalUrl；附带 meta.raw 便于调试（已移除 legacy 字段）
@@ -71,7 +100,10 @@ export async function GET() {
             error: null as string | null,
             meta: { raw: json },
         };
-        return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+        return new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+        });
     } catch (error) {
         return new Response("Internal Server Error", { status: 500 });
     }
@@ -90,7 +122,10 @@ async function fetchWithRetry(
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
-            const resp = await fetch(url, { ...init, signal: controller.signal });
+            const resp = await fetch(url, {
+                ...init,
+                signal: controller.signal,
+            });
             clearTimeout(timer);
             lastStatus = resp.status;
             const ct = resp.headers.get("content-type") || "";
@@ -103,7 +138,13 @@ async function fetchWithRetry(
             lastText = txt;
             if (resp.status === 429 || resp.status >= 500) {
                 if (attempt < maxAttempts) {
-                    await new Promise((r) => setTimeout(r, Math.min(5000, 1000 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 300)));
+                    await new Promise((r) =>
+                        setTimeout(
+                            r,
+                            Math.min(5000, 1000 * 2 ** (attempt - 1)) +
+                                Math.floor(Math.random() * 300),
+                        ),
+                    );
                     continue;
                 }
             }
@@ -111,7 +152,13 @@ async function fetchWithRetry(
         } catch (err) {
             clearTimeout(timer);
             if (attempt < maxAttempts) {
-                await new Promise((r) => setTimeout(r, Math.min(5000, 1000 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 300)));
+                await new Promise((r) =>
+                    setTimeout(
+                        r,
+                        Math.min(5000, 1000 * 2 ** (attempt - 1)) +
+                            Math.floor(Math.random() * 300),
+                    ),
+                );
                 continue;
             }
             const msg = err instanceof Error ? err.message : String(err);

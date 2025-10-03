@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -26,17 +28,21 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const locale = await getLocale();
+    const messages = await getMessages();
     return (
-        <html lang="en">
+        <html lang={locale}>
             <body
                 className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased bg-gray-50 min-h-screen`}
             >
-                <main>{children}</main>
+                <NextIntlClientProvider messages={messages}>
+                    <main>{children}</main>
+                </NextIntlClientProvider>
                 <Toaster
                     position="bottom-right"
                     toastOptions={{
