@@ -18,46 +18,54 @@ import { SUBSCRIPTION_TIERS } from "@/modules/creem/config/subscriptions";
 export default async function Dashboard() {
     const session = await getSession();
     let credits = 0;
-    let subStatus = "未订阅";
+    let subStatus = "账单信息不可用";
     let planName = "-";
 
     if (session?.user) {
-        const db = await getDb();
-        const rows = await db
-            .select({ id: customers.id, credits: customers.credits })
-            .from(customers)
-            .where(eq(customers.userId, session.user.id))
-            .limit(1);
-
-        if (rows.length > 0) {
-            credits = rows[0].credits ?? 0;
-            const subs = await db
-                .select({ status: subscriptions.status, productId: subscriptions.creemProductId, updatedAt: subscriptions.updatedAt })
-                .from(subscriptions)
-                .where(eq(subscriptions.customerId, rows[0].id))
-                .orderBy(desc(subscriptions.updatedAt))
+        try {
+            const db = await getDb();
+            const rows = await db
+                .select({ id: customers.id, credits: customers.credits })
+                .from(customers)
+                .where(eq(customers.userId, session.user.id))
                 .limit(1);
 
-            if (subs.length > 0) {
-                const rawStatus = subs[0].status || "unknown";
-                const statusMap: Record<string, string> = {
-                    active: "已订阅",
-                    paid: "已订阅",
-                    trialing: "试用中",
-                    canceled: "已取消",
-                    expired: "已过期",
-                };
-                subStatus = statusMap[rawStatus] || rawStatus;
-                planName = SUBSCRIPTION_TIERS.find((t) => t.productId === subs[0].productId)?.name || "-";
+            if (rows.length > 0) {
+                credits = rows[0].credits ?? 0;
+                const subs = await db
+                    .select({ status: subscriptions.status, productId: subscriptions.creemProductId, updatedAt: subscriptions.updatedAt })
+                    .from(subscriptions)
+                    .where(eq(subscriptions.customerId, rows[0].id))
+                    .orderBy(desc(subscriptions.updatedAt))
+                    .limit(1);
+
+                if (subs.length > 0) {
+                    const rawStatus = subs[0].status || "unknown";
+                    const statusMap: Record<string, string> = {
+                        active: "已订阅",
+                        paid: "已订阅",
+                        trialing: "试用中",
+                        canceled: "已取消",
+                        expired: "已过期",
+                    };
+                    subStatus = statusMap[rawStatus] || rawStatus;
+                    planName = SUBSCRIPTION_TIERS.find((t) => t.productId === subs[0].productId)?.name || "-";
+                } else {
+                    subStatus = "未订阅";
+                }
+            } else {
+                subStatus = "未订阅";
             }
+        } catch (e) {
+            // 避免 SSR 直接崩溃，保留默认占位值
+            console.error("[dashboard] billing snapshot error", e);
         }
     }
+
     return (
         <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
             <div className="text-center mb-12">
-                <h1 className="text-title-sm font-bold mb-4">
-                    Welcome to TodoApp
-                </h1>
+                <h1 className="text-title-sm font-bold mb-4">Welcome to TodoApp</h1>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                     A simple and elegant todo application built with Next.js 15,
                     TailwindCSS, and shadcn/ui components.
@@ -92,7 +100,7 @@ export default async function Dashboard() {
                             Billing & Payments
                         </CardTitle>
                         <CardDescription>
-                            购买积分、订阅 Pro，或打开账单管理门户
+                            订阅与积分购买入口；查看当前订阅与剩余积分
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -132,36 +140,28 @@ export default async function Dashboard() {
             </div>
 
             <div className="mt-16 text-center">
-                <h2 className="text-subtitle font-semibold mb-4">
-                    Features
-                </h2>
+                <h2 className="text-subtitle font-semibold mb-4">Features</h2>
                 <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
                     <div className="text-center">
                         <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
                             <CheckSquare className="h-6 w-6 text-blue-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Task Management</h3>
-                        <p className="text-muted-foreground text-sm">
-                            Create, edit, and delete todos with ease
-                        </p>
+                        <p className="text-muted-foreground text-sm">Create, edit, and delete todos with ease</p>
                     </div>
                     <div className="text-center">
                         <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
                             <List className="h-6 w-6 text-green-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Categories</h3>
-                        <p className="text-muted-foreground text-sm">
-                            Organize your todos with custom categories
-                        </p>
+                        <p className="text-muted-foreground text-sm">Organize your todos with custom categories</p>
                     </div>
                     <div className="text-center">
                         <div className="bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
                             <Plus className="h-6 w-6 text-purple-600" />
                         </div>
                         <h3 className="font-semibold mb-2">Rich Features</h3>
-                        <p className="text-muted-foreground text-sm">
-                            Priorities, due dates, images, and more
-                        </p>
+                        <p className="text-muted-foreground text-sm">Priorities, due dates, images, and more</p>
                     </div>
                 </div>
             </div>
@@ -170,3 +170,4 @@ export default async function Dashboard() {
 }
 
 // 直接引入客户端组件：Server 组件可以渲染 Client 边界，无需 dynamic
+
