@@ -56,7 +56,7 @@ export default function MarketingLandingPage() {
                     <h2 className="text-2xl font-bold text-center mb-6">
                         What is Banana Generator?
                     </h2>
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
                         {[
                             {
                                 title: "Free & Unlimited Access",
@@ -97,7 +97,7 @@ export default function MarketingLandingPage() {
                     <h2 className="text-2xl font-bold text-center mb-6">
                         Why Choose Banana Generator?
                     </h2>
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
                         {[
                             {
                                 title: "AI Photo Editor",
