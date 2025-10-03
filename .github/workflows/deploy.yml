@@ -169,6 +169,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: production
           command: d1 migrations apply next-cf-app
 
       - name: Deploy to Production
@@ -176,6 +177,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: production
           secrets: |
             BETTER_AUTH_SECRET
             GOOGLE_CLIENT_ID
