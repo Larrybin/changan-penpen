@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { usePathname, useRouter } from "next-intl/client";
+import { usePathname, useRouter } from "next-intl/navigation";
 import { useMemo } from "react";
 
 import type { AppLocale } from "@/i18n/config";
