@@ -14,11 +14,12 @@ export default function BillingActions() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ tierId, productType }),
             });
-            const json = await resp.json();
-            if (!resp.ok || !json?.data?.checkoutUrl) {
+            const json: any = await resp.json();
+            const normalized = json?.data?.checkoutUrl || json?.checkout_url;
+            if (!resp.ok || !normalized) {
                 throw new Error(json?.error || "Failed to create checkout");
             }
-            window.location.href = json.data.checkoutUrl as string;
+            window.location.href = normalized as string;
         } catch (e: any) {
             alert(e?.message || "Checkout error");
         } finally {
@@ -30,11 +31,11 @@ export default function BillingActions() {
         try {
             setLoading("portal");
             const resp = await fetch("/api/creem/customer-portal");
-            const json = await resp.json();
+            const json: any = await resp.json();
             if (!resp.ok) {
                 throw new Error(typeof json === "string" ? json : json?.error || "Failed to get portal link");
             }
-            const url = (json?.url || json?.portal_url || json?.billing_url) as string | undefined;
+            const url = (json?.data?.portalUrl || json?.url || json?.portal_url || json?.billing_url) as string | undefined;
             if (!url) throw new Error("Portal URL missing");
             window.location.href = url;
         } catch (e: any) {
@@ -72,4 +73,3 @@ export default function BillingActions() {
         </div>
     );
 }
-

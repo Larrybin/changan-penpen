@@ -42,12 +42,22 @@ export async function GET() {
         const url = json?.url || json?.portal_url || json?.billing_url;
         if (!url || typeof url !== "string") {
             return new Response(
-                JSON.stringify({ error: "Invalid response from Creem: missing portal url" }),
+                JSON.stringify({ success: false, error: "Invalid response from Creem: missing portal url", data: null }),
                 { status: 502, headers: { "Content-Type": "application/json" } },
             );
         }
-        // 透传 Creem 返回，前端已兼容多字段名称
-        return new Response(JSON.stringify(json), { status: 200, headers: { "Content-Type": "application/json" } });
+        // 标准化字段：data.portalUrl，同时保留旧字段以兼容既有前端；附带 meta.raw 便于调试
+        const payload = {
+            success: true,
+            data: { portalUrl: url },
+            error: null as string | null,
+            // legacy fields for backward compatibility
+            url: json?.url,
+            portal_url: json?.portal_url,
+            billing_url: json?.billing_url,
+            meta: { raw: json },
+        };
+        return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
     } catch (error) {
         return new Response("Internal Server Error", { status: 500 });
     }
