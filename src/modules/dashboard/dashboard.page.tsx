@@ -1,4 +1,4 @@
-import { CheckSquare, List, Plus } from "lucide-react";
+import { CheckSquare, List, Plus, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +40,22 @@ export default async function Dashboard() {
                                 Go to Todos
                             </Button>
                         </Link>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <CreditCard className="mr-2 h-5 w-5" />
+                            Billing & Payments
+                        </CardTitle>
+                        <CardDescription>
+                            购买积分、订阅 Pro，或打开账单管理门户
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {/* @ts-expect-error Server Component boundary */}
+                        <BillingActionsLazy />
                     </CardContent>
                 </Card>
 
@@ -101,3 +117,10 @@ export default async function Dashboard() {
         </div>
     );
 }
+
+// 动态导入客户端组件，避免 SSR 期间触发 window 引用
+import dynamic from "next/dynamic";
+const BillingActionsLazy = dynamic(
+    () => import("@/modules/creem/components/billing-actions"),
+    { ssr: false },
+);
