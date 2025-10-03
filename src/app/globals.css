@@ -169,7 +169,8 @@
   /* Button tokens */
   [data-slot="button"] {
     /* Colors */
-    --button-bg: var(--token-color-primary, var(--primary));
+    /* Use current theme primary by default to ensure zero diff */
+    --button-bg: var(--primary);
     --button-fg: var(--primary-foreground);
     --button-hover-bg: color-mix(in oklch, var(--button-bg) 90%, transparent);
 
