@@ -86,6 +86,7 @@ jobs:
             CLOUDFLARE_R2_URL
             CREEM_API_KEY
             CREEM_WEBHOOK_SECRET
+          vars: |
             CREEM_API_URL
             CREEM_SUCCESS_URL
             CREEM_CANCEL_URL
@@ -191,6 +192,7 @@ jobs:
             CLOUDFLARE_R2_URL
             CREEM_API_KEY
             CREEM_WEBHOOK_SECRET
+          vars: |
             CREEM_API_URL
             CREEM_SUCCESS_URL
             CREEM_CANCEL_URL
