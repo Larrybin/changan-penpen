@@ -10,7 +10,7 @@ export default function PublicHeader() {
                     <span className="text-xl">🍌</span>
                     <span className="font-semibold tracking-wide">Banana Generator</span>
                 </Link>
-                <nav className="hidden md:flex items-center gap-6 text-sm text-yellow-100/80">
+                <nav className="hidden xs:flex items-center gap-6 text-sm text-yellow-100/80">
                     <Link href="#features" className="hover:text-yellow-300 transition">Features</Link>
                     <Link href="#why" className="hover:text-yellow-300 transition">Why Us</Link>
                     <Link href="#faq" className="hover:text-yellow-300 transition">FAQ</Link>
@@ -29,4 +29,3 @@ export default function PublicHeader() {
         </header>
     );
 }
-

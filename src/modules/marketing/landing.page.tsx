@@ -13,13 +13,13 @@ export default function MarketingLandingPage() {
 
             <main>
                 <section className="mx-auto w-full max-w-6xl px-4 py-12 md:py-16">
-                    <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <div className="grid xs:grid-cols-2 gap-8 items-center">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <Badge className="bg-yellow-400 text-black">Free Online</Badge>
                                 <span className="text-lg">🍌</span>
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+                            <h1 className="text-4xl xs:text-5xl font-extrabold tracking-tight mb-4">
                                 AI Photo Editor
                             </h1>
                             <p className="text-yellow-200/80 leading-relaxed mb-6">
@@ -44,7 +44,7 @@ export default function MarketingLandingPage() {
                                 <span>🆓 Unlimited</span>
                             </div>
                         </div>
-                        <div className="hidden md:block text-right text-7xl">🍌✨</div>
+                        <div className="hidden lg-narrow:block text-right text-7xl">🍌✨</div>
                     </div>
                 </section>
 
@@ -172,4 +172,3 @@ export default function MarketingLandingPage() {
         </div>
     );
 }
-

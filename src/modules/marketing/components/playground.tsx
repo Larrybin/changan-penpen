@@ -97,7 +97,7 @@ export default function Playground() {
                     </div>
                 </div>
 
-                <div className="hidden md:flex items-center justify-center">
+                <div className="hidden lg-narrow:flex items-center justify-center">
                     <div className="text-center">
                         <div className="text-7xl mb-4">🍌</div>
                         <p className="text-yellow-200/80 text-sm">
@@ -109,4 +109,3 @@ export default function Playground() {
         </section>
     );
 }
-
