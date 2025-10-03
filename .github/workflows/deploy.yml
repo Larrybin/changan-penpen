@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Generate Cloudflare types
+        run: pnpm run cf-typegen
+
       - name: Build Next.js (diagnostic)
         run: pnpm run build
 
@@ -134,6 +137,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Generate Cloudflare types
+        run: pnpm run cf-typegen
 
       - name: Build Next.js (diagnostic)
         run: pnpm run build
