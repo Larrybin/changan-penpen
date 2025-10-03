@@ -104,6 +104,25 @@
   --token-text-subtitle: 1.5rem; /* 24px */
   --token-leading-subtitle: 2rem; /* 32px */
 
+  /* Link tokens */
+  --token-link-color: var(--primary);
+  --token-link-hover: var(--accent);
+  --token-link-underline-offset: 4px;
+
+  /* Form control sizing tokens (defaults preserve current visuals) */
+  --token-control-height: 2.25rem; /* h-9 */
+  --token-control-height-sm: 2rem;  /* h-8 */
+  --token-control-px: 0.75rem;      /* px-3 */
+  --token-control-py: 0.25rem;      /* py-1 */
+  --token-control-radius: var(--radius-md);
+
+  /* Motion tokens */
+  --token-motion-duration-fast: 100ms;
+  --token-motion-duration-md: 200ms;
+  --token-motion-duration-slow: 300ms;
+  --token-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --token-motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
   /* Colors (brand tokens) */
   --token-color-primary: #1A1F36; /* blue-black */
   --token-color-bg: #FFFFFF;      /* white */
@@ -127,6 +146,16 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Default link styling via tokens (opt-out with data-unstyled) */
+  a:not([data-unstyled]) {
+    color: var(--token-link-color);
+  }
+  a:not([data-unstyled]):hover {
+    color: var(--token-link-hover);
+  }
+  a.underline:not([data-unstyled]) {
+    text-underline-offset: var(--token-link-underline-offset);
   }
 }
 
@@ -153,7 +182,7 @@
 
     /* Interactions */
     --button-press-scale: 0.99;     /* active:scale-[var(--button-press-scale)] */
-    --button-transition: 200ms;     /* transition duration */
+    --button-transition: var(--token-motion-duration-md); /* transition duration */
   }
 
   /* Card tokens */
@@ -176,6 +205,17 @@
   [data-slot="card-footer"] {
     --card-footer-px: 1.5rem;         /* matches px-6 */
     --card-footer-pt: 1.5rem;         /* matches pt-6 when has border-t */
+  }
+
+  /* Input/select/textarea control tokens (sizing) */
+  [data-slot="input"],
+  [data-slot="select-trigger"],
+  [data-slot="textarea"] {
+    --control-h: var(--token-control-height);
+    --control-h-sm: var(--token-control-height-sm);
+    --control-px: var(--token-control-px);
+    --control-py: var(--token-control-py);
+    --control-radius: var(--token-control-radius);
   }
 }
 
