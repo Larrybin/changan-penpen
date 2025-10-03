@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { usePathname, useRouter } from "next-intl/navigation";
+import { createNavigation } from "next-intl/navigation";
 import { useMemo } from "react";
 
 import type { AppLocale } from "@/i18n/config";
@@ -15,6 +15,7 @@ const LABELS: Record<AppLocale, string> = {
 
 export default function LanguageSwitcher() {
     const locale = useLocale() as AppLocale;
+    const { usePathname, useRouter } = createNavigation();
     const pathname = usePathname();
     const router = useRouter();
 
