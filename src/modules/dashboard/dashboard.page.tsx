@@ -1,4 +1,5 @@
 import { CheckSquare, List, Plus, CreditCard } from "lucide-react";
+import BillingActions from "@/modules/creem/components/billing-actions";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,8 +55,7 @@ export default async function Dashboard() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {/* @ts-expect-error Server Component boundary */}
-                        <BillingActionsLazy />
+                        <BillingActions />
                     </CardContent>
                 </Card>
 
@@ -118,9 +118,4 @@ export default async function Dashboard() {
     );
 }
 
-// 动态导入客户端组件，避免 SSR 期间触发 window 引用
-import dynamic from "next/dynamic";
-const BillingActionsLazy = dynamic(
-    () => import("@/modules/creem/components/billing-actions"),
-    { ssr: false },
-);
+// 直接引入客户端组件：Server 组件可以渲染 Client 边界，无需 dynamic
