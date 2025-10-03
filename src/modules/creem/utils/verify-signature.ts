@@ -1,5 +1,3 @@
-import { createHmac } from "crypto";
-
 function timingSafeEqual(a: string, b: string) {
     if (a.length !== b.length) return false;
     let result = 0;
@@ -9,17 +7,39 @@ function timingSafeEqual(a: string, b: string) {
     return result === 0;
 }
 
-export function verifyCreemWebhookSignature(
+async function hmacSha256(payload: string, secret: string) {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(secret),
+        { name: "HMAC", hash: { name: "SHA-256" } },
+        false,
+        ["sign"],
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+    const bytes = new Uint8Array(sig);
+    // hex
+    const hex = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    // base64
+    let b64 = "";
+    if (typeof Buffer !== "undefined") {
+        b64 = Buffer.from(bytes).toString("base64");
+    } else {
+        // Browser/Workers fallback
+        b64 = btoa(String.fromCharCode(...bytes));
+    }
+    return { hex, b64 } as const;
+}
+
+export async function verifyCreemWebhookSignature(
     payload: string,
     signature: string,
     secret: string,
-): boolean {
+): Promise<boolean> {
     try {
-        const hmac = createHmac("sha256", secret);
-        const digest = hmac.update(payload).digest();
-        const hex = digest.toString("hex");
-        const b64 = digest.toString("base64");
-
+        const { hex, b64 } = await hmacSha256(payload, secret);
         const header = (signature || "").trim();
 
         if (header && (timingSafeEqual(header, hex) || timingSafeEqual(header, b64))) {
@@ -45,4 +65,3 @@ export function verifyCreemWebhookSignature(
         return false;
     }
 }
-

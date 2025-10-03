@@ -14,7 +14,7 @@ export async function POST(request: Request) {
             console.log("[creem webhook] signature:", signature);
         }
 
-        const valid = verifyCreemWebhookSignature(raw, signature, env.CREEM_WEBHOOK_SECRET);
+        const valid = await verifyCreemWebhookSignature(raw, signature, env.CREEM_WEBHOOK_SECRET);
         if (!valid) {
             return new Response("Invalid signature", { status: 401 });
         }
@@ -75,4 +75,3 @@ async function onSubscriptionChanged(subscription: CreemSubscription) {
 
     await createOrUpdateSubscription(subscription, customerId);
 }
-
