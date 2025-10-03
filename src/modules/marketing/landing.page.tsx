@@ -14,6 +14,13 @@ export default function MarketingLandingPage() {
             style={{
                 "--card-header-gap": "0.5rem",
                 "--token-font-family-sans": "var(--font-inter)",
+                // Button tokens for default variant
+                "--button-bg": "var(--token-color-accent)",
+                "--button-fg": "#000",
+                "--button-hover-bg": "color-mix(in oklch, var(--token-color-accent) 85%, black 15%)",
+                // Accent used by outline variant
+                "--accent": "var(--token-color-accent)",
+                "--accent-foreground": "#000",
                 fontFamily: "var(--token-font-family-sans)",
             } as React.CSSProperties}
         >
@@ -27,7 +34,7 @@ export default function MarketingLandingPage() {
                                 <Badge className="bg-yellow-400 text-black">Free Online</Badge>
                                 <span className="text-lg">🍌</span>
                             </div>
-                            <h1 className="text-4xl xs:text-5xl lg-narrow:text-title font-extrabold tracking-tight mb-4">
+                            <h1 className="text-title font-extrabold tracking-tight mb-4">
                                 AI Photo Editor
                             </h1>
                             <p className="text-yellow-200/80 leading-relaxed mb-6">
@@ -36,14 +43,14 @@ export default function MarketingLandingPage() {
                             </p>
                             <div className="flex gap-3">
                                 <Link href="/signup">
-                                    <Button className="bg-yellow-400 text-black hover:bg-yellow-300">
+                                    <Button>
                                         Try it free
                                     </Button>
                                 </Link>
                                 <Link href="#playground">
                                     <Button
                                         variant="outline"
-                                        className="border-yellow-400 text-yellow-300 hover:bg-yellow-400/10"
+                                        className="border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
                                     >
                                         What can it do?
                                     </Button>
@@ -64,7 +71,7 @@ export default function MarketingLandingPage() {
                 </div>
 
                 <section id="features" className="mx-auto w-full max-w-6xl px-4 py-10">
-                    <h2 className="text-2xl lg-narrow:text-subtitle font-bold text-center mb-6">
+                    <h2 className="text-subtitle font-bold text-center mb-6">
                         What is Banana Generator?
                     </h2>
                     <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
@@ -105,7 +112,7 @@ export default function MarketingLandingPage() {
                 </section>
 
                 <section id="why" className="mx-auto w-full max-w-6xl px-4 py-10">
-                    <h2 className="text-2xl lg-narrow:text-subtitle font-bold text-center mb-6">
+                    <h2 className="text-subtitle font-bold text-center mb-6">
                         Why Choose Banana Generator?
                     </h2>
                     <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
@@ -134,7 +141,7 @@ export default function MarketingLandingPage() {
                 </section>
 
                 <section id="faq" className="mx-auto w-full max-w-4xl px-4 py-10">
-                    <h2 className="text-2xl font-bold text-center mb-6">
+                    <h2 className="text-subtitle font-bold text-center mb-6">
                         Frequently Asked Questions
                     </h2>
                     <div className="space-y-3">
@@ -183,4 +190,3 @@ export default function MarketingLandingPage() {
         </div>
     );
 }
-
