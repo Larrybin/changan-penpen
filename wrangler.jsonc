@@ -8,11 +8,6 @@
     "main": ".open-next/worker.js",
     "compatibility_date": "2025-03-01",
     "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-    "vars": {
-        // Non-secret runtime variables (override per-environment below if needed)
-        // Use test API by default; change production in the env block if needed
-        "CREEM_API_URL": "https://api.creem.dev"
-    },
     "assets": {
         "binding": "ASSETS",
         "directory": ".open-next/assets"
@@ -41,11 +36,7 @@
     "env": {
         "preview": {
             "vars": {
-                "CREEM_API_URL": "https://api.creem.dev",
-                "CREEM_LOG_WEBHOOK_SIGNATURE": "1",
-                // Local preview defaults; production will infer from request origin
-                "CREEM_SUCCESS_URL": "http://localhost:3000/billing/success",
-                "CREEM_CANCEL_URL": "http://localhost:3000/billing/cancel"
+                "CREEM_LOG_WEBHOOK_SIGNATURE": "1"
             },
             "d1_databases": [
                 {
@@ -67,10 +58,6 @@
             }
         },
         "production": {
-            "vars": {
-                // Change to production API if different
-                "CREEM_API_URL": "https://api.creem.dev"
-            },
             "d1_databases": [
                 {
                     "binding": "next_cf_app",
