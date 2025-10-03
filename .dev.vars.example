@@ -6,6 +6,17 @@ NEXTJS_ENV=development
 # Get your API Token from: https://dash.cloudflare.com/profile/api-tokens
 CLOUDFLARE_ACCOUNT_ID=your-account-id-here
 CLOUDFLARE_D1_TOKEN=your-api-token-here
+
+# Creem (test/staging values suggested)
+CREEM_API_URL=https://api.creem.dev
+# Optional default redirect URLs when not inferred from request origin
+CREEM_SUCCESS_URL=http://localhost:3000/billing/success
+CREEM_CANCEL_URL=http://localhost:3000/billing/cancel
+
+# Local-only examples (put real values in .dev.vars, not committed) or set via `wrangler secret put`
+CREEM_API_KEY=your-creem-api-key
+CREEM_WEBHOOK_SECRET=whsec_xxx
+CREEM_LOG_WEBHOOK_SIGNATURE=1
 CLOUDFLARE_R2_URL=your-r2-url-here
 CLOUDFLARE_API_TOKEN=your-api-token-here
 
