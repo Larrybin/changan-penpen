@@ -25,6 +25,14 @@ export async function POST(request: Request) {
         const origin = (await headers()).get("origin");
         const body = (await request.json()) as Body;
 
+        // 必要环境变量校验（缺失则直接失败，避免上游 503）
+        if (!env.CREEM_API_URL || !env.CREEM_API_KEY) {
+            return new Response(
+                JSON.stringify({ success: false, error: "Missing CREEM_API_URL or CREEM_API_KEY", data: null }),
+                { status: 500, headers: { "Content-Type": "application/json" } },
+            );
+        }
+
         const normalizedType = (body.productType || "").toLowerCase();
         const isCredits = normalizedType === "credits" || normalizedType.includes("credits");
         const isSubscription = normalizedType === "subscription";
@@ -94,23 +102,43 @@ export async function POST(request: Request) {
         if (cancelUrl) requestBody.cancel_url = cancelUrl;
         if (body.discountCode) requestBody.discount_code = body.discountCode;
 
-        const resp = await fetch(`${env.CREEM_API_URL}/checkouts`, {
-            method: "POST",
-            headers: {
-                "x-api-key": env.CREEM_API_KEY,
-                "Content-Type": "application/json",
+        // 上游请求：增加超时、重试（指数退避 + 抖动）与错误归因
+        const { ok, status, data, text, attempts, contentType } = await fetchWithRetry(
+            `${env.CREEM_API_URL}/checkouts`,
+            {
+                method: "POST",
+                headers: {
+                    "x-api-key": env.CREEM_API_KEY,
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify(requestBody),
             },
-            body: JSON.stringify(requestBody),
-        });
-        if (!resp.ok) {
-            const txt = await resp.text();
-            return new Response(JSON.stringify({ success: false, error: `Create checkout failed: ${txt}`, data: null }), {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            });
+        );
+
+        if (!ok) {
+            const snippet = (text || "").slice(0, 300);
+            const isAuthErr = status === 401 || status === 403;
+            const isClientErr = status === 400 || status === 404 || status === 422;
+            const mapped = isAuthErr ? 401 : isClientErr ? 400 : 502;
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Create checkout failed",
+                    data: null,
+                    meta: {
+                        status,
+                        attempts,
+                        contentType: contentType || null,
+                        upstreamBodySnippet: snippet,
+                    },
+                }),
+                { status: mapped, headers: { "Content-Type": "application/json" } },
+            );
         }
+
         type CreateCheckoutResponse = { checkout_url?: string };
-        const json = (await resp.json()) as unknown as CreateCheckoutResponse;
+        const json = data as CreateCheckoutResponse;
         const checkoutUrl = json?.checkout_url;
         if (!checkoutUrl || typeof checkoutUrl !== "string") {
             return new Response(
@@ -130,4 +158,72 @@ export async function POST(request: Request) {
             headers: { "Content-Type": "application/json" },
         });
     }
+}
+
+// 内部：带超时与重试的 fetch（针对 Workers 环境）
+async function fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    options?: { attempts?: number; timeoutMs?: number },
+): Promise<{ ok: boolean; status: number; data?: unknown; text?: string; attempts: number; contentType?: string | null }> {
+    const maxAttempts = Math.max(1, options?.attempts ?? 3);
+    const timeoutMs = Math.max(1000, options?.timeoutMs ?? 8000);
+
+    let lastText: string | undefined;
+    let lastStatus = 0;
+    let lastContentType: string | undefined | null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const resp = await fetch(url, { ...init, signal: controller.signal });
+            clearTimeout(timer);
+
+            lastStatus = resp.status;
+            lastContentType = resp.headers.get("content-type") || undefined;
+
+            const isJson = (lastContentType || "").toLowerCase().includes("application/json");
+            if (resp.ok) {
+                const data = isJson ? await resp.json() : JSON.parse(await resp.text()).catch(() => ({}));
+                return { ok: true, status: resp.status, data, attempts: attempt, contentType: lastContentType || null };
+            }
+
+            // 读取文本用于诊断；对 5xx/429 进行重试
+            const txt = await resp.text();
+            lastText = txt;
+
+            if (resp.status === 429 || resp.status >= 500) {
+                if (attempt < maxAttempts) {
+                    const backoff = backoffWithJitter(attempt);
+                    await sleep(backoff);
+                    continue;
+                }
+            }
+
+            return { ok: false, status: resp.status, text: txt, attempts: attempt, contentType: lastContentType || null };
+        } catch (err) {
+            clearTimeout(timer);
+            // 网络/超时错误：重试
+            if (attempt < maxAttempts) {
+                const backoff = backoffWithJitter(attempt);
+                await sleep(backoff);
+                continue;
+            }
+            const msg = err instanceof Error ? err.message : String(err);
+            return { ok: false, status: lastStatus || 0, text: msg, attempts: attempt, contentType: lastContentType || null };
+        }
+    }
+
+    return { ok: false, status: lastStatus || 0, text: lastText, attempts: maxAttempts, contentType: lastContentType || null };
+}
+
+function sleep(ms: number) {
+    return new Promise((res) => setTimeout(res, ms));
+}
+
+function backoffWithJitter(attempt: number) {
+    const base = Math.min(1000 * 2 ** (attempt - 1), 5000); // 1s, 2s, 4s, capped 5s
+    const jitter = Math.floor(Math.random() * 300);
+    return base + jitter;
 }
