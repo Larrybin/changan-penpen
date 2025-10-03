@@ -11,7 +11,11 @@ export default function MarketingLandingPage() {
     return (
         <div
             className="bg-black text-yellow-50"
-            style={{ "--card-header-gap": "0.5rem" } as React.CSSProperties}
+            style={{
+                "--card-header-gap": "0.5rem",
+                "--token-font-family-sans": "var(--font-inter)",
+                fontFamily: "var(--token-font-family-sans)",
+            } as React.CSSProperties}
         >
             <PublicHeader />
 
@@ -23,7 +27,7 @@ export default function MarketingLandingPage() {
                                 <Badge className="bg-yellow-400 text-black">Free Online</Badge>
                                 <span className="text-lg">🍌</span>
                             </div>
-                            <h1 className="text-4xl xs:text-5xl font-extrabold tracking-tight mb-4">
+                            <h1 className="text-4xl xs:text-5xl lg-narrow:text-title font-extrabold tracking-tight mb-4">
                                 AI Photo Editor
                             </h1>
                             <p className="text-yellow-200/80 leading-relaxed mb-6">
@@ -37,7 +41,10 @@ export default function MarketingLandingPage() {
                                     </Button>
                                 </Link>
                                 <Link href="#playground">
-                                    <Button variant="outline" className="border-yellow-400 text-yellow-300 hover:bg-yellow-400/10">
+                                    <Button
+                                        variant="outline"
+                                        className="border-yellow-400 text-yellow-300 hover:bg-yellow-400/10"
+                                    >
                                         What can it do?
                                     </Button>
                                 </Link>
@@ -57,14 +64,14 @@ export default function MarketingLandingPage() {
                 </div>
 
                 <section id="features" className="mx-auto w-full max-w-6xl px-4 py-10">
-                    <h2 className="text-2xl font-bold text-center mb-6">
+                    <h2 className="text-2xl lg-narrow:text-subtitle font-bold text-center mb-6">
                         What is Banana Generator?
                     </h2>
                     <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
                         {[
                             {
                                 title: "Free & Unlimited Access",
-                                desc: "Enjoy unlimited image generation — no sign‑up, no hidden costs.",
+                                desc: "Enjoy unlimited image generation — no sign-up, no hidden costs.",
                             },
                             {
                                 title: "Natural Language Editing",
@@ -98,7 +105,7 @@ export default function MarketingLandingPage() {
                 </section>
 
                 <section id="why" className="mx-auto w-full max-w-6xl px-4 py-10">
-                    <h2 className="text-2xl font-bold text-center mb-6">
+                    <h2 className="text-2xl lg-narrow:text-subtitle font-bold text-center mb-6">
                         Why Choose Banana Generator?
                     </h2>
                     <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
@@ -176,3 +183,4 @@ export default function MarketingLandingPage() {
         </div>
     );
 }
+
