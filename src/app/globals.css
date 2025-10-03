@@ -66,7 +66,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: var(--token-focus-ring-color);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -103,6 +103,23 @@
   --token-leading-title-sm: 2.5rem; /* 40px */
   --token-text-subtitle: 1.5rem; /* 24px */
   --token-leading-subtitle: 2rem; /* 32px */
+
+  /* Focus ring tokens */
+  --token-focus-ring-color: oklch(0.708 0 0);
+  --token-focus-ring-width: 3px;
+  --token-focus-ring-offset: 0px;
+
+  /* Icon size tokens */
+  --icon-sm: 0.75rem; /* 12px */
+  --icon-md: 1rem;    /* 16px */
+  --icon-lg: 1.25rem; /* 20px */
+
+  /* Overlay token */
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+
+  /* Radius family tokens */
+  --token-radius-card: var(--radius-xl);
+  --token-radius-input: var(--radius-md);
 
   /* Link tokens */
   --token-link-color: var(--primary);
@@ -267,6 +284,7 @@
     font-weight: var(--token-font-weight-normal);
   }
 }
+
 
 
 
