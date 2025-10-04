@@ -1,0 +1,30 @@
+"use client";
+
+import type { NotificationProvider } from "@refinedev/core";
+import { Toaster, toast } from "react-hot-toast";
+
+export const notificationProvider: NotificationProvider = {
+    open: ({ message, description, type, key }) => {
+        const toastId = key?.toString();
+        const content = description ? `${message}\n${description}` : message;
+
+        switch (type) {
+            case "success":
+                toast.success(content, { id: toastId });
+                break;
+            case "error":
+                toast.error(content, { id: toastId });
+                break;
+            default:
+                toast(content, { id: toastId });
+                break;
+        }
+    },
+    close: (key) => {
+        toast.dismiss(key?.toString());
+    },
+};
+
+export function AdminToaster() {
+    return <Toaster position="top-right" />;
+}

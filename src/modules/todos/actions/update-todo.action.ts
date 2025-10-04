@@ -1,16 +1,12 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db";
 import { type UploadResult, uploadToR2 } from "@/lib/r2";
 import { requireAuth } from "@/modules/auth/utils/auth-utils";
-import {
-    type TodoPriority,
-    TodoStatus,
-} from "@/modules/todos/models/todo.enum";
-import { todos, updateTodoSchema } from "@/modules/todos/schemas/todo.schema";
+import { TodoStatus } from "@/modules/todos/models/todo.enum";
+import { updateTodoSchema } from "@/modules/todos/schemas/todo.schema";
+import { updateTodoForUser } from "@/modules/todos/services/todo.service";
 import todosRoutes from "../todos.route";
 
 export async function updateTodoAction(todoId: number, formData: FormData) {
@@ -55,33 +51,17 @@ export async function updateTodoAction(todoId: number, formData: FormData) {
             }
         }
 
-        const db = await getDb();
-
         const { status, priority, ...restValidatedData } = validatedData;
 
-        const result = await db
-            .update(todos)
-            .set({
-                ...restValidatedData,
-                // Ensure proper typing for enum fields
-                ...(status && {
-                    status: status as (typeof TodoStatus)[keyof typeof TodoStatus],
-                }),
-                ...(priority && {
-                    priority:
-                        priority as (typeof TodoPriority)[keyof typeof TodoPriority],
-                }),
-                // Only update image fields if we have new values
-                ...(imageUrl && { imageUrl }),
-                ...(imageAlt && { imageAlt }),
-                updatedAt: new Date().toISOString(),
-            })
-            .where(and(eq(todos.id, todoId), eq(todos.userId, user.id)))
-            .returning();
-
-        if (!result.length) {
-            throw new Error("Todo not found or unauthorized");
-        }
+        await updateTodoForUser(user.id, todoId, {
+            ...restValidatedData,
+            ...(status && {
+                status: status as (typeof TodoStatus)[keyof typeof TodoStatus],
+            }),
+            ...(priority && { priority }),
+            ...(imageUrl && { imageUrl }),
+            ...(imageAlt && { imageAlt }),
+        });
 
         revalidatePath(todosRoutes.list);
         redirect(todosRoutes.list);
@@ -107,23 +87,16 @@ export async function updateTodoFieldAction(
 ) {
     try {
         const user = await requireAuth();
-        const db = await getDb();
+        const updated = await updateTodoForUser(user.id, todoId, {
+            ...data,
+            ...(data.completed !== undefined && {
+                status: data.completed
+                    ? TodoStatus.COMPLETED
+                    : TodoStatus.PENDING,
+            }),
+        });
 
-        const result = await db
-            .update(todos)
-            .set({
-                ...data,
-                ...(data.completed !== undefined && {
-                    status: data.completed
-                        ? TodoStatus.COMPLETED
-                        : TodoStatus.PENDING,
-                }),
-                updatedAt: new Date().toISOString(),
-            })
-            .where(and(eq(todos.id, todoId), eq(todos.userId, user.id)))
-            .returning();
-
-        if (!result.length) {
+        if (!updated) {
             return {
                 success: false,
                 error: "Todo not found or unauthorized",
@@ -134,7 +107,7 @@ export async function updateTodoFieldAction(
 
         return {
             success: true,
-            data: result[0],
+            data: updated,
         };
     } catch (error) {
         console.error("Error updating todo field:", error);
