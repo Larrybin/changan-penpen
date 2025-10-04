@@ -4,7 +4,10 @@ import type { ComponentProps } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useList, useOne, useUpdate } from "@refinedev/core";
-import { AdminTodoForm } from "@/modules/admin/todos/components/todo-form";
+import {
+    AdminTodoForm,
+    type AdminTodoFormValues,
+} from "@/modules/admin/todos/components/todo-form";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 interface AdminTodoEditPageProps {
@@ -90,6 +93,19 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
         );
     };
 
+    const initialValues: Partial<AdminTodoFormValues> = {
+        userId: record.userId ?? "",
+        title: record.title ?? "",
+        description: record.description ?? "",
+        categoryId: record.categoryId ?? undefined,
+        status: record.status,
+        priority: record.priority,
+        imageUrl: record.imageUrl ?? "",
+        imageAlt: record.imageAlt ?? "",
+        completed: record.completed ?? false,
+        dueDate: record.dueDate ?? undefined,
+    } satisfies Partial<ComponentProps<typeof AdminTodoForm>["initialValues"]>;
+
     return (
         <div className="space-y-6">
             <div>
@@ -99,7 +115,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
                 </p>
             </div>
             <AdminTodoForm
-                initialValues={record}
+                initialValues={initialValues}
                 onSubmit={handleSubmit}
                 loading={isUpdating}
                 submitLabel="保存修改"

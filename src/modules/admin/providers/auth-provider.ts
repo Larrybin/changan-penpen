@@ -26,7 +26,9 @@ export const adminAuthProvider: AuthBindings = {
         };
     },
     check: async () => {
-        const session = await fetchSession();
+        const session = (await fetchSession()) as {
+            user?: Record<string, unknown>;
+        } | null;
 
         if (session?.user) {
             return {
@@ -50,7 +52,9 @@ export const adminAuthProvider: AuthBindings = {
         return {};
     },
     getIdentity: async () => {
-        const session = await fetchSession();
+        const session = (await fetchSession()) as {
+            user?: Record<string, unknown>;
+        } | null;
 
         if (session?.user) {
             return session.user;

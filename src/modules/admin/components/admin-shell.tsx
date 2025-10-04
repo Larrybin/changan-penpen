@@ -52,7 +52,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
 
     const handleLogout = async () => {
         const result = await adminAuthProvider.logout?.({});
-        if (result?.redirectTo) {
+        if (result && typeof result.redirectTo === "string") {
             router.push(result.redirectTo);
         }
     };

@@ -138,7 +138,7 @@ export async function updateSiteSettings(
         seoTitle: input.seoTitle ?? "",
         seoDescription: input.seoDescription ?? "",
         seoOgImage: input.seoOgImage ?? "",
-        sitemapEnabled: input.sitemapEnabled ? 1 : 0,
+        sitemapEnabled: Boolean(input.sitemapEnabled),
         robotsRules: input.robotsRules ?? "",
         brandPrimaryColor: input.brandPrimaryColor ?? "#2563eb",
         brandSecondaryColor: input.brandSecondaryColor ?? "#0f172a",

@@ -6,7 +6,10 @@ import { Toaster, toast } from "react-hot-toast";
 export const notificationProvider: NotificationProvider = {
     open: ({ message, description, type, key }) => {
         const toastId = key?.toString();
-        const content = description ? `${message}\n${description}` : message;
+        const baseMessage = typeof message === "string" ? message : "";
+        const content = description
+            ? `${baseMessage}\n${description}`
+            : baseMessage;
 
         switch (type) {
             case "success":

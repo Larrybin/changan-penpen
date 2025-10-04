@@ -3,6 +3,7 @@ import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 import {
     createTodoForTenant,
     listTodosForAdmin,
+    type TodoCreateInput,
 } from "@/modules/todos/services/todo.service";
 
 export async function GET(request: Request) {
@@ -35,10 +36,13 @@ export async function POST(request: Request) {
     }
 
     try {
-        const body = await request.json();
+        const payload = (await request.json()) as Partial<TodoCreateInput> & {
+            userId?: string;
+        };
         const tenantId =
-            typeof body?.userId === "string" && body.userId.trim().length > 0
-                ? body.userId.trim()
+            typeof payload?.userId === "string" &&
+            payload.userId.trim().length > 0
+                ? payload.userId.trim()
                 : null;
 
         if (!tenantId) {
@@ -48,7 +52,11 @@ export async function POST(request: Request) {
             );
         }
 
-        const todo = await createTodoForTenant(tenantId, body);
+        const { userId: _omit, ...todoInput } = payload;
+        const todo = await createTodoForTenant(
+            tenantId,
+            todoInput as TodoCreateInput,
+        );
 
         return NextResponse.json({ data: todo }, { status: 201 });
     } catch (error) {

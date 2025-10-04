@@ -12,7 +12,7 @@ export async function uploadToR2(
     folder: string = "uploads",
 ): Promise<UploadResult> {
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
 
         // Generate unique filename
         const timestamp = Date.now();
@@ -62,7 +62,7 @@ export async function uploadToR2(
 
 export async function getFromR2(key: string): Promise<R2Object | null> {
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         return env.next_cf_app_bucket.get(key);
     } catch (error) {
         console.error("Error getting data from R2", error);

@@ -58,7 +58,9 @@ export function SiteSettingsPage() {
                 credentials: "include",
             });
             if (response.ok) {
-                const payload = await response.json();
+                const payload = (await response.json()) as {
+                    data?: Partial<SiteSettingsState>;
+                };
                 setSettings({
                     ...defaultSettings,
                     ...(payload.data as SiteSettingsState),

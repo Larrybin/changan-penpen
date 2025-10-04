@@ -9,8 +9,13 @@ import type {
 
 const API_BASE = "/api/admin";
 
-async function parseResponse(response: Response) {
-    const data = await response.json().catch(() => ({}));
+async function parseResponse(
+    response: Response,
+): Promise<Record<string, unknown>> {
+    const data = (await response.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+    >;
 
     if (!response.ok) {
         const message =
@@ -68,9 +73,19 @@ export const adminDataProvider: DataProvider = {
             credentials: "include",
         });
         const payload = await parseResponse(response);
+        const rawData = payload.data;
+        const items = Array.isArray(rawData)
+            ? (rawData as TData[])
+            : ([] as TData[]);
+        const total =
+            typeof payload.total === "number"
+                ? payload.total
+                : Array.isArray(rawData)
+                  ? rawData.length
+                  : items.length;
         return {
-            data: (payload.data ?? []) as TData[],
-            total: payload.total ?? payload.data?.length ?? 0,
+            data: items,
+            total,
         };
     },
     getOne: async <TData = any>({ resource, id }: GetOneParams) => {
@@ -80,7 +95,7 @@ export const adminDataProvider: DataProvider = {
         });
         const payload = await parseResponse(response);
         return {
-            data: payload.data as TData,
+            data: (payload.data ?? null) as TData,
         };
     },
     create: async <TData = any>({ resource, variables }: CreateParams) => {
@@ -94,7 +109,7 @@ export const adminDataProvider: DataProvider = {
         });
         const payload = await parseResponse(response);
         return {
-            data: payload.data as TData,
+            data: (payload.data ?? null) as TData,
         };
     },
     update: async <TData = any>({ resource, id, variables }: UpdateParams) => {
@@ -108,7 +123,7 @@ export const adminDataProvider: DataProvider = {
         });
         const payload = await parseResponse(response);
         return {
-            data: payload.data as TData,
+            data: (payload.data ?? null) as TData,
         };
     },
     deleteOne: async <TData = any>({ resource, id }: DeleteOneParams) => {

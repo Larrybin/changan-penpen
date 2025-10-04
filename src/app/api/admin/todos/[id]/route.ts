@@ -4,6 +4,7 @@ import {
     deleteTodoForAdmin,
     getTodoByIdForAdmin,
     updateTodoForAdmin,
+    type TodoUpdateInput,
 } from "@/modules/todos/services/todo.service";
 
 function parseId(param: string | string[] | undefined) {
@@ -13,16 +14,18 @@ function parseId(param: string | string[] | undefined) {
     return Number.isNaN(id) ? null : id;
 }
 
-export async function GET(
-    request: Request,
-    { params }: { params: { id: string } },
-) {
+type RouteContext = {
+    params: Promise<{ id: string }>;
+};
+
+export async function GET(request: Request, context: RouteContext) {
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
     }
 
-    const todoId = parseId(params.id);
+    const todoId = parseId(id);
 
     if (todoId === null) {
         return NextResponse.json(
@@ -43,16 +46,14 @@ export async function GET(
     return NextResponse.json({ data: todo });
 }
 
-export async function PATCH(
-    request: Request,
-    { params }: { params: { id: string } },
-) {
+export async function PATCH(request: Request, context: RouteContext) {
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
     }
 
-    const todoId = parseId(params.id);
+    const todoId = parseId(id);
 
     if (todoId === null) {
         return NextResponse.json(
@@ -62,7 +63,7 @@ export async function PATCH(
     }
 
     try {
-        const body = await request.json();
+        const body = (await request.json()) as TodoUpdateInput;
         const todo = await updateTodoForAdmin(todoId, body);
 
         return NextResponse.json({ data: todo });
@@ -80,16 +81,14 @@ export async function PATCH(
     }
 }
 
-export async function DELETE(
-    request: Request,
-    { params }: { params: { id: string } },
-) {
+export async function DELETE(request: Request, context: RouteContext) {
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
     }
 
-    const todoId = parseId(params.id);
+    const todoId = parseId(id);
 
     if (todoId === null) {
         return NextResponse.json(

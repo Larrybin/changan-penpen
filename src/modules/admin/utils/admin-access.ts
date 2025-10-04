@@ -9,7 +9,7 @@ export interface AdminAccessConfig {
 }
 
 export async function getAdminAccessConfig(): Promise<AdminAccessConfig> {
-    const { env } = await getCloudflareContext();
+    const { env } = await getCloudflareContext({ async: true });
     const allowedEmails = env.ADMIN_ALLOWED_EMAILS?.split(",")
         .map((value) => value.trim().toLowerCase())
         .filter(Boolean);

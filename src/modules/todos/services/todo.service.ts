@@ -1,7 +1,12 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { categories, getDb, user } from "@/db";
-import { TodoPriority, TodoStatus } from "@/modules/todos/models/todo.enum";
+import {
+    TodoPriority,
+    TodoStatus,
+    type TodoPriorityType,
+    type TodoStatusType,
+} from "@/modules/todos/models/todo.enum";
 import {
     insertTodoSchema,
     todos,
@@ -14,11 +19,7 @@ const updateTodoForUserSchema = updateTodoSchema;
 
 export type TodoCreateInput = z.input<typeof createTodoForUserSchema>;
 export type TodoUpdateInput = z.input<typeof updateTodoForUserSchema>;
-export type TodoWithCategory = z.infer<typeof createTodoForUserSchema> & {
-    id: number;
-    createdAt: string;
-    updatedAt: string;
-    userId: string;
+export type TodoWithCategory = typeof todos.$inferSelect & {
     categoryName: Category["name"] | null;
 };
 
@@ -80,6 +81,14 @@ function normalizeTodoPayload<T extends Record<string, unknown>>(
         sanitized.imageAlt = undefined;
     }
 
+    if (sanitized.status === "") {
+        sanitized.status = undefined;
+    }
+
+    if (sanitized.priority === "") {
+        sanitized.priority = undefined;
+    }
+
     const categoryId = sanitized.categoryId;
     if (typeof categoryId === "string") {
         const parsed = Number.parseInt(categoryId, 10);
@@ -102,10 +111,6 @@ function normalizeTodoPayload<T extends Record<string, unknown>>(
 export async function listTodosForUser(
     userId: string,
     pagination?: PaginationParams,
-): Promise<{ data: TodoWithCategory[]; total: number }>;
-export async function listTodosForUser(
-    userId: string,
-    pagination: PaginationParams = defaultPagination,
 ): Promise<{ data: TodoWithCategory[]; total: number }>;
 export async function listTodosForUser(
     userId: string,
@@ -177,16 +182,26 @@ export async function createTodoForUser(
     );
     const now = new Date().toISOString();
 
+    const status: TodoStatusType =
+        (parsed.status as TodoStatusType | undefined) ?? TodoStatus.PENDING;
+    const priority: TodoPriorityType =
+        (parsed.priority as TodoPriorityType | undefined) ??
+        TodoPriority.MEDIUM;
+    const completed = parsed.completed ?? false;
+
+    const valuesToInsert: typeof todos.$inferInsert = {
+        ...parsed,
+        userId,
+        status,
+        priority,
+        createdAt: now,
+        updatedAt: now,
+        completed,
+    };
+
     const created = await db
         .insert(todos)
-        .values({
-            ...parsed,
-            userId,
-            status: parsed.status ?? TodoStatus.PENDING,
-            priority: parsed.priority ?? TodoPriority.MEDIUM,
-            createdAt: now,
-            updatedAt: now,
-        })
+        .values(valuesToInsert)
         .returning({ id: todos.id });
 
     const todoId = created[0]?.id;
@@ -215,12 +230,24 @@ export async function updateTodoForUser(
         normalizeTodoPayload({ ...input }),
     );
 
+    const { status: parsedStatus, priority: parsedPriority, ...rest } = parsed;
+
+    const updateValues: Partial<typeof todos.$inferInsert> = {
+        ...rest,
+        updatedAt: new Date().toISOString(),
+    };
+
+    if (parsedStatus !== undefined) {
+        updateValues.status = parsedStatus as TodoStatusType;
+    }
+
+    if (parsedPriority !== undefined) {
+        updateValues.priority = parsedPriority as TodoPriorityType;
+    }
+
     const result = await db
         .update(todos)
-        .set({
-            ...parsed,
-            updatedAt: new Date().toISOString(),
-        })
+        .set(updateValues)
         .where(and(eq(todos.id, todoId), eq(todos.userId, userId)))
         .returning({ id: todos.id });
 

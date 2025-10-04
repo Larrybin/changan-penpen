@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
     createReport,
     listReports,
+    type CreateReportInput,
 } from "@/modules/admin/services/report.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
         );
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as CreateReportInput;
     const created = await createReport(body, result.user.email ?? "admin");
     return NextResponse.json({ data: created });
 }

@@ -1,7 +1,1 @@
-import { defaultLocale, localePrefix, locales } from "./src/i18n/config";
-
-export default {
-    locales: Array.from(locales),
-    defaultLocale,
-    localePrefix,
-};
+export { default } from "./src/i18n/request";

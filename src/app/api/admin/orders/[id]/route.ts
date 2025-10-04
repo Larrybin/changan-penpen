@@ -6,13 +6,18 @@ interface Params {
     id: string;
 }
 
-export async function GET(request: Request, { params }: { params: Params }) {
+type RouteContext = {
+    params: Promise<Params>;
+};
+
+export async function GET(request: Request, context: RouteContext) {
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
     }
 
-    const order = await getOrderById(Number(params.id));
+    const order = await getOrderById(Number(id));
     if (!order) {
         return NextResponse.json({ message: "Not found" }, { status: 404 });
     }

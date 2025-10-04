@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
     createProduct,
     listProducts,
+    type ProductInput,
 } from "@/modules/admin/services/catalog.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
         );
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as ProductInput;
     const created = await createProduct(body, result.user.email ?? "admin");
     return NextResponse.json({ data: created });
 }

@@ -3,6 +3,7 @@ import {
     deleteProduct,
     getProductById,
     updateProduct,
+    type ProductInput,
 } from "@/modules/admin/services/catalog.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
@@ -10,13 +11,18 @@ interface Params {
     id: string;
 }
 
-export async function GET(request: Request, { params }: { params: Params }) {
+type RouteContext = {
+    params: Promise<Params>;
+};
+
+export async function GET(request: Request, context: RouteContext) {
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
     }
 
-    const product = await getProductById(Number(params.id));
+    const product = await getProductById(Number(id));
     if (!product) {
         return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
@@ -24,7 +30,8 @@ export async function GET(request: Request, { params }: { params: Params }) {
     return NextResponse.json({ data: product });
 }
 
-export async function PATCH(request: Request, { params }: { params: Params }) {
+export async function PATCH(request: Request, context: RouteContext) {
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (
@@ -33,16 +40,17 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
         );
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as ProductInput;
     const updated = await updateProduct(
-        Number(params.id),
+        Number(id),
         body,
         result.user.email ?? "admin",
     );
     return NextResponse.json({ data: updated });
 }
 
-export async function DELETE(request: Request, { params }: { params: Params }) {
+export async function DELETE(request: Request, context: RouteContext) {
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (
@@ -51,6 +59,6 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
         );
     }
 
-    await deleteProduct(Number(params.id), result.user.email ?? "admin");
+    await deleteProduct(Number(id), result.user.email ?? "admin");
     return NextResponse.json({ success: true });
 }

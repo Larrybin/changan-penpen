@@ -6,6 +6,12 @@ import { requireAuth } from "@/modules/auth/utils/auth-utils";
 import { getAllCategories } from "@/modules/todos/actions/get-categories.action";
 import { getTodoById } from "@/modules/todos/actions/get-todo-by-id.action";
 import { TodoForm } from "./components/todo-form";
+import {
+    TodoPriority,
+    TodoStatus,
+    type TodoPriorityType,
+    type TodoStatusType,
+} from "@/modules/todos/models/todo.enum";
 import todosRoutes from "./todos.route";
 
 interface EditTodoPageProps {
@@ -29,6 +35,19 @@ export default async function EditTodoPage({ id }: EditTodoPageProps) {
         notFound();
     }
 
+    const initialData = {
+        id: todo.id,
+        title: todo.title ?? "",
+        description: todo.description ?? "",
+        completed: todo.completed ?? false,
+        categoryId: todo.categoryId ?? null,
+        dueDate: todo.dueDate ?? null,
+        imageUrl: todo.imageUrl ?? null,
+        imageAlt: todo.imageAlt ?? null,
+        status: (todo.status as TodoStatusType) ?? TodoStatus.PENDING,
+        priority: (todo.priority as TodoPriorityType) ?? TodoPriority.MEDIUM,
+    };
+
     return (
         <>
             <div className="mb-8">
@@ -44,7 +63,11 @@ export default async function EditTodoPage({ id }: EditTodoPageProps) {
                 </p>
             </div>
 
-            <TodoForm user={user} categories={categories} initialData={todo} />
+            <TodoForm
+                user={user}
+                categories={categories}
+                initialData={initialData}
+            />
         </>
     );
 }

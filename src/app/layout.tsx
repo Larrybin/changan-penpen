@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { NextIntlClientProvider } from "next-intl";
@@ -22,21 +21,6 @@ const openGraphLocales: Record<AppLocale, string> = {
     fr: "fr_FR",
     pt: "pt_BR",
 };
-
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
-
-const inter = Inter({
-    variable: "--font-inter",
-    subsets: ["latin"],
-});
 
 type MetadataMessages = {
     title: string;
@@ -134,9 +118,7 @@ export default async function RootLayout({
     const messages = await getMessages();
     return (
         <html lang={locale}>
-            <body
-                className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased bg-gray-50 min-h-screen`}
-            >
+            <body className="font-sans antialiased bg-gray-50 min-h-screen">
                 <NextIntlClientProvider messages={messages}>
                     <main>{children}</main>
                 </NextIntlClientProvider>

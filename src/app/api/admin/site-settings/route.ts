@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
     getSiteSettingsPayload,
     updateSiteSettings,
+    type UpdateSiteSettingsInput,
 } from "@/modules/admin/services/site-settings.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
@@ -24,7 +25,7 @@ export async function PATCH(request: Request) {
         );
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as UpdateSiteSettingsInput;
     const updated = await updateSiteSettings(
         body,
         result.user.email ?? "admin",

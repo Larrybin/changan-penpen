@@ -9,14 +9,15 @@ interface Params {
     token: string;
 }
 
-export default async function AdminEntryPage({ params }: { params: Params }) {
+export default async function AdminEntryPage({
+    params,
+}: {
+    params: Promise<Params>;
+}) {
+    const { token } = await params;
     const config = await getAdminAccessConfig();
 
-    if (
-        !params.token ||
-        !config.entryToken ||
-        !isEntryTokenValid(params.token, config)
-    ) {
+    if (!token || !config.entryToken || !isEntryTokenValid(token, config)) {
         redirect("/login?admin=1&error=invalid-entry");
     }
 

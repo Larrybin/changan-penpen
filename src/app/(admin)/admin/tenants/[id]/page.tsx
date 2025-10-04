@@ -4,6 +4,11 @@ interface Params {
     id: string;
 }
 
-export default function TenantDetail({ params }: { params: Params }) {
-    return <TenantDetailPage id={params.id} />;
+export default async function TenantDetail({
+    params,
+}: {
+    params: Promise<Params>;
+}) {
+    const { id } = await params;
+    return <TenantDetailPage id={id} />;
 }

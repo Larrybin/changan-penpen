@@ -26,7 +26,7 @@ export async function GET() {
             });
         }
 
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         if (!env.CREEM_API_URL || !env.CREEM_API_KEY) {
             return new Response(
                 JSON.stringify({

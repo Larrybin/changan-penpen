@@ -48,6 +48,11 @@
 }
 
 :root {
+    --font-geist-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-geist-mono:
+        "Geist Mono", "SFMono-Regular", Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    --font-inter: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
     --radius: 0.625rem;
     --background: var(--token-color-bg);
     --foreground: oklch(0.145 0 0);

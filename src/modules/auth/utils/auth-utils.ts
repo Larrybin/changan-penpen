@@ -20,7 +20,7 @@ async function getAuth() {
         return cachedAuth;
     }
 
-    const { env } = await getCloudflareContext();
+    const { env } = await getCloudflareContext({ async: true });
     const db = await getDb();
 
     cachedAuth = betterAuth({

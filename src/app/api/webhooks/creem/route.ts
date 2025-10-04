@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     try {
         const raw = await request.text();
         const signature = (await headers()).get("creem-signature") || "";
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
 
         if (
             env.CREEM_LOG_WEBHOOK_SIGNATURE === "1" &&
