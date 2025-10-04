@@ -1,41 +1,16 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
-import { categories, getDb } from "@/db";
 import { requireAuth } from "@/modules/auth/utils/auth-utils";
-import { type Todo, todos } from "@/modules/todos/schemas/todo.schema";
+import type { TodoWithCategory } from "@/modules/todos/services/todo.service";
+import { listTodosForUser } from "@/modules/todos/services/todo.service";
 
-export default async function getAllTodos(): Promise<Todo[]> {
+export default async function getAllTodos(): Promise<TodoWithCategory[]> {
     try {
         const user = await requireAuth();
-        const db = await getDb();
-        const data = await db
-            .select({
-                id: todos.id,
-                title: todos.title,
-                description: todos.description,
-                completed: todos.completed,
-                categoryId: todos.categoryId,
-                categoryName: categories.name,
-                dueDate: todos.dueDate,
-                imageUrl: todos.imageUrl,
-                imageAlt: todos.imageAlt,
-                status: todos.status,
-                priority: todos.priority,
-                userId: todos.userId,
-                createdAt: todos.createdAt,
-                updatedAt: todos.updatedAt,
-            })
-            .from(todos)
-            .leftJoin(
-                categories,
-                and(
-                    eq(todos.categoryId, categories.id),
-                    eq(categories.userId, user.id),
-                ),
-            )
-            .where(eq(todos.userId, user.id))
-            .orderBy(todos.createdAt);
+        const { data } = await listTodosForUser(user.id, {
+            page: 1,
+            perPage: 100,
+        });
 
         return data;
     } catch (error) {

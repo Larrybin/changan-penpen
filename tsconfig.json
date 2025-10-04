@@ -30,8 +30,5 @@
         "**/*.tsx",
         ".next/types/**/*.ts"
     ],
-    "exclude": [
-        "node_modules",
-        "creem_payment_example/**"
-    ]
+    "exclude": ["node_modules", "creem_payment_example/**"]
 }

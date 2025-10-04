@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db";
 import { type UploadResult, uploadToR2 } from "@/lib/r2";
 import { requireAuth } from "@/modules/auth/utils/auth-utils";
 import { TodoPriority, TodoStatus } from "@/modules/todos/models/todo.enum";
-import { insertTodoSchema, todos } from "@/modules/todos/schemas/todo.schema";
+import { insertTodoSchema } from "@/modules/todos/schemas/todo.schema";
+import { createTodoForUser } from "@/modules/todos/services/todo.service";
 import todosRoutes from "../todos.route";
 
 export async function createTodoAction(formData: FormData) {
@@ -43,6 +43,7 @@ export async function createTodoAction(formData: FormData) {
             ...todoData,
             userId: user.id,
         });
+        const { userId: _ignoredUserId, ...todoInput } = validatedData;
 
         // Handle optional image upload
         let imageUrl: string | undefined;
@@ -63,10 +64,8 @@ export async function createTodoAction(formData: FormData) {
             }
         }
 
-        const db = await getDb();
-        await db.insert(todos).values({
-            ...validatedData,
-            userId: user.id,
+        await createTodoForUser(user.id, {
+            ...todoInput,
             status:
                 (validatedData.status as (typeof TodoStatus)[keyof typeof TodoStatus]) ||
                 TodoStatus.PENDING,
@@ -75,8 +74,6 @@ export async function createTodoAction(formData: FormData) {
                 TodoPriority.MEDIUM,
             imageUrl: imageUrl || validatedData.imageUrl,
             imageAlt: imageAlt || validatedData.imageAlt,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         });
 
         revalidatePath(todosRoutes.list);

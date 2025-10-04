@@ -1,20 +1,11 @@
 "use server";
 
-import { eq } from "drizzle-orm";
-import { getDb } from "@/db";
-import {
-    type Category,
-    categories,
-} from "@/modules/todos/schemas/category.schema";
+import type { Category } from "@/modules/todos/schemas/category.schema";
+import { listCategoriesForUser } from "@/modules/todos/services/category.service";
 
 export async function getAllCategories(userId: string): Promise<Category[]> {
     try {
-        const db = await getDb();
-        return await db
-            .select()
-            .from(categories)
-            .where(eq(categories.userId, userId))
-            .orderBy(categories.createdAt);
+        return await listCategoriesForUser(userId);
     } catch (error) {
         console.error("Error fetching categories:", error);
         return [];

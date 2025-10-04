@@ -8,6 +8,13 @@
             "when": 1757850562913,
             "tag": "0000_initial_schemas_migration",
             "breakpoints": true
+        },
+        {
+            "idx": 3,
+            "version": "7",
+            "when": 1758096000000,
+            "tag": "0003_admin_extensions",
+            "breakpoints": false
         }
     ]
 }
