@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { listOrders } from "@/modules/admin/services/billing.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 
 export async function GET(request: Request) {
     const result = await requireAdminRequest(request);
@@ -9,8 +10,7 @@ export async function GET(request: Request) {
     }
 
     const url = new URL(request.url);
-    const page = Number(url.searchParams.get("page") ?? "1");
-    const perPage = Number(url.searchParams.get("perPage") ?? "20");
+    const { page, perPage } = parsePaginationParams(url.searchParams);
     const tenantId = url.searchParams.get("tenantId") ?? undefined;
 
     const data = await listOrders({

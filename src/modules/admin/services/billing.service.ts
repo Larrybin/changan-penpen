@@ -1,6 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { creditsHistory, customers, orders } from "@/db";
 import { getDb } from "@/db";
+import { normalizePagination } from "../utils/pagination";
 
 export interface ListOrdersOptions {
     page?: number;
@@ -10,8 +11,10 @@ export interface ListOrdersOptions {
 
 export async function listOrders(options: ListOrdersOptions = {}) {
     const db = await getDb();
-    const page = Math.max(options.page ?? 1, 1);
-    const perPage = Math.min(Math.max(options.perPage ?? 20, 1), 100);
+    const { page: normalizedPage, perPage: normalizedPerPage } =
+        normalizePagination(options);
+    const page = Math.max(normalizedPage, 1);
+    const perPage = Math.min(Math.max(normalizedPerPage, 1), 100);
     const offset = (page - 1) * perPage;
 
     const query = db
@@ -77,8 +80,10 @@ export interface ListCreditsOptions {
 
 export async function listCreditsHistory(options: ListCreditsOptions = {}) {
     const db = await getDb();
-    const page = Math.max(options.page ?? 1, 1);
-    const perPage = Math.min(Math.max(options.perPage ?? 20, 1), 100);
+    const { page: normalizedPage, perPage: normalizedPerPage } =
+        normalizePagination(options);
+    const page = Math.max(normalizedPage, 1);
+    const perPage = Math.min(Math.max(normalizedPerPage, 1), 100);
     const offset = (page - 1) * perPage;
 
     const query = db
