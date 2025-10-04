@@ -46,10 +46,12 @@ type MetadataMessages = {
         title: string;
         description: string;
         siteName: string;
+        imageAlt: string;
     };
     twitter: {
         title: string;
         description: string;
+        imageAlt: string;
     };
 };
 
@@ -68,6 +70,10 @@ export async function generateMetadata(): Promise<Metadata> {
         }),
         {} as Record<string, string>,
     );
+    const shareImagePath = "/og-image.svg";
+    const shareImageUrl = metadataBase
+        ? new URL(shareImagePath, metadataBase).toString()
+        : shareImagePath;
 
     return {
         metadataBase,
@@ -85,11 +91,25 @@ export async function generateMetadata(): Promise<Metadata> {
             siteName: metadataMessages.openGraph.siteName,
             locale: openGraphLocales[locale],
             type: "website",
+            images: [
+                {
+                    url: shareImageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: metadataMessages.openGraph.imageAlt,
+                },
+            ],
         },
         twitter: {
             card: "summary_large_image",
             title: metadataMessages.twitter.title,
             description: metadataMessages.twitter.description,
+            images: [
+                {
+                    url: shareImageUrl,
+                    alt: metadataMessages.twitter.imageAlt,
+                },
+            ],
         },
         robots: {
             index: true,
@@ -104,8 +124,6 @@ export async function generateMetadata(): Promise<Metadata> {
         },
     };
 }
-
-export const dynamic = "force-dynamic";
 
 export default async function RootLayout({
     children,

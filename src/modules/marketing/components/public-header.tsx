@@ -1,7 +1,14 @@
 "use client";
 import Link from "next/link";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+    DialogClose,
+} from "@/components/ui/dialog";
 import { useTranslations } from "next-intl";
 
 export default function PublicHeader() {
@@ -9,6 +16,11 @@ export default function PublicHeader() {
     const tNav = useTranslations("Nav");
     const tAuth = useTranslations("Auth");
     const tMarketingHeader = useTranslations("Marketing.header");
+    const navigationItems = [
+        { href: "#features", label: tNav("features") },
+        { href: "#why", label: tNav("why") },
+        { href: "#faq", label: tNav("faq") },
+    ];
     return (
         <header className="sticky top-0 z-[var(--z-nav)] w-full border-b border-border bg-background/80 backdrop-blur text-foreground">
             <div className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-3 flex items-center justify-between">
@@ -19,20 +31,17 @@ export default function PublicHeader() {
                     </span>
                 </Link>
                 <nav className="hidden xs:flex items-center gap-6 text-sm text-foreground/80">
-                    <Link
-                        href="#features"
-                        className="hover:text-accent transition"
-                    >
-                        {tNav("features")}
-                    </Link>
-                    <Link href="#why" className="hover:text-accent transition">
-                        {tNav("why")}
-                    </Link>
-                    <Link href="#faq" className="hover:text-accent transition">
-                        {tNav("faq")}
-                    </Link>
+                    {navigationItems.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className="hover:text-accent transition"
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
                 </nav>
-                <div className="flex items-center gap-2">
+                <div className="hidden xs:flex items-center gap-2">
                     <LanguageSwitcher />
                     <Link href="/login">
                         <Button
@@ -46,6 +55,54 @@ export default function PublicHeader() {
                         <Button>{tMarketingHeader("cta")}</Button>
                     </Link>
                 </div>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="xs:hidden"
+                            aria-label={tMarketingHeader("menuLabel")}
+                        >
+                            <Menu className="h-5 w-5" aria-hidden="true" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="xs:hidden max-w-sm">
+                        <div className="flex flex-col gap-4">
+                            <nav className="flex flex-col gap-3 text-base text-foreground/80">
+                                {navigationItems.map((item) => (
+                                    <DialogClose asChild key={item.href}>
+                                        <Link
+                                            href={item.href}
+                                            className="hover:text-accent transition"
+                                        >
+                                            {item.label}
+                                        </Link>
+                                    </DialogClose>
+                                ))}
+                            </nav>
+                            <LanguageSwitcher />
+                            <div className="flex flex-col gap-2">
+                                <DialogClose asChild>
+                                    <Link href="/login">
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+                                        >
+                                            {tAuth("login")}
+                                        </Button>
+                                    </Link>
+                                </DialogClose>
+                                <DialogClose asChild>
+                                    <Link href="/signup">
+                                        <Button className="w-full">
+                                            {tMarketingHeader("cta")}
+                                        </Button>
+                                    </Link>
+                                </DialogClose>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         </header>
     );

@@ -11,6 +11,9 @@ import { useTranslations, useLocale } from "next-intl";
 export default function MarketingLandingPage() {
     const t = useTranslations("Marketing");
     const locale = useLocale();
+    const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://www.bananagenerator.app";
+    const structuredDataImage = `${appUrl}/og-image.svg`;
     const features = t.raw("features.items") as Array<{
         title: string;
         description: string;
@@ -29,10 +32,12 @@ export default function MarketingLandingPage() {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         name: t("structuredData.name"),
+        url: appUrl,
         applicationCategory: "MultimediaApplication",
         operatingSystem: "Web",
         description: t("structuredData.description"),
         featureList: t.raw("structuredData.featureList") as string[],
+        image: structuredDataImage,
         offers: {
             "@type": "Offer",
             price: "0",
@@ -41,6 +46,15 @@ export default function MarketingLandingPage() {
         inLanguage: locale,
         alternateName: t("hero.title"),
         slogan: t("structuredData.tagline"),
+        publisher: {
+            "@type": "Organization",
+            name: t("structuredData.name"),
+            url: appUrl,
+            logo: {
+                "@type": "ImageObject",
+                url: structuredDataImage,
+            },
+        },
     };
     return (
         <div

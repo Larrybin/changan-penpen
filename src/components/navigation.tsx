@@ -1,6 +1,7 @@
 import { CheckSquare, Home } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import todosRoutes from "@/modules/todos/todos.route";
 import LogoutButton from "../modules/auth/components/logout-button";
 
 export function Navigation() {
@@ -22,7 +23,7 @@ export function Navigation() {
                                     Home
                                 </Button>
                             </Link>
-                            <Link href="/todos">
+                            <Link href={todosRoutes.list}>
                                 <Button variant="ghost" size="sm">
                                     <CheckSquare className="mr-2 h-4 w-4" />
                                     Todos

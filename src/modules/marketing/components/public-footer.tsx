@@ -24,12 +24,12 @@ export default function PublicFooter() {
                     </h4>
                     <ul className="space-y-1 text-sm text-foreground/80">
                         <li>
-                            <Link href="#" className="hover:text-accent">
+                            <Link href="/about" className="hover:text-accent">
                                 {tFooter("supportLinks.about")}
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-accent">
+                            <Link href="/contact" className="hover:text-accent">
                                 {tFooter("supportLinks.contact")}
                             </Link>
                         </li>
@@ -41,12 +41,12 @@ export default function PublicFooter() {
                     </h4>
                     <ul className="space-y-1 text-sm text-foreground/80">
                         <li>
-                            <Link href="#" className="hover:text-accent">
+                            <Link href="/privacy" className="hover:text-accent">
                                 {tFooter("legalLinks.privacy")}
                             </Link>
                         </li>
                         <li>
-                            <Link href="#" className="hover:text-accent">
+                            <Link href="/terms" className="hover:text-accent">
                                 {tFooter("legalLinks.terms")}
                             </Link>
                         </li>

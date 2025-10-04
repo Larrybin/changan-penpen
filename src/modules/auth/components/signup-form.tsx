@@ -74,7 +74,9 @@ export function SignupForm({
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card>
                 <CardHeader className="text-center">
-                    <CardTitle className="text-xl">Welcome</CardTitle>
+                    <CardTitle className="text-xl">
+                        <h2 className="text-xl font-semibold">Welcome</h2>
+                    </CardTitle>
                     <CardDescription>
                         Sign up with your Google account
                     </CardDescription>
@@ -187,10 +189,22 @@ export function SignupForm({
                     </Form>
                 </CardContent>
             </Card>
-            <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+            <div className="text-muted-foreground text-center text-xs text-balance">
                 By clicking continue, you agree to our{" "}
-                <a href="#">Terms of Service</a> and{" "}
-                <a href="#">Privacy Policy</a>.
+                <Link
+                    href="/terms"
+                    className="text-primary underline underline-offset-4 hover:text-primary"
+                >
+                    Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link
+                    href="/privacy"
+                    className="text-primary underline underline-offset-4 hover:text-primary"
+                >
+                    Privacy Policy
+                </Link>
+                .
             </div>
         </div>
     );

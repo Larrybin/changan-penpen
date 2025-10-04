@@ -1,19 +1,30 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { getTranslations } from "next-intl/server";
 
-export default function Page() {
+import { Button } from "@/components/ui/button";
+import dashboardRoutes from "@/modules/dashboard/dashboard.route";
+
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations("Metadata");
+    return {
+        title: t("billingSuccess.title"),
+        description: t("billingSuccess.description"),
+    };
+}
+
+export default async function Page() {
+    const t = await getTranslations("BillingStatus.success");
     return (
         <div className="mx-auto max-w-xl py-16 px-6 text-center space-y-6">
-            <h1 className="text-title-sm font-bold">支付成功</h1>
-            <p className="text-muted-foreground">
-                我们已收到您的支付，帐户权益将很快更新。如未看到更新，请稍候片刻或刷新页面。
-            </p>
+            <h1 className="text-title-sm font-bold">{t("title")}</h1>
+            <p className="text-muted-foreground">{t("description")}</p>
             <div className="flex gap-3 justify-center">
-                <Link href="/dashboard">
-                    <Button>返回仪表盘</Button>
+                <Link href={dashboardRoutes.dashboard}>
+                    <Button>{t("primaryCta")}</Button>
                 </Link>
                 <Link href="/billing">
-                    <Button variant="outline">继续购买</Button>
+                    <Button variant="outline">{t("secondaryCta")}</Button>
                 </Link>
             </div>
         </div>

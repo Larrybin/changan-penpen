@@ -153,6 +153,10 @@ export function TodoCard({ todo }: TodoCardProps) {
                         <img
                             src={todo.imageUrl}
                             alt={todo.imageAlt || "Todo image"}
+                            width={640}
+                            height={360}
+                            loading="lazy"
+                            decoding="async"
                             className="max-w-full h-auto rounded-md max-h-48 object-cover"
                         />
                     </div>

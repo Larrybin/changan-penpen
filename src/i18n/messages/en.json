@@ -20,7 +20,8 @@
     },
     "Marketing": {
         "header": {
-            "cta": "Go Bananas"
+            "cta": "Go Bananas",
+            "menuLabel": "Open navigation menu"
         },
         "hero": {
             "badge": "Free Online",
@@ -158,11 +159,177 @@
         "openGraph": {
             "title": "Banana Generator – Edit and Generate Photos with AI",
             "description": "Unlock instant AI-powered photo editing, text-to-image generation, and creative workflows with Banana Generator.",
-            "siteName": "Banana Generator"
+            "siteName": "Banana Generator",
+            "imageAlt": "Preview image showing Banana Generator features."
         },
         "twitter": {
             "title": "Banana Generator | AI Photo Editor & Image Generator",
-            "description": "Generate and edit photos in seconds using AI prompts with Banana Generator."
+            "description": "Generate and edit photos in seconds using AI prompts with Banana Generator.",
+            "imageAlt": "Preview image showing Banana Generator features."
+        },
+        "login": {
+            "title": "Log in | Banana Generator",
+            "description": "Sign in to manage AI photo projects and access your dashboard."
+        },
+        "signup": {
+            "title": "Sign up | Banana Generator",
+            "description": "Create a Banana Generator account to unlock AI editing and collaboration features."
+        },
+        "dashboard": {
+            "title": "Dashboard | Banana Generator",
+            "description": "Track tasks, billing, and AI workflows from your personal dashboard."
+        },
+        "dashboardTodos": {
+            "title": "Task manager | Banana Generator",
+            "description": "Organize and complete your AI project tasks from the dashboard todo list."
+        },
+        "billing": {
+            "title": "Plans & Pricing | Banana Generator",
+            "description": "Review billing plans, credits, and subscription options for Banana Generator."
+        },
+        "billingUsage": {
+            "title": "Usage analytics | Banana Generator",
+            "description": "Monitor your recent credit consumption and feature usage over the last 30 days."
+        },
+        "billingSuccess": {
+            "title": "Payment successful | Banana Generator",
+            "description": "Your payment has been processed and account access will refresh shortly."
+        },
+        "billingCancel": {
+            "title": "Payment cancelled | Banana Generator",
+            "description": "You exited checkout before completing payment. Resume whenever you're ready."
+        },
+        "about": {
+            "title": "About Banana Generator",
+            "description": "Learn how Banana Generator helps teams create AI-powered visuals faster."
+        },
+        "contact": {
+            "title": "Contact Banana Generator",
+            "description": "Reach our support and partnerships teams for help with Banana Generator."
+        },
+        "privacy": {
+            "title": "Privacy policy | Banana Generator",
+            "description": "Understand how Banana Generator collects, stores, and protects your data."
+        },
+        "terms": {
+            "title": "Terms of service | Banana Generator",
+            "description": "Review the usage terms for Banana Generator's AI editing platform."
+        }
+    },
+    "Billing": {
+        "title": "Plans & Pricing",
+        "description": "Choose a subscription or credit package to complete your purchase.",
+        "loginPrompt": "Please <login>log in</login> before checkout."
+    },
+    "AuthPages": {
+        "Login": {
+            "title": "Log in to Banana Generator",
+            "subtitle": "Access your dashboard and manage your creative workflow."
+        },
+        "Signup": {
+            "title": "Create your Banana Generator account",
+            "subtitle": "Get started with AI-powered editing in just a few clicks."
+        }
+    },
+    "BillingUsage": {
+        "title": "Usage (last 30 days)",
+        "loginRequiredTitle": "Usage reports",
+        "loginRequiredMessage": "Log in to review your recent activity.",
+        "empty": "No usage data is available for this period.",
+        "entry": "{{feature}}: {{total}} {{unit}}"
+    },
+    "BillingStatus": {
+        "success": {
+            "title": "Payment successful",
+            "description": "We've received your payment. Your account benefits will update shortly.",
+            "primaryCta": "Go to dashboard",
+            "secondaryCta": "View more plans"
+        },
+        "cancel": {
+            "title": "Payment cancelled",
+            "description": "Your payment was cancelled. You can resume checkout whenever you're ready.",
+            "primaryCta": "Back to plans",
+            "secondaryCta": "Return to dashboard"
+        }
+    },
+    "StaticPages": {
+        "about": {
+            "title": "About Banana Generator",
+            "intro": "Banana Generator is a production-ready AI editing toolkit built for teams that need reliable, repeatable creative results.",
+            "sections": [
+                {
+                    "title": "Our mission",
+                    "description": "Give creators and product teams an intuitive workspace for editing images with natural language prompts—without sacrificing quality or control."
+                },
+                {
+                    "title": "What we offer",
+                    "description": "From batch automation to character consistency, Banana Generator combines AI models, storage, and deployment workflows that scale with your needs."
+                },
+                {
+                    "title": "Why it matters",
+                    "description": "Teams launch visuals faster, keep branding consistent, and collaborate securely across global markets."
+                }
+            ]
+        },
+        "contact": {
+            "title": "Contact us",
+            "intro": "We’d love to hear from you. Choose the right channel so our team can respond quickly.",
+            "details": [
+                {
+                    "label": "Support",
+                    "value": "support@bananagenerator.app"
+                },
+                {
+                    "label": "Partnerships",
+                    "value": "partners@bananagenerator.app"
+                },
+                {
+                    "label": "Hours",
+                    "value": "Mon–Fri, 9am–6pm UTC"
+                }
+            ],
+            "sections": [
+                {
+                    "title": "How we can help",
+                    "description": "Ask about onboarding, enterprise pilots, billing questions, or new collaboration ideas—we respond within one business day."
+                }
+            ]
+        },
+        "privacy": {
+            "title": "Privacy policy",
+            "intro": "Your trust matters. We follow a privacy-by-design approach for every feature we ship.",
+            "sections": [
+                {
+                    "title": "Data we collect",
+                    "description": "We store essential account details, usage events, and files you upload so the product works reliably."
+                },
+                {
+                    "title": "How we use data",
+                    "description": "Information is used to deliver core functionality, improve model performance in aggregate, and provide support."
+                },
+                {
+                    "title": "Your choices",
+                    "description": "Export your data anytime, request deletion, and control marketing preferences from the dashboard."
+                }
+            ]
+        },
+        "terms": {
+            "title": "Terms of service",
+            "intro": "These terms govern how you access and use Banana Generator.",
+            "sections": [
+                {
+                    "title": "Using Banana Generator",
+                    "description": "You must be 18 or older, keep your credentials secure, and comply with applicable laws."
+                },
+                {
+                    "title": "Fair use & content guidelines",
+                    "description": "Do not generate harmful, infringing, or deceptive content. We may suspend accounts that violate policies."
+                },
+                {
+                    "title": "Billing & cancellations",
+                    "description": "Subscriptions renew automatically until cancelled. Cancel anytime to avoid future charges."
+                }
+            ]
         }
     }
 }

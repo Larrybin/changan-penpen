@@ -20,7 +20,8 @@
     },
     "Marketing": {
         "header": {
-            "cta": "Jetzt loslegen"
+            "cta": "Jetzt loslegen",
+            "menuLabel": "Navigationsmenü öffnen"
         },
         "hero": {
             "badge": "Kostenlos online",
@@ -162,11 +163,177 @@
         "openGraph": {
             "title": "Banana Generator – Fotos mit KI bearbeiten und generieren",
             "description": "Nutze sofortige KI-Fotobearbeitung, Text-zu-Bild-Generierung und kreative Workflows mit Banana Generator.",
-            "siteName": "Banana Generator"
+            "siteName": "Banana Generator",
+            "imageAlt": "Vorschauabbildung mit den Funktionen von Banana Generator."
         },
         "twitter": {
             "title": "Banana Generator | KI-Fotobearbeitung & Bildgenerator",
-            "description": "Erstelle und bearbeite Fotos in Sekunden mithilfe von KI-Prompts mit Banana Generator."
+            "description": "Erstelle und bearbeite Fotos in Sekunden mithilfe von KI-Prompts mit Banana Generator.",
+            "imageAlt": "Vorschauabbildung mit den Funktionen von Banana Generator."
+        },
+        "login": {
+            "title": "Anmelden | Banana Generator",
+            "description": "Melden Sie sich an, um KI-Fotoprojekte zu verwalten und auf Ihr Dashboard zuzugreifen."
+        },
+        "signup": {
+            "title": "Konto erstellen | Banana Generator",
+            "description": "Registrieren Sie sich, um KI-gestützte Bearbeitung und Teamfunktionen zu nutzen."
+        },
+        "dashboard": {
+            "title": "Dashboard | Banana Generator",
+            "description": "Verfolgen Sie Aufgaben, Abrechnung und KI-Workflows in Ihrem persönlichen Bereich."
+        },
+        "dashboardTodos": {
+            "title": "Aufgabenverwaltung | Banana Generator",
+            "description": "Organisieren Sie Ihre Projektaufgaben in der Dashboard-To-do-Liste."
+        },
+        "billing": {
+            "title": "Tarife & Preise | Banana Generator",
+            "description": "Vergleichen Sie Abonnements, Guthaben und Zahlungsoptionen."
+        },
+        "billingUsage": {
+            "title": "Nutzungsanalyse | Banana Generator",
+            "description": "Überwachen Sie Ihren Verbrauch der letzten 30 Tage."
+        },
+        "billingSuccess": {
+            "title": "Zahlung erfolgreich | Banana Generator",
+            "description": "Ihre Zahlung wurde verarbeitet. Der Kontozugriff aktualisiert sich in Kürze."
+        },
+        "billingCancel": {
+            "title": "Zahlung abgebrochen | Banana Generator",
+            "description": "Sie haben den Checkout beendet, bevor die Zahlung abgeschlossen wurde."
+        },
+        "about": {
+            "title": "Über Banana Generator",
+            "description": "Erfahren Sie, wie Banana Generator Teams bei der KI-gestützten Bildproduktion unterstützt."
+        },
+        "contact": {
+            "title": "Kontakt | Banana Generator",
+            "description": "Nehmen Sie Kontakt mit Support oder Partnerschaften von Banana Generator auf."
+        },
+        "privacy": {
+            "title": "Datenschutzerklärung | Banana Generator",
+            "description": "Erfahren Sie, wie wir Daten erfassen, speichern und schützen."
+        },
+        "terms": {
+            "title": "Nutzungsbedingungen | Banana Generator",
+            "description": "Lesen Sie die Nutzungsbedingungen für die KI-Bearbeitungsplattform Banana Generator."
+        }
+    },
+    "Billing": {
+        "title": "Tarife & Preise",
+        "description": "Wählen Sie ein Abonnement oder Guthabenpaket, um den Kauf abzuschließen.",
+        "loginPrompt": "Bitte <login>melden Sie sich an</login>, bevor Sie zur Kasse gehen."
+    },
+    "AuthPages": {
+        "Login": {
+            "title": "Bei Banana Generator anmelden",
+            "subtitle": "Greifen Sie auf Ihr Dashboard zu und steuern Sie Ihre kreativen Workflows."
+        },
+        "Signup": {
+            "title": "Ein Banana-Generator-Konto erstellen",
+            "subtitle": "Starten Sie mit KI-gestützter Bildbearbeitung in wenigen Klicks."
+        }
+    },
+    "BillingUsage": {
+        "title": "Nutzung (letzte 30 Tage)",
+        "loginRequiredTitle": "Nutzungsberichte",
+        "loginRequiredMessage": "Melden Sie sich an, um Ihre aktuellen Aktivitäten zu sehen.",
+        "empty": "Für diesen Zeitraum liegen keine Nutzungsdaten vor.",
+        "entry": "{{feature}}: {{total}} {{unit}}"
+    },
+    "BillingStatus": {
+        "success": {
+            "title": "Zahlung erfolgreich",
+            "description": "Wir haben Ihre Zahlung erhalten. Ihre Kontorechte werden in Kürze aktualisiert.",
+            "primaryCta": "Zum Dashboard",
+            "secondaryCta": "Weitere Tarife ansehen"
+        },
+        "cancel": {
+            "title": "Zahlung abgebrochen",
+            "description": "Die Zahlung wurde abgebrochen. Sie können den Kauf jederzeit fortsetzen.",
+            "primaryCta": "Zur Tarifübersicht",
+            "secondaryCta": "Zurück zum Dashboard"
+        }
+    },
+    "StaticPages": {
+        "about": {
+            "title": "Über Banana Generator",
+            "intro": "Banana Generator ist ein produktionsreifes KI-Bearbeitungstoolkit für Teams, die verlässliche und reproduzierbare Ergebnisse brauchen.",
+            "sections": [
+                {
+                    "title": "Unsere Mission",
+                    "description": "Wir bieten Kreativen und Produktteams einen intuitiven Arbeitsbereich, um Bilder mit natürlicher Sprache zu bearbeiten – ohne Qualitätsverluste."
+                },
+                {
+                    "title": "Was wir bieten",
+                    "description": "Von Stapelautomatisierung bis zur Charakterkonsistenz kombiniert Banana Generator KI-Modelle, Speicher und Deployment-Workflows, die mit Ihren Anforderungen wachsen."
+                },
+                {
+                    "title": "Warum es wichtig ist",
+                    "description": "Teams veröffentlichen Visuals schneller, halten Markenrichtlinien ein und arbeiten sicher über Länder hinweg zusammen."
+                }
+            ]
+        },
+        "contact": {
+            "title": "Kontakt",
+            "intro": "Wir freuen uns über Ihre Nachricht. Wählen Sie den passenden Kanal, damit wir schnell reagieren können.",
+            "details": [
+                {
+                    "label": "Support",
+                    "value": "support@bananagenerator.app"
+                },
+                {
+                    "label": "Partnerschaften",
+                    "value": "partners@bananagenerator.app"
+                },
+                {
+                    "label": "Zeiten",
+                    "value": "Mo–Fr, 9–18 Uhr UTC"
+                }
+            ],
+            "sections": [
+                {
+                    "title": "Wie wir helfen können",
+                    "description": "Fragen Sie nach Onboarding, Enterprise-Tests, Abrechnungen oder neuen Kooperationen – wir antworten innerhalb eines Werktags."
+                }
+            ]
+        },
+        "privacy": {
+            "title": "Datenschutzerklärung",
+            "intro": "Ihr Vertrauen zählt. Wir verfolgen bei jeder Funktion einen Privacy-by-Design-Ansatz.",
+            "sections": [
+                {
+                    "title": "Welche Daten wir erfassen",
+                    "description": "Wir speichern notwendige Kontoinformationen, Nutzungsereignisse und hochgeladene Dateien, damit das Produkt zuverlässig funktioniert."
+                },
+                {
+                    "title": "Wie wir Daten nutzen",
+                    "description": "Informationen dienen der Bereitstellung der Kernfunktionen, der aggregierten Verbesserung der Modelle und dem Support."
+                },
+                {
+                    "title": "Ihre Wahlmöglichkeiten",
+                    "description": "Exportieren Sie Ihre Daten jederzeit, fordern Sie Löschungen an und steuern Sie Marketing-Einstellungen im Dashboard."
+                }
+            ]
+        },
+        "terms": {
+            "title": "Nutzungsbedingungen",
+            "intro": "Diese Bedingungen regeln den Zugriff und die Nutzung von Banana Generator.",
+            "sections": [
+                {
+                    "title": "Banana Generator verwenden",
+                    "description": "Sie müssen mindestens 18 Jahre alt sein, Ihre Zugangsdaten schützen und geltendes Recht einhalten."
+                },
+                {
+                    "title": "Fair Use & Inhaltsrichtlinien",
+                    "description": "Erzeugen Sie keine schädlichen, rechtsverletzenden oder irreführenden Inhalte. Wir können Accounts bei Verstößen sperren."
+                },
+                {
+                    "title": "Abrechnung & Kündigungen",
+                    "description": "Abonnements verlängern sich automatisch, bis sie gekündigt werden. Kündigen Sie rechtzeitig, um weitere Gebühren zu vermeiden."
+                }
+            ]
         }
     }
 }

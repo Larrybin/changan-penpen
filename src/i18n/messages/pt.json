@@ -20,7 +20,8 @@
     },
     "Marketing": {
         "header": {
-            "cta": "Começar agora"
+            "cta": "Começar agora",
+            "menuLabel": "Abrir menu de navegação"
         },
         "hero": {
             "badge": "Gratuito online",
@@ -162,11 +163,177 @@
         "openGraph": {
             "title": "Banana Generator – Edite e gere fotos com IA",
             "description": "Aproveite edição de fotos com IA instantânea, geração texto-para-imagem e fluxos criativos com o Banana Generator.",
-            "siteName": "Banana Generator"
+            "siteName": "Banana Generator",
+            "imageAlt": "Imagem de pré-visualização mostrando os recursos do Banana Generator."
         },
         "twitter": {
             "title": "Banana Generator | Editor de fotos e gerador de imagens com IA",
-            "description": "Gere e edite fotos em segundos com prompts de IA usando o Banana Generator."
+            "description": "Gere e edite fotos em segundos com prompts de IA usando o Banana Generator.",
+            "imageAlt": "Imagem de pré-visualização mostrando os recursos do Banana Generator."
+        },
+        "login": {
+            "title": "Login | Banana Generator",
+            "description": "Entre para gerenciar projetos de fotos com IA e acessar seu painel."
+        },
+        "signup": {
+            "title": "Criar conta | Banana Generator",
+            "description": "Cadastre-se para usar os recursos de edição com IA e colaboração."
+        },
+        "dashboard": {
+            "title": "Painel | Banana Generator",
+            "description": "Acompanhe tarefas, cobrança e fluxos de IA no seu painel pessoal."
+        },
+        "dashboardTodos": {
+            "title": "Gerenciador de tarefas | Banana Generator",
+            "description": "Organize suas tarefas de projeto na lista de afazeres do painel."
+        },
+        "billing": {
+            "title": "Planos e preços | Banana Generator",
+            "description": "Veja assinaturas, créditos e opções de pagamento disponíveis."
+        },
+        "billingUsage": {
+            "title": "Análises de uso | Banana Generator",
+            "description": "Monitore o consumo de créditos e recursos nos últimos 30 dias."
+        },
+        "billingSuccess": {
+            "title": "Pagamento concluído | Banana Generator",
+            "description": "Seu pagamento foi processado. O acesso da conta será atualizado em breve."
+        },
+        "billingCancel": {
+            "title": "Pagamento cancelado | Banana Generator",
+            "description": "Você saiu do checkout antes de concluir o pagamento. Retome quando estiver pronto."
+        },
+        "about": {
+            "title": "Sobre o Banana Generator",
+            "description": "Saiba como o Banana Generator ajuda equipes a criar visuais com IA mais rápido."
+        },
+        "contact": {
+            "title": "Contato | Banana Generator",
+            "description": "Fale com nossas equipes de suporte e parcerias para tirar dúvidas."
+        },
+        "privacy": {
+            "title": "Política de privacidade | Banana Generator",
+            "description": "Entenda como coletamos, armazenamos e protegemos seus dados."
+        },
+        "terms": {
+            "title": "Termos de uso | Banana Generator",
+            "description": "Conheça as condições de uso da plataforma de edição com IA Banana Generator."
+        }
+    },
+    "Billing": {
+        "title": "Planos e preços",
+        "description": "Escolha uma assinatura ou pacote de créditos para concluir a compra.",
+        "loginPrompt": "Faça <login>login</login> antes de finalizar o pagamento."
+    },
+    "AuthPages": {
+        "Login": {
+            "title": "Entrar no Banana Generator",
+            "subtitle": "Acesse seu painel e gerencie fluxos criativos com IA."
+        },
+        "Signup": {
+            "title": "Criar conta no Banana Generator",
+            "subtitle": "Comece a editar com IA em poucos cliques."
+        }
+    },
+    "BillingUsage": {
+        "title": "Uso (últimos 30 dias)",
+        "loginRequiredTitle": "Relatórios de uso",
+        "loginRequiredMessage": "Faça login para revisar sua atividade recente.",
+        "empty": "Nenhum dado de uso disponível para este período.",
+        "entry": "{{feature}}: {{total}} {{unit}}"
+    },
+    "BillingStatus": {
+        "success": {
+            "title": "Pagamento concluído",
+            "description": "Recebemos seu pagamento. Os benefícios da conta serão atualizados em breve.",
+            "primaryCta": "Ir para o painel",
+            "secondaryCta": "Ver mais planos"
+        },
+        "cancel": {
+            "title": "Pagamento cancelado",
+            "description": "O pagamento foi cancelado. Você pode retomar a compra quando quiser.",
+            "primaryCta": "Voltar aos planos",
+            "secondaryCta": "Retornar ao painel"
+        }
+    },
+    "StaticPages": {
+        "about": {
+            "title": "Sobre o Banana Generator",
+            "intro": "Banana Generator é um kit de edição com IA pronto para produção, feito para equipes que precisam de resultados consistentes.",
+            "sections": [
+                {
+                    "title": "Nossa missão",
+                    "description": "Oferecer a criativos e times de produto um ambiente intuitivo para editar imagens com linguagem natural sem perder qualidade."
+                },
+                {
+                    "title": "O que oferecemos",
+                    "description": "Automação em lote, consistência de personagens, modelos de IA, armazenamento e fluxos de deploy escaláveis."
+                },
+                {
+                    "title": "Por que importa",
+                    "description": "As equipes lançam visuais mais rápido, mantêm a marca consistente e colaboram com segurança em diferentes mercados."
+                }
+            ]
+        },
+        "contact": {
+            "title": "Fale conosco",
+            "intro": "Queremos ouvir você. Escolha o canal certo para receber uma resposta rápida.",
+            "details": [
+                {
+                    "label": "Suporte",
+                    "value": "support@bananagenerator.app"
+                },
+                {
+                    "label": "Parcerias",
+                    "value": "partners@bananagenerator.app"
+                },
+                {
+                    "label": "Horário",
+                    "value": "Seg–Sex, 9h–18h UTC"
+                }
+            ],
+            "sections": [
+                {
+                    "title": "Como podemos ajudar",
+                    "description": "Onboarding, pilotos enterprise, dúvidas de cobrança ou novas ideias de parceria — respondemos em até um dia útil."
+                }
+            ]
+        },
+        "privacy": {
+            "title": "Política de privacidade",
+            "intro": "Sua confiança é prioridade. Seguimos privacidade desde o desenho de cada funcionalidade.",
+            "sections": [
+                {
+                    "title": "Dados que coletamos",
+                    "description": "Armazenamos informações essenciais da conta, eventos de uso e arquivos enviados para garantir estabilidade."
+                },
+                {
+                    "title": "Como usamos os dados",
+                    "description": "Usamos as informações para oferecer recursos principais, melhorar modelos de forma agregada e prestar suporte."
+                },
+                {
+                    "title": "Suas escolhas",
+                    "description": "Exporte seus dados a qualquer momento, solicite exclusão e gerencie preferências de marketing no painel."
+                }
+            ]
+        },
+        "terms": {
+            "title": "Termos de uso",
+            "intro": "Estes termos regem o acesso e o uso do Banana Generator.",
+            "sections": [
+                {
+                    "title": "Uso do Banana Generator",
+                    "description": "Você deve ter 18 anos ou mais, proteger suas credenciais e cumprir as leis aplicáveis."
+                },
+                {
+                    "title": "Uso responsável e conteúdo",
+                    "description": "Não gere conteúdo nocivo, infrator ou enganoso. Podemos suspender contas em caso de violação."
+                },
+                {
+                    "title": "Cobrança e cancelamentos",
+                    "description": "Assinaturas renovam automaticamente até serem canceladas. Cancele a tempo para evitar novas cobranças."
+                }
+            ]
         }
     }
 }

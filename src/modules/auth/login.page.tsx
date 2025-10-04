@@ -1,9 +1,15 @@
 import { GalleryVerticalEnd } from "lucide-react";
+import Link from "next/link";
 import type React from "react";
+import { getTranslations } from "next-intl/server";
 
 import { LoginForm } from "./components/login-form";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+    const [tCommon, tLoginPage] = await Promise.all([
+        getTranslations("Common"),
+        getTranslations("AuthPages.Login"),
+    ]);
     return (
         <div
             className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 xs:p-8 md:p-10"
@@ -22,15 +28,23 @@ export default function LoginPage() {
             }
         >
             <div className="flex w-full max-w-sm xs:max-w-md lg-narrow:max-w-lg flex-col gap-6">
-                <a
-                    href="#"
+                <Link
+                    href="/"
                     className="flex items-center gap-2 self-center font-medium"
                 >
                     <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
                         <GalleryVerticalEnd className="size-4" />
                     </div>
-                    Acme Inc.
-                </a>
+                    {tCommon("appName")}
+                </Link>
+                <div className="text-center space-y-2">
+                    <h1 className="text-3xl font-semibold tracking-tight">
+                        {tLoginPage("title")}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        {tLoginPage("subtitle")}
+                    </p>
+                </div>
                 <LoginForm />
             </div>
         </div>
