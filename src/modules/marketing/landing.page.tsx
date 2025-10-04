@@ -6,8 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 
 export default function MarketingLandingPage() {
+    const t = useTranslations("Marketing");
+    const locale = useLocale();
+    const features = t.raw("features.items") as Array<{
+        title: string;
+        description: string;
+    }>;
+    const whyItems = t.raw("why.items") as Array<{
+        title: string;
+        description: string;
+    }>;
+    const faqItems = t.raw("faq.items") as Array<{
+        question: string;
+        answer: string;
+    }>;
+    const heroSupport = t.raw("hero.support") as Record<string, string>;
+    const heroSupportValues = Object.values(heroSupport);
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        name: t("structuredData.name"),
+        applicationCategory: "MultimediaApplication",
+        operatingSystem: "Web",
+        description: t("structuredData.description"),
+        featureList: t.raw("structuredData.featureList") as string[],
+        offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+        },
+        inLanguage: locale,
+        alternateName: t("hero.title"),
+        slogan: t("structuredData.tagline"),
+    };
     return (
         <div
             className="bg-background text-foreground"
@@ -40,39 +74,48 @@ export default function MarketingLandingPage() {
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <Badge className="bg-yellow-400 text-black">
-                                    Free Online
+                                    {t("hero.badge")}
                                 </Badge>
-                                <span className="text-lg">🍌</span>
+                                <span className="text-lg">
+                                    {t("hero.emoji")}
+                                </span>
                             </div>
                             <h1 className="text-title font-extrabold tracking-tight mb-4">
-                                AI Photo Editor
+                                {t("hero.title")}
                             </h1>
                             <p className="text-yellow-200/80 leading-relaxed mb-6">
-                                Transform, edit, and enhance your images with
-                                simple text prompts. Add, remove, or restyle
-                                anything in seconds using AI image editing.
+                                {t("hero.description")}
                             </p>
                             <div className="flex gap-3">
                                 <Link href="/signup">
-                                    <Button>Try it free</Button>
+                                    <Button>{t("hero.primaryCta")}</Button>
                                 </Link>
                                 <Link href="#playground">
                                     <Button
                                         variant="outline"
                                         className="border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
                                     >
-                                        What can it do?
+                                        {t("hero.secondaryCta")}
                                     </Button>
                                 </Link>
                             </div>
                             <div className="mt-3 text-xs text-yellow-200/70">
-                                <span className="mr-3">⚡ Fast</span>
-                                <span className="mr-3">🔒 No sign-up</span>
-                                <span>🆓 Unlimited</span>
+                                {heroSupportValues.map((item, index) => (
+                                    <span
+                                        key={item}
+                                        className={
+                                            index < heroSupportValues.length - 1
+                                                ? "mr-3"
+                                                : ""
+                                        }
+                                    >
+                                        {item}
+                                    </span>
+                                ))}
                             </div>
                         </div>
                         <div className="hidden lg-narrow:block text-right text-7xl">
-                            🍌✨
+                            {t("hero.emoji")}✨
                         </div>
                     </div>
                 </section>
@@ -89,35 +132,10 @@ export default function MarketingLandingPage() {
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
                     <h2 className="text-subtitle font-bold text-center mb-6">
-                        What is Banana Generator?
+                        {t("features.title")}
                     </h2>
                     <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
-                        {[
-                            {
-                                title: "Free & Unlimited Access",
-                                desc: "Enjoy unlimited image generation — no sign-up, no hidden costs.",
-                            },
-                            {
-                                title: "Natural Language Editing",
-                                desc: "Replace backgrounds, adjust lighting, or remove objects using text.",
-                            },
-                            {
-                                title: "Consistent Characters",
-                                desc: "Maintain identifiable characters across multiple images.",
-                            },
-                            {
-                                title: "Seamless Scene Integration",
-                                desc: "Blend edits naturally with original shadows and lighting.",
-                            },
-                            {
-                                title: "High‑Speed Processing",
-                                desc: "Generate or edit 1MP images in seconds.",
-                            },
-                            {
-                                title: "Versatile Style Generation",
-                                desc: "Photorealistic, cartoon, watercolor, or oil painting styles.",
-                            },
-                        ].map((f) => (
+                        {features.map((f) => (
                             <Card
                                 key={f.title}
                                 className="bg-black/40 border-yellow-400/20"
@@ -127,7 +145,7 @@ export default function MarketingLandingPage() {
                                         {f.title}
                                     </h3>
                                     <p className="text-sm text-yellow-200/80">
-                                        {f.desc}
+                                        {f.description}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -140,23 +158,10 @@ export default function MarketingLandingPage() {
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
                     <h2 className="text-subtitle font-bold text-center mb-6">
-                        Why Choose Banana Generator?
+                        {t("why.title")}
                     </h2>
                     <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
-                        {[
-                            {
-                                title: "AI Photo Editor",
-                                desc: "Edit photos by simply describing changes. No layers needed.",
-                            },
-                            {
-                                title: "AI Image Generator",
-                                desc: "Turn text into unique images with realistic or artistic styles.",
-                            },
-                            {
-                                title: "Go Bananas Mode",
-                                desc: "Create multiple variations at once for endless inspiration.",
-                            },
-                        ].map((f) => (
+                        {whyItems.map((f) => (
                             <Card
                                 key={f.title}
                                 className="bg-black/40 border-yellow-400/20"
@@ -166,7 +171,7 @@ export default function MarketingLandingPage() {
                                         {f.title}
                                     </h3>
                                     <p className="text-sm text-yellow-200/80">
-                                        {f.desc}
+                                        {f.description}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -179,36 +184,19 @@ export default function MarketingLandingPage() {
                     className="mx-auto w-full max-w-4xl px-[var(--container-px)] py-10"
                 >
                     <h2 className="text-subtitle font-bold text-center mb-6">
-                        Frequently Asked Questions
+                        {t("faq.title")}
                     </h2>
                     <div className="space-y-3">
-                        {[
-                            {
-                                q: "What is Banana Generator?",
-                                a: "A free AI photo editor and image generator powered by the Nano Banana model.",
-                            },
-                            {
-                                q: "Do I need to sign up or pay?",
-                                a: "No. It's fast, free, and unlimited to get started.",
-                            },
-                            {
-                                q: "What formats are supported?",
-                                a: "Upload common formats like PNG and JPG; high‑res export is supported.",
-                            },
-                            {
-                                q: "Is my data private and secure?",
-                                a: "We follow a privacy‑first policy. You keep ownership of your images.",
-                            },
-                        ].map((item) => (
+                        {faqItems.map((item) => (
                             <details
-                                key={item.q}
+                                key={item.question}
                                 className="bg-black/40 border border-yellow-400/20 rounded-md p-4"
                             >
                                 <summary className="cursor-pointer font-medium text-yellow-50">
-                                    {item.q}
+                                    {item.question}
                                 </summary>
                                 <p className="mt-2 text-sm text-yellow-200/80">
-                                    {item.a}
+                                    {item.answer}
                                 </p>
                             </details>
                         ))}
@@ -217,21 +205,27 @@ export default function MarketingLandingPage() {
 
                 <section className="mx-auto w-full max-w-3xl px-4 py-14 text-center">
                     <h3 className="text-3xl font-extrabold mb-3">
-                        Ready to Go Bananas?
+                        {t("cta.title")}
                     </h3>
                     <p className="text-yellow-200/80 mb-6">
-                        Try Banana Generator now and turn your photos into top
-                        banana creations!
+                        {t("cta.description")}
                     </p>
                     <Link href="/signup">
                         <Button className="bg-yellow-400 text-black hover:bg-yellow-300">
-                            Try Banana Generator Free
+                            {t("cta.primaryCta")}
                         </Button>
                     </Link>
                 </section>
             </main>
 
             <PublicFooter />
+            <script
+                type="application/ld+json"
+                suppressHydrationWarning
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(structuredData),
+                }}
+            />
         </div>
     );
 }

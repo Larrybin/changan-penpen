@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { createNavigation } from "next-intl/navigation";
 import { useMemo } from "react";
 
@@ -15,6 +15,7 @@ const LABELS: Record<AppLocale, string> = {
 
 export default function LanguageSwitcher() {
     const locale = useLocale() as AppLocale;
+    const tCommon = useTranslations("Common");
     const { usePathname, useRouter } = createNavigation();
     const pathname = usePathname();
     const router = useRouter();
@@ -37,7 +38,7 @@ export default function LanguageSwitcher() {
                 })
             }
             className="border rounded-md px-2 py-1 text-sm bg-white"
-            aria-label="Language selector"
+            aria-label={tCommon("languageSwitcherLabel")}
         >
             {options.map((opt) => (
                 <option key={opt.value} value={opt.value}>

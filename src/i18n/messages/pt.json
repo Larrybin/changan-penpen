@@ -1,16 +1,172 @@
 {
     "Common": {
-        "appName": "Next.js Cloudflare App",
+        "appName": "Banana Generator",
         "welcome": "Bem-vindo",
-        "language": "Idioma"
+        "language": "Idioma",
+        "languageSwitcherLabel": "Selecionar idioma",
+        "brandTagline": "Edição de imagens com IA para você continuar no topo."
     },
     "Nav": {
         "home": "Início",
-        "dashboard": "Painel",
-        "billing": "Cobrança"
+        "dashboard": "Dashboard",
+        "billing": "Cobrança",
+        "features": "Recursos",
+        "why": "Por que nós",
+        "faq": "FAQ"
     },
     "Auth": {
         "login": "Entrar",
-        "signup": "Cadastrar-se"
+        "signup": "Criar conta"
+    },
+    "Marketing": {
+        "header": {
+            "cta": "Começar agora"
+        },
+        "hero": {
+            "badge": "Gratuito online",
+            "emoji": "🍌",
+            "title": "Editor de fotos com IA",
+            "description": "Transforme, edite e aprimore suas imagens com comandos de texto simples. Adicione, remova ou estilize qualquer coisa em segundos usando edição de imagem com IA.",
+            "primaryCta": "Teste grátis",
+            "secondaryCta": "O que ele faz?",
+            "support": {
+                "fast": "⚡ Rápido",
+                "secure": "🔒 Sem cadastro",
+                "free": "🆓 Ilimitado"
+            }
+        },
+        "features": {
+            "title": "O que é o Banana Generator?",
+            "items": [
+                {
+                    "title": "Acesso gratuito e ilimitado",
+                    "description": "Aproveite geração ilimitada de imagens – sem cadastro e sem custos ocultos."
+                },
+                {
+                    "title": "Edição em linguagem natural",
+                    "description": "Substitua fundos, ajuste iluminação ou remova objetos usando texto."
+                },
+                {
+                    "title": "Personagens consistentes",
+                    "description": "Mantenha personagens reconhecíveis em várias imagens."
+                },
+                {
+                    "title": "Integração de cena perfeita",
+                    "description": "Combine edições com sombras e luzes originais de forma natural."
+                },
+                {
+                    "title": "Processamento em alta velocidade",
+                    "description": "Gere ou edite imagens de 1 MP em segundos."
+                },
+                {
+                    "title": "Geração de estilos versátil",
+                    "description": "Crie estilos fotorrealistas, cartoon, aquarela ou pintura a óleo."
+                }
+            ]
+        },
+        "why": {
+            "title": "Por que escolher o Banana Generator?",
+            "items": [
+                {
+                    "title": "Editor de fotos com IA",
+                    "description": "Edite fotos apenas descrevendo as alterações. Sem camadas complicadas."
+                },
+                {
+                    "title": "Gerador de imagens com IA",
+                    "description": "Transforme texto em imagens únicas com estilos realistas ou artísticos."
+                },
+                {
+                    "title": "Modo Go Bananas",
+                    "description": "Crie várias variações de uma vez para inspiração ilimitada."
+                }
+            ]
+        },
+        "faq": {
+            "title": "Perguntas frequentes",
+            "items": [
+                {
+                    "question": "O que é o Banana Generator?",
+                    "answer": "Um editor de fotos e gerador de imagens com IA gratuito alimentado pelo modelo Nano Banana."
+                },
+                {
+                    "question": "Preciso me cadastrar ou pagar?",
+                    "answer": "Não. Comece rápido, grátis e sem limites."
+                },
+                {
+                    "question": "Quais formatos são compatíveis?",
+                    "answer": "Envie formatos comuns como PNG e JPG; exportação em alta resolução é suportada."
+                },
+                {
+                    "question": "Meus dados são privados e seguros?",
+                    "answer": "Seguimos uma política que prioriza privacidade. Você mantém a propriedade das suas imagens."
+                }
+            ]
+        },
+        "cta": {
+            "title": "Pronto para entrar no modo Banana?",
+            "description": "Experimente o Banana Generator agora e transforme suas fotos em criações incríveis!",
+            "primaryCta": "Experimentar Banana Generator grátis"
+        },
+        "playground": {
+            "title": "Playground",
+            "badges": [
+                "Edição inteligente",
+                "Sem necessidade de conta",
+                "Teste gratuito"
+            ],
+            "uploadLabel": "Escolha uma imagem para editar",
+            "uploadSecondary": "Texto para imagem",
+            "filePlaceholder": "Toque para escolher uma imagem",
+            "instructionsLabel": "Instruções de edição",
+            "usageGuide": "Guia de uso",
+            "promptPlaceholder": "ex.: \"coloque um chapéu de aniversário no gato\"",
+            "aspectRatioLabel": "Proporção",
+            "humanCheck": "Prove que você é humano",
+            "generate": "Descascar",
+            "sideDescription": "Solte a imaginação e crie imagens com IA."
+        },
+        "footer": {
+            "supportTitle": "Suporte",
+            "legalTitle": "Jurídico",
+            "supportLinks": {
+                "about": "Sobre",
+                "contact": "Contato"
+            },
+            "legalLinks": {
+                "privacy": "Privacidade",
+                "terms": "Termos"
+            },
+            "copyright": "© 2025 Banana Generator. Todos os direitos reservados."
+        },
+        "structuredData": {
+            "name": "Banana Generator",
+            "description": "Banana Generator é um editor de fotos e gerador de imagens com IA gratuito que ajuda equipes a lançar visuais criativos instantaneamente.",
+            "tagline": "Edição de imagens com IA para você continuar no topo.",
+            "featureList": [
+                "Editor de fotos com IA e comandos em linguagem natural",
+                "Geração e aprimoramento de imagens com IA instantâneos",
+                "Sem cadastro obrigatório e com edições ilimitadas"
+            ]
+        }
+    },
+    "Metadata": {
+        "title": "Banana Generator – Editor de fotos e gerador de imagens com IA",
+        "description": "Crie e edite fotos com prompts de texto baseados em IA. O Banana Generator oferece edição de imagens com IA rápida, segura e ilimitada para equipes e criadores.",
+        "keywords": [
+            "editor de fotos com IA",
+            "gerador de imagens com IA",
+            "texto para imagem",
+            "automação criativa",
+            "Banana Generator"
+        ],
+        "openGraph": {
+            "title": "Banana Generator – Edite e gere fotos com IA",
+            "description": "Aproveite edição de fotos com IA instantânea, geração texto-para-imagem e fluxos criativos com o Banana Generator.",
+            "siteName": "Banana Generator"
+        },
+        "twitter": {
+            "title": "Banana Generator | Editor de fotos e gerador de imagens com IA",
+            "description": "Gere e edite fotos em segundos com prompts de IA usando o Banana Generator."
+        }
     }
 }

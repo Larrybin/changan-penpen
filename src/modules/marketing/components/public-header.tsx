@@ -2,15 +2,20 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 export default function PublicHeader() {
+    const tCommon = useTranslations("Common");
+    const tNav = useTranslations("Nav");
+    const tAuth = useTranslations("Auth");
+    const tMarketingHeader = useTranslations("Marketing.header");
     return (
         <header className="sticky top-0 z-[var(--z-nav)] w-full border-b border-border bg-background/80 backdrop-blur text-foreground">
             <div className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-3 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 text-primary">
                     <span className="text-xl">🍌</span>
                     <span className="font-semibold tracking-wide">
-                        Banana Generator
+                        {tCommon("appName")}
                     </span>
                 </Link>
                 <nav className="hidden xs:flex items-center gap-6 text-sm text-foreground/80">
@@ -18,13 +23,13 @@ export default function PublicHeader() {
                         href="#features"
                         className="hover:text-accent transition"
                     >
-                        Features
+                        {tNav("features")}
                     </Link>
                     <Link href="#why" className="hover:text-accent transition">
-                        Why Us
+                        {tNav("why")}
                     </Link>
                     <Link href="#faq" className="hover:text-accent transition">
-                        FAQ
+                        {tNav("faq")}
                     </Link>
                 </nav>
                 <div className="flex items-center gap-2">
@@ -34,11 +39,11 @@ export default function PublicHeader() {
                             variant="outline"
                             className="border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
                         >
-                            Login
+                            {tAuth("login")}
                         </Button>
                     </Link>
                     <Link href="/signup">
-                        <Button>Go Bananas</Button>
+                        <Button>{tMarketingHeader("cta")}</Button>
                     </Link>
                 </div>
             </div>

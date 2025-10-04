@@ -1,51 +1,60 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function PublicFooter() {
+    const tCommon = useTranslations("Common");
+    const tFooter = useTranslations("Marketing.footer");
     return (
         <footer className="border-t border-border bg-background text-foreground">
             <div className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10 grid gap-[var(--grid-gap-section)] md:grid-cols-3">
                 <div>
                     <div className="flex items-center gap-2 text-primary mb-2">
                         <span className="text-lg">🍌</span>
-                        <span className="font-semibold">Banana Generator</span>
+                        <span className="font-semibold">
+                            {tCommon("appName")}
+                        </span>
                     </div>
                     <p className="text-sm text-foreground/70">
-                        AI image editing that keeps you the top banana.
+                        {tCommon("brandTagline")}
                     </p>
                 </div>
                 <div>
-                    <h4 className="font-semibold mb-2">Support</h4>
+                    <h4 className="font-semibold mb-2">
+                        {tFooter("supportTitle")}
+                    </h4>
                     <ul className="space-y-1 text-sm text-foreground/80">
                         <li>
                             <Link href="#" className="hover:text-accent">
-                                About
+                                {tFooter("supportLinks.about")}
                             </Link>
                         </li>
                         <li>
                             <Link href="#" className="hover:text-accent">
-                                Contact
+                                {tFooter("supportLinks.contact")}
                             </Link>
                         </li>
                     </ul>
                 </div>
                 <div>
-                    <h4 className="font-semibold mb-2">Legal</h4>
+                    <h4 className="font-semibold mb-2">
+                        {tFooter("legalTitle")}
+                    </h4>
                     <ul className="space-y-1 text-sm text-foreground/80">
                         <li>
                             <Link href="#" className="hover:text-accent">
-                                Privacy
+                                {tFooter("legalLinks.privacy")}
                             </Link>
                         </li>
                         <li>
                             <Link href="#" className="hover:text-accent">
-                                Terms
+                                {tFooter("legalLinks.terms")}
                             </Link>
                         </li>
                     </ul>
                 </div>
             </div>
             <div className="border-t border-border/50 text-center text-xs py-4 text-foreground/60">
-                © 2025 Banana Generator. All rights reserved.
+                {tFooter("copyright")}
             </div>
         </footer>
     );

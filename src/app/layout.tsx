@@ -4,6 +4,24 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import type { AppLocale } from "@/i18n/config";
+import { defaultLocale, locales } from "@/i18n/config";
+
+const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://www.bananagenerator.app";
+let metadataBase: URL | undefined;
+try {
+    metadataBase = new URL(appUrl);
+} catch (_error) {
+    metadataBase = undefined;
+}
+
+const openGraphLocales: Record<AppLocale, string> = {
+    en: "en_US",
+    de: "de_DE",
+    fr: "fr_FR",
+    pt: "pt_BR",
+};
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -20,11 +38,72 @@ const inter = Inter({
     subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-    title: "Next.js Cloudflare App",
-    description:
-        "Full-stack Next.js application with Cloudflare Workers, D1 db, R2 storage, and Drizzle ORM.",
+type MetadataMessages = {
+    title: string;
+    description: string;
+    keywords: string[];
+    openGraph: {
+        title: string;
+        description: string;
+        siteName: string;
+    };
+    twitter: {
+        title: string;
+        description: string;
+    };
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+    const locale = (await getLocale()) as AppLocale;
+    const messagesModule = (await import(`@/i18n/messages/${locale}.json`))
+        .default as {
+        Metadata: MetadataMessages;
+    };
+    const metadataMessages = messagesModule.Metadata;
+    const canonicalPath = locale === defaultLocale ? "/" : `/${locale}`;
+    const languageAlternates = locales.reduce(
+        (acc, current) => ({
+            ...acc,
+            [current]: current === defaultLocale ? "/" : `/${current}`,
+        }),
+        {} as Record<string, string>,
+    );
+
+    return {
+        metadataBase,
+        title: metadataMessages.title,
+        description: metadataMessages.description,
+        keywords: metadataMessages.keywords,
+        alternates: {
+            canonical: canonicalPath,
+            languages: languageAlternates,
+        },
+        openGraph: {
+            title: metadataMessages.openGraph.title,
+            description: metadataMessages.openGraph.description,
+            url: canonicalPath,
+            siteName: metadataMessages.openGraph.siteName,
+            locale: openGraphLocales[locale],
+            type: "website",
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: metadataMessages.twitter.title,
+            description: metadataMessages.twitter.description,
+        },
+        robots: {
+            index: true,
+            follow: true,
+            googleBot: {
+                index: true,
+                follow: true,
+                "max-video-preview": -1,
+                "max-image-preview": "large",
+                "max-snippet": -1,
+            },
+        },
+    };
+}
 
 export const dynamic = "force-dynamic";
 
