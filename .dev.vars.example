@@ -20,6 +20,14 @@ CREEM_LOG_WEBHOOK_SIGNATURE=1
 CLOUDFLARE_R2_URL=your-r2-url-here
 CLOUDFLARE_API_TOKEN=your-api-token-here
 
+# AI Translation
+TRANSLATION_PROVIDER=gemini
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=models/gemini-1.5-pro-latest
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_TRANSLATION_MODEL=gpt-4o-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+
 # Authentication
 BETTER_AUTH_SECRET=your-better-auth-secret # see https://www.better-auth.com/docs/installation
 BETTER_AUTH_URL=http://localhost:3000 # Base URL of your app - should use the deployed URL in Workers for prod

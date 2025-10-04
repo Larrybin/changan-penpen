@@ -12,6 +12,12 @@ declare namespace Cloudflare {
         BETTER_AUTH_URL: string;
         GOOGLE_CLIENT_ID: string;
         GOOGLE_CLIENT_SECRET: string;
+        TRANSLATION_PROVIDER: string;
+        GEMINI_API_KEY: string;
+        GEMINI_MODEL: string;
+        OPENAI_API_KEY: string;
+        OPENAI_TRANSLATION_MODEL: string;
+        OPENAI_BASE_URL: string;
         next_cf_app_bucket: R2Bucket;
         next_cf_app: D1Database;
         VECTORIZE: VectorizeIndex;

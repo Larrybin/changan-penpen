@@ -481,6 +481,14 @@ pnpm run dev:remote
 | `pnpm run cf-typegen` | Generate Cloudflare TypeScript types |
 | `pnpm run cf:secret` | Add secrets to Cloudflare Workers |
 
+### **Localization & Translation**
+| Script | Description |
+|--------|-------------|
+| `pnpm run translate` | Compile the helper and translate missing strings for all configured locales |
+| `pnpm run translate:de` | Translate missing strings for German (`de`) |
+| `pnpm run translate:fr` | Translate missing strings for French (`fr`) |
+| `pnpm run translate:pt` | Translate missing strings for Portuguese (`pt`) |
+
 ### **Development Order**
 
 **First-time setup:**
@@ -532,7 +540,8 @@ src/
 │       ├── models/       # Todo models
 │       └── schemas/      # Todo schemas
 ├── services/              # Business logic services
-│   └── summarizer.service.ts  # AI summarization service
+│   ├── summarizer.service.ts     # AI summarization service
+│   └── translation.service.ts    # AI localization service
 └── drizzle/              # Database migrations
 ```
 
@@ -608,6 +617,16 @@ Cloudflare Workers AI supports various models:
 - **@cf/meta/m2m100-1.2b** - Translation
 - **@cf/baai/bge-base-en-v1.5** - Text embeddings
 - **@cf/microsoft/resnet-50** - Image classification
+
+### Localization Workflow
+
+- 配置 `.dev.vars` 中的 `TRANSLATION_PROVIDER` 及对应的 Gemini/OpenAI API Key（参见 `.dev.vars.example`）。
+- 运行 `pnpm run translate`（或 `translate:<locale>`）会自动编译脚本、识别缺失/待更新文案并调用所选 AI Provider 批量翻译。
+- 使用 `--dry-run`、`--target=de,fr` 等参数可以模拟或限制翻译范围，例如：
+  ```bash
+  pnpm run translate -- --target=fr --dry-run
+  ```
+- 新生成的译文会直接写回 `src/i18n/messages/<locale>.json`，请在提交前人工校对，并在需要时将条目标记为 `待更新` 以便再次翻译。
 
 ## 🔧 Advanced Configuration
 
