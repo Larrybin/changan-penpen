@@ -115,7 +115,7 @@ export function ensureAbsoluteUrl(value: string, baseUrl: string): string {
 export function getActiveAppLocales(
     settings?: SiteSettingsPayload | null,
 ): AppLocale[] {
-    const configuredLocales = new Set<AppLocale>(locales as AppLocale[]);
+    const configuredLocales = new Set<AppLocale>(locales);
     const enabled = settings?.enabledLanguages ?? [];
     const filtered = enabled
         .map((locale) => locale as AppLocale)
@@ -123,7 +123,7 @@ export function getActiveAppLocales(
     if (filtered.length) {
         return Array.from(new Set(filtered));
     }
-    return locales as AppLocale[];
+    return [...locales];
 }
 
 function isAllowedAttribute(tag: AllowedHeadTag, attribute: string): boolean {
