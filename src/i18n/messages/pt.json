@@ -16,7 +16,73 @@
     },
     "Auth": {
         "login": "Entrar",
-        "signup": "Criar conta"
+        "signup": "Criar conta",
+        "logout": "Sair"
+    },
+    "AuthForms": {
+        "Messages": {
+            "signInSuccess": "Login realizado com sucesso",
+            "signUpSuccess": "Cadastro realizado com sucesso",
+            "signOutSuccess": "Logout realizado com sucesso",
+            "unknownError": "Ocorreu um erro desconhecido.",
+            "socialSignInError": "Falha no login com o Google. Tente novamente."
+        },
+        "Shared": {
+            "continueWith": "Ou continue com",
+            "loading": "Carregando...",
+            "fields": {
+                "email": {
+                    "label": "E-mail",
+                    "placeholder": "mail@mail.com"
+                },
+                "password": {
+                    "label": "Senha",
+                    "placeholder": "*********"
+                },
+                "username": {
+                    "label": "Nome de usuário",
+                    "placeholder": "johndoe"
+                }
+            },
+            "agreement": {
+                "prefix": "Ao continuar, você concorda com nossos",
+                "terms": "Termos de Serviço",
+                "privacy": "Política de Privacidade",
+                "conjunction": "e"
+            }
+        },
+        "Login": {
+            "title": "Bem-vindo de volta",
+            "description": "Faça login com sua conta Google",
+            "googleCta": "Entrar com Google",
+            "forgotPassword": "Esqueceu sua senha?",
+            "forgotUnavailable": "A redefinição de senha ainda não está disponível. Entre em contato com o suporte.",
+            "submit": "Entrar",
+            "switchPrompt": "Ainda não tem uma conta?",
+            "switchCta": "Criar conta"
+        },
+        "Signup": {
+            "title": "Bem-vindo",
+            "description": "Crie sua conta com o Google",
+            "googleCta": "Criar conta com Google",
+            "submit": "Criar conta",
+            "switchPrompt": "Já possui uma conta?",
+            "switchCta": "Entrar"
+        },
+        "Validation": {
+            "email": {
+                "required": "E-mail é obrigatório",
+                "invalid": "Informe um endereço de e-mail válido"
+            },
+            "password": {
+                "required": "Senha é obrigatória",
+                "min": "A senha deve conter no mínimo {count} caracteres"
+            },
+            "username": {
+                "required": "Nome de usuário é obrigatório",
+                "min": "O nome de usuário deve conter no mínimo {count} caracteres"
+            }
+        }
     },
     "Marketing": {
         "header": {

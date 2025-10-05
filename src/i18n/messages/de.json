@@ -16,7 +16,73 @@
     },
     "Auth": {
         "login": "Anmelden",
-        "signup": "Registrieren"
+        "signup": "Registrieren",
+        "logout": "Abmelden"
+    },
+    "AuthForms": {
+        "Messages": {
+            "signInSuccess": "Erfolgreich angemeldet",
+            "signUpSuccess": "Erfolgreich registriert",
+            "signOutSuccess": "Erfolgreich abgemeldet",
+            "unknownError": "Ein unbekannter Fehler ist aufgetreten.",
+            "socialSignInError": "Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut."
+        },
+        "Shared": {
+            "continueWith": "Oder weiter mit",
+            "loading": "Laden...",
+            "fields": {
+                "email": {
+                    "label": "E-Mail",
+                    "placeholder": "mail@mail.com"
+                },
+                "password": {
+                    "label": "Passwort",
+                    "placeholder": "*********"
+                },
+                "username": {
+                    "label": "Benutzername",
+                    "placeholder": "johndoe"
+                }
+            },
+            "agreement": {
+                "prefix": "Mit einem Klick auf Weiter stimmen Sie unseren",
+                "terms": "Nutzungsbedingungen",
+                "privacy": "Datenschutzrichtlinien",
+                "conjunction": "und"
+            }
+        },
+        "Login": {
+            "title": "Willkommen zurück",
+            "description": "Melde dich mit deinem Google-Konto an",
+            "googleCta": "Mit Google anmelden",
+            "forgotPassword": "Passwort vergessen?",
+            "forgotUnavailable": "Das Zurücksetzen des Passworts ist derzeit nicht verfügbar. Bitte wenden Sie sich an den Support.",
+            "submit": "Anmelden",
+            "switchPrompt": "Noch kein Konto?",
+            "switchCta": "Registrieren"
+        },
+        "Signup": {
+            "title": "Willkommen",
+            "description": "Registriere dich mit deinem Google-Konto",
+            "googleCta": "Mit Google registrieren",
+            "submit": "Registrieren",
+            "switchPrompt": "Bereits ein Konto?",
+            "switchCta": "Anmelden"
+        },
+        "Validation": {
+            "email": {
+                "required": "E-Mail ist erforderlich",
+                "invalid": "Bitte eine gültige E-Mail-Adresse eingeben"
+            },
+            "password": {
+                "required": "Passwort ist erforderlich",
+                "min": "Das Passwort muss mindestens {count} Zeichen enthalten"
+            },
+            "username": {
+                "required": "Benutzername ist erforderlich",
+                "min": "Der Benutzername muss mindestens {count} Zeichen enthalten"
+            }
+        }
     },
     "Marketing": {
         "header": {

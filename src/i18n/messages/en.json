@@ -16,7 +16,73 @@
     },
     "Auth": {
         "login": "Login",
-        "signup": "Sign up"
+        "signup": "Sign up",
+        "logout": "Log out"
+    },
+    "AuthForms": {
+        "Messages": {
+            "signInSuccess": "Signed in successfully",
+            "signUpSuccess": "Signed up successfully",
+            "signOutSuccess": "Signed out successfully",
+            "unknownError": "An unknown error occurred.",
+            "socialSignInError": "Google sign-in failed. Please try again."
+        },
+        "Shared": {
+            "continueWith": "Or continue with",
+            "loading": "Loading…",
+            "fields": {
+                "email": {
+                    "label": "Email",
+                    "placeholder": "mail@mail.com"
+                },
+                "password": {
+                    "label": "Password",
+                    "placeholder": "*********"
+                },
+                "username": {
+                    "label": "Username",
+                    "placeholder": "johndoe"
+                }
+            },
+            "agreement": {
+                "prefix": "By clicking continue, you agree to our",
+                "terms": "Terms of Service",
+                "privacy": "Privacy Policy",
+                "conjunction": "and"
+            }
+        },
+        "Login": {
+            "title": "Welcome back",
+            "description": "Login with your Google account",
+            "googleCta": "Login with Google",
+            "forgotPassword": "Forgot your password?",
+            "forgotUnavailable": "Password reset is not available yet. Please contact support.",
+            "submit": "Login",
+            "switchPrompt": "Don’t have an account?",
+            "switchCta": "Sign up"
+        },
+        "Signup": {
+            "title": "Welcome",
+            "description": "Sign up with your Google account",
+            "googleCta": "Sign up with Google",
+            "submit": "Sign up",
+            "switchPrompt": "Already have an account?",
+            "switchCta": "Sign in"
+        },
+        "Validation": {
+            "email": {
+                "required": "Email is required",
+                "invalid": "Enter a valid email address"
+            },
+            "password": {
+                "required": "Password is required",
+                "min": "Password should contain minimum {count} characters"
+            },
+            "username": {
+                "required": "Username is required",
+                "min": "Username should contain minimum {count} characters"
+            }
+        }
     },
     "Marketing": {
         "header": {
@@ -91,7 +157,7 @@
                 },
                 {
                     "question": "Do I need to sign up or pay?",
-                    "answer": "No. It's fast, free, and unlimited to get started."
+                    "answer": "No. It’s fast, free, and unlimited to get started."
                 },
                 {
                     "question": "What formats are supported?",
@@ -110,7 +176,11 @@
         },
         "playground": {
             "title": "Playground",
-            "badges": ["Smart editing", "No account needed", "Free trial"],
+            "badges": [
+                "Smart editing",
+                "No account needed",
+                "Free trial"
+            ],
             "uploadLabel": "Choose an image to edit",
             "uploadSecondary": "Text to Image",
             "filePlaceholder": "Tap to choose an image",
@@ -198,7 +268,7 @@
         },
         "billingCancel": {
             "title": "Payment cancelled | Banana Generator",
-            "description": "You exited checkout before completing payment. Resume whenever you're ready."
+            "description": "You exited checkout before completing payment. Resume whenever you’re ready."
         },
         "about": {
             "title": "About Banana Generator",
@@ -214,7 +284,7 @@
         },
         "terms": {
             "title": "Terms of service | Banana Generator",
-            "description": "Review the usage terms for Banana Generator's AI editing platform."
+            "description": "Review the usage terms for Banana Generator’s AI editing platform."
         }
     },
     "Billing": {
@@ -237,18 +307,18 @@
         "loginRequiredTitle": "Usage reports",
         "loginRequiredMessage": "Log in to review your recent activity.",
         "empty": "No usage data is available for this period.",
-        "entry": "{{feature}}: {{total}} {{unit}}"
+        "entry": "{{feature}}: {{total}} {{unit}}"
     },
     "BillingStatus": {
         "success": {
             "title": "Payment successful",
-            "description": "We've received your payment. Your account benefits will update shortly.",
+            "description": "We’ve received your payment. Your account benefits will update shortly.",
             "primaryCta": "Go to dashboard",
             "secondaryCta": "View more plans"
         },
         "cancel": {
             "title": "Payment cancelled",
-            "description": "Your payment was cancelled. You can resume checkout whenever you're ready.",
+            "description": "Your payment was cancelled. You can resume checkout whenever you’re ready.",
             "primaryCta": "Back to plans",
             "secondaryCta": "Return to dashboard"
         }
@@ -286,7 +356,7 @@
                 },
                 {
                     "label": "Hours",
-                    "value": "Mon–Fri, 9am–6pm UTC"
+                    "value": "Mon–Fri, 9am–8pm UTC"
                 }
             ],
             "sections": [

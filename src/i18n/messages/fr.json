@@ -16,7 +16,73 @@
     },
     "Auth": {
         "login": "Connexion",
-        "signup": "Inscription"
+        "signup": "Inscription",
+        "logout": "Déconnexion"
+    },
+    "AuthForms": {
+        "Messages": {
+            "signInSuccess": "Connexion réussie",
+            "signUpSuccess": "Inscription réussie",
+            "signOutSuccess": "Déconnexion réussie",
+            "unknownError": "Une erreur inconnue s'est produite.",
+            "socialSignInError": "La connexion Google a échoué. Veuillez réessayer."
+        },
+        "Shared": {
+            "continueWith": "Ou continuer avec",
+            "loading": "Chargement...",
+            "fields": {
+                "email": {
+                    "label": "E-mail",
+                    "placeholder": "mail@mail.com"
+                },
+                "password": {
+                    "label": "Mot de passe",
+                    "placeholder": "*********"
+                },
+                "username": {
+                    "label": "Nom d'utilisateur",
+                    "placeholder": "johndoe"
+                }
+            },
+            "agreement": {
+                "prefix": "En cliquant sur Continuer, vous acceptez nos",
+                "terms": "Conditions d'utilisation",
+                "privacy": "Politique de confidentialité",
+                "conjunction": "et"
+            }
+        },
+        "Login": {
+            "title": "Bon retour",
+            "description": "Connectez-vous avec votre compte Google",
+            "googleCta": "Se connecter avec Google",
+            "forgotPassword": "Mot de passe oublié ?",
+            "forgotUnavailable": "La réinitialisation du mot de passe n’est pas encore disponible. Veuillez contacter le support.",
+            "submit": "Se connecter",
+            "switchPrompt": "Vous n'avez pas de compte ?",
+            "switchCta": "Inscrivez-vous"
+        },
+        "Signup": {
+            "title": "Bienvenue",
+            "description": "Inscrivez-vous avec votre compte Google",
+            "googleCta": "S'inscrire avec Google",
+            "submit": "S'inscrire",
+            "switchPrompt": "Vous avez déjà un compte ?",
+            "switchCta": "Connectez-vous"
+        },
+        "Validation": {
+            "email": {
+                "required": "L'e-mail est obligatoire",
+                "invalid": "Veuillez saisir une adresse e-mail valide"
+            },
+            "password": {
+                "required": "Le mot de passe est obligatoire",
+                "min": "Le mot de passe doit contenir au moins {count} caractères"
+            },
+            "username": {
+                "required": "Le nom d'utilisateur est obligatoire",
+                "min": "Le nom d'utilisateur doit contenir au moins {count} caractères"
+            }
+        }
     },
     "Marketing": {
         "header": {
