@@ -1,0 +1,11 @@
+{
+    "name": "@standard-schema/utils",
+    "version": "0.0.0",
+    "type": "module",
+    "main": "./index.js",
+    "module": "./index.js",
+    "exports": {
+        ".": "./index.js"
+    },
+    "types": "./index.d.ts"
+}

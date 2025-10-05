@@ -19,7 +19,9 @@
             }
         ],
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@refinedev/core": ["./src/lib/stubs/refine-core"],
+            "@standard-schema/utils": ["./stubs/standard-schema-utils"]
         }
     },
     "include": [

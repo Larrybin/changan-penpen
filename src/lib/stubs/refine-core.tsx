@@ -24,9 +24,17 @@ export interface Filter {
     value?: unknown;
 }
 
+export type CrudFilter = Filter;
+export type CrudFilters = CrudFilter[];
+
 export interface Sorter {
     field?: string | number | symbol;
     order?: "asc" | "desc";
+}
+
+export interface QueryOptions {
+    enabled?: boolean;
+    [key: string]: unknown;
 }
 
 export interface GetListParams {
@@ -34,13 +42,13 @@ export interface GetListParams {
     pagination?: Pagination;
     filters?: Filter[];
     sorters?: Sorter[];
-    queryOptions?: Record<string, unknown>;
+    queryOptions?: QueryOptions;
 }
 
 export interface GetOneParams {
     resource: string;
     id: string | number;
-    queryOptions?: Record<string, unknown>;
+    queryOptions?: QueryOptions;
 }
 
 export interface CreateParams<TVariables = unknown> {
@@ -64,7 +72,7 @@ export interface CustomParams<TPayload = unknown> {
     method?: string;
     payload?: TPayload;
     meta?: { headers?: Record<string, string> };
-    queryOptions?: Record<string, unknown>;
+    queryOptions?: QueryOptions;
 }
 
 export interface DataProvider {
@@ -204,22 +212,61 @@ function useSerializedParams(params: unknown) {
     return useMemo(() => JSON.stringify(params ?? {}), [params]);
 }
 
+type QueryLike<TData> = {
+    data: TData;
+    error: Error | null;
+    isLoading: boolean;
+    isFetching: boolean;
+    refetch: () => Promise<void>;
+};
+
+function useQueryLike<TData>(config: {
+    data: TData;
+    error: Error | null;
+    isLoading: boolean;
+    refetch: () => Promise<void>;
+}): QueryLike<TData> {
+    const { data, error, isLoading, refetch } = config;
+
+    return useMemo(
+        () => ({
+            data,
+            error,
+            isLoading,
+            isFetching: isLoading,
+            refetch,
+        }),
+        [data, error, isLoading, refetch],
+    );
+}
+
+type ListResponse<TData> = { data: TData[]; total: number } | undefined;
+type OneResponse<TData> = { data: TData } | undefined;
+type CustomResponse<TData> = { data?: TData } | undefined;
+
 export function useList<TData = BaseRecord>(params: GetListParams) {
     const { dataProvider } = useRefineContext();
-    const [data, setData] = useState<{ data: TData[]; total: number }>();
+    const [data, setData] = useState<ListResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const serialized = useSerializedParams(params);
+    const stableParams = useMemo(() => params, [serialized]);
 
     const execute = useCallback(async () => {
+        const enabled = stableParams.queryOptions?.enabled ?? true;
+        if (!enabled) {
+            setIsLoading(false);
+            return;
+        }
         if (!dataProvider?.getList) {
             setData({ data: [], total: 0 });
+            setError(null);
             setIsLoading(false);
             return;
         }
         setIsLoading(true);
         try {
-            const response = await dataProvider.getList<TData>(params);
+            const response = await dataProvider.getList<TData>(stableParams);
             setData({
                 data: response.data ?? [],
                 total:
@@ -233,41 +280,59 @@ export function useList<TData = BaseRecord>(params: GetListParams) {
         } finally {
             setIsLoading(false);
         }
-    }, [dataProvider, params]);
+    }, [dataProvider, stableParams]);
 
     useEffect(() => {
         void execute();
-    }, [execute, serialized]);
+    }, [execute]);
 
     const refetch = useCallback(async () => {
         await execute();
     }, [execute]);
 
-    return {
+    const query = useQueryLike<ListResponse<TData>>({
         data,
         error,
         isLoading,
         refetch,
+    });
+
+    return {
+        data,
+        error,
+        isLoading,
+        isFetching: isLoading,
+        refetch,
+        query,
+        queryResult: query,
+        result: data,
     };
 }
 
 export function useOne<TData = BaseRecord>(params: GetOneParams) {
     const { dataProvider } = useRefineContext();
-    const [data, setData] = useState<TData>();
+    const [data, setData] = useState<OneResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const serialized = useSerializedParams(params);
+    const stableParams = useMemo(() => params, [serialized]);
 
     const execute = useCallback(async () => {
+        const enabled = stableParams.queryOptions?.enabled ?? true;
+        if (!enabled) {
+            setIsLoading(false);
+            return;
+        }
         if (!dataProvider?.getOne) {
             setData(undefined);
+            setError(null);
             setIsLoading(false);
             return;
         }
         setIsLoading(true);
         try {
-            const response = await dataProvider.getOne<TData>(params);
-            setData(response.data);
+            const response = await dataProvider.getOne<TData>(stableParams);
+            setData(response);
             setError(null);
         } catch (err) {
             setError(toError(err));
@@ -275,40 +340,58 @@ export function useOne<TData = BaseRecord>(params: GetOneParams) {
         } finally {
             setIsLoading(false);
         }
-    }, [dataProvider, params]);
+    }, [dataProvider, stableParams]);
 
     useEffect(() => {
         void execute();
-    }, [execute, serialized]);
+    }, [execute]);
 
     const refetch = useCallback(async () => {
         await execute();
     }, [execute]);
 
-    return {
+    const query = useQueryLike<OneResponse<TData>>({
         data,
         error,
         isLoading,
         refetch,
+    });
+
+    return {
+        data,
+        error,
+        isLoading,
+        isFetching: isLoading,
+        refetch,
+        query,
+        queryResult: query,
+        result: data,
     };
 }
 
 export function useCustom<TData = BaseRecord>(params: CustomParams) {
     const { dataProvider } = useRefineContext();
-    const [data, setData] = useState<{ data?: TData }>();
+    const [data, setData] = useState<CustomResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const serialized = useSerializedParams(params);
+    const stableParams = useMemo(() => params, [serialized]);
 
     const execute = useCallback(async () => {
+        const enabled = stableParams.queryOptions?.enabled ?? true;
+        if (!enabled) {
+            setIsLoading(false);
+            return;
+        }
         if (!dataProvider?.custom) {
             setData({});
+            setError(null);
             setIsLoading(false);
             return;
         }
         setIsLoading(true);
         try {
-            const response = await dataProvider.custom<TData>(params);
+            const response = await dataProvider.custom<TData>(stableParams);
             setData(
                 response && typeof response === "object" && "data" in response
                     ? (response as { data?: TData })
@@ -321,21 +404,32 @@ export function useCustom<TData = BaseRecord>(params: CustomParams) {
         } finally {
             setIsLoading(false);
         }
-    }, [dataProvider, params]);
+    }, [dataProvider, stableParams]);
 
     useEffect(() => {
         void execute();
-    }, [execute, serialized]);
+    }, [execute]);
 
     const refetch = useCallback(async () => {
         await execute();
     }, [execute]);
 
-    return {
+    const query = useQueryLike<CustomResponse<TData>>({
         data,
         error,
         isLoading,
         refetch,
+    });
+
+    return {
+        data,
+        error,
+        isLoading,
+        isFetching: isLoading,
+        refetch,
+        query,
+        queryResult: query,
+        result: data,
     };
 }
 

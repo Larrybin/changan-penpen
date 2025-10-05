@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
                 __dirname,
                 "src/lib/stubs/refine-core",
             ),
+            "@standard-schema/utils": path.resolve(
+                __dirname,
+                "stubs/standard-schema-utils",
+            ),
             "next-intl/config": path.resolve(__dirname, "next-intl.config.ts"),
         };
         return config;
