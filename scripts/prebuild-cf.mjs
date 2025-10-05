@@ -8,7 +8,9 @@ function runWranglerMigration(args, label) {
     });
 
     if (result.status !== 0) {
-        console.error(`\n[error] Failed to complete ${label} database migrations`);
+        console.error(
+            `\n[error] Failed to complete ${label} database migrations`,
+        );
         return false;
     }
 

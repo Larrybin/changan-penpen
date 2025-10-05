@@ -56,6 +56,10 @@ export function LoginForm({
         });
     };
 
+    const handleForgotPassword = () => {
+        toast("Password reset is not available yet. Please contact support.");
+    };
+
     async function onSubmit(values: SignInSchema) {
         setIsLoading(true);
         const { success, message } = await signIn(values);
@@ -146,12 +150,13 @@ export function LoginForm({
                                                 </FormItem>
                                             )}
                                         />
-                                        <a
-                                            href="#"
-                                            className="ml-auto text-sm text-primary underline-offset-4 hover:underline"
+                                        <button
+                                            type="button"
+                                            onClick={handleForgotPassword}
+                                            className="ml-auto text-left text-sm text-primary underline-offset-4 hover:underline"
                                         >
                                             Forgot your password?
-                                        </a>
+                                        </button>
                                     </div>
                                     <Button
                                         type="submit"

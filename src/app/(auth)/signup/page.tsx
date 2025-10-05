@@ -13,6 +13,10 @@ export async function generateMetadata(): Promise<Metadata> {
         path: "/signup",
         title: signup.title,
         description: signup.description,
+        robots: {
+            index: false,
+            follow: false,
+        },
     });
 }
 

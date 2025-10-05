@@ -13,6 +13,10 @@ export async function generateMetadata(): Promise<Metadata> {
         path: "/login",
         title: login.title,
         description: login.description,
+        robots: {
+            index: false,
+            follow: false,
+        },
     });
 }
 
