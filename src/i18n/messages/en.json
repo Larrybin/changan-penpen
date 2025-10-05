@@ -116,6 +116,7 @@
             "filePlaceholder": "Tap to choose an image",
             "instructionsLabel": "Editing Instructions",
             "usageGuide": "Usage Guide",
+            "usageGuideHint": "Interactive guide coming soon.",
             "promptPlaceholder": "e.g., \"add a birthday hat on the cat\"",
             "aspectRatioLabel": "Aspect Ratio",
             "humanCheck": "Prove you are human",

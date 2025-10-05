@@ -60,15 +60,21 @@ export default function Playground() {
                     </div>
 
                     <div>
-                        <div className="flex items-center justify-between text-xs text-yellow-200/80 mb-1">
-                            <span>{tPlayground("instructionsLabel")}</span>
-                            <a
-                                className="text-primary hover:underline"
-                                href="#"
-                                onClick={(e) => e.preventDefault()}
-                            >
-                                {tPlayground("usageGuide")}
-                            </a>
+                        <div className="flex items-start justify-between text-xs text-yellow-200/80 mb-1 gap-2">
+                            <span className="pt-1">
+                                {tPlayground("instructionsLabel")}
+                            </span>
+                            <div className="flex flex-col items-end gap-1 text-right">
+                                <button
+                                    type="button"
+                                    className="text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300 active:text-primary/80"
+                                >
+                                    {tPlayground("usageGuide")}
+                                </button>
+                                <span className="text-[10px] text-yellow-200/60">
+                                    {tPlayground("usageGuideHint")}
+                                </span>
+                            </div>
                         </div>
                         <Textarea
                             placeholder={tPlayground("promptPlaceholder")}
@@ -86,8 +92,11 @@ export default function Playground() {
                             {["1:1", "4:3", "3:2", "9:16", "16:9"].map((r) => (
                                 <button
                                     key={r}
+                                    type="button"
+                                    aria-pressed={ratio === r}
+                                    aria-label={`${tPlayground("aspectRatioLabel")} ${r}`}
                                     onClick={() => setRatio(r as Ratio)}
-                                    className={`px-3 py-1 rounded border text-xs transition ${
+                                    className={`px-3 py-1 rounded border text-xs transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300 active:translate-y-px ${
                                         ratio === r
                                             ? "border-yellow-400 bg-yellow-400 text-black"
                                             : "border-yellow-400/30 text-yellow-100/80 hover:border-yellow-400/60"

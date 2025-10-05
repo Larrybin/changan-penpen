@@ -120,6 +120,7 @@
             "filePlaceholder": "Appuyez pour choisir une image",
             "instructionsLabel": "Instructions de retouche",
             "usageGuide": "Guide d'utilisation",
+            "usageGuideHint": "Le guide interactif arrive bientôt.",
             "promptPlaceholder": "ex. : « ajouter un chapeau d'anniversaire au chat »",
             "aspectRatioLabel": "Format d'image",
             "humanCheck": "Confirmez que vous êtes humain",

@@ -120,6 +120,7 @@
             "filePlaceholder": "Tippe, um ein Bild auszuwählen",
             "instructionsLabel": "Bearbeitungsanweisungen",
             "usageGuide": "Anleitung",
+            "usageGuideHint": "Interaktiver Leitfaden folgt in Kürze.",
             "promptPlaceholder": "z. B. „setze der Katze einen Geburtstags-Hut auf“",
             "aspectRatioLabel": "Seitenverhältnis",
             "humanCheck": "Bestätige, dass du Mensch bist",

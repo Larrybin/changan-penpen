@@ -120,6 +120,7 @@
             "filePlaceholder": "Toque para escolher uma imagem",
             "instructionsLabel": "Instruções de edição",
             "usageGuide": "Guia de uso",
+            "usageGuideHint": "Guia interativo disponível em breve.",
             "promptPlaceholder": "ex.: \"coloque um chapéu de aniversário no gato\"",
             "aspectRatioLabel": "Proporção",
             "humanCheck": "Prove que você é humano",
