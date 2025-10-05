@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { getUsageDaily } from "@/modules/creem/services/usage.service";
+import type { AppLocale } from "@/i18n/config";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const t = await getTranslations("Metadata");
-    return {
-        title: t("billingUsage.title"),
-        description: t("billingUsage.description"),
-    };
+    const locale = (await getLocale()) as AppLocale;
+    const context = await getMetadataContext(locale);
+    const { billingUsage } = context.messages;
+    return createMetadata(context, {
+        path: "/billing/usage",
+        title: billingUsage.title,
+        description: billingUsage.description,
+    });
 }
 
 function formatDate(d: Date) {

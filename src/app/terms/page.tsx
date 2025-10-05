@@ -1,20 +1,56 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+
+import type { AppLocale } from "@/i18n/config";
+import { buildLocalizedPath } from "@/lib/seo";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const t = await getTranslations("Metadata");
-    return {
-        title: t("terms.title"),
-        description: t("terms.description"),
-    };
+    const locale = (await getLocale()) as AppLocale;
+    const context = await getMetadataContext(locale);
+    const { terms } = context.messages;
+    return createMetadata(context, {
+        path: "/terms",
+        title: terms.title,
+        description: terms.description,
+    });
 }
 
 export default async function TermsPage() {
-    const t = await getTranslations("StaticPages.terms");
+    const locale = (await getLocale()) as AppLocale;
+    const [t, metadataContext] = await Promise.all([
+        getTranslations("StaticPages.terms"),
+        getMetadataContext(locale),
+    ]);
     const sections = t.raw("sections") as Array<{
         title: string;
         description: string;
     }>;
+    const canonicalPath = buildLocalizedPath(locale, "/terms");
+    const absoluteUrl =
+        canonicalPath === "/"
+            ? metadataContext.appUrl
+            : `${metadataContext.appUrl}${canonicalPath}`;
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "TermsOfService",
+        name: t("title"),
+        description: t("intro"),
+        inLanguage: locale,
+        url: absoluteUrl,
+        isPartOf: {
+            "@type": "WebSite",
+            name: metadataContext.settings.siteName?.trim().length
+                ? metadataContext.settings.siteName.trim()
+                : metadataContext.messages.openGraph.siteName,
+            url: metadataContext.appUrl,
+        },
+        hasPart: sections.map((section) => ({
+            "@type": "WebPageSection",
+            name: section.title,
+            description: section.description,
+        })),
+    };
 
     return (
         <div className="mx-auto max-w-3xl px-[var(--container-px)] py-12 space-y-8">
@@ -36,6 +72,13 @@ export default async function TermsPage() {
                     </section>
                 ))}
             </div>
+            <script
+                type="application/ld+json"
+                suppressHydrationWarning
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(structuredData),
+                }}
+            />
         </div>
     );
 }

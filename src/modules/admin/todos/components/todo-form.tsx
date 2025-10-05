@@ -115,7 +115,8 @@ export function AdminTodoForm({
     const watchedTenantId = form.watch("userId") ?? "";
     const selectedTenantId = watchedTenantId.trim();
     const submitting = form.formState.isSubmitting;
-    const effectiveLoading = typeof loading === "boolean" ? loading : submitting;
+    const effectiveLoading =
+        typeof loading === "boolean" ? loading : submitting;
 
     return (
         <Card>
@@ -150,7 +151,9 @@ export function AdminTodoForm({
                                                 {...field}
                                                 onChange={(e) => {
                                                     field.onChange(e);
-                                                    onTenantChange?.(e.target.value);
+                                                    onTenantChange?.(
+                                                        e.target.value,
+                                                    );
                                                 }}
                                                 disabled={Boolean(
                                                     disableTenantSelection,
@@ -163,7 +166,8 @@ export function AdminTodoForm({
                                             </p>
                                         ) : (
                                             <FormDescription>
-                                                先填入租户 ID，后续分类选项会自动匹配。
+                                                先填入租户
+                                                ID，后续分类选项会自动匹配。
                                             </FormDescription>
                                         )}
                                         <FormMessage />
@@ -177,11 +181,15 @@ export function AdminTodoForm({
                                     <FormItem>
                                         <FormLabel>分类</FormLabel>
                                         <Select
-                                            onValueChange={(val) => field.onChange(val)}
+                                            onValueChange={(val) =>
+                                                field.onChange(val)
+                                            }
                                             value={
                                                 typeof field.value === "number"
                                                     ? String(field.value)
-                                                    : (field.value as string | undefined)
+                                                    : (field.value as
+                                                          | string
+                                                          | undefined)
                                             }
                                         >
                                             <FormControl>
@@ -191,7 +199,10 @@ export function AdminTodoForm({
                                             </FormControl>
                                             <SelectContent>
                                                 {categories.map((c) => (
-                                                    <SelectItem key={c.id} value={String(c.id)}>
+                                                    <SelectItem
+                                                        key={c.id}
+                                                        value={String(c.id)}
+                                                    >
                                                         {c.name}
                                                     </SelectItem>
                                                 ))}
@@ -210,7 +221,10 @@ export function AdminTodoForm({
                                 <FormItem>
                                     <FormLabel>标题</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="请输入标题" {...field} />
+                                        <Input
+                                            placeholder="请输入标题"
+                                            {...field}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -242,7 +256,10 @@ export function AdminTodoForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>状态</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value ?? undefined}
+                                        >
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="选择状态" />
@@ -250,7 +267,10 @@ export function AdminTodoForm({
                                             </FormControl>
                                             <SelectContent>
                                                 {statusOptions.map((option) => (
-                                                    <SelectItem key={option} value={option}>
+                                                    <SelectItem
+                                                        key={option}
+                                                        value={option}
+                                                    >
                                                         {option}
                                                     </SelectItem>
                                                 ))}
@@ -266,18 +286,26 @@ export function AdminTodoForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>优先级</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value ?? undefined}
+                                        >
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="选择优先级" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {priorityOptions.map((option) => (
-                                                    <SelectItem key={option} value={option}>
-                                                        {option}
-                                                    </SelectItem>
-                                                ))}
+                                                {priorityOptions.map(
+                                                    (option) => (
+                                                        <SelectItem
+                                                            key={option}
+                                                            value={option}
+                                                        >
+                                                            {option}
+                                                        </SelectItem>
+                                                    ),
+                                                )}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -294,7 +322,10 @@ export function AdminTodoForm({
                                     <FormItem>
                                         <FormLabel>封面图 URL</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="https://..." {...field} />
+                                            <Input
+                                                placeholder="https://..."
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -307,7 +338,10 @@ export function AdminTodoForm({
                                     <FormItem>
                                         <FormLabel>封面图描述</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="用于无障碍与 SEO 的文字描述" {...field} />
+                                            <Input
+                                                placeholder="用于无障碍与 SEO 的文字描述"
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -322,11 +356,16 @@ export function AdminTodoForm({
                                 render={({ field }) => (
                                     <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                                         <FormControl>
-                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
                                         </FormControl>
                                         <div className="space-y-1 leading-none">
                                             <FormLabel>标记为已完成</FormLabel>
-                                            <FormDescription>完成后仍可在后台继续编辑或重新打开。</FormDescription>
+                                            <FormDescription>
+                                                完成后仍可在后台继续编辑或重新打开。
+                                            </FormDescription>
                                         </div>
                                     </FormItem>
                                 )}
@@ -338,7 +377,11 @@ export function AdminTodoForm({
                                     <FormItem>
                                         <FormLabel>截至日期</FormLabel>
                                         <FormControl>
-                                            <Input type="date" value={field.value ?? ""} onChange={field.onChange} />
+                                            <Input
+                                                type="date"
+                                                value={field.value ?? ""}
+                                                onChange={field.onChange}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -347,7 +390,10 @@ export function AdminTodoForm({
                         </div>
 
                         <div className="flex items-center space-x-2">
-                            <Button type="submit" disabled={effectiveLoading || !selectedTenantId}>
+                            <Button
+                                type="submit"
+                                disabled={effectiveLoading || !selectedTenantId}
+                            >
                                 {effectiveLoading ? "提交中..." : submitLabel}
                             </Button>
                         </div>
@@ -357,4 +403,3 @@ export function AdminTodoForm({
         </Card>
     );
 }
-

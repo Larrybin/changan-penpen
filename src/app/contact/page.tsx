@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+
+import type { AppLocale } from "@/i18n/config";
+import { buildLocalizedPath } from "@/lib/seo";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const t = await getTranslations("Metadata");
-    return {
-        title: t("contact.title"),
-        description: t("contact.description"),
-    };
+    const locale = (await getLocale()) as AppLocale;
+    const context = await getMetadataContext(locale);
+    const { contact } = context.messages;
+    return createMetadata(context, {
+        path: "/contact",
+        title: contact.title,
+        description: contact.description,
+    });
 }
 
 export default async function ContactPage() {
-    const t = await getTranslations("StaticPages.contact");
+    const locale = (await getLocale()) as AppLocale;
+    const [t, metadataContext] = await Promise.all([
+        getTranslations("StaticPages.contact"),
+        getMetadataContext(locale),
+    ]);
     const sections = t.raw("sections") as Array<{
         title: string;
         description: string;
@@ -19,6 +30,55 @@ export default async function ContactPage() {
         label: string;
         value: string;
     }>;
+    const canonicalPath = buildLocalizedPath(locale, "/contact");
+    const absoluteUrl =
+        canonicalPath === "/"
+            ? metadataContext.appUrl
+            : `${metadataContext.appUrl}${canonicalPath}`;
+    const contactPoints = details
+        .map((detail) => {
+            const point: Record<string, string> = {
+                "@type": "ContactPoint",
+                contactType: detail.label,
+            };
+            if (detail.value.includes("@")) {
+                point.email = detail.value;
+            }
+            if (/^[+0-9][0-9\s()+-]*$/.test(detail.value)) {
+                point.telephone = detail.value;
+            }
+            return point;
+        })
+        .filter((point) => point.email || point.telephone);
+    const hoursDetail = details.find((detail) =>
+        detail.label.toLowerCase().includes("hour"),
+    );
+    const structuredData: Record<string, unknown> = {
+        "@context": "https://schema.org",
+        "@type": "ContactPage",
+        name: t("title"),
+        description: t("intro"),
+        inLanguage: locale,
+        url: absoluteUrl,
+        isPartOf: {
+            "@type": "WebSite",
+            name: metadataContext.settings.siteName?.trim().length
+                ? metadataContext.settings.siteName.trim()
+                : metadataContext.messages.openGraph.siteName,
+            url: metadataContext.appUrl,
+        },
+    };
+    if (contactPoints.length) {
+        structuredData.contactPoint = contactPoints;
+    }
+    if (hoursDetail) {
+        structuredData.openingHoursSpecification = [
+            {
+                "@type": "OpeningHoursSpecification",
+                description: hoursDetail.value,
+            },
+        ];
+    }
 
     return (
         <div className="mx-auto max-w-3xl px-[var(--container-px)] py-12 space-y-8">
@@ -55,6 +115,13 @@ export default async function ContactPage() {
                     </section>
                 ))}
             </div>
+            <script
+                type="application/ld+json"
+                suppressHydrationWarning
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(structuredData),
+                }}
+            />
         </div>
     );
 }

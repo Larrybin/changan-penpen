@@ -1,20 +1,56 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+
+import type { AppLocale } from "@/i18n/config";
+import { buildLocalizedPath } from "@/lib/seo";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const t = await getTranslations("Metadata");
-    return {
-        title: t("about.title"),
-        description: t("about.description"),
-    };
+    const locale = (await getLocale()) as AppLocale;
+    const context = await getMetadataContext(locale);
+    const { about } = context.messages;
+    return createMetadata(context, {
+        path: "/about",
+        title: about.title,
+        description: about.description,
+    });
 }
 
 export default async function AboutPage() {
-    const t = await getTranslations("StaticPages.about");
+    const locale = (await getLocale()) as AppLocale;
+    const [t, metadataContext] = await Promise.all([
+        getTranslations("StaticPages.about"),
+        getMetadataContext(locale),
+    ]);
     const sections = t.raw("sections") as Array<{
         title: string;
         description: string;
     }>;
+    const canonicalPath = buildLocalizedPath(locale, "/about");
+    const absoluteUrl =
+        canonicalPath === "/"
+            ? metadataContext.appUrl
+            : `${metadataContext.appUrl}${canonicalPath}`;
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        name: t("title"),
+        description: t("intro"),
+        inLanguage: locale,
+        url: absoluteUrl,
+        isPartOf: {
+            "@type": "WebSite",
+            name: metadataContext.settings.siteName?.trim().length
+                ? metadataContext.settings.siteName.trim()
+                : metadataContext.messages.openGraph.siteName,
+            url: metadataContext.appUrl,
+        },
+        mainEntity: sections.map((section) => ({
+            "@type": "CreativeWork",
+            name: section.title,
+            description: section.description,
+        })),
+    };
 
     return (
         <div className="mx-auto max-w-3xl px-[var(--container-px)] py-12 space-y-8">
@@ -36,6 +72,13 @@ export default async function AboutPage() {
                     </section>
                 ))}
             </div>
+            <script
+                type="application/ld+json"
+                suppressHydrationWarning
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(structuredData),
+                }}
+            />
         </div>
     );
 }

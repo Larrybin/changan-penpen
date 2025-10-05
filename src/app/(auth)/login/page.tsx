@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 
 import LoginPage from "@/modules/auth/login.page";
+import type { AppLocale } from "@/i18n/config";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const t = await getTranslations("Metadata");
-    return {
-        title: t("login.title"),
-        description: t("login.description"),
-    };
+    const locale = (await getLocale()) as AppLocale;
+    const context = await getMetadataContext(locale);
+    const { login } = context.messages;
+    return createMetadata(context, {
+        path: "/login",
+        title: login.title,
+        description: login.description,
+    });
 }
 
 export default async function Page() {

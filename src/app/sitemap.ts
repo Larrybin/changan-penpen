@@ -1,46 +1,71 @@
 import type { MetadataRoute } from "next";
 
-import { defaultLocale, locales } from "@/i18n/config";
+import {
+    buildLocalizedPath,
+    getActiveAppLocales,
+    resolveAppUrl,
+} from "@/lib/seo";
+import { getDynamicSitemapEntries } from "@/lib/sitemap";
+import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
-const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://www.bananagenerator.app";
+type RouteConfig = {
+    path: string;
+    changeFrequency?: MetadataRoute.Sitemap[number]["changeFrequency"];
+    priority?: number;
+    lastModified?: Date;
+};
 
-const routes = [
-    "",
-    "login",
-    "signup",
-    "dashboard",
-    "dashboard/todos",
-    "billing",
-    "billing/usage",
-    "billing/success",
-    "billing/cancel",
-    "about",
-    "contact",
-    "privacy",
-    "terms",
+const staticRoutes: RouteConfig[] = [
+    { path: "/", changeFrequency: "daily", priority: 1 },
+    { path: "/login", changeFrequency: "monthly", priority: 0.3 },
+    { path: "/signup", changeFrequency: "monthly", priority: 0.3 },
+    { path: "/dashboard", changeFrequency: "weekly", priority: 0.6 },
+    { path: "/dashboard/todos", changeFrequency: "weekly", priority: 0.5 },
+    { path: "/billing", changeFrequency: "weekly", priority: 0.6 },
+    { path: "/billing/usage", changeFrequency: "weekly", priority: 0.4 },
+    { path: "/billing/success", changeFrequency: "monthly", priority: 0.4 },
+    { path: "/billing/cancel", changeFrequency: "monthly", priority: 0.4 },
+    { path: "/about", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/privacy", changeFrequency: "yearly", priority: 0.5 },
+    { path: "/terms", changeFrequency: "yearly", priority: 0.5 },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+function normalizePath(path: string): string {
+    if (!path || path === "/") {
+        return "/";
+    }
+    return path.startsWith("/") ? path : `/${path}`;
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    const settings = await getSiteSettingsPayload();
+    if (!settings.sitemapEnabled) {
+        return [];
+    }
+    const [dynamicEntries] = await Promise.all([getDynamicSitemapEntries()]);
+    const baseUrl = resolveAppUrl(settings);
+    const locales = getActiveAppLocales(settings);
     const now = new Date();
-    return routes.flatMap((route) => {
-        const basePath = route === "" ? "" : `/${route}`;
-        const changeFrequency: MetadataRoute.Sitemap[0]["changeFrequency"] =
-            route === "" ? "daily" : "weekly";
-        const priority = route === "" ? 1 : 0.6;
-
+    const routeConfigs = [...staticRoutes, ...dynamicEntries];
+    const seen = new Set<string>();
+    return routeConfigs.flatMap((entry) => {
+        const normalizedPath = normalizePath(entry.path);
+        if (seen.has(normalizedPath)) {
+            return [] as MetadataRoute.Sitemap;
+        }
+        seen.add(normalizedPath);
         return locales.map((locale) => {
-            const isDefault = locale === defaultLocale;
-            const localizedPath = isDefault
-                ? basePath
-                : `/${locale}${basePath}`;
-            const pathname = localizedPath || "/";
-
+            const localizedPath = buildLocalizedPath(locale, normalizedPath);
+            const absoluteUrl =
+                localizedPath === "/" ? baseUrl : `${baseUrl}${localizedPath}`;
             return {
-                url: `${appUrl}${pathname}`,
-                lastModified: now,
-                changeFrequency,
-                priority,
+                url: absoluteUrl,
+                lastModified: entry.lastModified ?? now,
+                changeFrequency:
+                    entry.changeFrequency ??
+                    (normalizedPath === "/" ? "daily" : "weekly"),
+                priority: entry.priority ?? (normalizedPath === "/" ? 1 : 0.6),
             } satisfies MetadataRoute.Sitemap[number];
         });
     });

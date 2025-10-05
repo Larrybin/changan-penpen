@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 
 import Dashboard from "@/modules/dashboard/dashboard.page";
+import type { AppLocale } from "@/i18n/config";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const t = await getTranslations("Metadata");
-    return {
-        title: t("dashboard.title"),
-        description: t("dashboard.description"),
-    };
+    const locale = (await getLocale()) as AppLocale;
+    const context = await getMetadataContext(locale);
+    const { dashboard } = context.messages;
+    return createMetadata(context, {
+        path: "/dashboard",
+        title: dashboard.title,
+        description: dashboard.description,
+    });
 }
 
 export default async function Page() {

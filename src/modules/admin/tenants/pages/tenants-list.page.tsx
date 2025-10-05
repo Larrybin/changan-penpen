@@ -120,7 +120,11 @@ export function TenantsListPage() {
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <Button asChild size="sm" variant="ghost">
-                                        <Link href={adminRoutes.tenants.show(String(tenant.id))}>
+                                        <Link
+                                            href={adminRoutes.tenants.show(
+                                                String(tenant.id),
+                                            )}
+                                        >
                                             查看
                                         </Link>
                                     </Button>

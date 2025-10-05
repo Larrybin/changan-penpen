@@ -8,12 +8,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 
-export default function MarketingLandingPage() {
+import type { AppLocale } from "@/i18n/config";
+import { localeCurrencyMap } from "@/lib/seo";
+
+type MarketingLandingPageProps = {
+    appUrl: string;
+    structuredDataImage: string;
+    siteName?: string;
+};
+
+export default function MarketingLandingPage({
+    appUrl,
+    structuredDataImage,
+    siteName,
+}: MarketingLandingPageProps) {
     const t = useTranslations("Marketing");
     const locale = useLocale();
-    const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ?? "https://www.bananagenerator.app";
-    const structuredDataImage = `${appUrl}/og-image.svg`;
+    const resolvedSiteName = siteName?.trim().length
+        ? siteName.trim()
+        : t("structuredData.name");
     const features = t.raw("features.items") as Array<{
         title: string;
         description: string;
@@ -28,6 +41,8 @@ export default function MarketingLandingPage() {
     }>;
     const heroSupport = t.raw("hero.support") as Record<string, string>;
     const heroSupportValues = Object.values(heroSupport);
+    const localeKey = (locale as AppLocale) ?? "en";
+    const currency = localeCurrencyMap[localeKey] ?? localeCurrencyMap.en;
     const structuredData = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
@@ -41,14 +56,14 @@ export default function MarketingLandingPage() {
         offers: {
             "@type": "Offer",
             price: "0",
-            priceCurrency: "USD",
+            priceCurrency: currency,
         },
         inLanguage: locale,
         alternateName: t("hero.title"),
         slogan: t("structuredData.tagline"),
         publisher: {
             "@type": "Organization",
-            name: t("structuredData.name"),
+            name: resolvedSiteName,
             url: appUrl,
             logo: {
                 "@type": "ImageObject",

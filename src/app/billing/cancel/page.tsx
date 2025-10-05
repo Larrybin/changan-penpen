@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
 import dashboardRoutes from "@/modules/dashboard/dashboard.route";
+import type { AppLocale } from "@/i18n/config";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const t = await getTranslations("Metadata");
-    return {
-        title: t("billingCancel.title"),
-        description: t("billingCancel.description"),
-    };
+    const locale = (await getLocale()) as AppLocale;
+    const context = await getMetadataContext(locale);
+    const { billingCancel } = context.messages;
+    return createMetadata(context, {
+        path: "/billing/cancel",
+        title: billingCancel.title,
+        description: billingCancel.description,
+    });
 }
 
 export default async function Page() {

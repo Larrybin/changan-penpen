@@ -49,7 +49,10 @@ function buildQuery(params?: GetListParams) {
             if (filter && typeof filter === "object") {
                 if (typeof filter.field !== "undefined") {
                     if (filter.value !== undefined && filter.value !== null) {
-                        searchParams.append(String(filter.field), String(filter.value));
+                        searchParams.append(
+                            String(filter.field),
+                            String(filter.value),
+                        );
                     }
                 } else if (
                     (filter.operator === "or" || filter.operator === "and") &&
@@ -57,8 +60,14 @@ function buildQuery(params?: GetListParams) {
                 ) {
                     filter.value.forEach((inner: any) => {
                         if (inner && typeof inner.field !== "undefined") {
-                            if (inner.value !== undefined && inner.value !== null) {
-                                searchParams.append(String(inner.field), String(inner.value));
+                            if (
+                                inner.value !== undefined &&
+                                inner.value !== null
+                            ) {
+                                searchParams.append(
+                                    String(inner.field),
+                                    String(inner.value),
+                                );
                             }
                         }
                     });

@@ -194,7 +194,11 @@ export default function AdminTodoListPage() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
-                                                    <Link href={adminRoutes.todos.edit(Number(todo.id))}>
+                                                    <Link
+                                                        href={adminRoutes.todos.edit(
+                                                            Number(todo.id),
+                                                        )}
+                                                    >
                                                         <Button
                                                             variant="outline"
                                                             size="icon"
@@ -207,7 +211,11 @@ export default function AdminTodoListPage() {
                                                         variant="destructive"
                                                         size="icon"
                                                         className="h-8 w-8"
-                                                        onClick={() => handleDelete(Number(todo.id))}
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                Number(todo.id),
+                                                            )
+                                                        }
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
