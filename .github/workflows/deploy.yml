@@ -112,6 +112,9 @@ jobs:
       - name: Lint (Biome)
         run: pnpm exec biome check .
 
+      - name: Type check (tsc)
+        run: pnpm exec tsc --noEmit
+
       - name: Test (Vitest)
         run: pnpm test
 
