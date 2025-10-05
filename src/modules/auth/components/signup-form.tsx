@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -26,8 +27,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
+    createSignUpSchema,
     type SignUpSchema,
-    signUpSchema,
 } from "@/modules/auth/models/auth.model";
 import dashboardRoutes from "@/modules/dashboard/dashboard.route";
 import { signUp } from "../actions/auth.action";
@@ -39,10 +40,14 @@ export function SignupForm({
     ...props
 }: React.ComponentProps<"div">) {
     const router = useRouter();
+    const tSignup = useTranslations("AuthForms.Signup");
+    const tShared = useTranslations("AuthForms.Shared");
+    const tValidation = useTranslations("AuthForms.Validation");
+    const tMessages = useTranslations("AuthForms.Messages");
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<SignUpSchema>({
-        resolver: zodResolver(signUpSchema),
+        resolver: zodResolver(createSignUpSchema(tValidation)),
         defaultValues: {
             username: "",
             email: "",
@@ -51,21 +56,25 @@ export function SignupForm({
     });
 
     const signInWithGoogle = async () => {
-        await authClient.signIn.social({
-            provider: "google",
-            callbackURL: dashboardRoutes.dashboard,
-        });
+        try {
+            await authClient.signIn.social({
+                provider: "google",
+                callbackURL: dashboardRoutes.dashboard,
+            });
+        } catch (err) {
+            toast.error(tMessages("socialSignInError"));
+        }
     };
 
     async function onSubmit(values: SignUpSchema) {
         setIsLoading(true);
-        const { success, message } = await signUp(values);
+        const { success, messageKey } = await signUp(values);
 
         if (success) {
-            toast.success(message.toString());
+            toast.success(tMessages(messageKey));
             router.push(dashboardRoutes.dashboard);
         } else {
-            toast.error(message.toString());
+            toast.error(tMessages(messageKey));
         }
         setIsLoading(false);
     }
@@ -75,11 +84,11 @@ export function SignupForm({
             <Card>
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl">
-                        <h2 className="text-xl font-semibold">Welcome</h2>
+                        <h2 className="text-xl font-semibold">
+                            {tSignup("title")}
+                        </h2>
                     </CardTitle>
-                    <CardDescription>
-                        Sign up with your Google account
-                    </CardDescription>
+                    <CardDescription>{tSignup("description")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -103,11 +112,11 @@ export function SignupForm({
                                             fill="currentColor"
                                         />
                                     </svg>
-                                    Sign up with Google
+                                    {tSignup("googleCta")}
                                 </Button>
                                 <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                                     <span className="bg-card text-muted-foreground relative z-10 px-2">
-                                        Or continue with
+                                        {tShared("continueWith")}
                                     </span>
                                 </div>
                                 <div className="grid gap-6">
@@ -116,10 +125,16 @@ export function SignupForm({
                                         name="username"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Username</FormLabel>
+                                                <FormLabel>
+                                                    {tShared(
+                                                        "fields.username.label",
+                                                    )}
+                                                </FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        placeholder="johndoe"
+                                                        placeholder={tShared(
+                                                            "fields.username.placeholder",
+                                                        )}
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -132,10 +147,16 @@ export function SignupForm({
                                         name="email"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Email</FormLabel>
+                                                <FormLabel>
+                                                    {tShared(
+                                                        "fields.email.label",
+                                                    )}
+                                                </FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        placeholder="mail@mail.com"
+                                                        placeholder={tShared(
+                                                            "fields.email.placeholder",
+                                                        )}
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -148,10 +169,16 @@ export function SignupForm({
                                         name="password"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Password</FormLabel>
+                                                <FormLabel>
+                                                    {tShared(
+                                                        "fields.password.label",
+                                                    )}
+                                                </FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        placeholder="*********"
+                                                        placeholder={tShared(
+                                                            "fields.password.placeholder",
+                                                        )}
                                                         {...field}
                                                         type="password"
                                                     />
@@ -168,20 +195,20 @@ export function SignupForm({
                                         {isLoading ? (
                                             <>
                                                 <Loader2 className="size-4 animate-spin mr-2" />
-                                                Loading...
+                                                {tShared("loading")}
                                             </>
                                         ) : (
-                                            "Sign Up"
+                                            tSignup("submit")
                                         )}
                                     </Button>
                                 </div>
                                 <div className="text-center text-sm">
-                                    Already have an account?{" "}
+                                    {tSignup("switchPrompt")}{" "}
                                     <Link
                                         href={authRoutes.login}
                                         className="text-primary underline underline-offset-4"
                                     >
-                                        Sign in
+                                        {tSignup("switchCta")}
                                     </Link>
                                 </div>
                             </div>
@@ -190,19 +217,19 @@ export function SignupForm({
                 </CardContent>
             </Card>
             <div className="text-muted-foreground text-center text-xs text-balance">
-                By clicking continue, you agree to our{" "}
+                {tShared("agreement.prefix")}{" "}
                 <Link
                     href="/terms"
                     className="text-primary underline underline-offset-4 hover:text-primary"
                 >
-                    Terms of Service
+                    {tShared("agreement.terms")}
                 </Link>{" "}
-                and{" "}
+                {tShared("agreement.conjunction")}{" "}
                 <Link
                     href="/privacy"
                     className="text-primary underline underline-offset-4 hover:text-primary"
                 >
-                    Privacy Policy
+                    {tShared("agreement.privacy")}
                 </Link>
                 .
             </div>

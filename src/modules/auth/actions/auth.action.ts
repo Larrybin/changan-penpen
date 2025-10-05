@@ -24,13 +24,16 @@ export const signIn = async ({
 
         return {
             success: true,
-            message: "Signed in succesfully",
+            code: "SIGNED_IN",
+            messageKey: "signInSuccess",
         };
     } catch (error) {
         const err = error as Error;
         return {
             success: false,
-            message: err.message || "An unknown error occured.",
+            code: "ERROR",
+            messageKey: "unknownError",
+            message: err.message,
         };
     }
 };
@@ -52,13 +55,16 @@ export const signUp = async ({
 
         return {
             success: true,
-            message: "Signed up succesfully",
+            code: "SIGNED_UP",
+            messageKey: "signUpSuccess",
         };
     } catch (error) {
         const err = error as Error;
         return {
             success: false,
-            message: err.message || "An unknown error occured.",
+            code: "ERROR",
+            messageKey: "unknownError",
+            message: err.message,
         };
     }
 };
@@ -71,13 +77,16 @@ export const signOut = async (): Promise<AuthResponse> => {
 
         return {
             success: true,
-            message: "Signed out successfully",
+            code: "SIGNED_OUT",
+            messageKey: "signOutSuccess",
         };
     } catch (error) {
         const err = error as Error;
         return {
             success: false,
-            message: err.message || "An unknown error occurred.",
+            code: "ERROR",
+            messageKey: "unknownError",
+            message: err.message,
         };
     }
 };

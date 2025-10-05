@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -26,8 +27,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
+    createSignInSchema,
     type SignInSchema,
-    signInSchema,
 } from "@/modules/auth/models/auth.model";
 import { authClient } from "@/modules/auth/utils/auth-client";
 import dashboardRoutes from "@/modules/dashboard/dashboard.route";
@@ -39,10 +40,14 @@ export function LoginForm({
     ...props
 }: React.ComponentProps<"div">) {
     const router = useRouter();
+    const tLogin = useTranslations("AuthForms.Login");
+    const tShared = useTranslations("AuthForms.Shared");
+    const tValidation = useTranslations("AuthForms.Validation");
+    const tMessages = useTranslations("AuthForms.Messages");
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<SignInSchema>({
-        resolver: zodResolver(signInSchema),
+        resolver: zodResolver(createSignInSchema(tValidation)),
         defaultValues: {
             email: "",
             password: "",
@@ -50,25 +55,29 @@ export function LoginForm({
     });
 
     const signInWithGoogle = async () => {
-        await authClient.signIn.social({
-            provider: "google",
-            callbackURL: dashboardRoutes.dashboard,
-        });
+        try {
+            await authClient.signIn.social({
+                provider: "google",
+                callbackURL: dashboardRoutes.dashboard,
+            });
+        } catch (err) {
+            toast.error(tMessages("socialSignInError"));
+        }
     };
 
     const handleForgotPassword = () => {
-        toast("Password reset is not available yet. Please contact support.");
+        toast(tLogin("forgotUnavailable"));
     };
 
     async function onSubmit(values: SignInSchema) {
         setIsLoading(true);
-        const { success, message } = await signIn(values);
+        const { success, messageKey } = await signIn(values);
 
         if (success) {
-            toast.success(message.toString());
+            toast.success(tMessages(messageKey));
             router.push(dashboardRoutes.dashboard);
         } else {
-            toast.error(message.toString());
+            toast.error(tMessages(messageKey));
         }
         setIsLoading(false);
     }
@@ -78,11 +87,11 @@ export function LoginForm({
             <Card>
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl">
-                        <h2 className="text-xl font-semibold">Welcome back</h2>
+                        <h2 className="text-xl font-semibold">
+                            {tLogin("title")}
+                        </h2>
                     </CardTitle>
-                    <CardDescription>
-                        Login with your Google account
-                    </CardDescription>
+                    <CardDescription>{tLogin("description")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -106,11 +115,11 @@ export function LoginForm({
                                             fill="currentColor"
                                         />
                                     </svg>
-                                    Login with Google
+                                    {tLogin("googleCta")}
                                 </Button>
                                 <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                                     <span className="bg-card text-muted-foreground relative z-10 px-2">
-                                        Or continue with
+                                        {tShared("continueWith")}
                                     </span>
                                 </div>
                                 <div className="grid gap-6">
@@ -119,10 +128,16 @@ export function LoginForm({
                                         name="email"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Email</FormLabel>
+                                                <FormLabel>
+                                                    {tShared(
+                                                        "fields.email.label",
+                                                    )}
+                                                </FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        placeholder="mail@mail.com"
+                                                        placeholder={tShared(
+                                                            "fields.email.placeholder",
+                                                        )}
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -137,11 +152,15 @@ export function LoginForm({
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
-                                                        Password
+                                                        {tShared(
+                                                            "fields.password.label",
+                                                        )}
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input
-                                                            placeholder="*********"
+                                                            placeholder={tShared(
+                                                                "fields.password.placeholder",
+                                                            )}
                                                             {...field}
                                                             type="password"
                                                         />
@@ -155,7 +174,7 @@ export function LoginForm({
                                             onClick={handleForgotPassword}
                                             className="ml-auto text-left text-sm text-primary underline-offset-4 hover:underline"
                                         >
-                                            Forgot your password?
+                                            {tLogin("forgotPassword")}
                                         </button>
                                     </div>
                                     <Button
@@ -166,20 +185,20 @@ export function LoginForm({
                                         {isLoading ? (
                                             <>
                                                 <Loader2 className="size-4 animate-spin mr-2" />
-                                                Loading...
+                                                {tShared("loading")}
                                             </>
                                         ) : (
-                                            "Login"
+                                            tLogin("submit")
                                         )}
                                     </Button>
                                 </div>
                                 <div className="text-center text-sm">
-                                    Don&apos;t have an account?{" "}
+                                    {tLogin("switchPrompt")}{" "}
                                     <Link
                                         href={authRoutes.signup}
                                         className="text-primary underline underline-offset-4"
                                     >
-                                        Sign up
+                                        {tLogin("switchCta")}
                                     </Link>
                                 </div>
                             </div>
@@ -188,19 +207,19 @@ export function LoginForm({
                 </CardContent>
             </Card>
             <div className="text-muted-foreground text-center text-xs text-balance">
-                By clicking continue, you agree to our{" "}
+                {tShared("agreement.prefix")}{" "}
                 <Link
                     href="/terms"
                     className="text-primary underline underline-offset-4 hover:text-primary"
                 >
-                    Terms of Service
+                    {tShared("agreement.terms")}
                 </Link>{" "}
-                and{" "}
+                {tShared("agreement.conjunction")}{" "}
                 <Link
                     href="/privacy"
                     className="text-primary underline underline-offset-4 hover:text-primary"
                 >
-                    Privacy Policy
+                    {tShared("agreement.privacy")}
                 </Link>
                 .
             </div>
