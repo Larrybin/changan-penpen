@@ -313,6 +313,14 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 export next-cf-app --output ${{ steps.backup.outputs.filename }}
 
+      - name: Upload production DB backup
+        if: steps.backup.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.backup.outputs.filename }}
+          path: ${{ steps.backup.outputs.filename }}
+          retention-days: 14
+
       - name: Run database migrations (Production)
         uses: cloudflare/wrangler-action@v3
         with:
