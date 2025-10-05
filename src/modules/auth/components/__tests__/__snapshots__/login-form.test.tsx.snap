@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LoginForm > shows validation in French 1`] = `
+<h2
+  class="text-xl font-semibold"
+>
+  Bon retour
+</h2>
+`;

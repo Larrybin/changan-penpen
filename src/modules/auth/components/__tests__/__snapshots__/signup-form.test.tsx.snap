@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SignupForm > shows validation in German 1`] = `
+<h2
+  class="text-xl font-semibold"
+>
+  Willkommen
+</h2>
+`;

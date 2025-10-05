@@ -1,0 +1,150 @@
+import React from "react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { vi } from "vitest";
+// Mock server actions used by the component
+vi.mock("../../actions/auth.action", () => ({
+    signIn: vi.fn().mockResolvedValue({
+        success: true,
+        code: "SIGNED_IN",
+        messageKey: "signInSuccess",
+    }),
+}));
+import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
+import enMessages from "@/i18n/messages/en.json";
+import frMessages from "@/i18n/messages/fr.json";
+import { LoginForm } from "../login-form";
+
+vi.mock("react-hot-toast", () => {
+    const fn: any = vi.fn();
+    fn.success = vi.fn();
+    fn.error = vi.fn();
+    return { default: fn };
+});
+
+describe("LoginForm", () => {
+    const renderWithMessages = (
+        locale: string,
+        messages: AbstractIntlMessages,
+    ) =>
+        render(
+            <NextIntlClientProvider locale={locale} messages={messages}>
+                <LoginForm />
+            </NextIntlClientProvider>,
+        );
+
+    it("renders English copy", () => {
+        renderWithMessages("en", enMessages);
+
+        expect(
+            screen.getByRole("heading", {
+                level: 2,
+                name: enMessages.AuthForms.Login.title,
+            }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(enMessages.AuthForms.Login.description),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", {
+                name: enMessages.AuthForms.Login.googleCta,
+            }),
+        ).toBeInTheDocument();
+    });
+
+    it("shows validation in French", async () => {
+        renderWithMessages("fr", frMessages);
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: frMessages.AuthForms.Login.submit,
+            }),
+        );
+
+        expect(
+            await screen.findByText(
+                frMessages.AuthForms.Validation.email.required,
+            ),
+        ).toBeInTheDocument();
+
+        // Minimal snapshot to detect key regressions
+        expect(screen.getByRole("heading", { level: 2 })).toMatchSnapshot();
+    });
+
+    it("fires localized forgot-password toast (EN)", async () => {
+        const toast = (await import("react-hot-toast")).default as any;
+        renderWithMessages("en", enMessages);
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: enMessages.AuthForms.Login.forgotPassword,
+            }),
+        );
+
+        expect(toast).toHaveBeenCalledWith(
+            enMessages.AuthForms.Login.forgotUnavailable,
+        );
+    });
+
+    it("shows password min length message with count (FR)", async () => {
+        renderWithMessages("fr", frMessages);
+
+        // Fill a valid email and a short password to trigger min-length
+        fireEvent.change(
+            screen.getByLabelText(
+                frMessages.AuthForms.Shared.fields.email.label,
+            ),
+            {
+                target: { value: "john@doe.com" },
+            },
+        );
+        fireEvent.change(
+            screen.getByLabelText(
+                frMessages.AuthForms.Shared.fields.password.label,
+            ),
+            { target: { value: "short" } },
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: frMessages.AuthForms.Login.submit,
+            }),
+        );
+
+        expect(
+            await screen.findByText(
+                frMessages.AuthForms.Validation.password.min.replace(
+                    "{count}",
+                    "8",
+                ),
+            ),
+        ).toBeInTheDocument();
+    });
+
+    it("shows success toast on sign-in using i18n key (EN)", async () => {
+        const toast = (await import("react-hot-toast")).default as any;
+        renderWithMessages("en", enMessages);
+
+        fireEvent.change(
+            screen.getByLabelText(enMessages.AuthForms.Shared.fields.email.label),
+            { target: { value: "john@doe.com" } },
+        );
+        fireEvent.change(
+            screen.getByLabelText(
+                enMessages.AuthForms.Shared.fields.password.label,
+            ),
+            { target: { value: "password123" } },
+        );
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: enMessages.AuthForms.Login.submit,
+            }),
+        );
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith(
+                enMessages.AuthForms.Messages.signInSuccess,
+            );
+        });
+    });
+});
