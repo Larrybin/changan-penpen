@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useList } from "@refinedev/core";
+import { useList, type CrudFilter } from "@refinedev/core";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 export function TenantsListPage() {
     const [search, setSearch] = useState("");
-    const filters = useMemo(
+    const filters: CrudFilter[] = useMemo(
         () =>
             search
                 ? [
@@ -23,15 +23,15 @@ export function TenantsListPage() {
         [search],
     );
 
-    const { data, isLoading } = useList({
+    const { query, result } = useList({
         resource: "tenants",
         pagination: {
             pageSize: 20,
         },
         filters,
     });
-
-    const tenants = data?.data ?? [];
+    const isLoading = query.isLoading;
+    const tenants = result?.data ?? [];
 
     return (
         <div className="space-y-6">
@@ -120,11 +120,7 @@ export function TenantsListPage() {
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <Button asChild size="sm" variant="ghost">
-                                        <Link
-                                            href={adminRoutes.tenants.show(
-                                                tenant.id,
-                                            )}
-                                        >
+                                        <Link href={adminRoutes.tenants.show(String(tenant.id))}>
                                             查看
                                         </Link>
                                     </Button>

@@ -26,8 +26,8 @@ export interface ProductFormProps {
 export function ProductForm({ id, initialData }: ProductFormProps) {
     const router = useRouter();
     const { open } = useNotification();
-    const { mutateAsync: createProduct, isLoading: creating } = useCreate();
-    const { mutateAsync: updateProduct, isLoading: updating } = useUpdate();
+    const { mutateAsync: createProduct } = useCreate();
+    const { mutateAsync: updateProduct } = useUpdate();
 
     const form = useForm({
         defaultValues: {
@@ -151,7 +151,7 @@ export function ProductForm({ id, initialData }: ProductFormProps) {
                 >
                     取消
                 </Button>
-                <Button type="submit" disabled={creating || updating}>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
                     保存
                 </Button>
             </div>

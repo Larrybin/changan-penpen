@@ -3,7 +3,7 @@
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useDelete, useList } from "@refinedev/core";
+import { useDelete, useList, type CrudFilter } from "@refinedev/core";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,29 +13,29 @@ import adminRoutes from "@/modules/admin/routes/admin.routes";
 export default function AdminTodoListPage() {
     const [tenantFilter, setTenantFilter] = useState("");
     const normalizedFilter = tenantFilter.trim();
-    const { data, isLoading, refetch } = useList({
+    const filters: CrudFilter[] = normalizedFilter
+        ? [
+              {
+                  field: "tenantId",
+                  operator: "eq",
+                  value: normalizedFilter,
+              },
+          ]
+        : [];
+    const { query, result } = useList({
         resource: "todos",
         pagination: {
             pageSize: 20,
         },
-        filters: normalizedFilter
-            ? [
-                  {
-                      field: "tenantId",
-                      operator: "eq",
-                      value: normalizedFilter,
-                  },
-              ]
-            : [],
-        queryOptions: {
-            keepPreviousData: true,
-        },
+        filters,
+        queryOptions: {},
     });
 
-    const { mutate: deleteTodo, isLoading: isDeleting } = useDelete();
-
-    const todos = data?.data ?? [];
-    const total = data?.total ?? 0;
+    const { mutate: deleteTodo } = useDelete();
+    const isLoading = query.isLoading;
+    const refetch = query.refetch;
+    const todos = result?.data ?? [];
+    const total = result?.total ?? 0;
 
     const formatter = useMemo(() => {
         return new Intl.DateTimeFormat("zh-CN", {
@@ -194,11 +194,7 @@ export default function AdminTodoListPage() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
-                                                    <Link
-                                                        href={adminRoutes.todos.edit(
-                                                            todo.id,
-                                                        )}
-                                                    >
+                                                    <Link href={adminRoutes.todos.edit(Number(todo.id))}>
                                                         <Button
                                                             variant="outline"
                                                             size="icon"
@@ -211,12 +207,7 @@ export default function AdminTodoListPage() {
                                                         variant="destructive"
                                                         size="icon"
                                                         className="h-8 w-8"
-                                                        onClick={() =>
-                                                            handleDelete(
-                                                                todo.id,
-                                                            )
-                                                        }
-                                                        disabled={isDeleting}
+                                                        onClick={() => handleDelete(Number(todo.id))}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>

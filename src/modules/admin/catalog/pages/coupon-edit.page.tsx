@@ -12,13 +12,14 @@ export function CouponEditPage() {
         return <p className="text-sm text-muted-foreground">参数错误</p>;
     }
 
-    const { data, isLoading } = useOne({ resource: "coupons", id });
+    const { query, result } = useOne({ resource: "coupons", id });
 
+    const isLoading = query.isLoading;
     if (isLoading) {
         return <p className="text-sm text-muted-foreground">加载中...</p>;
     }
 
-    if (!data?.data) {
+    if (!result?.data) {
         return (
             <p className="text-sm text-muted-foreground">未找到该优惠券。</p>
         );
@@ -30,7 +31,7 @@ export function CouponEditPage() {
                 <h1 className="text-xl font-semibold">编辑优惠券</h1>
                 <p className="text-sm text-muted-foreground">更新折扣信息。</p>
             </div>
-            <CouponForm id={id} initialData={data.data} />
+            <CouponForm id={id} initialData={result.data} />
         </div>
     );
 }

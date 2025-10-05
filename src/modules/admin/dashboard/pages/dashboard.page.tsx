@@ -52,7 +52,7 @@ function formatCurrency(cents: number) {
 }
 
 export function AdminDashboardPage() {
-    const { data, isLoading } = useCustom<DashboardMetricsPayload>({
+    const { query } = useCustom<DashboardMetricsPayload>({
         url: "/dashboard",
         method: "get",
         queryOptions: {
@@ -60,7 +60,8 @@ export function AdminDashboardPage() {
         },
     });
 
-    const payload = data?.data;
+    const isLoading = query.isLoading;
+    const payload = query.data?.data;
 
     return (
         <div className="space-y-8">

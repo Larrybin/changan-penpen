@@ -51,7 +51,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
     }, [menuItems]);
 
     const handleLogout = async () => {
-        const result = await adminAuthProvider.logout?.({});
+        const result = await adminAuthProvider.logout?.();
         if (result && typeof result.redirectTo === "string") {
             router.push(result.redirectTo);
         }

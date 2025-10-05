@@ -13,8 +13,10 @@ const REPORT_TYPES = [
 ];
 
 export function ReportsPage() {
-    const { data, isLoading, refetch } = useList({ resource: "reports" });
-    const { mutateAsync: createReport, isLoading: creating } = useCreate();
+    const { query, result } = useList({ resource: "reports" });
+    const isLoading = query.isLoading;
+    const refetch = query.refetch;
+    const { mutateAsync: createReport } = useCreate();
     const [form, setForm] = useState({ type: "orders", tenantId: "" });
 
     const handleGenerate = async (event: React.FormEvent) => {
@@ -30,7 +32,7 @@ export function ReportsPage() {
         refetch();
     };
 
-    const reports = data?.data ?? [];
+    const reports = result?.data ?? [];
 
     return (
         <div className="space-y-6">
@@ -81,7 +83,7 @@ export function ReportsPage() {
                             placeholder="全部租户"
                         />
                     </div>
-                    <Button type="submit" disabled={creating}>
+                    <Button type="submit" disabled={false}>
                         生成报表
                     </Button>
                 </form>

@@ -17,8 +17,8 @@ interface CouponFormProps {
 export function CouponForm({ id, initialData }: CouponFormProps) {
     const router = useRouter();
     const { open } = useNotification();
-    const { mutateAsync: createCoupon, isLoading: creating } = useCreate();
-    const { mutateAsync: updateCoupon, isLoading: updating } = useUpdate();
+    const { mutateAsync: createCoupon } = useCreate();
+    const { mutateAsync: updateCoupon } = useUpdate();
 
     const form = useForm({
         defaultValues: {
@@ -145,7 +145,7 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
                 >
                     取消
                 </Button>
-                <Button type="submit" disabled={creating || updating}>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
                     保存
                 </Button>
             </div>

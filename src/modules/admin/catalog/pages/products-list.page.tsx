@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 export function ProductsListPage() {
-    const { data, isLoading } = useList({ resource: "products" });
+    const { query, result } = useList({ resource: "products" });
     const { mutateAsync: deleteProduct } = useDelete();
-    const products = data?.data ?? [];
+    const isLoading = query.isLoading;
+    const products = result?.data ?? [];
 
     return (
         <div className="space-y-6">
@@ -86,7 +87,7 @@ export function ProductsListPage() {
                                         onClick={async () => {
                                             await deleteProduct({
                                                 resource: "products",
-                                                id: product.id,
+                                                id: product.id as number,
                                             });
                                         }}
                                     >

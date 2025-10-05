@@ -2,6 +2,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { creditsHistory, customers, orders, reports, usageDaily } from "@/db";
 import { getDb } from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
+import { normalizePagination } from "@/modules/admin/utils/pagination";
 
 export interface ListReportsOptions {
     page?: number;
@@ -10,8 +11,10 @@ export interface ListReportsOptions {
 
 export async function listReports(options: ListReportsOptions = {}) {
     const db = await getDb();
-    const page = Math.max(options.page ?? 1, 1);
-    const perPage = Math.min(Math.max(options.perPage ?? 20, 1), 100);
+    const { page: normalizedPage, perPage: normalizedPerPage } =
+        normalizePagination(options);
+    const page = Math.max(normalizedPage, 1);
+    const perPage = Math.min(Math.max(normalizedPerPage, 1), 100);
     const offset = (page - 1) * perPage;
 
     const [rows, totalRows] = await Promise.all([

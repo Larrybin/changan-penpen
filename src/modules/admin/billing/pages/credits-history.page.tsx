@@ -1,13 +1,13 @@
 "use client";
 
-import { useList } from "@refinedev/core";
+import { useList, type CrudFilter } from "@refinedev/core";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function CreditsHistoryPage() {
     const [tenantId, setTenantId] = useState("");
-    const filters = useMemo(
+    const filters: CrudFilter[] = useMemo(
         () =>
             tenantId
                 ? [
@@ -20,15 +20,15 @@ export function CreditsHistoryPage() {
                 : [],
         [tenantId],
     );
-    const { data, isLoading } = useList({
+    const { query, result } = useList({
         resource: "credits-history",
         pagination: {
             pageSize: 20,
         },
         filters,
     });
-
-    const entries = data?.data ?? [];
+    const isLoading = query.isLoading;
+    const entries = result?.data ?? [];
 
     return (
         <div className="space-y-6">

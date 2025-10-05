@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 export function CouponsListPage() {
-    const { data, isLoading } = useList({ resource: "coupons" });
+    const { query, result } = useList({ resource: "coupons" });
     const { mutateAsync: deleteCoupon } = useDelete();
-    const coupons = data?.data ?? [];
+    const isLoading = query.isLoading;
+    const coupons = result?.data ?? [];
 
     return (
         <div className="space-y-6">
@@ -88,7 +89,7 @@ export function CouponsListPage() {
                                         onClick={async () => {
                                             await deleteCoupon({
                                                 resource: "coupons",
-                                                id: coupon.id,
+                                                id: coupon.id as number,
                                             });
                                         }}
                                     >

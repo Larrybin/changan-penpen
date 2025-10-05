@@ -1,6 +1,6 @@
 "use client";
 
-import { useList } from "@refinedev/core";
+import { useList, type CrudFilter } from "@refinedev/core";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,8 @@ import { Input } from "@/components/ui/input";
 export function UsageListPage() {
     const [tenantId, setTenantId] = useState("");
     const [feature, setFeature] = useState("");
-    const filters = useMemo(() => {
-        const list = [] as Array<{
-            field: string;
-            operator: string;
-            value: string;
-        }>;
+    const filters: CrudFilter[] = useMemo(() => {
+        const list: CrudFilter[] = [];
         if (tenantId) {
             list.push({ field: "tenantId", operator: "eq", value: tenantId });
         }
@@ -23,15 +19,15 @@ export function UsageListPage() {
         return list;
     }, [tenantId, feature]);
 
-    const { data, isLoading } = useList({
+    const { query, result } = useList({
         resource: "usage",
         pagination: {
             pageSize: 20,
         },
         filters,
     });
-
-    const usage = data?.data ?? [];
+    const isLoading = query.isLoading;
+    const usage = result?.data ?? [];
 
     return (
         <div className="space-y-6">

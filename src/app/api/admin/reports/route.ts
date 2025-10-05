@@ -4,6 +4,7 @@ import {
     listReports,
     type CreateReportInput,
 } from "@/modules/admin/services/report.service";
+import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
 export async function GET(request: Request) {
@@ -13,8 +14,7 @@ export async function GET(request: Request) {
     }
 
     const url = new URL(request.url);
-    const page = Number(url.searchParams.get("page") ?? "1");
-    const perPage = Number(url.searchParams.get("perPage") ?? "20");
+    const { page, perPage } = parsePaginationParams(url.searchParams);
 
     const data = await listReports({ page, perPage });
     return NextResponse.json(data);

@@ -1,4 +1,4 @@
-import type { AuthBindings } from "@refinedev/core";
+// Refine v5 不再需要显式的 AuthBindings 类型导入，按结构提供实现即可。
 
 async function fetchSession() {
     const response = await fetch("/api/admin/session", {
@@ -12,7 +12,7 @@ async function fetchSession() {
     return null;
 }
 
-export const adminAuthProvider: AuthBindings = {
+export const adminAuthProvider = {
     login: async () => ({ success: true }),
     logout: async () => {
         await fetch("/api/auth/logout", {
@@ -41,7 +41,7 @@ export const adminAuthProvider: AuthBindings = {
             redirectTo: "/login",
         };
     },
-    onError: async (error) => {
+    onError: async (error: any) => {
         if (error?.message === "Authentication required") {
             return {
                 logout: true,
@@ -63,4 +63,4 @@ export const adminAuthProvider: AuthBindings = {
         return null;
     },
     getPermissions: async () => null,
-};
+} as const;

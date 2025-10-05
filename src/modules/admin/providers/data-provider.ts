@@ -33,7 +33,9 @@ function buildQuery(params?: GetListParams) {
     const searchParams = new URLSearchParams();
 
     if (params.pagination) {
-        const { current, pageSize } = params.pagination;
+        const p = params.pagination as any;
+        const current = p?.current ?? p?.page;
+        const pageSize = p?.pageSize;
         if (current) {
             searchParams.set("page", `${current}`);
         }
@@ -43,13 +45,24 @@ function buildQuery(params?: GetListParams) {
     }
 
     if (params.filters) {
-        params.filters.forEach((filter) => {
-            if (
-                filter.field &&
-                filter.value !== undefined &&
-                filter.value !== null
-            ) {
-                searchParams.append(String(filter.field), String(filter.value));
+        params.filters.forEach((filter: any) => {
+            if (filter && typeof filter === "object") {
+                if (typeof filter.field !== "undefined") {
+                    if (filter.value !== undefined && filter.value !== null) {
+                        searchParams.append(String(filter.field), String(filter.value));
+                    }
+                } else if (
+                    (filter.operator === "or" || filter.operator === "and") &&
+                    Array.isArray(filter.value)
+                ) {
+                    filter.value.forEach((inner: any) => {
+                        if (inner && typeof inner.field !== "undefined") {
+                            if (inner.value !== undefined && inner.value !== null) {
+                                searchParams.append(String(inner.field), String(inner.value));
+                            }
+                        }
+                    });
+                }
             }
         });
     }
@@ -65,7 +78,7 @@ function buildQuery(params?: GetListParams) {
     return searchParams.toString() ? `?${searchParams.toString()}` : "";
 }
 
-export const adminDataProvider: DataProvider = {
+export const adminDataProvider = {
     getList: async <TData = any>(params: GetListParams) => {
         const query = buildQuery(params);
         const response = await fetch(`${API_BASE}/${params.resource}${query}`, {
@@ -136,7 +149,7 @@ export const adminDataProvider: DataProvider = {
             data: { id } as TData,
         };
     },
-    custom: async ({ url, method, meta, payload }) => {
+    custom: async ({ url, method, meta, payload }: any) => {
         const requestUrl = url ? `${API_BASE}${url}` : API_BASE;
         const response = await fetch(requestUrl, {
             method: method ?? "GET",
@@ -151,4 +164,4 @@ export const adminDataProvider: DataProvider = {
         return data;
     },
     getApiUrl: () => API_BASE,
-};
+} as unknown as DataProvider;

@@ -12,13 +12,14 @@ export function ContentPageEditPage() {
         return <p className="text-sm text-muted-foreground">参数错误</p>;
     }
 
-    const { data, isLoading } = useOne({ resource: "content-pages", id });
+    const { query, result } = useOne({ resource: "content-pages", id });
 
+    const isLoading = query.isLoading;
     if (isLoading) {
         return <p className="text-sm text-muted-foreground">加载中...</p>;
     }
 
-    if (!data?.data) {
+    if (!result?.data) {
         return (
             <p className="text-sm text-muted-foreground">未找到该内容页。</p>
         );
@@ -32,7 +33,7 @@ export function ContentPageEditPage() {
                     调整页面内容与发布状态。
                 </p>
             </div>
-            <ContentPageForm id={id} initialData={data.data} />
+            <ContentPageForm id={id} initialData={result.data} />
         </div>
     );
 }

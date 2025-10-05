@@ -3,36 +3,36 @@
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useList, useCreate } from "@refinedev/core";
+import { useList, useCreate, type CrudFilter } from "@refinedev/core";
 import { AdminTodoForm } from "@/modules/admin/todos/components/todo-form";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 export default function AdminTodoCreatePage() {
     const router = useRouter();
     const [tenantId, setTenantId] = useState("");
-    const { mutate, isLoading } = useCreate();
+    const { mutate } = useCreate();
     const normalizedTenantId = tenantId.trim();
-    const { data: categoriesData } = useList({
+    const categoryFilters: CrudFilter[] = normalizedTenantId
+        ? [
+              {
+                  field: "tenantId",
+                  operator: "eq",
+                  value: normalizedTenantId,
+              },
+          ]
+        : [];
+    const { result: categoriesResult } = useList({
         resource: "categories",
         pagination: {
             pageSize: 100,
         },
-        filters: normalizedTenantId
-            ? [
-                  {
-                      field: "tenantId",
-                      operator: "eq",
-                      value: normalizedTenantId,
-                  },
-              ]
-            : [],
+        filters: categoryFilters,
         queryOptions: {
             enabled: Boolean(normalizedTenantId),
-            keepPreviousData: true,
         },
     });
 
-    const categories = categoriesData?.data ?? [];
+    const categories = categoriesResult?.data ?? [];
 
     const handleSubmit: ComponentProps<typeof AdminTodoForm>["onSubmit"] = (
         values,
@@ -60,12 +60,13 @@ export default function AdminTodoCreatePage() {
             </div>
             <AdminTodoForm
                 onSubmit={handleSubmit}
-                loading={isLoading}
                 submitLabel="创建"
-                categories={categories.map((category) => ({
-                    id: category.id,
-                    name: category.name,
-                }))}
+                categories={categories
+                    .filter((c) => typeof c.id === "number")
+                    .map((category) => ({
+                        id: category.id as number,
+                        name: String(category.name ?? ""),
+                    }))}
                 onTenantChange={setTenantId}
             />
         </div>

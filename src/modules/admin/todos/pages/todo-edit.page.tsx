@@ -3,7 +3,7 @@
 import type { ComponentProps } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useList, useOne, useUpdate } from "@refinedev/core";
+import { useList, useOne, useUpdate, type CrudFilter } from "@refinedev/core";
 import {
     AdminTodoForm,
     type AdminTodoFormValues,
@@ -18,7 +18,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
     const router = useRouter();
     const todoId = Number.parseInt(id, 10);
 
-    const { data: todoData, isLoading } = useOne({
+    const { query: todoQuery, result: todoResult } = useOne({
         resource: "todos",
         id: todoId,
         queryOptions: {
@@ -26,29 +26,30 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
         },
     });
 
-    const tenantId = todoData?.data?.userId ?? "";
+    const record = todoResult?.data;
+    const tenantId = record?.userId ?? "";
     const normalizedTenantId = tenantId.trim();
-    const { data: categoriesData } = useList({
+    const categoryFilters: CrudFilter[] = normalizedTenantId
+        ? [
+              {
+                  field: "tenantId",
+                  operator: "eq",
+                  value: normalizedTenantId,
+              },
+          ]
+        : [];
+    const { result: categoriesResult } = useList({
         resource: "categories",
         pagination: {
             pageSize: 100,
         },
-        filters: normalizedTenantId
-            ? [
-                  {
-                      field: "tenantId",
-                      operator: "eq",
-                      value: normalizedTenantId,
-                  },
-              ]
-            : [],
+        filters: categoryFilters,
         queryOptions: {
             enabled: Boolean(normalizedTenantId),
-            keepPreviousData: true,
         },
     });
 
-    const { mutate, isLoading: isUpdating } = useUpdate();
+    const { mutate } = useUpdate();
 
     if (Number.isNaN(todoId)) {
         return (
@@ -58,6 +59,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
         );
     }
 
+    const isLoading = todoQuery.isLoading;
     if (isLoading) {
         return (
             <div className="flex h-full items-center justify-center py-20 text-muted-foreground">
@@ -65,8 +67,6 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
             </div>
         );
     }
-
-    const record = todoData?.data;
 
     if (!record) {
         return (
@@ -117,12 +117,13 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
             <AdminTodoForm
                 initialValues={initialValues}
                 onSubmit={handleSubmit}
-                loading={isUpdating}
                 submitLabel="保存修改"
-                categories={(categoriesData?.data ?? []).map((category) => ({
-                    id: category.id,
-                    name: category.name,
-                }))}
+                categories={(categoriesResult?.data ?? [])
+                    .filter((c) => typeof c.id === "number")
+                    .map((category) => ({
+                        id: category.id as number,
+                        name: String(category.name ?? ""),
+                    }))}
                 disableTenantSelection
                 tenantEmail={record.userEmail ?? null}
             />

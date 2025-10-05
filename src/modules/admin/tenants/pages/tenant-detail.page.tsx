@@ -10,8 +10,9 @@ interface TenantDetailPageProps {
 }
 
 export function TenantDetailPage({ id }: TenantDetailPageProps) {
-    const { data, isLoading } = useOne({ resource: "tenants", id });
-    const tenant = data?.data;
+    const { query, result } = useOne({ resource: "tenants", id });
+    const isLoading = query.isLoading;
+    const tenant = result?.data;
 
     if (isLoading) {
         return <p className="text-sm text-muted-foreground">加载中...</p>;

@@ -17,8 +17,8 @@ interface ContentPageFormProps {
 export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
     const router = useRouter();
     const { open } = useNotification();
-    const { mutateAsync: createPage, isLoading: creating } = useCreate();
-    const { mutateAsync: updatePage, isLoading: updating } = useUpdate();
+    const { mutateAsync: createPage } = useCreate();
+    const { mutateAsync: updatePage } = useUpdate();
 
     const form = useForm({
         defaultValues: {
@@ -129,7 +129,7 @@ export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
                 >
                     取消
                 </Button>
-                <Button type="submit" disabled={creating || updating}>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
                     保存
                 </Button>
             </div>

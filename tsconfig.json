@@ -19,8 +19,7 @@
             }
         ],
         "paths": {
-            "@/*": ["./src/*"],
-            "@refinedev/core": ["./src/lib/stubs/refine-core"]
+            "@/*": ["./src/*"]
         }
     },
     "include": [

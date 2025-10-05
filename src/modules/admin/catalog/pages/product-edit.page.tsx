@@ -12,13 +12,14 @@ export function ProductEditPage() {
         return <p className="text-sm text-muted-foreground">参数错误</p>;
     }
 
-    const { data, isLoading } = useOne({ resource: "products", id });
+    const { query, result } = useOne({ resource: "products", id });
 
+    const isLoading = query.isLoading;
     if (isLoading) {
         return <p className="text-sm text-muted-foreground">加载中...</p>;
     }
 
-    if (!data?.data) {
+    if (!result?.data) {
         return <p className="text-sm text-muted-foreground">未找到该商品。</p>;
     }
 
@@ -28,7 +29,7 @@ export function ProductEditPage() {
                 <h1 className="text-xl font-semibold">编辑商品</h1>
                 <p className="text-sm text-muted-foreground">更新商品信息。</p>
             </div>
-            <ProductForm id={id} initialData={data.data} />
+            <ProductForm id={id} initialData={result.data} />
         </div>
     );
 }

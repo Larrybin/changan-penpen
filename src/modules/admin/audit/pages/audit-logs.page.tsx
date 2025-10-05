@@ -3,8 +3,9 @@
 import { useList } from "@refinedev/core";
 
 export function AuditLogsPage() {
-    const { data, isLoading } = useList({ resource: "audit-logs" });
-    const logs = data?.data ?? [];
+    const { query, result } = useList({ resource: "audit-logs" });
+    const isLoading = query.isLoading;
+    const logs = result?.data ?? [];
 
     return (
         <div className="space-y-6">

@@ -109,10 +109,13 @@ export function AdminTodoForm({
                 onTenantChange?.(initialValues.userId);
             }
         }
-    }, [form, initialValues, onTenantChange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialValues?.userId, initialValues?.title]);
 
     const watchedTenantId = form.watch("userId") ?? "";
     const selectedTenantId = watchedTenantId.trim();
+    const submitting = form.formState.isSubmitting;
+    const effectiveLoading = typeof loading === "boolean" ? loading : submitting;
 
     return (
         <Card>
@@ -130,54 +133,76 @@ export function AdminTodoForm({
                                     typeof values.categoryId === "string"
                                         ? Number.parseInt(values.categoryId, 10)
                                         : values.categoryId,
-                                dueDate: values.dueDate
-                                    ? new Date(values.dueDate).toISOString()
-                                    : undefined,
-                                imageUrl: values.imageUrl || undefined,
-                                imageAlt: values.imageAlt || undefined,
                             };
                             onSubmit(payload);
                         })}
                     >
-                        <FormField
-                            control={form.control}
-                            name="userId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>租户 ID</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="请输入租户 ID（可在租户列表复制）"
-                                            {...field}
-                                            onChange={(event) => {
-                                                field.onChange(
-                                                    event.target.value,
-                                                );
-                                                onTenantChange?.(
-                                                    event.target.value,
-                                                );
-                                            }}
-                                            disabled={
-                                                Boolean(
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField
+                                control={form.control}
+                                name="userId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>租户 ID</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="请输入租户 ID（邮箱或用户编号）"
+                                                {...field}
+                                                onChange={(e) => {
+                                                    field.onChange(e);
+                                                    onTenantChange?.(e.target.value);
+                                                }}
+                                                disabled={Boolean(
                                                     disableTenantSelection,
-                                                ) || loading
+                                                )}
+                                            />
+                                        </FormControl>
+                                        {tenantEmail ? (
+                                            <p className="text-xs text-muted-foreground">
+                                                当前租户邮箱：{tenantEmail}
+                                            </p>
+                                        ) : (
+                                            <FormDescription>
+                                                先填入租户 ID，后续分类选项会自动匹配。
+                                            </FormDescription>
+                                        )}
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="categoryId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>分类</FormLabel>
+                                        <Select
+                                            onValueChange={(val) => field.onChange(val)}
+                                            value={
+                                                typeof field.value === "number"
+                                                    ? String(field.value)
+                                                    : (field.value as string | undefined)
                                             }
-                                        />
-                                    </FormControl>
-                                    {tenantEmail ? (
-                                        <p className="text-xs text-muted-foreground">
-                                            当前租户邮箱：{tenantEmail}
-                                        </p>
-                                    ) : (
-                                        <FormDescription>
-                                            先填入租户
-                                            ID，后续分类选项会自动匹配。
-                                        </FormDescription>
-                                    )}
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="选择分类" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {categories.map((c) => (
+                                                    <SelectItem key={c.id} value={String(c.id)}>
+                                                        {c.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
                         <FormField
                             control={form.control}
                             name="title"
@@ -185,15 +210,13 @@ export function AdminTodoForm({
                                 <FormItem>
                                     <FormLabel>标题</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            placeholder="请输入标题"
-                                            {...field}
-                                        />
+                                        <Input placeholder="请输入标题" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+
                         <FormField
                             control={form.control}
                             name="description"
@@ -211,92 +234,15 @@ export function AdminTodoForm({
                                 </FormItem>
                             )}
                         />
+
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <FormField
-                                control={form.control}
-                                name="categoryId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>分类</FormLabel>
-                                        <Select
-                                            onValueChange={(value) => {
-                                                field.onChange(
-                                                    value
-                                                        ? Number.parseInt(
-                                                              value,
-                                                              10,
-                                                          )
-                                                        : undefined,
-                                                );
-                                            }}
-                                            value={
-                                                field.value
-                                                    ? `${field.value}`
-                                                    : undefined
-                                            }
-                                            disabled={
-                                                !selectedTenantId ||
-                                                Boolean(
-                                                    disableTenantSelection,
-                                                ) ||
-                                                loading
-                                            }
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="选择分类" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="">
-                                                    无
-                                                </SelectItem>
-                                                {categories.map((category) => (
-                                                    <SelectItem
-                                                        key={category.id}
-                                                        value={`${category.id}`}
-                                                    >
-                                                        {category.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {!selectedTenantId ? (
-                                            <FormDescription>
-                                                请选择租户后再选择对应分类。
-                                            </FormDescription>
-                                        ) : categories.length === 0 ? (
-                                            <p className="text-xs text-muted-foreground">
-                                                当前租户暂无分类，可先在租户侧新增分类。
-                                            </p>
-                                        ) : null}
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="dueDate"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>截止日期</FormLabel>
-                                        <FormControl>
-                                            <Input type="date" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
                             <FormField
                                 control={form.control}
                                 name="status"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>状态</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            value={field.value ?? undefined}
-                                        >
+                                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="选择状态" />
@@ -304,10 +250,7 @@ export function AdminTodoForm({
                                             </FormControl>
                                             <SelectContent>
                                                 {statusOptions.map((option) => (
-                                                    <SelectItem
-                                                        key={option}
-                                                        value={option}
-                                                    >
+                                                    <SelectItem key={option} value={option}>
                                                         {option}
                                                     </SelectItem>
                                                 ))}
@@ -323,26 +266,18 @@ export function AdminTodoForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>优先级</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            value={field.value ?? undefined}
-                                        >
+                                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="选择优先级" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {priorityOptions.map(
-                                                    (option) => (
-                                                        <SelectItem
-                                                            key={option}
-                                                            value={option}
-                                                        >
-                                                            {option}
-                                                        </SelectItem>
-                                                    ),
-                                                )}
+                                                {priorityOptions.map((option) => (
+                                                    <SelectItem key={option} value={option}>
+                                                        {option}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -350,6 +285,7 @@ export function AdminTodoForm({
                                 )}
                             />
                         </div>
+
                         <div className="grid gap-4 sm:grid-cols-2">
                             <FormField
                                 control={form.control}
@@ -358,10 +294,7 @@ export function AdminTodoForm({
                                     <FormItem>
                                         <FormLabel>封面图 URL</FormLabel>
                                         <FormControl>
-                                            <Input
-                                                placeholder="https://..."
-                                                {...field}
-                                            />
+                                            <Input placeholder="https://..." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -374,42 +307,48 @@ export function AdminTodoForm({
                                     <FormItem>
                                         <FormLabel>封面图描述</FormLabel>
                                         <FormControl>
-                                            <Input
-                                                placeholder="用于无障碍与 SEO 的文字描述"
-                                                {...field}
-                                            />
+                                            <Input placeholder="用于无障碍与 SEO 的文字描述" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name="completed"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                    <FormControl>
-                                        <Checkbox
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    </FormControl>
-                                    <div className="space-y-1 leading-none">
-                                        <FormLabel>标记为已完成</FormLabel>
-                                        <FormDescription>
-                                            完成后仍可在后台继续编辑或重新打开。
-                                        </FormDescription>
-                                    </div>
-                                </FormItem>
-                            )}
-                        />
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField
+                                control={form.control}
+                                name="completed"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                        <FormControl>
+                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                        <div className="space-y-1 leading-none">
+                                            <FormLabel>标记为已完成</FormLabel>
+                                            <FormDescription>完成后仍可在后台继续编辑或重新打开。</FormDescription>
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="dueDate"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>截至日期</FormLabel>
+                                        <FormControl>
+                                            <Input type="date" value={field.value ?? ""} onChange={field.onChange} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
                         <div className="flex items-center space-x-2">
-                            <Button
-                                type="submit"
-                                disabled={loading || !selectedTenantId}
-                            >
-                                {loading ? "提交中..." : submitLabel}
+                            <Button type="submit" disabled={effectiveLoading || !selectedTenantId}>
+                                {effectiveLoading ? "提交中..." : submitLabel}
                             </Button>
                         </div>
                     </form>
@@ -418,3 +357,4 @@ export function AdminTodoForm({
         </Card>
     );
 }
+
