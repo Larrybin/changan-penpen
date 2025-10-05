@@ -345,6 +345,7 @@ jobs:
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
 
       - name: Sync Production secrets
+        if: vars.SYNC_PRODUCTION_SECRETS == 'true'
         run: |
           set -euo pipefail
           sync_secret () {
@@ -367,6 +368,9 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+      - name: Skip production secret sync (disabled)
+        if: vars.SYNC_PRODUCTION_SECRETS != 'true'
+        run: echo "Skipping production secret sync (set vars.SYNC_PRODUCTION_SECRETS to 'true' to enable)."
       - name: Wait for deployment
         run: sleep 10
 
