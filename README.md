@@ -245,7 +245,7 @@ openssl rand -base64 32
 **Configure Google OAuth:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing one
-3. Enable Google+ API
+3. Configure the OAuth consent screen (APIs & Services > OAuth consent screen)
 4. Create OAuth 2.0 credentials
 5. Add authorized redirect URIs:
    - `http://localhost:3000/api/auth/callback/google` (development)
@@ -513,37 +513,41 @@ This template uses a **feature-based/module-sliced architecture** for better mai
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── (auth)/            # Auth-related pages
-│   ├── api/               # API routes (for external access)
-│   │   └── summarize/     # AI summarization endpoint
-│   ├── dashboard/         # Dashboard pages
-│   └── globals.css        # Global styles
-├── components/            # Shared UI components
-├── constants/             # App constants
-├── db/                    # Database configuration
-│   ├── index.ts          # DB connection
-│   └── schema.ts         # Database schemas
-├── lib/                   # Shared utilities
-├── modules/               # Feature modules
-│   ├── auth/             # Authentication module
-│   │   ├── actions/      # Auth server actions
-│   │   ├── components/   # Auth components
-│   │   ├── hooks/        # Auth hooks
-│   │   ├── models/       # Auth models
-│   │   ├── schemas/      # Auth schemas
-│   │   └── utils/        # Auth utilities
-│   ├── dashboard/        # Dashboard module
-│   └── todos/            # Todo module
-│       ├── actions/      # Todo server actions
-│       ├── components/   # Todo components
-│       ├── models/       # Todo models
-│       └── schemas/      # Todo schemas
-├── services/              # Business logic services
-│   ├── summarizer.service.ts     # AI summarization service
-│   └── translation.service.ts    # AI localization service
-└── drizzle/              # Database migrations
+|-- app/                    # Next.js App Router
+|   |-- (admin)/            # Admin area shell and routes
+|   |-- (auth)/             # Auth pages
+|   |-- about/              # Marketing about page
+|   |-- api/                # API routes
+|   |   |-- creem/          # Creem billing endpoints
+|   |   |   |-- create-checkout/route.ts
+|   |   |   \-- customer-portal/route.ts
+|   |   |-- summarize/      # AI summarization endpoint
+|   |   \-- webhooks/
+|   |       \-- creem/      # Creem webhook handler
+|   |-- billing/            # Billing UI
+|   |-- contact/            # Contact page
+|   |-- dashboard/          # Application dashboard
+|   |-- privacy/            # Privacy policy page
+|   \-- terms/              # Terms of service page
+|-- components/             # Shared UI components
+|   \-- ui/                 # Shadcn UI primitives
+|-- constants/              # Application constants
+|-- db/                     # Database configuration
+|   |-- index.ts            # D1 client bootstrap
+|   \-- schema.ts           # Drizzle schema definitions
+|-- drizzle/                # Database migrations
+|-- i18n/                   # next-intl config & messages
+|-- lib/                    # Shared libraries (auth, Cloudflare helpers)
+|-- modules/                # Domain modules
+|   |-- admin/              # Admin domain (billing, reports, etc.)
+|   |-- auth/               # Authentication logic
+|   |-- creem/              # Creem integration layer
+|   |-- marketing/          # Marketing components and actions
+|   \-- todos/              # Todo feature domain
+|-- services/               # Cross-cutting services (AI, translation)
+\-- types/                  # Shared TypeScript types
 ```
+
 
 **Key Architecture Benefits:**
 - 🎯 **Feature Isolation** - Each module contains its own actions, components, and logic
