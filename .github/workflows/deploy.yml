@@ -110,7 +110,23 @@ jobs:
           environment: preview
           command: d1 migrations apply next-cf-app --env preview
 
-      - name: Deploy to Preview
+      - name: Deploy to Preview (code)
+        if: steps.preview-secrets.outputs.available == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: preview
+          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}"
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
+          CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
+          CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+
+      - name: Sync Preview secrets
         if: steps.preview-secrets.outputs.available == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
@@ -132,7 +148,6 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
-
       - name: Comment PR with preview URL
         if: steps.preview-secrets.outputs.available == 'true'
         uses: actions/github-script@v7
@@ -229,7 +244,22 @@ jobs:
           environment: production
           command: d1 migrations apply next-cf-app
 
-      - name: Deploy to Production
+      - name: Deploy to Production (code)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: production
+          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}"
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
+          CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
+          CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+
+      - name: Sync Production secrets
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -250,7 +280,6 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
-
       - name: Wait for deployment
         run: sleep 10
 
