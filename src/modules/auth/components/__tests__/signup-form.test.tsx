@@ -123,7 +123,9 @@ describe("SignupForm", () => {
             { target: { value: "usuario" } },
         );
         fireEvent.change(
-            screen.getByLabelText(ptMessages.AuthForms.Shared.fields.email.label),
+            screen.getByLabelText(
+                ptMessages.AuthForms.Shared.fields.email.label,
+            ),
             { target: { value: "user@mail.com" } },
         );
         fireEvent.change(

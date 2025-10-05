@@ -176,11 +176,7 @@
         },
         "playground": {
             "title": "Playground",
-            "badges": [
-                "Smart editing",
-                "No account needed",
-                "Free trial"
-            ],
+            "badges": ["Smart editing", "No account needed", "Free trial"],
             "uploadLabel": "Choose an image to edit",
             "uploadSecondary": "Text to Image",
             "filePlaceholder": "Tap to choose an image",

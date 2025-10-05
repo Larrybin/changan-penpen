@@ -125,7 +125,9 @@ describe("LoginForm", () => {
         renderWithMessages("en", enMessages);
 
         fireEvent.change(
-            screen.getByLabelText(enMessages.AuthForms.Shared.fields.email.label),
+            screen.getByLabelText(
+                enMessages.AuthForms.Shared.fields.email.label,
+            ),
             { target: { value: "john@doe.com" } },
         );
         fireEvent.change(
