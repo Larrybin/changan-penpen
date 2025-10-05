@@ -46,6 +46,39 @@ const EMPTY_SETTINGS: SiteSettingsPayload = {
     enabledLanguages: ["en"],
 };
 
+function hasCloudflareBindings(env: NodeJS.ProcessEnv | undefined) {
+    if (!env) {
+        return false;
+    }
+
+    if (env.CF_PAGES === "1" || env.CF_WORKER === "1") {
+        return true;
+    }
+
+    const accountId = env.CLOUDFLARE_ACCOUNT_ID ?? env.CF_ACCOUNT_ID;
+    const hasApiToken =
+        env.CLOUDFLARE_API_TOKEN ?? env.CLOUDFLARE_GLOBAL_API_KEY;
+
+    return Boolean(accountId && hasApiToken);
+}
+
+function shouldBypassDatabaseForStaticBuild() {
+    if (typeof globalThis.process === "undefined") {
+        return false;
+    }
+
+    const env = globalThis.process.env;
+    if (!env) {
+        return false;
+    }
+
+    if (env.NEXT_PHASE !== "phase-production-build") {
+        return false;
+    }
+
+    return !hasCloudflareBindings(env);
+}
+
 function mapRowToPayload(
     row: typeof siteSettings.$inferSelect,
 ): SiteSettingsPayload {
@@ -89,6 +122,11 @@ export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
     const cached = getCachedSiteSettings<SiteSettingsPayload>();
     if (cached) {
         return cached;
+    }
+
+    if (shouldBypassDatabaseForStaticBuild()) {
+        setCachedSiteSettings(EMPTY_SETTINGS);
+        return EMPTY_SETTINGS;
     }
 
     try {
@@ -194,4 +232,3 @@ async function recordSettingsAudit(
         metadata: JSON.stringify(input ?? {}),
     });
 }
-

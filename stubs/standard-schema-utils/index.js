@@ -18,10 +18,18 @@ export function getDotPath(issue) {
         return "";
     }
 
-    const value = issue.path ?? issue.paths ?? issue.key ?? issue.field ?? issue.property ?? issue.pointer;
+    const value =
+        issue.path ??
+        issue.paths ??
+        issue.key ??
+        issue.field ??
+        issue.property ??
+        issue.pointer;
 
     if (Array.isArray(value)) {
-        const path = value.map(normalizeSegment).filter((part) => part.length > 0);
+        const path = value
+            .map(normalizeSegment)
+            .filter((part) => part.length > 0);
         if (path.length > 0) {
             return path.join(".");
         }
