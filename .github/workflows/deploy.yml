@@ -234,6 +234,20 @@ jobs:
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
 
+      - name: Preview health check
+        if: steps.preview-secrets.outputs.available == 'true'
+        env:
+          HC_SECRET: ${{ secrets.PREVIEW_HEALTHCHECK_URL }}
+          HC_VAR: ${{ vars.PREVIEW_HEALTHCHECK_URL }}
+        run: |
+          url="${HC_SECRET:-$HC_VAR}"
+          if [ -z "$url" ]; then
+            echo "No preview health check URL configured. Skipping check."
+            exit 0
+          fi
+          echo "Checking preview health at $url"
+          curl -f --retry 3 --retry-delay 5 "$url"
+
   # Deploy to production
   deploy-production:
     name: Deploy Production
@@ -347,6 +361,19 @@ jobs:
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
       - name: Wait for deployment
         run: sleep 10
+
+      - name: Production health check
+        env:
+          HC_SECRET: ${{ secrets.PRODUCTION_HEALTHCHECK_URL }}
+          HC_VAR: ${{ vars.PRODUCTION_HEALTHCHECK_URL }}
+        run: |
+          url="${HC_SECRET:-$HC_VAR}"
+          if [ -z "$url" ]; then
+            echo "No production health check URL configured. Skipping check."
+            exit 0
+          fi
+          echo "Checking production health at $url"
+          curl -f --retry 3 --retry-delay 5 "$url"
 
       - name: Post-deployment verification
         uses: cloudflare/wrangler-action@v3
