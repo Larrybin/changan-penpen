@@ -26,12 +26,12 @@
     "r2_buckets": [
         {
             "bucket_name": "next-cf-app-bucket",
-            "binding": "next_cf_app_bucket",
-            "preview_bucket_name": "next-cf-app-dev-bucket"
+            "binding": "next_cf_app_bucket"
         }
     ],
     "ai": {
-        "binding": "AI"
+        "binding": "AI",
+        "remote": true
     },
     "env": {
         "preview": {
@@ -41,20 +41,20 @@
             "d1_databases": [
                 {
                     "binding": "next_cf_app",
-                    "database_name": "next-cf-app",
-                    "database_id": "0a4563c7-3ffb-4805-a564-681f81562d31",
+                    "database_name": "next-cf-app-preview",
+                    "database_id": "PREVIEW_D1_DATABASE_ID",
                     "migrations_dir": "./src/drizzle"
                 }
             ],
             "r2_buckets": [
                 {
-                    "bucket_name": "next-cf-app-bucket",
-                    "binding": "next_cf_app_bucket",
-                    "preview_bucket_name": "next-cf-app-dev-bucket"
+                    "bucket_name": "next-cf-app-preview-bucket",
+                    "binding": "next_cf_app_bucket"
                 }
             ],
             "ai": {
-                "binding": "AI"
+                "binding": "AI",
+                "remote": true
             }
         },
         "production": {
@@ -69,12 +69,12 @@
             "r2_buckets": [
                 {
                     "bucket_name": "next-cf-app-bucket",
-                    "binding": "next_cf_app_bucket",
-                    "preview_bucket_name": "next-cf-app-dev-bucket"
+                    "binding": "next_cf_app_bucket"
                 }
             ],
             "ai": {
-                "binding": "AI"
+                "binding": "AI",
+                "remote": true
             }
         }
     }
