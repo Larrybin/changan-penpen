@@ -9,6 +9,7 @@
         "wrangler:dev": "npx wrangler dev",
         "dev:cf": "npx @opennextjs/cloudflare build && wrangler dev",
         "dev:remote": "npx @opennextjs/cloudflare build && wrangler dev --remote",
+        "prebuild:cf": "pnpm db:migrate:local",
         "build:cf": "npx @opennextjs/cloudflare build",
         "deploy:cf": "npx @opennextjs/cloudflare deploy",
         "preview:cf": "npx @opennextjs/cloudflare preview",
