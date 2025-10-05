@@ -30,8 +30,49 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: Determine pnpm store path
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-
+
+      - name: Determine pnpm store path
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-
+
+      - name: Determine pnpm store path
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('next.config.*', 'package.json', 'tsconfig.json', 'tsconfig.*.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Normalize i18n and ensure no diff
         run: |
@@ -39,7 +80,7 @@ jobs:
           git diff --exit-code || (echo "i18n files not normalized. Run 'pnpm run fix:i18n' and commit changes." && exit 1)
 
       - name: Lint (Biome)
-        run: pnpm lint
+        run: pnpm exec biome check .
 
       - name: Test (Vitest)
         run: pnpm test
@@ -108,7 +149,7 @@ jobs:
             ${{ runner.os }}-opennext-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Generate Cloudflare types
         if: steps.preview-secrets.outputs.available == 'true'
@@ -195,7 +236,7 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Generate Cloudflare types
         run: pnpm run cf-typegen
