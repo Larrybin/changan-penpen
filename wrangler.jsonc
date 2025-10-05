@@ -36,8 +36,7 @@
     "env": {
         "preview": {
             "vars": {
-                "CREEM_LOG_WEBHOOK_SIGNATURE": "1",
-                "CREEM_API_URL": "https://api.creem.dev"
+                "CREEM_LOG_WEBHOOK_SIGNATURE": "1"
             },
             "d1_databases": [
                 {
@@ -59,9 +58,6 @@
             }
         },
         "production": {
-            "vars": {
-                "CREEM_API_URL": "https://api.creem.dev"
-            },
             "d1_databases": [
                 {
                     "binding": "next_cf_app",
