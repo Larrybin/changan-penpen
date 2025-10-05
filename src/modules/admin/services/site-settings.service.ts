@@ -91,17 +91,23 @@ export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
         return cached;
     }
 
-    const db = await getDb();
-    const rows = await db.select().from(siteSettings).limit(1);
+    try {
+        const db = await getDb();
+        const rows = await db.select().from(siteSettings).limit(1);
 
-    if (!rows.length) {
+        if (!rows.length) {
+            setCachedSiteSettings(EMPTY_SETTINGS);
+            return EMPTY_SETTINGS;
+        }
+
+        const payload = mapRowToPayload(rows[0]);
+        setCachedSiteSettings(payload);
+        return payload;
+    } catch (error) {
+        console.warn("Failed to load site settings from database", error);
         setCachedSiteSettings(EMPTY_SETTINGS);
         return EMPTY_SETTINGS;
     }
-
-    const payload = mapRowToPayload(rows[0]);
-    setCachedSiteSettings(payload);
-    return payload;
 }
 
 export interface UpdateSiteSettingsInput {
@@ -188,3 +194,4 @@ async function recordSettingsAudit(
         metadata: JSON.stringify(input ?? {}),
     });
 }
+
