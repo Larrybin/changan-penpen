@@ -1,12 +1,27 @@
 {
-    "$schema": "https://biomejs.dev/schemas/2.2.3/schema.json",
+    "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
     "vcs": {
         "enabled": false,
         "clientKind": "git",
         "useIgnoreFile": false
     },
     "files": {
-        "ignoreUnknown": false
+        "ignoreUnknown": false,
+        "includes": [
+            "src/**",
+            "scripts/**",
+            "types/**",
+            "*.json",
+            "*.jsonc",
+            "*.md",
+            "vitest.*",
+            "tsconfig*.json",
+            "package.json",
+            "wrangler.jsonc",
+            "next.config.ts",
+            "postcss.config.mjs",
+            "drizzle*.ts"
+        ]
     },
     "formatter": {
         "enabled": true,
