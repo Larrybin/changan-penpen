@@ -11,10 +11,47 @@ env:
   PNPM_VERSION: '8'
 
 jobs:
+  # Quality gate: run fix:i18n (no diff), lint, test, build
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Normalize i18n and ensure no diff
+        run: |
+          pnpm run fix:i18n
+          git diff --exit-code || (echo "i18n files not normalized. Run 'pnpm run fix:i18n' and commit changes." && exit 1)
+
+      - name: Lint (Biome)
+        run: pnpm lint
+
+      - name: Test (Vitest)
+        run: pnpm test
+
+      - name: Build (Next.js)
+        run: pnpm build
+
   # Deploy preview for pull requests
   deploy-preview:
     name: Deploy Preview
     if: github.event_name == 'pull_request'
+    needs: [quality-gate]
     runs-on: ubuntu-latest
     environment: preview
     steps:
@@ -130,6 +167,7 @@ jobs:
   deploy-production:
     name: Deploy Production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [quality-gate]
     runs-on: ubuntu-latest
     environment: production
     steps:
