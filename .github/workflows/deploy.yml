@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Quality gate锛堝鐢ㄨ嚜 CI锛?  
+  # Quality gate（复用自 CI）
   quality-gate-reusable:
     name: Quality Gate
     uses: ./.github/workflows/ci.yml
