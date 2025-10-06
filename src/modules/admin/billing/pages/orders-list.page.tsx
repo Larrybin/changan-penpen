@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { OrderRecord } from "@/modules/admin/types/resource.types";
 
-const formatCurrency = (amountCents?: number | null, currency?: string | null) => {
+const formatCurrency = (
+    amountCents?: number | null,
+    currency?: string | null,
+) => {
     const normalizedAmount = typeof amountCents === "number" ? amountCents : 0;
-    const code = typeof currency === "string" && currency.length > 0 ? currency : "USD";
+    const code =
+        typeof currency === "string" && currency.length > 0 ? currency : "USD";
 
     return new Intl.NumberFormat("zh-CN", {
         style: "currency",
@@ -17,9 +21,7 @@ const formatCurrency = (amountCents?: number | null, currency?: string | null) =
 };
 
 const formatDateTime = (value?: string | null) =>
-    typeof value === "string" && value.length > 0
-        ? value.slice(0, 19)
-        : "-";
+    typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
 export function OrdersListPage() {
     const [tenantId, setTenantId] = useState("");
@@ -113,7 +115,10 @@ export function OrdersListPage() {
                                     </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                    {formatCurrency(order.amountCents, order.currency)}
+                                    {formatCurrency(
+                                        order.amountCents,
+                                        order.currency,
+                                    )}
                                 </td>
                                 <td className="px-4 py-3 capitalize">
                                     {order.status ?? "-"}

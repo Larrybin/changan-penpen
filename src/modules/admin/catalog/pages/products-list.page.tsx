@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ProductRecord } from "@/modules/admin/types/resource.types";
 
-const formatCurrency = (amountCents?: number | null, currency?: string | null) => {
+const formatCurrency = (
+    amountCents?: number | null,
+    currency?: string | null,
+) => {
     const normalizedAmount = typeof amountCents === "number" ? amountCents : 0;
-    const code = typeof currency === "string" && currency.length > 0 ? currency : "USD";
+    const code =
+        typeof currency === "string" && currency.length > 0 ? currency : "USD";
 
     return new Intl.NumberFormat("zh-CN", {
         style: "currency",
@@ -76,9 +80,14 @@ export function ProductsListPage() {
                                 <td className="px-4 py-3 font-medium">
                                     {product.name ?? "-"}
                                 </td>
-                                <td className="px-4 py-3">{product.slug ?? "-"}</td>
                                 <td className="px-4 py-3">
-                                    {formatCurrency(product.priceCents, product.currency)}
+                                    {product.slug ?? "-"}
+                                </td>
+                                <td className="px-4 py-3">
+                                    {formatCurrency(
+                                        product.priceCents,
+                                        product.currency,
+                                    )}
                                 </td>
                                 <td className="px-4 py-3 capitalize">
                                     {product.status ?? "-"}

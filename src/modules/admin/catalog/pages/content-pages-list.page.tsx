@@ -7,9 +7,7 @@ import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ContentPageRecord } from "@/modules/admin/types/resource.types";
 
 const formatDateTime = (value?: string | null) =>
-    typeof value === "string" && value.length > 0
-        ? value.slice(0, 19)
-        : "-";
+    typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
 export function ContentPagesListPage() {
     const { query, result } = useList<ContentPageRecord>({
@@ -72,8 +70,12 @@ export function ContentPagesListPage() {
                                 <td className="px-4 py-3 font-medium">
                                     {page.title ?? "-"}
                                 </td>
-                                <td className="px-4 py-3">{page.slug ?? "-"}</td>
-                                <td className="px-4 py-3">{page.language ?? "-"}</td>
+                                <td className="px-4 py-3">
+                                    {page.slug ?? "-"}
+                                </td>
+                                <td className="px-4 py-3">
+                                    {page.language ?? "-"}
+                                </td>
                                 <td className="px-4 py-3 capitalize">
                                     {page.status ?? "-"}
                                 </td>

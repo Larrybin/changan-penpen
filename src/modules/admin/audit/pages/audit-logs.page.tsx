@@ -4,9 +4,7 @@ import { useList } from "@refinedev/core";
 import type { AuditLogRecord } from "@/modules/admin/types/resource.types";
 
 const formatDateTime = (value?: string | null) =>
-    typeof value === "string" && value.length > 0
-        ? value.slice(0, 19)
-        : "-";
+    typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
 const formatMetadata = (metadata: unknown) => {
     if (metadata == null || metadata === "") {
@@ -19,7 +17,7 @@ const formatMetadata = (metadata: unknown) => {
 
     try {
         return JSON.stringify(metadata);
-    } catch (error) {
+    } catch (_error) {
         return String(metadata);
     }
 };
@@ -76,8 +74,12 @@ export function AuditLogsPage() {
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
                                     {formatDateTime(log.createdAt)}
                                 </td>
-                                <td className="px-4 py-3">{log.adminEmail ?? "-"}</td>
-                                <td className="px-4 py-3">{log.action ?? "-"}</td>
+                                <td className="px-4 py-3">
+                                    {log.adminEmail ?? "-"}
+                                </td>
+                                <td className="px-4 py-3">
+                                    {log.action ?? "-"}
+                                </td>
                                 <td className="px-4 py-3">
                                     {log.targetType ?? "-"}
                                     {log.targetId ? `#${log.targetId}` : ""}

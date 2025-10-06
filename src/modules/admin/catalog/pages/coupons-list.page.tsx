@@ -69,10 +69,10 @@ export function CouponsListPage() {
                                 <td className="px-4 py-3">
                                     {coupon.discountType === "percentage"
                                         ? `${coupon.discountValue ?? 0}%`
-                                        : coupon.discountValue ?? 0}
+                                        : (coupon.discountValue ?? 0)}
                                 </td>
                                 <td className="px-4 py-3">
-                                    {coupon.maxRedemptions ?? "无限"} / 已使用 {" "}
+                                    {coupon.maxRedemptions ?? "无限"} / 已使用{" "}
                                     {coupon.redeemedCount ?? 0}
                                 </td>
                                 <td className="px-4 py-3 capitalize">

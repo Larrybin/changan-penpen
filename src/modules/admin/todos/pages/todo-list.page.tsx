@@ -185,9 +185,12 @@ export default function AdminTodoListPage() {
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3 text-muted-foreground">
-                                                {typeof todo.dueDate === "string" && todo.dueDate
+                                                {typeof todo.dueDate ===
+                                                    "string" && todo.dueDate
                                                     ? formatter.format(
-                                                          new Date(todo.dueDate),
+                                                          new Date(
+                                                              todo.dueDate,
+                                                          ),
                                                       )
                                                     : "-"}
                                             </td>

@@ -7,9 +7,7 @@ import { Input } from "@/components/ui/input";
 import type { CreditHistoryEntry } from "@/modules/admin/types/resource.types";
 
 const formatDateTime = (value?: string | null) =>
-    typeof value === "string" && value.length > 0
-        ? value.slice(0, 19)
-        : "-";
+    typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
 export function CreditsHistoryPage() {
     const [tenantId, setTenantId] = useState("");

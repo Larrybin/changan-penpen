@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
+import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "@/i18n/messages/en.json";
 import LogoutButton from "../logout-button";

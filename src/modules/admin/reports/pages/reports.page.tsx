@@ -24,15 +24,13 @@ const formatParameters = (parameters: unknown) => {
 
     try {
         return JSON.stringify(parameters);
-    } catch (error) {
+    } catch (_error) {
         return String(parameters);
     }
 };
 
 const formatDateTime = (value?: string | null) =>
-    typeof value === "string" && value.length > 0
-        ? value.slice(0, 19)
-        : "-";
+    typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
 export function ReportsPage() {
     const { query, result } = useList<ReportRecord>({ resource: "reports" });

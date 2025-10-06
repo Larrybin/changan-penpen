@@ -98,26 +98,27 @@ export function UsageListPage() {
                             ].join("-");
 
                             return (
-                                <tr
-                                key={key}
-                                className="border-t"
-                            >
-                                <td className="px-4 py-3">{item.date ?? "-"}</td>
-                                <td className="px-4 py-3">
-                                    <div>{item.email ?? "-"}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {item.userId ?? "-"}
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3">{item.feature ?? "-"}</td>
-                                <td className="px-4 py-3">
-                                    {item.totalAmount ?? 0}
-                                </td>
-                                <td className="px-4 py-3 uppercase">
-                                    {item.unit ?? "-"}
-                                </td>
-                            </tr>
-                        );
+                                <tr key={key} className="border-t">
+                                    <td className="px-4 py-3">
+                                        {item.date ?? "-"}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div>{item.email ?? "-"}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {item.userId ?? "-"}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {item.feature ?? "-"}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {item.totalAmount ?? 0}
+                                    </td>
+                                    <td className="px-4 py-3 uppercase">
+                                        {item.unit ?? "-"}
+                                    </td>
+                                </tr>
+                            );
                         })}
                     </tbody>
                 </table>
