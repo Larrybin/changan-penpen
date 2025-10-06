@@ -148,7 +148,7 @@ jobs:
           HC_SECRET: ${{ secrets.PREVIEW_HEALTHCHECK_URL }}
           HC_VAR: ${{ vars.PREVIEW_HEALTHCHECK_URL }}
         run: |
-          url="${HC_SECRET:-$HC_VAR}"
+          url="${HC_SECRET:-${HC_VAR:-${NEXT_PUBLIC_APP_URL%/}/api/health}}"
           if [ -z "$url" ]; then
             echo "No preview health check URL configured. Skipping check."
             exit 0
@@ -330,7 +330,7 @@ jobs:
           HC_SECRET: ${{ secrets.PRODUCTION_HEALTHCHECK_URL }}
           HC_VAR: ${{ vars.PRODUCTION_HEALTHCHECK_URL }}
         run: |
-          url="${HC_SECRET:-$HC_VAR}"
+          url="${HC_SECRET:-${HC_VAR:-${NEXT_PUBLIC_APP_URL%/}/api/health}}"
           if [ -z "$url" ]; then
             echo "No production health check URL configured. Skipping check."
             exit 0
