@@ -4,7 +4,9 @@ import { getDb, siteSettings } from "@/db";
 import { resolveAppUrl } from "@/lib/seo";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
-export const runtime = "edge";
+// OpenNext Cloudflare 要求 edge 路由独立打包；
+// 健康检查不依赖 edge 语义，使用 Node 运行时以兼容打包。
+export const runtime = "nodejs";
 
 type CheckResult = { ok: true } | { ok: false; error: string };
 
