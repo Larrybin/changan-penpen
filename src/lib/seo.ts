@@ -2,8 +2,16 @@ import type { AppLocale } from "@/i18n/config";
 import { defaultLocale, locales } from "@/i18n/config";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
-const FALLBACK_APP_URL =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://www.bananagenerator.app";
+const FALLBACK_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+
+export class AppUrlResolutionError extends Error {
+    constructor(
+        message = "Unable to resolve the application URL. Configure the domain in site settings or set NEXT_PUBLIC_APP_URL.",
+    ) {
+        super(message);
+        this.name = "AppUrlResolutionError";
+    }
+}
 
 export type AllowedHeadTag = "script" | "meta" | "link" | "style" | "noscript";
 
@@ -85,8 +93,16 @@ export function resolveAppUrl(settings?: SiteSettingsPayload | null): string {
     if (configured) {
         return configured;
     }
-    const fallback = normalizeBaseUrl(FALLBACK_APP_URL);
-    return fallback ?? "https://www.bananagenerator.app";
+    const fallback = normalizeBaseUrl(FALLBACK_APP_URL ?? "");
+    if (fallback) {
+        return fallback;
+    }
+    const error = new AppUrlResolutionError();
+    console.error(error.message, {
+        domain: settings?.domain,
+        hasEnvFallback: Boolean(FALLBACK_APP_URL),
+    });
+    throw error;
 }
 
 export function ensureAbsoluteUrl(value: string, baseUrl: string): string {

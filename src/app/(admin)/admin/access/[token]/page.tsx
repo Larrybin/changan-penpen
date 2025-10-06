@@ -1,12 +1,29 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
     getAdminAccessConfig,
     isEntryTokenValid,
 } from "@/modules/admin/utils/admin-access";
+import { generateAdminMetadata } from "@/modules/admin/metadata";
 
 interface Params {
     token: string;
+}
+
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<Params>;
+}): Promise<Metadata> {
+    const { token } = await params;
+    const path = token
+        ? `/admin/access/${encodeURIComponent(token)}`
+        : "/admin/access";
+    return generateAdminMetadata({
+        path,
+        robots: { index: false, follow: false },
+    });
 }
 
 export default async function AdminEntryPage({

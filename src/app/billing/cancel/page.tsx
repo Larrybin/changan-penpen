@@ -15,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
         path: "/billing/cancel",
         title: billingCancel.title,
         description: billingCancel.description,
+        robots: { index: false, follow: false },
     });
 }
 

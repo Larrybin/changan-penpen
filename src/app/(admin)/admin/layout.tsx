@@ -6,7 +6,10 @@ import { generateAdminMetadata } from "@/modules/admin/metadata";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-    return generateAdminMetadata({ path: "/admin" });
+    return generateAdminMetadata({
+        path: "/admin",
+        robots: { index: false, follow: false },
+    });
 }
 
 export default async function Layout({

@@ -17,8 +17,6 @@ type RouteConfig = {
 
 const staticRoutes: RouteConfig[] = [
     { path: "/", changeFrequency: "daily", priority: 1 },
-    { path: "/login", changeFrequency: "monthly", priority: 0.3 },
-    { path: "/signup", changeFrequency: "monthly", priority: 0.3 },
     { path: "/billing", changeFrequency: "weekly", priority: 0.6 },
     { path: "/about", changeFrequency: "monthly", priority: 0.5 },
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },

@@ -1,6 +1,9 @@
 # Load .env.development* files when running `wrangler dev`
 NEXTJS_ENV=development
 
+# Base URL used for canonical tags and structured data
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
 # Drizzle Kit credentials for D1
 # Get your Account ID from: https://dash.cloudflare.com/ (right sidebar)
 # Get your API Token from: https://dash.cloudflare.com/profile/api-tokens

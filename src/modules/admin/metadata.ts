@@ -8,6 +8,7 @@ export interface AdminMetadataOptions {
     path: string;
     title?: string;
     description?: string;
+    robots?: Metadata["robots"];
 }
 
 export async function generateAdminMetadata(
@@ -24,9 +25,12 @@ export async function generateAdminMetadata(
         ? options.description.trim()
         : dashboard.description;
 
+    const robots = options.robots ?? { index: false, follow: false };
+
     return createMetadata(context, {
         path: options.path,
         title,
         description,
+        robots,
     });
 }

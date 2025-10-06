@@ -19,12 +19,12 @@ export default function Playground() {
             aria-labelledby="playground-heading"
         >
             <div className="flex items-center justify-between mb-4">
-                <h3
+                <h2
                     id="playground-heading"
                     className="font-semibold tracking-wide"
                 >
                     {tPlayground("title")}
-                </h3>
+                </h2>
                 <div className="text-[10px] md:text-xs text-yellow-200/70 space-x-2">
                     {badges.map((badge, index) => (
                         <span key={badge}>

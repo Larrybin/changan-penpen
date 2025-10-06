@@ -12,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
         path: "/dashboard",
         title: dashboard.title,
         description: dashboard.description,
+        robots: { index: false, follow: false },
     });
 }
 

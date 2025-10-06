@@ -15,5 +15,6 @@ export async function generateDashboardTodosMetadata(
         path,
         title: dashboardTodos.title,
         description: dashboardTodos.description,
+        robots: { index: false, follow: false },
     });
 }
