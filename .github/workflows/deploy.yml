@@ -9,6 +9,8 @@ on:
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9'
+  # 提供给 Next.js 预渲染与 SEO 逻辑的基础 URL（仓库 Actions Variables 可覆盖）
+  NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -71,6 +73,10 @@ jobs:
 
       - name: Test (Vitest)
         run: pnpm test
+
+      - name: Show NEXT_PUBLIC_APP_URL (diagnostic)
+        run: |
+          echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
 
       - name: Build (Next.js)
         run: pnpm build
@@ -147,6 +153,9 @@ jobs:
 
       - name: Build Next.js (diagnostic)
         run: pnpm run build
+        env:
+          # 显式注入以避免 fork PR 缺省环境导致的构建失败
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Build application
         if: steps.preview-secrets.outputs.available == 'true'
@@ -157,6 +166,7 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Verify build output
         if: steps.preview-secrets.outputs.available == 'true'
@@ -182,7 +192,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: preview
-          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}"
+          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}" --var "NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}"
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -274,6 +284,8 @@ jobs:
 
       - name: Build Next.js (diagnostic)
         run: pnpm run build
+        env:
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Build application
         run: pnpm run build:cf
@@ -283,6 +295,7 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Generate backup filename
         id: backup
@@ -319,7 +332,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
-          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}"
+          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}" --var "NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}"
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
