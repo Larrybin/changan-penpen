@@ -1,16 +1,21 @@
 name: CI
 
 on:
+  # 常规 CI：在除 main 外的分支上运行；避免与部署工作流重复
   push:
-    branches: ["**"]
+    branches-ignore:
+      - main
     paths-ignore:
       - README.md
       - docs/**
   pull_request:
-    branches: ["**"]
+    branches-ignore:
+      - main
     paths-ignore:
       - README.md
       - docs/**
+  # 允许被其他工作流复用（reusable workflow）
+  workflow_call:
 
 env:
   NODE_VERSION: '20'
