@@ -52,7 +52,10 @@ export async function GET() {
     const { env } = await getCloudflareContext({ async: true });
     const envRecord = env as unknown as Record<string, unknown>;
     const requireExternal =
-        String((envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ?? "false") === "true";
+        String(
+            (envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ??
+                "false",
+        ) === "true";
     const ok =
         db.ok &&
         r2.ok &&
