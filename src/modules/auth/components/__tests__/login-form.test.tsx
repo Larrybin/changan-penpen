@@ -15,11 +15,12 @@ import enMessages from "@/i18n/messages/en.json";
 import frMessages from "@/i18n/messages/fr.json";
 import { LoginForm } from "../login-form";
 
-const createToastMock = () =>
-    Object.assign(vi.fn(), {
+function createToastMock() {
+    return Object.assign(vi.fn(), {
         success: vi.fn(),
         error: vi.fn(),
     });
+}
 
 type ToastMock = ReturnType<typeof createToastMock>;
 

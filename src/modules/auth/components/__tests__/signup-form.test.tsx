@@ -5,11 +5,12 @@ import deMessages from "@/i18n/messages/de.json";
 import ptMessages from "@/i18n/messages/pt.json";
 import { SignupForm } from "../signup-form";
 
-const createToastMock = () =>
-    Object.assign(vi.fn(), {
+function createToastMock() {
+    return Object.assign(vi.fn(), {
         success: vi.fn(),
         error: vi.fn(),
     });
+}
 
 type ToastMock = ReturnType<typeof createToastMock>;
 

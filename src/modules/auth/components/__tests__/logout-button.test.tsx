@@ -4,11 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "@/i18n/messages/en.json";
 import LogoutButton from "../logout-button";
 
-const createToastMock = () =>
-    Object.assign(vi.fn(), {
+function createToastMock() {
+    return Object.assign(vi.fn(), {
         success: vi.fn(),
         error: vi.fn(),
     });
+}
 
 type ToastMock = ReturnType<typeof createToastMock>;
 
