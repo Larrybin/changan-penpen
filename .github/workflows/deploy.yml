@@ -1,4 +1,4 @@
-name: Deploy Next.js App to Cloudflare
+﻿name: Deploy Next.js App to Cloudflare
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9'
-  # 提供给 Next.js 预渲染与 SEO 逻辑的基础 URL（仓库 Actions Variables 可覆盖）
+  # 鎻愪緵缁?Next.js 棰勬覆鏌撲笌 SEO 閫昏緫鐨勫熀纭€ URL锛堜粨搴?Actions Variables 鍙鐩栵級
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 concurrency:
@@ -17,75 +17,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Quality gate: run fix:i18n (no diff), lint, test, build
-  quality-gate:
+  # Quality gate锛堝鐢ㄨ嚜 CI锛?  
+  quality-gate-reusable:
     name: Quality Gate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Determine pnpm store path
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-${{ env.PNPM_VERSION }}-
-
-      # 移除在质量门禁中的强密钥检查，避免 PR（尤其 fork）受阻
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Cache Next.js build cache
-        uses: actions/cache@v4
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('next.config.*', 'package.json', 'tsconfig.json', 'tsconfig.*.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
-
-      - name: Normalize i18n and ensure no diff
-        run: |
-          pnpm run fix:i18n
-          git diff --exit-code || (echo "i18n files not normalized. Run 'pnpm run fix:i18n' and commit changes." && exit 1)
-
-      - name: Lint (Biome)
-        run: pnpm exec biome check .
-
-      - name: Type check (tsc)
-        run: pnpm exec tsc --noEmit
-
-      - name: Test (Vitest)
-        run: pnpm test
-
-      - name: Show NEXT_PUBLIC_APP_URL (diagnostic)
-        run: |
-          echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
-
-      - name: Build (Next.js)
-        run: pnpm build
-
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
   # Deploy preview for pull requests
   deploy-preview:
     name: Deploy Preview
     if: github.event_name == 'pull_request'
-    needs: [quality-gate]
+    needs: [quality-gate-reusable]
     runs-on: ubuntu-latest
     environment: preview
     steps:
@@ -154,8 +95,7 @@ jobs:
       - name: Build Next.js (diagnostic)
         run: pnpm run build
         env:
-          # 显式注入以避免 fork PR 缺省环境导致的构建失败
-          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
+          # 鏄惧紡娉ㄥ叆浠ラ伩鍏?fork PR 缂虹渷鐜瀵艰嚧鐨勬瀯寤哄け璐?          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Build application
         if: steps.preview-secrets.outputs.available == 'true'
@@ -219,7 +159,7 @@ jobs:
   deploy-production:
     name: Deploy Production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [quality-gate]
+    needs: [quality-gate-reusable]
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -269,7 +209,7 @@ jobs:
           set -euo pipefail
           url="${{ vars.NEXT_PUBLIC_APP_URL }}"
           if [ -z "$url" ]; then
-            echo "NEXT_PUBLIC_APP_URL is required for production. Set it in: Settings → Secrets and variables → Actions → Variables."
+            echo "NEXT_PUBLIC_APP_URL is required for production. Set it in: Settings 鈫?Secrets and variables 鈫?Actions 鈫?Variables."
             exit 1
           fi
           if echo "$url" | grep -Eqi 'localhost|127\.0\.0\.1'; then
