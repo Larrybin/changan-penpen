@@ -1,7 +1,8 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 import { getDb, siteSettings } from "@/db";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { resolveAppUrl } from "@/lib/seo";
+import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
 export const runtime = "edge";
 
@@ -24,7 +25,10 @@ async function checkR2(): Promise<CheckResult> {
         const { env } = await getCloudflareContext({ async: true });
         // Ensure binding exists
         if (!env || !("next_cf_app_bucket" in env)) {
-            return { ok: false, error: "R2 binding next_cf_app_bucket missing" };
+            return {
+                ok: false,
+                error: "R2 binding next_cf_app_bucket missing",
+            };
         }
         // List with small limit to validate access
         // @ts-expect-error - R2Bucket types are provided at runtime by Cloudflare
@@ -47,8 +51,14 @@ export async function GET() {
     ]);
     // 外部依赖是否为强制项由开关控制（默认不阻断）
     const { env } = await getCloudflareContext({ async: true });
-    const requireExternal = String(env?.HEALTH_REQUIRE_EXTERNAL ?? "false") === "true";
-    const ok = db.ok && r2.ok && envs.ok && appUrl.ok && (!requireExternal || external.ok);
+    const requireExternal =
+        String(env?.HEALTH_REQUIRE_EXTERNAL ?? "false") === "true";
+    const ok =
+        db.ok &&
+        r2.ok &&
+        envs.ok &&
+        appUrl.ok &&
+        (!requireExternal || external.ok);
 
     const body = {
         ok,
@@ -75,19 +85,16 @@ async function checkEnvAndBindings(): Promise<CheckResult> {
             "GOOGLE_CLIENT_SECRET",
             "CLOUDFLARE_R2_URL",
         ];
-        const optionalSecrets = [
-            "CREEM_API_KEY",
-            "CREEM_WEBHOOK_SECRET",
-            "CREEM_API_URL",
-        ];
         const missing = requiredSecrets.filter((k) => !env?.[k]);
         // Check important bindings presence
         const missingBindings: string[] = [];
-        if (!("next_cf_app_bucket" in (env as any))) missingBindings.push("next_cf_app_bucket");
-        if (!("AI" in (env as any))) {
+        if (!env?.next_cf_app_bucket) {
+            missingBindings.push("next_cf_app_bucket");
+        }
+        if (!env?.AI) {
             // AI 可选，仅记录为可选缺失，不导致失败
         }
-        if (!("ASSETS" in (env as any))) {
+        if (!env?.ASSETS) {
             // ASSETS 由 OpenNext Workers 绑定，缺失可能是构建/配置异常
             // 仅在缺失时标记但不阻断（某些配置可能不直接暴露）
         }
@@ -110,21 +117,28 @@ async function checkAppUrl(): Promise<CheckResult> {
         // Ensure we can resolve a valid base URL from settings/env
         const db = await getDb();
         const rows = await db.select().from(siteSettings).limit(1);
-        let settings: any = undefined;
-        if (rows && rows.length) {
-            // Map minimal fields used by resolveAppUrl
-            settings = { domain: (rows[0] as any)?.domain ?? "" };
+        const domain = rows?.[0]?.domain ?? "";
+        const settings = domain
+            ? ({ domain } as SiteSettingsPayload)
+            : undefined;
+        const base = resolveAppUrl(settings);
+        if (!base) {
+            return { ok: false, error: "Failed to resolve app base URL" };
         }
-        const base = resolveAppUrl(settings as any);
-        if (!base) return { ok: false, error: "Failed to resolve app base URL" };
         // Basic shape check
         try {
             const u = new URL(base);
             if (!u.protocol.startsWith("http")) {
-                return { ok: false, error: `Invalid protocol in base URL: ${u.protocol}` };
+                return {
+                    ok: false,
+                    error: `Invalid protocol in base URL: ${u.protocol}`,
+                };
             }
         } catch (e) {
-            return { ok: false, error: `Invalid base URL format: ${String(e)}` };
+            return {
+                ok: false,
+                error: `Invalid base URL format: ${String(e)}`,
+            };
         }
         return { ok: true };
     } catch (err) {
@@ -143,7 +157,7 @@ async function checkExternalServices(): Promise<CheckResult> {
         }
         const bearer = String(env?.CREEM_API_KEY ?? "").trim();
         const headers: Record<string, string> = {};
-        if (bearer) headers["authorization"] = `Bearer ${bearer}`;
+        if (bearer) headers.authorization = `Bearer ${bearer}`;
 
         const endpointBase = base.replace(/\/+$/, "");
         const candidates = ["/status", ""]; // 优先尝试 /status，其次根路径
@@ -153,7 +167,11 @@ async function checkExternalServices(): Promise<CheckResult> {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                const res = await fetch(url, { method, headers, signal: controller.signal });
+                const res = await fetch(url, {
+                    method,
+                    headers,
+                    signal: controller.signal,
+                });
                 return res;
             } finally {
                 clearTimeout(id);
@@ -171,7 +189,7 @@ async function checkExternalServices(): Promise<CheckResult> {
                 if (res.status < 500) {
                     return { ok: true };
                 }
-            } catch (e) {
+            } catch (_error) {
                 // 继续尝试下一个候选
             }
         }
