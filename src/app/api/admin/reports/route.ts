@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import {
+    type CreateReportInput,
     createReport,
     listReports,
-    type CreateReportInput,
 } from "@/modules/admin/services/report.service";
-import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 
 export async function GET(request: Request) {
     const result = await requireAdminRequest(request);

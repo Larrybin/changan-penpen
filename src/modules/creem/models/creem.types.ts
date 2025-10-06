@@ -17,7 +17,7 @@ export type CreemSubscription = {
     current_period_start_date?: string;
     current_period_end_date?: string;
     canceled_at?: string | null;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 };
 
 export type CreemCheckout = {
@@ -28,11 +28,11 @@ export type CreemCheckout = {
         user_id?: string;
         product_type?: "subscription" | "credits" | string;
         credits?: number;
-        [k: string]: any;
+        [k: string]: unknown;
     };
 };
 
 export type CreemWebhookEvent = {
     eventType: string;
-    object: any;
+    object: unknown;
 };

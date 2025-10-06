@@ -1,6 +1,6 @@
 "use client";
 
-import { useList, type CrudFilter } from "@refinedev/core";
+import { type CrudFilter, useList } from "@refinedev/core";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

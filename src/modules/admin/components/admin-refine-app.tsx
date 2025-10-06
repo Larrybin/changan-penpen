@@ -1,12 +1,12 @@
 "use client";
 
 import { Refine } from "@refinedev/core";
+import { adminAuthProvider } from "@/modules/admin/providers/auth-provider";
+import { adminDataProvider } from "@/modules/admin/providers/data-provider";
 import {
     AdminToaster,
     notificationProvider,
 } from "@/modules/admin/providers/notification-provider";
-import { adminAuthProvider } from "@/modules/admin/providers/auth-provider";
-import { adminDataProvider } from "@/modules/admin/providers/data-provider";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AuthUser } from "@/modules/auth/models/user.model";
 import { AdminShell } from "./admin-shell";

@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { z } from "zod";
+import type { z } from "zod";
 import { getDb } from "@/db";
 import {
     categories,

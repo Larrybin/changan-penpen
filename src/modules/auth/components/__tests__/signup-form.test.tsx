@@ -1,16 +1,31 @@
-import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 import { vi } from "vitest";
-import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
 import deMessages from "@/i18n/messages/de.json";
 import ptMessages from "@/i18n/messages/pt.json";
 import { SignupForm } from "../signup-form";
 
+type ToastMock = {
+    (...args: unknown[]): unknown;
+    success: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+};
+
+const createToastMock = (): ToastMock => {
+    const toast = vi.fn<(...args: unknown[]) => unknown>() as ToastMock;
+    toast.success = vi.fn();
+    toast.error = vi.fn();
+    return toast;
+};
+
+const importToast = async (): Promise<ToastMock> => {
+    const module = (await import("react-hot-toast")) as { default: ToastMock };
+    return module.default;
+};
+
 vi.mock("react-hot-toast", () => {
-    const fn: any = vi.fn();
-    fn.success = vi.fn();
-    fn.error = vi.fn();
-    return { default: fn };
+    const toast = createToastMock();
+    return { default: toast };
 });
 
 // Mock server actions used by the component
@@ -113,7 +128,7 @@ describe("SignupForm", () => {
     });
 
     it("shows success toast on sign-up using i18n key (PT)", async () => {
-        const toast = (await import("react-hot-toast")).default as any;
+        const toast = await importToast();
         renderWithMessages("pt", ptMessages);
 
         fireEvent.change(

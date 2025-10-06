@@ -14,6 +14,36 @@ import {
     SUBSCRIPTION_TIERS,
 } from "@/modules/creem/config/subscriptions";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function readUrl(
+    payload: unknown,
+    key: "checkoutUrl" | "portalUrl",
+): string | undefined {
+    if (!isRecord(payload)) {
+        return undefined;
+    }
+    const data = payload.data;
+    if (!isRecord(data)) {
+        return undefined;
+    }
+    const url = data[key];
+    return typeof url === "string" ? url : undefined;
+}
+
+function readErrorMessage(payload: unknown): string | undefined {
+    if (typeof payload === "string") {
+        return payload;
+    }
+    if (!isRecord(payload)) {
+        return undefined;
+    }
+    const error = payload.error;
+    return typeof error === "string" ? error : undefined;
+}
+
 export default function PricingGrid() {
     const [loading, setLoading] = useState<string | null>(null);
 
@@ -28,14 +58,15 @@ export default function PricingGrid() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ tierId, productType }),
             });
-            const json: any = await resp.json();
-            const checkoutUrl = json?.data?.checkoutUrl as string | undefined;
+            const payload: unknown = await resp.json();
+            const checkoutUrl = readUrl(payload, "checkoutUrl");
             if (!resp.ok || !checkoutUrl) {
-                throw new Error(json?.error || "创建结账失败");
+                throw new Error(readErrorMessage(payload) || "创建结账失败");
             }
             window.location.href = checkoutUrl;
-        } catch (e: any) {
-            alert(e?.message || "结账错误");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "结账错误";
+            alert(message);
         } finally {
             setLoading(null);
         }
@@ -45,19 +76,19 @@ export default function PricingGrid() {
         try {
             setLoading("portal");
             const resp = await fetch("/api/creem/customer-portal");
-            const json: any = await resp.json();
+            const payload: unknown = await resp.json();
             if (!resp.ok) {
                 throw new Error(
-                    typeof json === "string"
-                        ? json
-                        : json?.error || "获取账单门户失败",
+                    readErrorMessage(payload) || "获取账单门户失败",
                 );
             }
-            const url = json?.data?.portalUrl as string | undefined;
+            const url = readUrl(payload, "portalUrl");
             if (!url) throw new Error("门户链接缺失");
             window.location.href = url;
-        } catch (e: any) {
-            alert(e?.message || "打开门户失败");
+        } catch (error: unknown) {
+            const message =
+                error instanceof Error ? error.message : "打开门户失败";
+            alert(message);
         } finally {
             setLoading(null);
         }
@@ -110,8 +141,10 @@ export default function PricingGrid() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                                    {(tier.features || []).map((f, idx) => (
-                                        <li key={idx}>{f}</li>
+                                    {(tier.features || []).map((feature) => (
+                                        <li key={`${tier.id}-${feature}`}>
+                                            {feature}
+                                        </li>
                                     ))}
                                 </ul>
                                 <Button
@@ -165,8 +198,10 @@ export default function PricingGrid() {
                             <CardContent className="space-y-4">
                                 <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
                                     <li>包含积分：{tier.creditAmount}</li>
-                                    {(tier.features || []).map((f, idx) => (
-                                        <li key={idx}>{f}</li>
+                                    {(tier.features || []).map((feature) => (
+                                        <li key={`${tier.id}-${feature}`}>
+                                            {feature}
+                                        </li>
                                     ))}
                                 </ul>
                                 <Button

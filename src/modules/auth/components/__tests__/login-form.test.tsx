@@ -1,6 +1,6 @@
-import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
+
 // Mock server actions used by the component
 vi.mock("../../actions/auth.action", () => ({
     signIn: vi.fn().mockResolvedValue({
@@ -9,16 +9,33 @@ vi.mock("../../actions/auth.action", () => ({
         messageKey: "signInSuccess",
     }),
 }));
-import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
+
+import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 import enMessages from "@/i18n/messages/en.json";
 import frMessages from "@/i18n/messages/fr.json";
 import { LoginForm } from "../login-form";
 
+type ToastMock = {
+    (...args: unknown[]): unknown;
+    success: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+};
+
+const createToastMock = (): ToastMock => {
+    const toast = vi.fn<(...args: unknown[]) => unknown>() as ToastMock;
+    toast.success = vi.fn();
+    toast.error = vi.fn();
+    return toast;
+};
+
+const importToast = async (): Promise<ToastMock> => {
+    const module = (await import("react-hot-toast")) as { default: ToastMock };
+    return module.default;
+};
+
 vi.mock("react-hot-toast", () => {
-    const fn: any = vi.fn();
-    fn.success = vi.fn();
-    fn.error = vi.fn();
-    return { default: fn };
+    const toast = createToastMock();
+    return { default: toast };
 });
 
 describe("LoginForm", () => {
@@ -71,7 +88,7 @@ describe("LoginForm", () => {
     });
 
     it("fires localized forgot-password toast (EN)", async () => {
-        const toast = (await import("react-hot-toast")).default as any;
+        const toast = await importToast();
         renderWithMessages("en", enMessages);
 
         fireEvent.click(
@@ -121,7 +138,7 @@ describe("LoginForm", () => {
     });
 
     it("shows success toast on sign-in using i18n key (EN)", async () => {
-        const toast = (await import("react-hot-toast")).default as any;
+        const toast = await importToast();
         renderWithMessages("en", enMessages);
 
         fireEvent.change(

@@ -324,7 +324,7 @@ for (const file of walk(ROOT)) {
                         // And ensure there is exactly one U+202F before the punctuation when there was none
                         .replace(
                             new RegExp(
-                                `([^\u00A0\u202F\s])(${FRENCH_PUNCT_BEFORE.source})`,
+                                `([^\u00A0\u202Fs])(${FRENCH_PUNCT_BEFORE.source})`,
                                 "g",
                             ),
                             "$1\u202F$2",
@@ -409,7 +409,7 @@ for (const file of walk(ROOT)) {
     }
 
     if (changed) {
-        fs.writeFileSync(file, JSON.stringify(json, null, 4) + "\n", "utf8");
+        fs.writeFileSync(file, `${JSON.stringify(json, null, 4)}\n`, "utf8");
         totalChanged++;
         console.log(`Fixed: ${path.relative(process.cwd(), file)}`);
     }

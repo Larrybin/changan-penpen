@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
+    type ContentPageInput,
     deleteContentPage,
     getContentPageById,
     updateContentPage,
-    type ContentPageInput,
 } from "@/modules/admin/services/catalog.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 

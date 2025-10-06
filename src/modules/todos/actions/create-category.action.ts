@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/modules/auth/utils/auth-utils";
 import type { Category } from "@/modules/todos/schemas/category.schema";
 import {
-    createCategoryForUser,
     type CategoryCreateInput,
+    createCategoryForUser,
 } from "@/modules/todos/services/category.service";
 import todosRoutes from "../todos.route";
 

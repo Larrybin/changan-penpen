@@ -237,7 +237,7 @@ export function TodoForm({
                                                     field.onChange(undefined);
                                                 } else {
                                                     field.onChange(
-                                                        parseInt(value),
+                                                        parseInt(value, 10),
                                                     );
                                                 }
                                             }}

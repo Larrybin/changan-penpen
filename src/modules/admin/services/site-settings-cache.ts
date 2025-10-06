@@ -6,7 +6,7 @@ interface CacheEntry<T> {
 const CACHE_KEY = "site-settings";
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
-const cacheStore = new Map<string, CacheEntry<any>>();
+const cacheStore = new Map<string, CacheEntry<unknown>>();
 
 export function getCachedSiteSettings<T>() {
     const entry = cacheStore.get(CACHE_KEY) as CacheEntry<T> | undefined;

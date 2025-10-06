@@ -58,7 +58,7 @@ export async function verifyCreemWebhookSignature(
             const idx = p.indexOf("=");
             if (idx > 0) kv[p.slice(0, idx)] = p.slice(idx + 1);
         }
-        const v1 = kv["v1"] || kv["sig"] || "";
+        const v1 = kv.v1 || kv.sig || "";
         if (v1 && (timingSafeEqual(v1, hex) || timingSafeEqual(v1, b64))) {
             return true;
         }

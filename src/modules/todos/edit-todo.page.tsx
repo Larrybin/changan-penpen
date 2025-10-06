@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { requireAuth } from "@/modules/auth/utils/auth-utils";
 import { getAllCategories } from "@/modules/todos/actions/get-categories.action";
 import { getTodoById } from "@/modules/todos/actions/get-todo-by-id.action";
-import { TodoForm } from "./components/todo-form";
 import {
     TodoPriority,
-    TodoStatus,
     type TodoPriorityType,
+    TodoStatus,
     type TodoStatusType,
 } from "@/modules/todos/models/todo.enum";
+import { TodoForm } from "./components/todo-form";
 import todosRoutes from "./todos.route";
 
 interface EditTodoPageProps {

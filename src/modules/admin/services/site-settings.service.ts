@@ -199,10 +199,14 @@ export async function updateSiteSettings(
     };
 
     if (rows.length) {
+        const existing = rows[0];
+        if (!existing?.id) {
+            throw new Error("Site settings record is missing an id");
+        }
         await db
             .update(siteSettings)
             .set(payload)
-            .where(eq(siteSettings.id, rows[0].id!));
+            .where(eq(siteSettings.id, existing.id));
     } else {
         await db.insert(siteSettings).values({
             ...payload,

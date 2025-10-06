@@ -1,15 +1,15 @@
-import PricingGrid from "@/modules/creem/components/pricing-grid";
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
+import Script from "next/script";
 import { getLocale, getTranslations } from "next-intl/server";
-
+import type { AppLocale } from "@/i18n/config";
+import { buildLocalizedPath, localeCurrencyMap } from "@/lib/seo";
+import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
+import PricingGrid from "@/modules/creem/components/pricing-grid";
 import {
     CREDITS_TIERS,
     SUBSCRIPTION_TIERS,
 } from "@/modules/creem/config/subscriptions";
-import type { AppLocale } from "@/i18n/config";
-import { buildLocalizedPath, localeCurrencyMap } from "@/lib/seo";
-import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
     const locale = (await getLocale()) as AppLocale;
@@ -87,13 +87,9 @@ export default async function Page() {
                 </p>
             </div>
             <PricingGrid />
-            <script
-                type="application/ld+json"
-                suppressHydrationWarning
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify(structuredData),
-                }}
-            />
+            <Script id="billing-structured-data" type="application/ld+json">
+                {JSON.stringify(structuredData)}
+            </Script>
         </div>
     );
 }

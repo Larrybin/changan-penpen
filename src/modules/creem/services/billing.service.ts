@@ -1,14 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import {
-    customers,
-    subscriptions,
-    creditsHistory,
-} from "@/modules/creem/schemas/billing.schema";
 import type {
     CreemCustomer,
     CreemSubscription,
 } from "@/modules/creem/models/creem.types";
+import {
+    creditsHistory,
+    customers,
+    subscriptions,
+} from "@/modules/creem/schemas/billing.schema";
 
 export async function createOrUpdateCustomer(
     creemCustomer: CreemCustomer,

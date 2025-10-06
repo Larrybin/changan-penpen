@@ -80,7 +80,7 @@ const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 const SYSTEM_PROMPT = (
     sourceLocale: string,
     targetLocale: string,
-    format: TranslationBatchRequest["format"],
+    _format: TranslationBatchRequest["format"],
     tone?: string,
 ) => `You are a professional localization specialist. Translate the provided entries from ${sourceLocale} to ${targetLocale}.
 
@@ -124,9 +124,7 @@ const parseJsonResponse = (raw: string): Record<string, string> => {
         try {
             const parsed = JSON.parse(candidate);
             return parsed as Record<string, string>;
-        } catch (error) {
-            continue;
-        }
+        } catch (_error) {}
     }
 
     throw new TranslationError(

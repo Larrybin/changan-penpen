@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+    type CouponInput,
     createCoupon,
     listCoupons,
-    type CouponInput,
 } from "@/modules/admin/services/catalog.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 

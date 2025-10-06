@@ -3,14 +3,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { config as loadEnv } from "dotenv";
-
+import { defaultLocale, locales } from "../src/i18n/config";
 import {
-    NEEDS_REVIEW_MARKERS,
     createTranslationServiceFromEnv,
+    NEEDS_REVIEW_MARKERS,
     type TranslationEntry,
     type TranslationProviderName,
 } from "../src/services/translation.service";
-import { defaultLocale, locales } from "../src/i18n/config";
 
 type PathSegment = string | number;
 

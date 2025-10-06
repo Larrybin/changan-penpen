@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCustom } from "@refinedev/core";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -10,8 +10,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import adminRoutes from "@/modules/admin/routes/admin.routes";
 import { UsageSparkline } from "@/modules/admin/dashboard/components/usage-sparkline";
+import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 interface DashboardMetricsPayload {
     totals: {

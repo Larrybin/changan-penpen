@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import {
     getSiteSettingsPayload,
-    updateSiteSettings,
     type UpdateSiteSettingsInput,
+    updateSiteSettings,
 } from "@/modules/admin/services/site-settings.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 

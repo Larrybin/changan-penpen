@@ -33,24 +33,20 @@ function renderNode(
     const key = `${node.tag}-${index}`;
     switch (node.tag) {
         case "script": {
-            if (node.content && node.content.trim().length) {
+            if (node.content?.trim().length) {
                 return (
-                    <script
-                        key={key}
-                        {...props}
-                        dangerouslySetInnerHTML={{ __html: node.content }}
-                    />
+                    <script key={key} {...props}>
+                        {node.content}
+                    </script>
                 );
             }
             return <script key={key} {...props} />;
         }
         case "style": {
             return (
-                <style
-                    key={key}
-                    {...props}
-                    dangerouslySetInnerHTML={{ __html: node.content ?? "" }}
-                />
+                <style key={key} {...props}>
+                    {node.content ?? ""}
+                </style>
             );
         }
         case "noscript": {
@@ -58,6 +54,7 @@ function renderNode(
                 <noscript
                     key={key}
                     {...props}
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: noscript content needs to render raw HTML for fallback messaging.
                     dangerouslySetInnerHTML={{ __html: node.content ?? "" }}
                 />
             );

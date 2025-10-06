@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import type { AuthUser } from "@/modules/auth/models/user.model";
 import { checkAdminAccessFromHeaders } from "@/modules/admin/utils/admin-access";
+import type { AuthUser } from "@/modules/auth/models/user.model";
 import { getCurrentUser } from "@/modules/auth/utils/auth-utils";
 
 export interface AdminGuardResult {

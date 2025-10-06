@@ -41,8 +41,15 @@ export const adminAuthProvider = {
             redirectTo: "/login",
         };
     },
-    onError: async (error: any) => {
-        if (error?.message === "Authentication required") {
+    onError: async (error: unknown) => {
+        const message =
+            typeof error === "object" && error && "message" in error
+                ? (error as { message?: unknown }).message
+                : undefined;
+        if (
+            typeof message === "string" &&
+            message === "Authentication required"
+        ) {
             return {
                 logout: true,
                 redirectTo: "/login",

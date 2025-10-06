@@ -3,9 +3,9 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
-import dashboardRoutes from "@/modules/dashboard/dashboard.route";
 import type { AppLocale } from "@/i18n/config";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
+import dashboardRoutes from "@/modules/dashboard/dashboard.route";
 
 export async function generateMetadata(): Promise<Metadata> {
     const locale = (await getLocale()) as AppLocale;

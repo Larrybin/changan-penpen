@@ -1,5 +1,5 @@
 import { desc, sql } from "drizzle-orm";
-import { getDb, adminAuditLogs } from "@/db";
+import { adminAuditLogs, getDb } from "@/db";
 import { normalizePagination } from "../utils/pagination";
 
 export interface RecordAdminAuditLogInput {

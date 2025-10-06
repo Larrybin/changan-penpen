@@ -1,6 +1,6 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { AuthUser } from "@/modules/auth/models/user.model";
 
 export interface AdminAccessConfig {

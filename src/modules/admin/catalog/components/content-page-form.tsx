@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
 import { useCreate, useNotification, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { ContentPageInput } from "@/modules/admin/services/catalog.service";
 
 interface ContentPageFormProps {
     id?: number;
-    initialData?: Record<string, any>;
+    initialData?: Partial<ContentPageInput>;
 }
 
 export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
@@ -20,7 +21,7 @@ export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
     const { mutateAsync: createPage } = useCreate();
     const { mutateAsync: updatePage } = useUpdate();
 
-    const form = useForm({
+    const form = useForm<ContentPageInput>({
         defaultValues: {
             title: "",
             slug: "",
@@ -46,7 +47,7 @@ export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialData?.id]);
+    }, [initialData?.id, initialData, form.reset]);
 
     const handleSubmit = form.handleSubmit(async (values) => {
         const payload = {
@@ -81,43 +82,88 @@ export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-2">
-                <label className="text-sm font-medium">标题</label>
+                <label className="text-sm font-medium" htmlFor="content-title">
+                    标题
+                </label>
                 <Input
+                    id="content-title"
                     {...form.register("title", { required: true })}
                     placeholder="功能介绍"
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">Slug</label>
+                <label className="text-sm font-medium" htmlFor="content-slug">
+                    Slug
+                </label>
                 <Input
+                    id="content-slug"
                     {...form.register("slug", { required: true })}
                     placeholder="features"
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">摘要</label>
-                <Textarea rows={3} {...form.register("summary")} />
+                <label
+                    className="text-sm font-medium"
+                    htmlFor="content-summary"
+                >
+                    摘要
+                </label>
+                <Textarea
+                    id="content-summary"
+                    rows={3}
+                    {...form.register("summary")}
+                />
             </div>
             <div className="grid gap-2 md:grid-cols-3 md:gap-4">
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">语言</label>
-                    <Input {...form.register("language")} placeholder="zh-CN" />
-                </div>
-                <div className="grid gap-2">
-                    <label className="text-sm font-medium">状态</label>
-                    <Input {...form.register("status")} placeholder="draft" />
-                </div>
-                <div className="grid gap-2">
-                    <label className="text-sm font-medium">发布时间</label>
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="content-language"
+                    >
+                        语言
+                    </label>
                     <Input
+                        id="content-language"
+                        {...form.register("language")}
+                        placeholder="zh-CN"
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="content-status"
+                    >
+                        状态
+                    </label>
+                    <Input
+                        id="content-status"
+                        {...form.register("status")}
+                        placeholder="draft"
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="content-published-at"
+                    >
+                        发布时间
+                    </label>
+                    <Input
+                        id="content-published-at"
                         type="datetime-local"
                         {...form.register("publishedAt")}
                     />
                 </div>
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">正文</label>
-                <Textarea rows={8} {...form.register("content")} />
+                <label className="text-sm font-medium" htmlFor="content-body">
+                    正文
+                </label>
+                <Textarea
+                    id="content-body"
+                    rows={8}
+                    {...form.register("content")}
+                />
             </div>
             <div className="flex justify-end gap-2">
                 <Button

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useDelete, useList } from "@refinedev/core";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 

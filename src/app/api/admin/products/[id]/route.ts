@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import {
     deleteProduct,
     getProductById,
-    updateProduct,
     type ProductInput,
+    updateProduct,
 } from "@/modules/admin/services/catalog.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 

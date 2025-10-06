@@ -1,18 +1,18 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import { z } from "zod";
+import type { z } from "zod";
 import { categories, getDb, user } from "@/db";
 import {
     TodoPriority,
-    TodoStatus,
     type TodoPriorityType,
+    TodoStatus,
     type TodoStatusType,
 } from "@/modules/todos/models/todo.enum";
+import type { Category } from "@/modules/todos/schemas/category.schema";
 import {
     insertTodoSchema,
     todos,
     updateTodoSchema,
 } from "@/modules/todos/schemas/todo.schema";
-import type { Category } from "@/modules/todos/schemas/category.schema";
 
 const createTodoForUserSchema = insertTodoSchema.omit({ userId: true });
 const updateTodoForUserSchema = updateTodoSchema;

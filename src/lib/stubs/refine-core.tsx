@@ -2,19 +2,20 @@
 
 import {
     createContext,
+    type ReactNode,
     useCallback,
     useContext,
     useEffect,
     useMemo,
     useState,
-    type ReactNode,
 } from "react";
 
-export type BaseRecord = Record<string, any>;
+export type BaseRecord = Record<string, unknown>;
 export type HttpError = Error;
 
 export interface Pagination {
     current?: number;
+    page?: number;
     pageSize?: number;
 }
 
@@ -249,8 +250,8 @@ export function useList<TData = BaseRecord>(params: GetListParams) {
     const [data, setData] = useState<ListResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const serialized = useSerializedParams(params);
-    const stableParams = useMemo(() => params, [serialized]);
+    const _serialized = useSerializedParams(params);
+    const stableParams = useMemo(() => params, [params]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
@@ -314,8 +315,8 @@ export function useOne<TData = BaseRecord>(params: GetOneParams) {
     const [data, setData] = useState<OneResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const serialized = useSerializedParams(params);
-    const stableParams = useMemo(() => params, [serialized]);
+    const _serialized = useSerializedParams(params);
+    const stableParams = useMemo(() => params, [params]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
@@ -374,8 +375,8 @@ export function useCustom<TData = BaseRecord>(params: CustomParams) {
     const [data, setData] = useState<CustomResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const serialized = useSerializedParams(params);
-    const stableParams = useMemo(() => params, [serialized]);
+    const _serialized = useSerializedParams(params);
+    const stableParams = useMemo(() => params, [params]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;

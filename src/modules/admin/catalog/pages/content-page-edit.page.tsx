@@ -7,12 +7,20 @@ import { ContentPageForm } from "@/modules/admin/catalog/components/content-page
 export function ContentPageEditPage() {
     const params = useParams<{ id: string }>();
     const id = Number(params?.id);
+    const isValidId = Number.isFinite(id);
+    const effectiveId = isValidId ? id : 0;
 
-    if (!Number.isFinite(id)) {
+    const { query, result } = useOne({
+        resource: "content-pages",
+        id: effectiveId,
+        queryOptions: {
+            enabled: isValidId,
+        },
+    });
+
+    if (!isValidId) {
         return <p className="text-sm text-muted-foreground">参数错误</p>;
     }
-
-    const { query, result } = useOne({ resource: "content-pages", id });
 
     const isLoading = query.isLoading;
     if (isLoading) {

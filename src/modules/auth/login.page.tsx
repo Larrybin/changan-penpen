@@ -1,7 +1,7 @@
 import { GalleryVerticalEnd } from "lucide-react";
 import Link from "next/link";
-import type React from "react";
 import { getTranslations } from "next-intl/server";
+import type React from "react";
 
 import { LoginForm } from "./components/login-form";
 

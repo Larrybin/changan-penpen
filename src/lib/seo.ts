@@ -175,8 +175,7 @@ function parseAttributes(
     const attributes: Record<string, string> = {};
     const attributeRegex =
         /([a-z0-9:-]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'>]+))?/gi;
-    let match: RegExpExecArray | null;
-    while ((match = attributeRegex.exec(rawAttributes)) !== null) {
+    for (const match of rawAttributes.matchAll(attributeRegex)) {
         const attributeName = match[1].toLowerCase();
         if (!isAllowedAttribute(tag, attributeName)) {
             continue;
@@ -191,10 +190,9 @@ function parseAttributes(
             rawValue,
             tag,
         );
-        if (sanitizedValue === undefined) {
-            continue;
+        if (sanitizedValue !== undefined) {
+            attributes[attributeName] = sanitizedValue;
         }
-        attributes[attributeName] = sanitizedValue;
     }
     return attributes;
 }
@@ -206,8 +204,7 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
     const nodes: SanitizedHeadNode[] = [];
     const nodeRegex =
         /<(script|style|noscript)([^>]*)>([\s\S]*?)<\/\1\s*>|<(meta|link)([^>]*)\/?\s*>/gi;
-    let match: RegExpExecArray | null;
-    while ((match = nodeRegex.exec(html)) !== null) {
+    for (const match of html.matchAll(nodeRegex)) {
         if (match[1]) {
             const tag = match[1].toLowerCase() as AllowedHeadTag;
             const attributes = parseAttributes(match[2] ?? "", tag);

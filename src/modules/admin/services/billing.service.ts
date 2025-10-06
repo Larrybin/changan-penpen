@@ -1,6 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
-import { creditsHistory, customers, orders } from "@/db";
-import { getDb } from "@/db";
+import { creditsHistory, customers, getDb, orders } from "@/db";
 import { normalizePagination } from "../utils/pagination";
 
 export interface ListOrdersOptions {

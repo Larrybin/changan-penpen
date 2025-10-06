@@ -1,26 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
 import { useCreate, useNotification, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { ProductInput } from "@/modules/admin/services/catalog.service";
 
 export interface ProductFormProps {
     id?: number;
-    initialData?: {
-        slug?: string;
-        name?: string;
-        description?: string;
-        priceCents?: number;
-        currency?: string;
-        type?: string;
-        status?: string;
-        metadata?: string;
-    };
+    initialData?: Partial<ProductInput>;
 }
 
 export function ProductForm({ id, initialData }: ProductFormProps) {
@@ -29,7 +21,7 @@ export function ProductForm({ id, initialData }: ProductFormProps) {
     const { mutateAsync: createProduct } = useCreate();
     const { mutateAsync: updateProduct } = useUpdate();
 
-    const form = useForm({
+    const form = useForm<ProductInput>({
         defaultValues: {
             slug: "",
             name: "",
@@ -57,7 +49,7 @@ export function ProductForm({ id, initialData }: ProductFormProps) {
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialData?.slug, initialData?.name]);
+    }, [initialData?.slug, initialData?.name, initialData, form.reset]);
 
     const handleSubmit = form.handleSubmit(async (values) => {
         const payload = {
@@ -95,27 +87,48 @@ export function ProductForm({ id, initialData }: ProductFormProps) {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-2">
-                <label className="text-sm font-medium">Slug</label>
+                <label className="text-sm font-medium" htmlFor="product-slug">
+                    Slug
+                </label>
                 <Input
+                    id="product-slug"
                     {...form.register("slug", { required: true })}
                     placeholder="plan-pro"
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">名称</label>
+                <label className="text-sm font-medium" htmlFor="product-name">
+                    名称
+                </label>
                 <Input
+                    id="product-name"
                     {...form.register("name", { required: true })}
                     placeholder="专业版订阅"
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">描述</label>
-                <Textarea rows={4} {...form.register("description")} />
+                <label
+                    className="text-sm font-medium"
+                    htmlFor="product-description"
+                >
+                    描述
+                </label>
+                <Textarea
+                    id="product-description"
+                    rows={4}
+                    {...form.register("description")}
+                />
             </div>
             <div className="grid gap-2 md:grid-cols-3 md:gap-4">
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">价格（分）</label>
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="product-price"
+                    >
+                        价格（分）
+                    </label>
                     <Input
+                        id="product-price"
                         type="number"
                         {...form.register("priceCents", {
                             valueAsNumber: true,
@@ -123,21 +136,51 @@ export function ProductForm({ id, initialData }: ProductFormProps) {
                     />
                 </div>
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">货币</label>
-                    <Input {...form.register("currency")} placeholder="USD" />
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="product-currency"
+                    >
+                        货币
+                    </label>
+                    <Input
+                        id="product-currency"
+                        {...form.register("currency")}
+                        placeholder="USD"
+                    />
                 </div>
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">类型</label>
-                    <Input {...form.register("type")} placeholder="one_time" />
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="product-type"
+                    >
+                        类型
+                    </label>
+                    <Input
+                        id="product-type"
+                        {...form.register("type")}
+                        placeholder="one_time"
+                    />
                 </div>
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">状态</label>
-                <Input {...form.register("status")} placeholder="active" />
+                <label className="text-sm font-medium" htmlFor="product-status">
+                    状态
+                </label>
+                <Input
+                    id="product-status"
+                    {...form.register("status")}
+                    placeholder="active"
+                />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">元数据</label>
+                <label
+                    className="text-sm font-medium"
+                    htmlFor="product-metadata"
+                >
+                    元数据
+                </label>
                 <Textarea
+                    id="product-metadata"
                     rows={3}
                     {...form.register("metadata")}
                     placeholder='{"category":"subscription"}'

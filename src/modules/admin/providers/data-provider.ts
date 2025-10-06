@@ -2,10 +2,14 @@ import type {
     CreateParams,
     DataProvider,
     DeleteOneParams,
+    Filter,
     GetListParams,
     GetOneParams,
     UpdateParams,
 } from "@refinedev/core";
+
+type CustomParams = Parameters<NonNullable<DataProvider["custom"]>>[0];
+type CustomReturn = ReturnType<NonNullable<DataProvider["custom"]>>;
 
 const API_BASE = "/api/admin";
 
@@ -33,11 +37,12 @@ function buildQuery(params?: GetListParams) {
     const searchParams = new URLSearchParams();
 
     if (params.pagination) {
-        const p = params.pagination as any;
-        const current = p?.current ?? p?.page;
-        const pageSize = p?.pageSize;
+        const { current, page, pageSize } = params.pagination;
+        const currentPage = current ?? page;
         if (current) {
             searchParams.set("page", `${current}`);
+        } else if (currentPage) {
+            searchParams.set("page", `${currentPage}`);
         }
         if (pageSize) {
             searchParams.set("perPage", `${pageSize}`);
@@ -45,33 +50,42 @@ function buildQuery(params?: GetListParams) {
     }
 
     if (params.filters) {
-        params.filters.forEach((filter: any) => {
-            if (filter && typeof filter === "object") {
-                if (typeof filter.field !== "undefined") {
-                    if (filter.value !== undefined && filter.value !== null) {
-                        searchParams.append(
-                            String(filter.field),
-                            String(filter.value),
-                        );
-                    }
-                } else if (
-                    (filter.operator === "or" || filter.operator === "and") &&
-                    Array.isArray(filter.value)
-                ) {
-                    filter.value.forEach((inner: any) => {
-                        if (inner && typeof inner.field !== "undefined") {
-                            if (
-                                inner.value !== undefined &&
-                                inner.value !== null
-                            ) {
-                                searchParams.append(
-                                    String(inner.field),
-                                    String(inner.value),
-                                );
-                            }
-                        }
-                    });
+        params.filters.forEach((filter) => {
+            if (!filter) {
+                return;
+            }
+            if (typeof filter.field !== "undefined") {
+                if (filter.value !== undefined && filter.value !== null) {
+                    searchParams.append(
+                        String(filter.field),
+                        String(filter.value),
+                    );
                 }
+                return;
+            }
+            if (
+                (filter.operator === "or" || filter.operator === "and") &&
+                Array.isArray(filter.value)
+            ) {
+                filter.value.forEach((inner) => {
+                    if (
+                        inner &&
+                        typeof inner === "object" &&
+                        "field" in inner &&
+                        (inner as Filter).field !== undefined
+                    ) {
+                        const innerFilter = inner as Filter;
+                        if (
+                            innerFilter.value !== undefined &&
+                            innerFilter.value !== null
+                        ) {
+                            searchParams.append(
+                                String(innerFilter.field),
+                                String(innerFilter.value),
+                            );
+                        }
+                    }
+                });
             }
         });
     }
@@ -88,7 +102,7 @@ function buildQuery(params?: GetListParams) {
 }
 
 export const adminDataProvider = {
-    getList: async <TData = any>(params: GetListParams) => {
+    getList: async <TData = Record<string, unknown>>(params: GetListParams) => {
         const query = buildQuery(params);
         const response = await fetch(`${API_BASE}/${params.resource}${query}`, {
             method: "GET",
@@ -110,7 +124,10 @@ export const adminDataProvider = {
             total,
         };
     },
-    getOne: async <TData = any>({ resource, id }: GetOneParams) => {
+    getOne: async <TData = Record<string, unknown>>({
+        resource,
+        id,
+    }: GetOneParams) => {
         const response = await fetch(`${API_BASE}/${resource}/${id}`, {
             method: "GET",
             credentials: "include",
@@ -120,7 +137,10 @@ export const adminDataProvider = {
             data: (payload.data ?? null) as TData,
         };
     },
-    create: async <TData = any>({ resource, variables }: CreateParams) => {
+    create: async <TData = Record<string, unknown>>({
+        resource,
+        variables,
+    }: CreateParams) => {
         const response = await fetch(`${API_BASE}/${resource}`, {
             method: "POST",
             credentials: "include",
@@ -134,7 +154,11 @@ export const adminDataProvider = {
             data: (payload.data ?? null) as TData,
         };
     },
-    update: async <TData = any>({ resource, id, variables }: UpdateParams) => {
+    update: async <TData = Record<string, unknown>>({
+        resource,
+        id,
+        variables,
+    }: UpdateParams) => {
         const response = await fetch(`${API_BASE}/${resource}/${id}`, {
             method: "PATCH",
             credentials: "include",
@@ -148,7 +172,10 @@ export const adminDataProvider = {
             data: (payload.data ?? null) as TData,
         };
     },
-    deleteOne: async <TData = any>({ resource, id }: DeleteOneParams) => {
+    deleteOne: async <TData = Record<string, unknown>>({
+        resource,
+        id,
+    }: DeleteOneParams) => {
         const response = await fetch(`${API_BASE}/${resource}/${id}`, {
             method: "DELETE",
             credentials: "include",
@@ -158,7 +185,7 @@ export const adminDataProvider = {
             data: { id } as TData,
         };
     },
-    custom: async ({ url, method, meta, payload }: any) => {
+    custom: async ({ url, method, meta, payload }: CustomParams) => {
         const requestUrl = url ? `${API_BASE}${url}` : API_BASE;
         const response = await fetch(requestUrl, {
             method: method ?? "GET",
@@ -169,8 +196,7 @@ export const adminDataProvider = {
             },
             body: payload ? JSON.stringify(payload) : undefined,
         });
-        const data = await parseResponse(response);
-        return data;
+        return (await parseResponse(response)) as Awaited<CustomReturn>;
     },
     getApiUrl: () => API_BASE,
 } as unknown as DataProvider;

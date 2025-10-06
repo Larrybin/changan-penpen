@@ -23,7 +23,7 @@ export default function LogoutButton() {
             } else {
                 toast.error(tMessages(result.messageKey));
             }
-        } catch (error) {
+        } catch (_error) {
             toast.error(tMessages("unknownError"));
         }
     };

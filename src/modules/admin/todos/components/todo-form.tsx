@@ -3,9 +3,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Form,
     FormControl,
@@ -24,7 +25,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { TodoPriority, TodoStatus } from "@/modules/todos/models/todo.enum";
 import { insertTodoSchema } from "@/modules/todos/schemas/todo.schema";
 
@@ -110,7 +110,13 @@ export function AdminTodoForm({
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialValues?.userId, initialValues?.title]);
+    }, [
+        initialValues?.userId,
+        initialValues?.title,
+        initialValues,
+        form.reset,
+        onTenantChange,
+    ]);
 
     const watchedTenantId = form.watch("userId") ?? "";
     const selectedTenantId = watchedTenantId.trim();

@@ -1,4 +1,5 @@
-import { CheckSquare, List, Plus, CreditCard } from "lucide-react";
+import { desc, eq } from "drizzle-orm";
+import { CheckSquare, CreditCard, List, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,11 +9,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-
+import { customers, getDb, subscriptions } from "@/db";
 import { getSession } from "@/modules/auth/utils/auth-utils";
-import { getDb } from "@/db";
-import { customers, subscriptions } from "@/db";
-import { eq, desc } from "drizzle-orm";
 import { SUBSCRIPTION_TIERS } from "@/modules/creem/config/subscriptions";
 
 export default async function Dashboard() {

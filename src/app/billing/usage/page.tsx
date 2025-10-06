@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
-
-import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
-import { getUsageDaily } from "@/modules/creem/services/usage.service";
 import type { AppLocale } from "@/i18n/config";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
+import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
+import { getUsageDaily } from "@/modules/creem/services/usage.service";
 
 export async function generateMetadata(): Promise<Metadata> {
     const locale = (await getLocale()) as AppLocale;
@@ -71,8 +70,8 @@ export default async function UsagePage() {
                         <div key={d} className="border rounded p-4">
                             <div className="font-semibold mb-2">{d}</div>
                             <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                                {byDate[d].map((it, idx) => (
-                                    <li key={idx}>
+                                {byDate[d].map((it) => (
+                                    <li key={`${d}-${it.feature}-${it.unit}`}>
                                         {t("entry", {
                                             feature: it.feature,
                                             total: it.total,

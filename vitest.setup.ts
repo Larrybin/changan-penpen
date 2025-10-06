@@ -1,7 +1,7 @@
 import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
-import React from "react";
 import type { ComponentProps, PropsWithChildren } from "react";
+import React from "react";
 import { afterEach, vi } from "vitest";
 
 afterEach(() => {
@@ -10,7 +10,7 @@ afterEach(() => {
 
 // Ensure React is available in scope for components compiled with classic JSX
 // or libraries that expect global React in test environment
-(globalThis as any).React = React;
+(globalThis as typeof globalThis & { React?: typeof React }).React = React;
 
 vi.mock("next/navigation", () => ({
     useRouter: () => ({

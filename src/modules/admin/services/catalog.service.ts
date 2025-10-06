@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm";
-import { contentPages, coupons, products } from "@/db";
-import { getDb } from "@/db";
+import { contentPages, coupons, getDb, products } from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
 
 const now = () => new Date().toISOString();

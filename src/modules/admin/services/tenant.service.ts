@@ -2,12 +2,12 @@ import { desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import {
     creditsHistory,
     customers,
+    getDb,
     orders,
     subscriptions,
     usageDaily,
     user,
 } from "@/db";
-import { getDb } from "@/db";
 import { normalizePagination } from "../utils/pagination";
 
 export interface ListTenantsOptions {

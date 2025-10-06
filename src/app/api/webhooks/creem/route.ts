@@ -1,17 +1,47 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { headers } from "next/headers";
-import { verifyCreemWebhookSignature } from "@/modules/creem/utils/verify-signature";
 import type {
-    CreemWebhookEvent,
     CreemCheckout,
+    CreemCustomer,
     CreemSubscription,
+    CreemWebhookEvent,
 } from "@/modules/creem/models/creem.types";
 import {
+    addCreditsToCustomer,
     createOrUpdateCustomer,
     createOrUpdateSubscription,
-    addCreditsToCustomer,
     getCustomerIdByUserId,
 } from "@/modules/creem/services/billing.service";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { verifyCreemWebhookSignature } from "@/modules/creem/utils/verify-signature";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function isCreemCustomer(value: unknown): value is CreemCustomer {
+    return isRecord(value) && typeof value.id === "string";
+}
+
+function isCreemSubscriptionPayload(
+    value: unknown,
+): value is CreemSubscription {
+    if (!isRecord(value) || typeof value.id !== "string") {
+        return false;
+    }
+    const customer = value.customer;
+    return typeof customer === "string" || isCreemCustomer(customer);
+}
+
+function isCreemCheckoutPayload(value: unknown): value is CreemCheckout {
+    if (!isRecord(value) || !isCreemCustomer(value.customer)) {
+        return false;
+    }
+    const subscription = value.subscription;
+    if (subscription && !isCreemSubscriptionPayload(subscription)) {
+        return false;
+    }
+    return true;
+}
 
 export async function POST(request: Request) {
     try {
@@ -35,17 +65,30 @@ export async function POST(request: Request) {
             return new Response("Invalid signature", { status: 401 });
         }
 
-        const event = JSON.parse(raw) as CreemWebhookEvent;
+        const parsed = JSON.parse(raw) as unknown;
+        if (!isRecord(parsed) || typeof parsed.eventType !== "string") {
+            throw new Error("Invalid webhook payload");
+        }
+        const event: CreemWebhookEvent = {
+            eventType: parsed.eventType,
+            object: parsed.object,
+        };
         switch (event.eventType) {
             case "checkout.completed":
-                await onCheckoutCompleted(event.object as CreemCheckout);
+                if (!isCreemCheckoutPayload(event.object)) {
+                    throw new Error("Invalid checkout payload");
+                }
+                await onCheckoutCompleted(event.object);
                 break;
             case "subscription.active":
             case "subscription.paid":
             case "subscription.canceled":
             case "subscription.expired":
             case "subscription.trialing":
-                await onSubscriptionChanged(event.object as CreemSubscription);
+                if (!isCreemSubscriptionPayload(event.object)) {
+                    throw new Error("Invalid subscription payload");
+                }
+                await onSubscriptionChanged(event.object);
                 break;
             default:
                 console.log(`[creem webhook] unhandled: ${event.eventType}`);
@@ -90,9 +133,14 @@ async function onCheckoutCompleted(checkout: CreemCheckout) {
 }
 
 async function onSubscriptionChanged(subscription: CreemSubscription) {
-    const metaUserId = (subscription?.metadata as any)?.user_id as
-        | string
-        | undefined;
+    const metaUserId = (() => {
+        const metadata = subscription.metadata;
+        if (!metadata) {
+            return undefined;
+        }
+        const userId = metadata.user_id;
+        return typeof userId === "string" ? userId : undefined;
+    })();
 
     let customerId: number | null = null;
     if (
@@ -101,7 +149,7 @@ async function onSubscriptionChanged(subscription: CreemSubscription) {
     ) {
         const userId = metaUserId || "";
         customerId = await createOrUpdateCustomer(
-            subscription.customer as any,
+            subscription.customer,
             userId,
         );
     } else if (metaUserId) {

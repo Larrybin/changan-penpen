@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import type { AppLocale } from "@/i18n/config";
@@ -115,13 +116,9 @@ export default async function ContactPage() {
                     </section>
                 ))}
             </div>
-            <script
-                type="application/ld+json"
-                suppressHydrationWarning
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify(structuredData),
-                }}
-            />
+            <Script id="contact-structured-data" type="application/ld+json">
+                {JSON.stringify(structuredData)}
+            </Script>
         </div>
     );
 }

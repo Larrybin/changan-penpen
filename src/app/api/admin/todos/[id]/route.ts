@@ -3,8 +3,8 @@ import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 import {
     deleteTodoForAdmin,
     getTodoByIdForAdmin,
-    updateTodoForAdmin,
     type TodoUpdateInput,
+    updateTodoForAdmin,
 } from "@/modules/todos/services/todo.service";
 
 function parseId(param: string | string[] | undefined) {

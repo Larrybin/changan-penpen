@@ -9,8 +9,36 @@ interface TenantDetailPageProps {
     id: string;
 }
 
+type TenantSubscription = { status: string | null };
+type TenantCreditsEntry = {
+    id: string;
+    amount: number;
+    type: string | null;
+    createdAt: string | null;
+};
+type TenantUsageEntry = {
+    date: string;
+    total: number;
+    unit: string | null;
+    feature?: string | null;
+};
+type TenantDetail = {
+    id: string;
+    email: string;
+    name?: string | null;
+    createdAt?: string;
+    lastSignIn?: string | null;
+    credits?: number;
+    subscriptions?: TenantSubscription[];
+    creditsHistory?: TenantCreditsEntry[];
+    usage?: TenantUsageEntry[];
+};
+
 export function TenantDetailPage({ id }: TenantDetailPageProps) {
-    const { query, result } = useOne({ resource: "tenants", id });
+    const { query, result } = useOne<TenantDetail>({
+        resource: "tenants",
+        id,
+    });
     const isLoading = query.isLoading;
     const tenant = result?.data;
 
@@ -85,21 +113,19 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {(tenant.creditsHistory ?? []).map(
-                                    (entry: any) => (
-                                        <tr key={entry.id} className="border-t">
-                                            <td className="py-2 pr-4">
-                                                {entry.createdAt?.slice(0, 19)}
-                                            </td>
-                                            <td className="py-2 pr-4 uppercase">
-                                                {entry.type ?? "-"}
-                                            </td>
-                                            <td className="py-2 pr-4">
-                                                {entry.amount}
-                                            </td>
-                                        </tr>
-                                    ),
-                                )}
+                                {(tenant.creditsHistory ?? []).map((entry) => (
+                                    <tr key={entry.id} className="border-t">
+                                        <td className="py-2 pr-4">
+                                            {entry.createdAt?.slice(0, 19)}
+                                        </td>
+                                        <td className="py-2 pr-4 uppercase">
+                                            {entry.type ?? "-"}
+                                        </td>
+                                        <td className="py-2 pr-4">
+                                            {entry.amount}
+                                        </td>
+                                    </tr>
+                                ))}
                                 {!tenant.creditsHistory?.length && (
                                     <tr>
                                         <td
@@ -128,7 +154,7 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {(tenant.usage ?? []).map((item: any) => (
+                                {(tenant.usage ?? []).map((item) => (
                                     <tr
                                         key={`${item.date}-${item.feature}`}
                                         className="border-t"

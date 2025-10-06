@@ -6,5 +6,3 @@ declare global {
         ADMIN_ENTRY_TOKEN: string;
     }
 }
-
-export {};

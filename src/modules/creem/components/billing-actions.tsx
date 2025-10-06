@@ -3,6 +3,36 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function readUrl(
+    payload: unknown,
+    key: "checkoutUrl" | "portalUrl",
+): string | undefined {
+    if (!isRecord(payload)) {
+        return undefined;
+    }
+    const data = payload.data;
+    if (!isRecord(data)) {
+        return undefined;
+    }
+    const url = data[key];
+    return typeof url === "string" ? url : undefined;
+}
+
+function readErrorMessage(payload: unknown): string | undefined {
+    if (typeof payload === "string") {
+        return payload;
+    }
+    if (!isRecord(payload)) {
+        return undefined;
+    }
+    const error = payload.error;
+    return typeof error === "string" ? error : undefined;
+}
+
 export default function BillingActions() {
     const [loading, setLoading] = useState<string | null>(null);
 
@@ -17,14 +47,18 @@ export default function BillingActions() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ tierId, productType }),
             });
-            const json: any = await resp.json();
-            const normalized = json?.data?.checkoutUrl as string | undefined;
+            const payload: unknown = await resp.json();
+            const normalized = readUrl(payload, "checkoutUrl");
             if (!resp.ok || !normalized) {
-                throw new Error(json?.error || "Failed to create checkout");
+                throw new Error(
+                    readErrorMessage(payload) || "Failed to create checkout",
+                );
             }
-            window.location.href = normalized as string;
-        } catch (e: any) {
-            alert(e?.message || "Checkout error");
+            window.location.href = normalized;
+        } catch (error: unknown) {
+            const message =
+                error instanceof Error ? error.message : "Checkout error";
+            alert(message);
         } finally {
             setLoading(null);
         }
@@ -34,19 +68,19 @@ export default function BillingActions() {
         try {
             setLoading("portal");
             const resp = await fetch("/api/creem/customer-portal");
-            const json: any = await resp.json();
+            const payload: unknown = await resp.json();
             if (!resp.ok) {
                 throw new Error(
-                    typeof json === "string"
-                        ? json
-                        : json?.error || "Failed to get portal link",
+                    readErrorMessage(payload) || "Failed to get portal link",
                 );
             }
-            const url = json?.data?.portalUrl as string | undefined;
+            const url = readUrl(payload, "portalUrl");
             if (!url) throw new Error("Portal URL missing");
             window.location.href = url;
-        } catch (e: any) {
-            alert(e?.message || "Portal error");
+        } catch (error: unknown) {
+            const message =
+                error instanceof Error ? error.message : "Portal error";
+            alert(message);
         } finally {
             setLoading(null);
         }

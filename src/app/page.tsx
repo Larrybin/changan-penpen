@@ -1,7 +1,6 @@
-import MarketingLandingPage from "@/modules/marketing/landing.page";
-
-import { resolveAppUrl, ensureAbsoluteUrl } from "@/lib/seo";
+import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
+import MarketingLandingPage from "@/modules/marketing/landing.page";
 
 export default async function HomePage() {
     const settings = await getSiteSettingsPayload();

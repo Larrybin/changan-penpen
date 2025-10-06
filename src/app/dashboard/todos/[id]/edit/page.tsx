@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-
-import EditTodoPage from "@/modules/todos/edit-todo.page";
 import { generateDashboardTodosMetadata } from "@/modules/dashboard/metadata";
+import EditTodoPage from "@/modules/todos/edit-todo.page";
 
 interface PageProps {
     params: Promise<{ id: string }>;

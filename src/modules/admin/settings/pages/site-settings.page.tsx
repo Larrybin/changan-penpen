@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useNotification } from "@refinedev/core";
+import React, { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -221,9 +221,15 @@ export function SiteSettingsPage() {
                     />
                 </Field>
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">站点地图</label>
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="sitemap-enabled"
+                    >
+                        站点地图
+                    </label>
                     <div className="flex items-center gap-2 text-sm">
                         <input
+                            id="sitemap-enabled"
                             type="checkbox"
                             checked={settings.sitemapEnabled}
                             onChange={(event) =>
@@ -338,14 +344,28 @@ export function SiteSettingsPage() {
 function Field({
     label,
     children,
+    id,
 }: {
     label: string;
     children: React.ReactNode;
+    id?: string;
 }) {
+    const generatedId = useId();
+    const existingId = React.isValidElement(children)
+        ? (children.props.id as string | undefined)
+        : undefined;
+    const controlId = id || existingId || generatedId;
+    const renderedChild =
+        React.isValidElement(children) && !existingId
+            ? React.cloneElement(children, { id: controlId })
+            : children;
+
     return (
         <div className="grid gap-2">
-            <label className="text-sm font-medium">{label}</label>
-            {children}
+            <label className="text-sm font-medium" htmlFor={controlId}>
+                {label}
+            </label>
+            {renderedChild}
         </div>
     );
 }

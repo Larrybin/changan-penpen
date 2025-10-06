@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCreate, useList } from "@refinedev/core";
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,10 +48,14 @@ export function ReportsPage() {
                     onSubmit={handleGenerate}
                 >
                     <div className="grid gap-1">
-                        <label className="text-xs font-medium uppercase text-muted-foreground">
+                        <label
+                            className="text-xs font-medium uppercase text-muted-foreground"
+                            htmlFor="report-type"
+                        >
                             报表类型
                         </label>
                         <select
+                            id="report-type"
                             className="rounded-md border px-3 py-2 text-sm"
                             value={form.type}
                             onChange={(event) =>
@@ -69,10 +73,14 @@ export function ReportsPage() {
                         </select>
                     </div>
                     <div className="grid gap-1">
-                        <label className="text-xs font-medium uppercase text-muted-foreground">
+                        <label
+                            className="text-xs font-medium uppercase text-muted-foreground"
+                            htmlFor="report-tenant"
+                        >
                             租户 ID（可选）
                         </label>
                         <Input
+                            id="report-tenant"
                             value={form.tenantId}
                             onChange={(event) =>
                                 setForm((prev) => ({

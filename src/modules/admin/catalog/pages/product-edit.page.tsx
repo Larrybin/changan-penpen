@@ -7,12 +7,20 @@ import { ProductForm } from "@/modules/admin/catalog/components/product-form";
 export function ProductEditPage() {
     const params = useParams<{ id: string }>();
     const id = Number(params?.id);
+    const isValidId = Number.isFinite(id);
+    const effectiveId = isValidId ? id : 0;
 
-    if (!Number.isFinite(id)) {
+    const { query, result } = useOne({
+        resource: "products",
+        id: effectiveId,
+        queryOptions: {
+            enabled: isValidId,
+        },
+    });
+
+    if (!isValidId) {
         return <p className="text-sm text-muted-foreground">参数错误</p>;
     }
-
-    const { query, result } = useOne({ resource: "products", id });
 
     const isLoading = query.isLoading;
     if (isLoading) {

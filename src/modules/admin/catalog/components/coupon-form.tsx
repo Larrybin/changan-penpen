@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
 import { useCreate, useNotification, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { CouponInput } from "@/modules/admin/services/catalog.service";
 
 interface CouponFormProps {
     id?: number;
-    initialData?: Record<string, any>;
+    initialData?: Partial<CouponInput>;
 }
 
 export function CouponForm({ id, initialData }: CouponFormProps) {
@@ -20,7 +21,7 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
     const { mutateAsync: createCoupon } = useCreate();
     const { mutateAsync: updateCoupon } = useUpdate();
 
-    const form = useForm({
+    const form = useForm<CouponInput>({
         defaultValues: {
             code: "",
             description: "",
@@ -48,7 +49,7 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialData?.code]);
+    }, [initialData?.code, initialData, form.reset]);
 
     const handleSubmit = form.handleSubmit(async (values) => {
         const payload = {
@@ -83,27 +84,51 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-2">
-                <label className="text-sm font-medium">优惠码</label>
+                <label className="text-sm font-medium" htmlFor="coupon-code">
+                    优惠码
+                </label>
                 <Input
+                    id="coupon-code"
                     {...form.register("code", { required: true })}
                     placeholder="WELCOME10"
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">描述</label>
-                <Textarea rows={3} {...form.register("description")} />
+                <label
+                    className="text-sm font-medium"
+                    htmlFor="coupon-description"
+                >
+                    描述
+                </label>
+                <Textarea
+                    id="coupon-description"
+                    rows={3}
+                    {...form.register("description")}
+                />
             </div>
             <div className="grid gap-2 md:grid-cols-3 md:gap-4">
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">折扣类型</label>
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="coupon-discount-type"
+                    >
+                        折扣类型
+                    </label>
                     <Input
+                        id="coupon-discount-type"
                         {...form.register("discountType")}
                         placeholder="percentage"
                     />
                 </div>
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">折扣值</label>
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="coupon-discount-value"
+                    >
+                        折扣值
+                    </label>
                     <Input
+                        id="coupon-discount-value"
                         type="number"
                         {...form.register("discountValue", {
                             valueAsNumber: true,
@@ -111,8 +136,14 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
                     />
                 </div>
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">最大兑换次数</label>
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="coupon-max-redemptions"
+                    >
+                        最大兑换次数
+                    </label>
                     <Input
+                        id="coupon-max-redemptions"
                         type="number"
                         {...form.register("maxRedemptions", {
                             valueAsNumber: true,
@@ -122,20 +153,41 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
             </div>
             <div className="grid gap-2 md:grid-cols-2 md:gap-4">
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">开始时间</label>
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="coupon-starts-at"
+                    >
+                        开始时间
+                    </label>
                     <Input
+                        id="coupon-starts-at"
                         type="datetime-local"
                         {...form.register("startsAt")}
                     />
                 </div>
                 <div className="grid gap-2">
-                    <label className="text-sm font-medium">结束时间</label>
-                    <Input type="datetime-local" {...form.register("endsAt")} />
+                    <label
+                        className="text-sm font-medium"
+                        htmlFor="coupon-ends-at"
+                    >
+                        结束时间
+                    </label>
+                    <Input
+                        id="coupon-ends-at"
+                        type="datetime-local"
+                        {...form.register("endsAt")}
+                    />
                 </div>
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium">状态</label>
-                <Input {...form.register("status")} placeholder="active" />
+                <label className="text-sm font-medium" htmlFor="coupon-status">
+                    状态
+                </label>
+                <Input
+                    id="coupon-status"
+                    {...form.register("status")}
+                    placeholder="active"
+                />
             </div>
             <div className="flex justify-end gap-2">
                 <Button

@@ -1,15 +1,15 @@
-import PublicHeader from "./components/public-header";
-import type React from "react";
-import Playground from "./components/playground";
-import PublicFooter from "./components/public-footer";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { useTranslations, useLocale } from "next-intl";
-
+import Script from "next/script";
+import { useLocale, useTranslations } from "next-intl";
+import type React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import type { AppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
+import Playground from "./components/playground";
+import PublicFooter from "./components/public-footer";
+import PublicHeader from "./components/public-header";
 
 type MarketingLandingPageProps = {
     appUrl: string;
@@ -248,13 +248,9 @@ export default function MarketingLandingPage({
             </main>
 
             <PublicFooter />
-            <script
-                type="application/ld+json"
-                suppressHydrationWarning
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify(structuredData),
-                }}
-            />
+            <Script id="marketing-structured-data" type="application/ld+json">
+                {JSON.stringify(structuredData)}
+            </Script>
         </div>
     );
 }

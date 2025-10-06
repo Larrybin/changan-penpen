@@ -1,6 +1,12 @@
 import { desc, eq, sql } from "drizzle-orm";
-import { creditsHistory, customers, orders, reports, usageDaily } from "@/db";
-import { getDb } from "@/db";
+import {
+    creditsHistory,
+    customers,
+    getDb,
+    orders,
+    reports,
+    usageDaily,
+} from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
 import { normalizePagination } from "@/modules/admin/utils/pagination";
 
@@ -80,7 +86,6 @@ async function generateReportData(input: CreateReportInput) {
             return generateOrdersReport(input);
         case "usage":
             return generateUsageReport(input);
-        case "credits":
         default:
             return generateCreditsReport(input);
     }
@@ -176,7 +181,7 @@ async function generateCreditsReport(input: CreateReportInput) {
 }
 
 function toCsv(headers: string[], rows: Array<Array<string | number | null>>) {
-    const escape = (value: string | number | null) => {
+    const escapeCsvValue = (value: string | number | null) => {
         if (value === null || value === undefined) return "";
         const str = String(value);
         if (str.includes(",") || str.includes('"')) {
@@ -187,7 +192,7 @@ function toCsv(headers: string[], rows: Array<Array<string | number | null>>) {
 
     const csvRows = [headers.join(",")];
     for (const row of rows) {
-        csvRows.push(row.map(escape).join(","));
+        csvRows.push(row.map(escapeCsvValue).join(","));
     }
     return csvRows.join("\n");
 }

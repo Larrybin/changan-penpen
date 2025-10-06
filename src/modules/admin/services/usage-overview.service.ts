@@ -1,6 +1,5 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { usageDaily, user } from "@/db";
-import { getDb } from "@/db";
+import { getDb, usageDaily, user } from "@/db";
 import { normalizePagination } from "../utils/pagination";
 
 export interface ListUsageOptions {

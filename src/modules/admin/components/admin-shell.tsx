@@ -1,14 +1,14 @@
 "use client";
 
+import { useMenu } from "@refinedev/core";
 import { CheckSquare, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { useMenu } from "@refinedev/core";
 import { Button } from "@/components/ui/button";
-import type { AuthUser } from "@/modules/auth/models/user.model";
 import { adminAuthProvider } from "@/modules/admin/providers/auth-provider";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { AuthUser } from "@/modules/auth/models/user.model";
 
 interface AdminShellProps {
     children: React.ReactNode;

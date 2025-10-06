@@ -1,15 +1,15 @@
 "use client";
-import Link from "next/link";
 import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
+    DialogClose,
     DialogContent,
     DialogTrigger,
-    DialogClose,
 } from "@/components/ui/dialog";
-import { useTranslations } from "next-intl";
 
 export default function PublicHeader() {
     const tCommon = useTranslations("Common");

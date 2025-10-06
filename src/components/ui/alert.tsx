@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import * as React from "react";
+import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva("w-full rounded-md border p-4 text-sm", {
@@ -25,6 +25,7 @@ function Alert({
     ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
     return (
+        /* biome-ignore lint/a11y/useSemanticElements: Using a div with role="status" ensures compatibility with existing styles and screen readers. */
         <div
             data-slot="alert"
             role="status"

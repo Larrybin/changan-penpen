@@ -1,9 +1,9 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { headers } from "next/headers";
-import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
-import { getDb } from "@/db";
-import { customers } from "@/modules/creem/schemas/billing.schema";
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
+import { getDb } from "@/db";
+import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
+import { customers } from "@/modules/creem/schemas/billing.schema";
 
 export async function GET() {
     try {
@@ -104,7 +104,7 @@ export async function GET() {
             status: 200,
             headers: { "Content-Type": "application/json" },
         });
-    } catch (error) {
+    } catch (_error) {
         return new Response("Internal Server Error", { status: 500 });
     }
 }

@@ -1,10 +1,10 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { headers } from "next/headers";
-import {
-    SUBSCRIPTION_TIERS,
-    CREDITS_TIERS,
-} from "@/modules/creem/config/subscriptions";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
+import {
+    CREDITS_TIERS,
+    SUBSCRIPTION_TIERS,
+} from "@/modules/creem/config/subscriptions";
 
 type Body = {
     productId?: string;
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         }
 
         const normalizedType = (body.productType || "").toLowerCase();
-        const isCredits =
+        const _isCredits =
             normalizedType === "credits" || normalizedType.includes("credits");
         const isSubscription = normalizedType === "subscription";
 
@@ -123,7 +123,18 @@ export async function POST(request: Request) {
             );
         }
 
-        const requestBody: Record<string, any> = {
+        const requestBody: {
+            product_id: string;
+            customer: { email: string };
+            metadata: {
+                user_id: string;
+                product_type: "subscription" | "credits";
+                credits: number;
+            };
+            success_url?: string;
+            cancel_url?: string;
+            discount_code?: string;
+        } = {
             product_id: productId,
             customer: { email },
             metadata: {
