@@ -341,23 +341,22 @@ export function SiteSettingsPage() {
     );
 }
 
-function Field({
-    label,
-    children,
-    id,
-}: {
+interface FieldProps {
     label: string;
     children: React.ReactNode;
     id?: string;
-}) {
+}
+
+function Field({ label, children, id }: FieldProps) {
     const generatedId = useId();
-    const existingId = React.isValidElement(children)
-        ? (children.props.id as string | undefined)
+    const childElement = React.isValidElement(children)
+        ? (children as React.ReactElement<{ id?: string }>)
         : undefined;
-    const controlId = id || existingId || generatedId;
+    const existingId = childElement?.props.id;
+    const controlId = id ?? existingId ?? generatedId;
     const renderedChild =
-        React.isValidElement(children) && !existingId
-            ? React.cloneElement(children, { id: controlId })
+        childElement && !existingId
+            ? React.cloneElement(childElement, { id: controlId })
             : children;
 
     return (

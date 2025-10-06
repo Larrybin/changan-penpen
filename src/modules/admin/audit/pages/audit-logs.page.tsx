@@ -1,9 +1,33 @@
 "use client";
 
 import { useList } from "@refinedev/core";
+import type { AuditLogRecord } from "@/modules/admin/types/resource.types";
+
+const formatDateTime = (value?: string | null) =>
+    typeof value === "string" && value.length > 0
+        ? value.slice(0, 19)
+        : "-";
+
+const formatMetadata = (metadata: unknown) => {
+    if (metadata == null || metadata === "") {
+        return "-";
+    }
+
+    if (typeof metadata === "string") {
+        return metadata;
+    }
+
+    try {
+        return JSON.stringify(metadata);
+    } catch (error) {
+        return String(metadata);
+    }
+};
 
 export function AuditLogsPage() {
-    const { query, result } = useList({ resource: "audit-logs" });
+    const { query, result } = useList<AuditLogRecord>({
+        resource: "audit-logs",
+    });
     const isLoading = query.isLoading;
     const logs = result?.data ?? [];
 
@@ -50,17 +74,17 @@ export function AuditLogsPage() {
                         {logs.map((log) => (
                             <tr key={log.id} className="border-t">
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
-                                    {log.createdAt?.slice(0, 19)}
+                                    {formatDateTime(log.createdAt)}
                                 </td>
-                                <td className="px-4 py-3">{log.adminEmail}</td>
-                                <td className="px-4 py-3">{log.action}</td>
+                                <td className="px-4 py-3">{log.adminEmail ?? "-"}</td>
+                                <td className="px-4 py-3">{log.action ?? "-"}</td>
                                 <td className="px-4 py-3">
                                     {log.targetType ?? "-"}
                                     {log.targetId ? `#${log.targetId}` : ""}
                                 </td>
                                 <td className="px-4 py-3 text-xs">
                                     <code className="rounded bg-muted px-2 py-1">
-                                        {log.metadata ?? "-"}
+                                        {formatMetadata(log.metadata)}
                                     </code>
                                 </td>
                             </tr>

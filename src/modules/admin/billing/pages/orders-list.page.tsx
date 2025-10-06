@@ -4,6 +4,22 @@ import { type CrudFilter, useList } from "@refinedev/core";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { OrderRecord } from "@/modules/admin/types/resource.types";
+
+const formatCurrency = (amountCents?: number | null, currency?: string | null) => {
+    const normalizedAmount = typeof amountCents === "number" ? amountCents : 0;
+    const code = typeof currency === "string" && currency.length > 0 ? currency : "USD";
+
+    return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency: code,
+    }).format(normalizedAmount / 100);
+};
+
+const formatDateTime = (value?: string | null) =>
+    typeof value === "string" && value.length > 0
+        ? value.slice(0, 19)
+        : "-";
 
 export function OrdersListPage() {
     const [tenantId, setTenantId] = useState("");
@@ -20,7 +36,7 @@ export function OrdersListPage() {
                 : [],
         [tenantId],
     );
-    const { query, result } = useList({
+    const { query, result } = useList<OrderRecord>({
         resource: "orders",
         pagination: {
             pageSize: 20,
@@ -93,20 +109,17 @@ export function OrdersListPage() {
                                 <td className="px-4 py-3">
                                     <div>{order.customerEmail ?? "-"}</div>
                                     <div className="text-xs text-muted-foreground">
-                                        {order.userId}
+                                        {order.userId ?? "-"}
                                     </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                    {new Intl.NumberFormat("zh-CN", {
-                                        style: "currency",
-                                        currency: order.currency ?? "USD",
-                                    }).format((order.amountCents ?? 0) / 100)}
+                                    {formatCurrency(order.amountCents, order.currency)}
                                 </td>
                                 <td className="px-4 py-3 capitalize">
                                     {order.status ?? "-"}
                                 </td>
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
-                                    {order.createdAt?.slice(0, 19)}
+                                    {formatDateTime(order.createdAt)}
                                 </td>
                             </tr>
                         ))}

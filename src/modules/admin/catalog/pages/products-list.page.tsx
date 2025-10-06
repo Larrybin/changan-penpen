@@ -4,9 +4,22 @@ import { useDelete, useList } from "@refinedev/core";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { ProductRecord } from "@/modules/admin/types/resource.types";
+
+const formatCurrency = (amountCents?: number | null, currency?: string | null) => {
+    const normalizedAmount = typeof amountCents === "number" ? amountCents : 0;
+    const code = typeof currency === "string" && currency.length > 0 ? currency : "USD";
+
+    return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency: code,
+    }).format(normalizedAmount / 100);
+};
 
 export function ProductsListPage() {
-    const { query, result } = useList({ resource: "products" });
+    const { query, result } = useList<ProductRecord>({
+        resource: "products",
+    });
     const { mutateAsync: deleteProduct } = useDelete();
     const isLoading = query.isLoading;
     const products = result?.data ?? [];
@@ -61,17 +74,14 @@ export function ProductsListPage() {
                         {products.map((product) => (
                             <tr key={product.id} className="border-t">
                                 <td className="px-4 py-3 font-medium">
-                                    {product.name}
+                                    {product.name ?? "-"}
                                 </td>
-                                <td className="px-4 py-3">{product.slug}</td>
+                                <td className="px-4 py-3">{product.slug ?? "-"}</td>
                                 <td className="px-4 py-3">
-                                    {new Intl.NumberFormat("zh-CN", {
-                                        style: "currency",
-                                        currency: product.currency ?? "USD",
-                                    }).format((product.priceCents ?? 0) / 100)}
+                                    {formatCurrency(product.priceCents, product.currency)}
                                 </td>
                                 <td className="px-4 py-3 capitalize">
-                                    {product.status}
+                                    {product.status ?? "-"}
                                 </td>
                                 <td className="px-4 py-3 text-right space-x-2">
                                     <Button asChild size="sm" variant="ghost">
@@ -87,7 +97,7 @@ export function ProductsListPage() {
                                         onClick={async () => {
                                             await deleteProduct({
                                                 resource: "products",
-                                                id: product.id as number,
+                                                id: product.id,
                                             });
                                         }}
                                     >

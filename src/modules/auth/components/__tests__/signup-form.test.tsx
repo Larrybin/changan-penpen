@@ -1,26 +1,21 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import deMessages from "@/i18n/messages/de.json";
 import ptMessages from "@/i18n/messages/pt.json";
 import { SignupForm } from "../signup-form";
 
-type ToastMock = {
-    (...args: unknown[]): unknown;
-    success: ReturnType<typeof vi.fn>;
-    error: ReturnType<typeof vi.fn>;
-};
+const createToastMock = () =>
+    Object.assign(vi.fn(), {
+        success: vi.fn(),
+        error: vi.fn(),
+    });
 
-const createToastMock = (): ToastMock => {
-    const toast = vi.fn<(...args: unknown[]) => unknown>() as ToastMock;
-    toast.success = vi.fn();
-    toast.error = vi.fn();
-    return toast;
-};
+type ToastMock = ReturnType<typeof createToastMock>;
 
 const importToast = async (): Promise<ToastMock> => {
-    const module = (await import("react-hot-toast")) as { default: ToastMock };
-    return module.default;
+    const module = await import("react-hot-toast");
+    return module.default as unknown as ToastMock;
 };
 
 vi.mock("react-hot-toast", () => {
@@ -40,10 +35,13 @@ vi.mock("../../actions/auth.action", () => ({
 describe("SignupForm", () => {
     const renderWithMessages = (
         locale: string,
-        messages: AbstractIntlMessages,
+        messages: Record<string, unknown>,
     ) =>
         render(
-            <NextIntlClientProvider locale={locale} messages={messages}>
+            <NextIntlClientProvider
+                locale={locale}
+                messages={messages as unknown as AbstractIntlMessages}
+            >
                 <SignupForm />
             </NextIntlClientProvider>,
         );

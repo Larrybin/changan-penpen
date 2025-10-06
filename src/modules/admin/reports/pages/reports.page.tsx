@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { ReportRecord } from "@/modules/admin/types/resource.types";
 
 const REPORT_TYPES = [
     { value: "orders", label: "订单报表" },
@@ -12,8 +13,29 @@ const REPORT_TYPES = [
     { value: "credits", label: "积分报表" },
 ];
 
+const formatParameters = (parameters: unknown) => {
+    if (parameters == null || parameters === "") {
+        return "{}";
+    }
+
+    if (typeof parameters === "string") {
+        return parameters;
+    }
+
+    try {
+        return JSON.stringify(parameters);
+    } catch (error) {
+        return String(parameters);
+    }
+};
+
+const formatDateTime = (value?: string | null) =>
+    typeof value === "string" && value.length > 0
+        ? value.slice(0, 19)
+        : "-";
+
 export function ReportsPage() {
-    const { query, result } = useList({ resource: "reports" });
+    const { query, result } = useList<ReportRecord>({ resource: "reports" });
     const isLoading = query.isLoading;
     const refetch = query.refetch;
     const { mutateAsync: createReport } = useCreate();
@@ -132,18 +154,18 @@ export function ReportsPage() {
                         {reports.map((report) => (
                             <tr key={report.id} className="border-t">
                                 <td className="px-4 py-3 font-medium">
-                                    {report.type}
+                                    {report.type ?? "-"}
                                 </td>
                                 <td className="px-4 py-3">
                                     <code className="rounded bg-muted px-2 py-1 text-xs">
-                                        {report.parameters ?? "{}"}
+                                        {formatParameters(report.parameters)}
                                     </code>
                                 </td>
                                 <td className="px-4 py-3 capitalize">
-                                    {report.status}
+                                    {report.status ?? "-"}
                                 </td>
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
-                                    {report.createdAt?.slice(0, 19)}
+                                    {formatDateTime(report.createdAt)}
                                 </td>
                                 <td className="px-4 py-3">
                                     {report.downloadUrl ? (

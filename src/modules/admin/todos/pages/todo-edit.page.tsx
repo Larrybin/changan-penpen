@@ -9,6 +9,10 @@ import {
     AdminTodoForm,
     type AdminTodoFormValues,
 } from "@/modules/admin/todos/components/todo-form";
+import type {
+    AdminTodoRecord,
+    TodoCategoryRecord,
+} from "@/modules/admin/types/resource.types";
 
 interface AdminTodoEditPageProps {
     id: string;
@@ -18,7 +22,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
     const router = useRouter();
     const todoId = Number.parseInt(id, 10);
 
-    const { query: todoQuery, result: todoResult } = useOne({
+    const { query: todoQuery, result: todoResult } = useOne<AdminTodoRecord>({
         resource: "todos",
         id: todoId,
         queryOptions: {
@@ -27,7 +31,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
     });
 
     const record = todoResult?.data;
-    const tenantId = record?.userId ?? "";
+    const tenantId = typeof record?.userId === "string" ? record.userId : "";
     const normalizedTenantId = tenantId.trim();
     const categoryFilters: CrudFilter[] = normalizedTenantId
         ? [
@@ -38,7 +42,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
               },
           ]
         : [];
-    const { result: categoriesResult } = useList({
+    const { result: categoriesResult } = useList<TodoCategoryRecord>({
         resource: "categories",
         pagination: {
             pageSize: 100,
@@ -94,12 +98,15 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
     };
 
     const initialValues: Partial<AdminTodoFormValues> = {
-        userId: record.userId ?? "",
+        userId: typeof record.userId === "string" ? record.userId : "",
         title: record.title ?? "",
         description: record.description ?? "",
-        categoryId: record.categoryId ?? undefined,
-        status: record.status,
-        priority: record.priority,
+        categoryId:
+            typeof record.categoryId === "number"
+                ? record.categoryId
+                : undefined,
+        status: record.status ?? undefined,
+        priority: record.priority ?? undefined,
         imageUrl: record.imageUrl ?? "",
         imageAlt: record.imageAlt ?? "",
         completed: record.completed ?? false,
@@ -119,7 +126,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
                 onSubmit={handleSubmit}
                 submitLabel="保存修改"
                 categories={(categoriesResult?.data ?? [])
-                    .filter((c) => typeof c.id === "number")
+                    .filter((category) => typeof category.id === "number")
                     .map((category) => ({
                         id: category.id as number,
                         name: String(category.name ?? ""),

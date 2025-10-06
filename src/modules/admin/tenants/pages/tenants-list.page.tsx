@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { TenantSummaryRecord } from "@/modules/admin/types/resource.types";
 
 export function TenantsListPage() {
     const [search, setSearch] = useState("");
@@ -23,7 +24,7 @@ export function TenantsListPage() {
         [search],
     );
 
-    const { query, result } = useList({
+    const { query, result } = useList<TenantSummaryRecord>({
         resource: "tenants",
         pagination: {
             pageSize: 20,
@@ -102,21 +103,23 @@ export function TenantsListPage() {
                                         {tenant.name ?? tenant.id}
                                     </div>
                                 </td>
-                                <td className="px-4 py-3">{tenant.credits}</td>
+                                <td className="px-4 py-3">
+                                    {tenant.credits ?? 0}
+                                </td>
                                 <td className="px-4 py-3">
                                     {tenant.subscriptionStatus ?? "-"}
                                 </td>
                                 <td className="px-4 py-3">
-                                    {tenant.ordersCount}
+                                    {tenant.ordersCount ?? 0}
                                 </td>
                                 <td className="px-4 py-3">
                                     {formatRevenue(tenant.revenueCents)}
                                 </td>
                                 <td className="px-4 py-3">
-                                    {tenant.totalUsage}
+                                    {tenant.totalUsage ?? 0}
                                 </td>
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
-                                    {tenant.createdAt?.slice(0, 10)}
+                                    {tenant.createdAt?.slice(0, 10) ?? "-"}
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <Button asChild size="sm" variant="ghost">
@@ -138,9 +141,11 @@ export function TenantsListPage() {
     );
 }
 
-function formatRevenue(cents?: number) {
+function formatRevenue(cents?: number | null) {
+    const amount = typeof cents === "number" ? cents : 0;
+
     return new Intl.NumberFormat("zh-CN", {
         style: "currency",
         currency: "USD",
-    }).format((cents ?? 0) / 100);
+    }).format(amount / 100);
 }

@@ -4,6 +4,7 @@ import { type CrudFilter, useList } from "@refinedev/core";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { UsageAggregateRecord } from "@/modules/admin/types/resource.types";
 
 export function UsageListPage() {
     const [tenantId, setTenantId] = useState("");
@@ -19,7 +20,7 @@ export function UsageListPage() {
         return list;
     }, [tenantId, feature]);
 
-    const { query, result } = useList({
+    const { query, result } = useList<UsageAggregateRecord>({
         resource: "usage",
         pagination: {
             pageSize: 20,
@@ -89,27 +90,35 @@ export function UsageListPage() {
                                 </td>
                             </tr>
                         )}
-                        {usage.map((item) => (
-                            <tr
-                                key={`${item.userId}-${item.date}-${item.feature}`}
+                        {usage.map((item) => {
+                            const key = [
+                                item.userId ?? "unknown-user",
+                                item.date ?? "unknown-date",
+                                item.feature ?? "unknown-feature",
+                            ].join("-");
+
+                            return (
+                                <tr
+                                key={key}
                                 className="border-t"
                             >
-                                <td className="px-4 py-3">{item.date}</td>
+                                <td className="px-4 py-3">{item.date ?? "-"}</td>
                                 <td className="px-4 py-3">
                                     <div>{item.email ?? "-"}</div>
                                     <div className="text-xs text-muted-foreground">
-                                        {item.userId}
+                                        {item.userId ?? "-"}
                                     </div>
                                 </td>
-                                <td className="px-4 py-3">{item.feature}</td>
+                                <td className="px-4 py-3">{item.feature ?? "-"}</td>
                                 <td className="px-4 py-3">
-                                    {item.totalAmount}
+                                    {item.totalAmount ?? 0}
                                 </td>
                                 <td className="px-4 py-3 uppercase">
                                     {item.unit ?? "-"}
                                 </td>
                             </tr>
-                        ))}
+                        );
+                        })}
                     </tbody>
                 </table>
             </div>

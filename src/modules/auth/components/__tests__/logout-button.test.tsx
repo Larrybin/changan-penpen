@@ -1,25 +1,20 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
-import { vi } from "vitest";
+import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
+import { describe, expect, it, vi } from "vitest";
 import enMessages from "@/i18n/messages/en.json";
 import LogoutButton from "../logout-button";
 
-type ToastMock = {
-    (...args: unknown[]): unknown;
-    success: ReturnType<typeof vi.fn>;
-    error: ReturnType<typeof vi.fn>;
-};
+const createToastMock = () =>
+    Object.assign(vi.fn(), {
+        success: vi.fn(),
+        error: vi.fn(),
+    });
 
-const createToastMock = (): ToastMock => {
-    const toast = vi.fn<(...args: unknown[]) => unknown>() as ToastMock;
-    toast.success = vi.fn();
-    toast.error = vi.fn();
-    return toast;
-};
+type ToastMock = ReturnType<typeof createToastMock>;
 
 const importToast = async (): Promise<ToastMock> => {
-    const module = (await import("react-hot-toast")) as { default: ToastMock };
-    return module.default;
+    const module = await import("react-hot-toast");
+    return module.default as unknown as ToastMock;
 };
 
 vi.mock("react-hot-toast", () => {
@@ -40,7 +35,10 @@ describe("LogoutButton", () => {
         const toast = await importToast();
 
         render(
-            <NextIntlClientProvider locale="en" messages={enMessages}>
+            <NextIntlClientProvider
+                locale="en"
+                messages={enMessages as unknown as AbstractIntlMessages}
+            >
                 <LogoutButton />
             </NextIntlClientProvider>,
         );

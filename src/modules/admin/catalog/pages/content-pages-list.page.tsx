@@ -4,9 +4,17 @@ import { useDelete, useList } from "@refinedev/core";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { ContentPageRecord } from "@/modules/admin/types/resource.types";
+
+const formatDateTime = (value?: string | null) =>
+    typeof value === "string" && value.length > 0
+        ? value.slice(0, 19)
+        : "-";
 
 export function ContentPagesListPage() {
-    const { query, result } = useList({ resource: "content-pages" });
+    const { query, result } = useList<ContentPageRecord>({
+        resource: "content-pages",
+    });
     const { mutateAsync: deletePage } = useDelete();
     const isLoading = query.isLoading;
     const pages = result?.data ?? [];
@@ -62,15 +70,15 @@ export function ContentPagesListPage() {
                         {pages.map((page) => (
                             <tr key={page.id} className="border-t">
                                 <td className="px-4 py-3 font-medium">
-                                    {page.title}
+                                    {page.title ?? "-"}
                                 </td>
-                                <td className="px-4 py-3">{page.slug}</td>
-                                <td className="px-4 py-3">{page.language}</td>
+                                <td className="px-4 py-3">{page.slug ?? "-"}</td>
+                                <td className="px-4 py-3">{page.language ?? "-"}</td>
                                 <td className="px-4 py-3 capitalize">
-                                    {page.status}
+                                    {page.status ?? "-"}
                                 </td>
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
-                                    {page.updatedAt?.slice(0, 19)}
+                                    {formatDateTime(page.updatedAt)}
                                 </td>
                                 <td className="px-4 py-3 text-right space-x-2">
                                     <Button asChild size="sm" variant="ghost">
@@ -86,7 +94,7 @@ export function ContentPagesListPage() {
                                         onClick={async () => {
                                             await deletePage({
                                                 resource: "content-pages",
-                                                id: page.id as number,
+                                                id: page.id,
                                             });
                                         }}
                                     >

@@ -4,6 +4,12 @@ import { type CrudFilter, useList } from "@refinedev/core";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { CreditHistoryEntry } from "@/modules/admin/types/resource.types";
+
+const formatDateTime = (value?: string | null) =>
+    typeof value === "string" && value.length > 0
+        ? value.slice(0, 19)
+        : "-";
 
 export function CreditsHistoryPage() {
     const [tenantId, setTenantId] = useState("");
@@ -20,7 +26,7 @@ export function CreditsHistoryPage() {
                 : [],
         [tenantId],
     );
-    const { query, result } = useList({
+    const { query, result } = useList<CreditHistoryEntry>({
         resource: "credits-history",
         pagination: {
             pageSize: 20,
@@ -94,18 +100,22 @@ export function CreditsHistoryPage() {
                                 <td className="px-4 py-3">
                                     <div>{entry.customerEmail ?? "-"}</div>
                                     <div className="text-xs text-muted-foreground">
-                                        {entry.userId}
+                                        {entry.userId ?? "-"}
                                     </div>
                                 </td>
                                 <td className="px-4 py-3 uppercase">
                                     {entry.type ?? "-"}
                                 </td>
-                                <td className="px-4 py-3">{entry.amount}</td>
+                                <td className="px-4 py-3">
+                                    {typeof entry.amount === "number"
+                                        ? entry.amount
+                                        : 0}
+                                </td>
                                 <td className="px-4 py-3">
                                     {entry.description ?? "-"}
                                 </td>
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
-                                    {entry.createdAt?.slice(0, 19)}
+                                    {formatDateTime(entry.createdAt)}
                                 </td>
                             </tr>
                         ))}

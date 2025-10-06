@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { AdminTodoRecord } from "@/modules/admin/types/resource.types";
 
 export default function AdminTodoListPage() {
     const [tenantFilter, setTenantFilter] = useState("");
@@ -22,7 +23,7 @@ export default function AdminTodoListPage() {
               },
           ]
         : [];
-    const { query, result } = useList({
+    const { query, result } = useList<AdminTodoRecord>({
         resource: "todos",
         pagination: {
             pageSize: 20,
@@ -153,7 +154,7 @@ export default function AdminTodoListPage() {
                                             className="border-b border-border/60 last:border-none"
                                         >
                                             <td className="px-4 py-3 font-medium text-foreground">
-                                                {todo.title}
+                                                {todo.title ?? "-"}
                                                 {todo.completed && (
                                                     <span className="ml-2 text-xs text-green-600">
                                                         已完成
@@ -166,7 +167,7 @@ export default function AdminTodoListPage() {
                                                         {todo.userEmail ?? "-"}
                                                     </span>
                                                     <span className="text-xs text-muted-foreground">
-                                                        {todo.userId}
+                                                        {todo.userId ?? "-"}
                                                     </span>
                                                 </div>
                                             </td>
@@ -175,20 +176,18 @@ export default function AdminTodoListPage() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <Badge variant="outline">
-                                                    {todo.status}
+                                                    {todo.status ?? "-"}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <Badge variant="secondary">
-                                                    {todo.priority}
+                                                    {todo.priority ?? "-"}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3 text-muted-foreground">
-                                                {todo.dueDate
+                                                {typeof todo.dueDate === "string" && todo.dueDate
                                                     ? formatter.format(
-                                                          new Date(
-                                                              todo.dueDate,
-                                                          ),
+                                                          new Date(todo.dueDate),
                                                       )
                                                     : "-"}
                                             </td>

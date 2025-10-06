@@ -33,21 +33,24 @@ export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
             ...initialData,
         },
     });
+    const { reset } = form;
 
     useEffect(() => {
-        if (initialData) {
-            form.reset({
-                title: initialData.title ?? "",
-                slug: initialData.slug ?? "",
-                summary: initialData.summary ?? "",
-                language: initialData.language ?? "zh-CN",
-                status: initialData.status ?? "draft",
-                content: initialData.content ?? "",
-                publishedAt: initialData.publishedAt ?? "",
-            });
+        if (!initialData) {
+            return;
         }
+
+        reset({
+            title: initialData.title ?? "",
+            slug: initialData.slug ?? "",
+            summary: initialData.summary ?? "",
+            language: initialData.language ?? "zh-CN",
+            status: initialData.status ?? "draft",
+            content: initialData.content ?? "",
+            publishedAt: initialData.publishedAt ?? "",
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialData?.id, initialData, form.reset]);
+    }, [initialData, reset]);
 
     const handleSubmit = form.handleSubmit(async (values) => {
         const payload = {

@@ -4,9 +4,12 @@ import { useDelete, useList } from "@refinedev/core";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
+import type { CouponRecord } from "@/modules/admin/types/resource.types";
 
 export function CouponsListPage() {
-    const { query, result } = useList({ resource: "coupons" });
+    const { query, result } = useList<CouponRecord>({
+        resource: "coupons",
+    });
     const { mutateAsync: deleteCoupon } = useDelete();
     const isLoading = query.isLoading;
     const coupons = result?.data ?? [];
@@ -61,19 +64,19 @@ export function CouponsListPage() {
                         {coupons.map((coupon) => (
                             <tr key={coupon.id} className="border-t">
                                 <td className="px-4 py-3 font-medium">
-                                    {coupon.code}
+                                    {coupon.code ?? "-"}
                                 </td>
                                 <td className="px-4 py-3">
                                     {coupon.discountType === "percentage"
                                         ? `${coupon.discountValue ?? 0}%`
-                                        : coupon.discountValue}
+                                        : coupon.discountValue ?? 0}
                                 </td>
                                 <td className="px-4 py-3">
-                                    {coupon.maxRedemptions ?? "无限"} / 已使用{" "}
+                                    {coupon.maxRedemptions ?? "无限"} / 已使用 {" "}
                                     {coupon.redeemedCount ?? 0}
                                 </td>
                                 <td className="px-4 py-3 capitalize">
-                                    {coupon.status}
+                                    {coupon.status ?? "-"}
                                 </td>
                                 <td className="px-4 py-3 text-right space-x-2">
                                     <Button asChild size="sm" variant="ghost">
@@ -89,7 +92,7 @@ export function CouponsListPage() {
                                         onClick={async () => {
                                             await deleteCoupon({
                                                 resource: "coupons",
-                                                id: coupon.id as number,
+                                                id: coupon.id,
                                             });
                                         }}
                                     >
