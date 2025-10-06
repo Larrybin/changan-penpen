@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { generateAdminMetadata } from "@/modules/admin/metadata";
 import { ContentPageCreatePage } from "@/modules/admin/catalog/pages/content-page-create.page";
+import { generateAdminMetadata } from "@/modules/admin/metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
     return generateAdminMetadata({

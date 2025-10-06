@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { generateAdminMetadata } from "@/modules/admin/metadata";
 import {
     getAdminAccessConfig,
     isEntryTokenValid,
 } from "@/modules/admin/utils/admin-access";
-import { generateAdminMetadata } from "@/modules/admin/metadata";
 
 interface Params {
     token: string;

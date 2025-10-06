@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { generateAdminMetadata } from "@/modules/admin/metadata";
 import { ProductEditPage } from "@/modules/admin/catalog/pages/product-edit.page";
+import { generateAdminMetadata } from "@/modules/admin/metadata";
 
 interface Params {
     id: string;
