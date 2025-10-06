@@ -31,7 +31,6 @@ async function checkR2(): Promise<CheckResult> {
             };
         }
         // List with small limit to validate access
-        // @ts-expect-error - R2Bucket types are provided at runtime by Cloudflare
         await env.next_cf_app_bucket.list({ limit: 1 });
         return { ok: true };
     } catch (err) {
@@ -51,8 +50,9 @@ export async function GET() {
     ]);
     // 外部依赖是否为强制项由开关控制（默认不阻断）
     const { env } = await getCloudflareContext({ async: true });
+    const envRecord = env as unknown as Record<string, unknown>;
     const requireExternal =
-        String(env?.HEALTH_REQUIRE_EXTERNAL ?? "false") === "true";
+        String((envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ?? "false") === "true";
     const ok =
         db.ok &&
         r2.ok &&
@@ -79,13 +79,14 @@ export async function GET() {
 async function checkEnvAndBindings(): Promise<CheckResult> {
     try {
         const { env } = await getCloudflareContext({ async: true });
+        const envRecord = env as unknown as Record<string, unknown>;
         const requiredSecrets = [
             "BETTER_AUTH_SECRET",
             "GOOGLE_CLIENT_ID",
             "GOOGLE_CLIENT_SECRET",
             "CLOUDFLARE_R2_URL",
         ];
-        const missing = requiredSecrets.filter((k) => !env?.[k]);
+        const missing = requiredSecrets.filter((k) => !envRecord?.[k]);
         // Check important bindings presence
         const missingBindings: string[] = [];
         if (!env?.next_cf_app_bucket) {
