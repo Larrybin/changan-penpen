@@ -58,9 +58,17 @@ export async function GET() {
             (envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ??
                 "false",
         ) === "true";
+    const requireDb =
+        String(
+            (envRecord.HEALTH_REQUIRE_DB as string | undefined) ?? "false",
+        ) === "true";
+    const requireR2 =
+        String(
+            (envRecord.HEALTH_REQUIRE_R2 as string | undefined) ?? "false",
+        ) === "true";
     const ok =
-        db.ok &&
-        r2.ok &&
+        (!requireDb || db.ok) &&
+        (!requireR2 || r2.ok) &&
         envs.ok &&
         appUrl.ok &&
         (!requireExternal || external.ok);
@@ -120,14 +128,23 @@ async function checkEnvAndBindings(): Promise<CheckResult> {
 
 async function checkAppUrl(): Promise<CheckResult> {
     try {
-        // Ensure we can resolve a valid base URL from settings/env
-        const db = await getDb();
-        const rows = await db.select().from(siteSettings).limit(1);
-        const domain = rows?.[0]?.domain ?? "";
-        const settings = domain
-            ? ({ domain } as SiteSettingsPayload)
-            : undefined;
-        const base = resolveAppUrl(settings);
+        // 优先从环境变量读取基础 URL，避免对 DB 的强依赖
+        const { env } = await getCloudflareContext({ async: true });
+        const fromEnv = String(
+            (env as unknown as Record<string, unknown>).NEXT_PUBLIC_APP_URL ??
+                "",
+        ).trim();
+        let base = fromEnv;
+        if (!base) {
+            // 回退到数据库配置（若存在）
+            const db = await getDb();
+            const rows = await db.select().from(siteSettings).limit(1);
+            const domain = rows?.[0]?.domain ?? "";
+            const settings = domain
+                ? ({ domain } as SiteSettingsPayload)
+                : undefined;
+            base = resolveAppUrl(settings) ?? "";
+        }
         if (!base) {
             return { ok: false, error: "Failed to resolve app base URL" };
         }
