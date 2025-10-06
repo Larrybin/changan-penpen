@@ -95,7 +95,8 @@ jobs:
       - name: Build Next.js (diagnostic)
         run: pnpm run build
         env:
-          # 鏄惧紡娉ㄥ叆浠ラ伩鍏?fork PR 缂虹渷鐜瀵艰嚧鐨勬瀯寤哄け璐?          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
+          # 显式注入以避免 fork PR 缺省环境导致的构建失败
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Build application
         if: steps.preview-secrets.outputs.available == 'true'
