@@ -1,7 +1,14 @@
 ﻿#!/usr/bin/env node
-import { appendFileSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
+import {
+    appendFileSync,
+    existsSync,
+    readdirSync,
+    readFileSync,
+    statSync,
+    writeFileSync,
+} from "node:fs";
+import { join, relative } from "node:path";
 
 const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {
@@ -9,8 +16,11 @@ if (!apiKey) {
     process.exit(0);
 }
 
-const apiBase = (process.env.OPENAI_API_BASE || "https://api.openai.com/v1").replace(/\/$/, "");
-const model = process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-4.1-mini";
+const apiBase = (
+    process.env.OPENAI_API_BASE || "https://api.openai.com/v1"
+).replace(/\/$/, "");
+const model =
+    process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-4.1-mini";
 
 const repo = process.env.GITHUB_REPOSITORY || "";
 const runId = process.env.WORKFLOW_RUN_ID || "";
@@ -51,7 +61,12 @@ function gatherLogSnippets() {
                 const matches = [];
                 for (let i = 0; i < lines.length; i++) {
                     const lower = lines[i].toLowerCase();
-                    if (lower.includes("error") || lower.includes("failed") || lower.includes("exception") || lower.includes("warning")) {
+                    if (
+                        lower.includes("error") ||
+                        lower.includes("failed") ||
+                        lower.includes("exception") ||
+                        lower.includes("warning")
+                    ) {
                         const start = Math.max(0, i - 8);
                         const end = Math.min(lines.length, i + 12);
                         matches.push(lines.slice(start, end).join("\n"));
@@ -83,9 +98,11 @@ appendSummary("\n### Log snippets provided to AI\n");
 appendSummary(logSummary);
 appendSummary("\n---\n");
 
-const systemPrompt = "You are a senior TypeScript/Next.js engineer. Provide precise reasoning and reliable patches.";
+const systemPrompt =
+    "You are a senior TypeScript/Next.js engineer. Provide precise reasoning and reliable patches.";
 const analysisPrompt = `${metaContext}\n\nReview the following CI/CD failure logs, explain the root cause, and outline a step-by-step fix plan.\n\n${logSummary}`;
-const diffPrompt = "Using the analysis above, produce a minimal unified git diff (with file headers) that resolves the issue. If no change is needed, respond with 'NO_DIFF'.";
+const diffPrompt =
+    "Using the analysis above, produce a minimal unified git diff (with file headers) that resolves the issue. If no change is needed, respond with 'NO_DIFF'.";
 
 async function callOpenAI(messages) {
     const response = await fetch(`${apiBase}/responses`, {
@@ -102,17 +119,23 @@ async function callOpenAI(messages) {
     });
     if (!response.ok) {
         const text = await response.text();
-        throw new Error(`OpenAI API request failed: ${response.status} ${text}`);
+        throw new Error(
+            `OpenAI API request failed: ${response.status} ${text}`,
+        );
     }
     const json = await response.json();
-    const content = json?.output?.[0]?.content?.[0]?.text ?? json?.output_text ?? "";
+    const content =
+        json?.output?.[0]?.content?.[0]?.text ?? json?.output_text ?? "";
     return content.trim();
 }
 
 function extractDiff(text) {
     const diffBlock = text.match(/```(?:diff|patch)?\s+[\s\S]*?```/);
     if (!diffBlock) return null;
-    return diffBlock[0].replace(/^```(?:diff|patch)?\s*/i, "").replace(/```$/, "").trim();
+    return diffBlock[0]
+        .replace(/^```(?:diff|patch)?\s*/i, "")
+        .replace(/```$/, "")
+        .trim();
 }
 
 let analysisText = "";
