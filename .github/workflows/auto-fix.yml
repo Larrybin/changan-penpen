@@ -211,13 +211,18 @@ jobs:
 
       - name: Run AI auto fix
         id: ai_fix
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
           WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node scripts/ai-auto-fix.mjs
+        run: |
+          if [ -n "${OPENAI_API_KEY}" ]; then
+            node scripts/ai-auto-fix.mjs
+          else
+            echo "AI auto-fix skipped: OPENAI_API_KEY not set"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Commit AI changes
         if: ${{ steps.ai_fix.outputs.changed == 'true' }}
