@@ -39,3 +39,13 @@ Checked 233 files in 1060ms. No fixes applied.
    Base
    Cancel ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
 ### tsc --noEmit
+
+### Command status
+| Command | Result |
+| --- | --- |
+| pnpm install | success |
+| pnpm dedupe | not-run |
+| biome format --write | success |
+| biome check --write | success |
+| next lint --fix | failed |
+| tsc --noEmit | success |
