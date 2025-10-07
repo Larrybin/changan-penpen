@@ -89,8 +89,8 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           base: ${{ env.BASE_BRANCH }}
-          branch: ai-autofix/${{ github.event.workflow_run.id }}
-          title: "fix(ai): auto-generated fix for failed run #${{ github.event.workflow_run.id }}"
+          branch: ai-autofix/stable
+          title: "fix(ai): auto-generated fixes (rolling PR)"
           commit-message: "fix(ai): auto-generated fix for failed run #${{ github.event.workflow_run.id }}"
           body-path: ${{ steps.ai_fix.outputs.summary_path }}
           labels: ai-autofix,ci,ai-generated

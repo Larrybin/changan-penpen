@@ -189,8 +189,8 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           base: ${{ env.BASE_BRANCH }}
-          branch: autofix/${{ env.RUN_ID }}
-          title: "chore(auto-fix): apply automated fixes after failed run #${{ env.RUN_ID }}"
+          branch: autofix/stable
+          title: "chore(auto-fix): automated fixes (rolling PR)"
           commit-message: "chore(auto-fix): automated fixes after failed run #${{ env.RUN_ID }}"
           body-path: ${{ env.SUMMARY_FILE }}
           labels: autofix,ci
