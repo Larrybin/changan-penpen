@@ -15,6 +15,7 @@ permissions:
 env:
   AI_AUTOFIX_MODEL: ${{ vars.AI_AUTOFIX_MODEL || vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
   AI_AUTOFIX_BASE: ${{ vars.AI_AUTOFIX_BASE || vars.OPENAI_API_BASE || '' }}
+  BASE_BRANCH: ${{ github.event.workflow_run.head_branch || github.event.repository.default_branch }}
 
 jobs:
   ai-fix:
@@ -77,8 +78,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="ai-autofix/${{ github.event.workflow_run.id }}"
-          git checkout -B "$BRANCH"
+          git fetch origin "${BASE_BRANCH}" --depth=1 || true
+          git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
           git add -A
           git commit -m "fix(ai): automated patch after failed run #${{ github.event.workflow_run.id }}"
 
@@ -86,6 +87,7 @@ jobs:
         if: ${{ steps.ai_fix.outputs.changed == 'true' }}
         uses: peter-evans/create-pull-request@v6
         with:
+          base: ${{ env.BASE_BRANCH }}
           branch: ai-autofix/${{ github.event.workflow_run.id }}
           title: "fix(ai): auto-generated fix for failed run #${{ github.event.workflow_run.id }}"
           commit-message: "fix(ai): auto-generated fix for failed run #${{ github.event.workflow_run.id }}"
