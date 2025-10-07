@@ -16,7 +16,6 @@ on:
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9'
-  # 鎻愪緵缁?Next.js 棰勬覆鏌撲笌 SEO 閫昏緫鐨勫熀纭€ URL锛堜粨搴?Actions Variables 鍙鐩栵級
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 concurrency:
