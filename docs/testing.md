@@ -1,59 +1,94 @@
 # 测试策略（Testing Strategy）
 
-> 当前仓库尚未配置完整测试套件，本章定义推荐工具、约定与补齐路线，确保后续功能具备可回归性。
+本仓库已集成 Vitest 测试栈，并在 CI 中运行。以下给出现状、约定与实践建议，确保功能具备可回归性。
 
-## 1. 现状评估
-- 未包含任何 `*.test.ts(x)` 文件，默认脚本 `pnpm test` 会运行 Vitest（配置于 `vitest.config.ts`）。
-- 依赖项已经引入 `@testing-library/react`、`@testing-library/jest-dom`、`jsdom`，可直接用于组件测试。
-- CI 中的 `ci.yml` 尚未启用单测步骤，计划在文档完善后纳入。
+## 1. 现状概览
+- 运行器：Vitest 3（`vitest`）
+- 断言与匹配器：`@testing-library/jest-dom`（在 `vitest.setup.ts` 通过 `@testing-library/jest-dom/vitest` 启用）
+- 组件测试：`@testing-library/react`
+- DOM 环境：`jsdom`（v27）
+- 配置：`vitest.config.ts` 使用 `environment: "jsdom"`、`setupFiles: "./vitest.setup.ts"`、`globals: true`，并配置别名 `@ -> src`
+- 示例用例：`src/modules/auth/components/__tests__/` 下 3 个组件测试文件
+- CI：`.github/workflows/ci.yml` 中包含 “Test (Vitest)” 步骤（`pnpm test`）
 
-## 2. 工具选型
-- **测试运行器**：Vitest（轻量、与 Vite 生态兼容）。
-- **断言库**：内置 expect + `@testing-library/jest-dom`。
-- **组件测试**：`@testing-library/react`。
-- **Mock 数据库**：使用 Drizzle 提供的 `sqlite` 内存模式或自定义 mock。
-- **Mock Cloudflare Bindings**：通过 `stubs/` 下的类型或 `wrangler` 提供的本地实现。
+## 2. 推荐工具与约定
+- 测试运行器：Vitest（轻量、与 Vite 生态兼容）
+- 断言扩展：`@testing-library/jest-dom`
+- 组件测试：`@testing-library/react`
+- Mock：优先使用模块级别的 `vi.mock()`；对外部网络调用使用自定义 `fetch` mock 或 `msw`
+- 命名与位置：测试文件与被测单元同目录，命名 `*.test.ts` / `*.test.tsx`
 
 ## 3. 基础命令
 ```bash
-pnpm test               # 单次运行
-pnpm test -- --watch    # 监听模式
-pnpm test -- --runInBand  # 在 CI 中串行运行
+pnpm test                  # 单次运行
+pnpm test -- --watch       # 监听模式
+pnpm test -- -u            # 更新快照（如有）
 ```
-
-建议在 PR 模板中附上 `pnpm test` 结果，CI 集成后可由 Github Actions 自动执行。
 
 ## 4. 测试分层
 | 类型 | 场景 | 约定 |
 | --- | --- | --- |
-| 单元测试 | 纯函数 / utils / hooks | 使用 Vitest + 内存 mock |
-| 组件测试 | UI 组件 / 表单 | `render()` + `@testing-library/react`，避免 snapshot |
-| Server Action 测试 | `src/modules/*/actions` | 使用 Vitest 模拟 `BetterAuth` session 与 D1 连接 |
-| 集成测试（可选） | API Route | 通过 `next-test-api-route-handler` 或直接调用 handler |
-
-测试文件放在源文件旁边，命名 `*.test.ts` 或 `*.test.tsx`。
+| 单元测试 | 纯函数 / utils / hooks | Vitest + 纯 mock，避免访问真实外部依赖 |
+| 组件测试 | UI 组件 / 表单 | 使用 RTL（`render`/`screen`/`user-event`），少量快照，仅用于关键结构 |
+| Server Action | `src/modules/*/actions` | 通过 `vi.mock()` 模拟 Auth、D1/R2 等边界依赖 |
+| 集成测试（可选） | API Route | 直接调用 handler 或使用适配工具（按需引入） |
 
 ## 5. Mock 策略
-- **D1**：优先使用内存 SQLite（`better-sqlite3`）模拟；或封装 repo 特定的 `createTestDb()`。
-- **R2**：通过简单的 in-memory Map 实现 `get`/`put` 接口，置于 `stubs/`。
-- **Workers AI**：Mock 为返回固定响应，避免真实调用产生费用。
-- **Auth**：在 `tests/fixtures/auth.ts`（后续创建）中生成伪 session。
+- D1：可用内存 SQLite（如 `better-sqlite3`）或封装测试工厂（例如 `createTestDb()`）
+- R2：用简单的 in-memory Map 实现 `get`/`put` 接口
+- Workers AI：返回固定响应，避免真实调用
+- Auth：在 `tests/fixtures/` 下集中构造伪 session 与上下文（后续补充）
 
-## 6. 代码覆盖与质量门
-- 初期以“关键流程必须有覆盖”为目标（认证、Todos CRUD、Creem 支付回调）。
-- 未来可在 `ci.yml` 中开启 `pnpm test --coverage` 并上传覆盖率报告。
-- 错误场景测试（异常、权限不足）优先级高于纯渲染快照。
+## 6. 代码覆盖率
+- Provider：`v8`（`@vitest/coverage-v8`）
+- Reporter：`text`、`html`
+- 统计范围：`src/modules/**`、`src/services/**`、`src/lib/**`
+- 排除：测试文件、`__tests__` 目录、`mocks/`、`stories/`、声明文件
+- `vitest.config.ts` 中的关键片段：
+```ts
+coverage: {
+    provider: "v8",
+    reporter: ["text", "html", "json-summary"],
+    reportsDirectory: "coverage",
+    all: true,
+    include: [
+        "src/modules/**/*.{ts,tsx}",
+        "src/services/**/*.{ts,tsx}",
+        "src/lib/**/*.{ts,tsx}",
+        "src/app/**/route.ts",
+    ],
+    exclude: [
+        "**/__tests__/**",
+        "src/**/?(*.)test.ts?(x)",
+        "src/modules/**/mocks/**",
+        "src/modules/**/stories/**",
+        "src/lib/stubs/**",
+        "**/*.page.tsx",
+        "**/*.layout.tsx",
+        "**/*.d.ts",
+    ],
+    thresholds: {
+        lines: 3,
+        statements: 3,
+        branches: 10,
+        functions: 10,
+    },
+},
+```
+- 运行命令：`pnpm test -- --coverage`
+- 如需启用基于 D1 的内存数据库夹具（`tests/fixtures/db.ts`），请确保本地已执行 `pnpm rebuild better-sqlite3` 以编译原生绑定。
 
-## 7. 里程碑路线图
-1. **短期（当前迭代）**：新增首个示例测试（例如 `src/modules/todos/services/todo.service.test.ts`），验证 Drizzle mock。
-2. **中期（M3-M4）**：覆盖核心 Server Actions、Hooks。
-3. **长期**：引入端到端测试（Playwright）用于健康检查与关键用户旅程。
+## 7. 路线图
+- 现状：已提供 3 个组件测试样例（Auth 表单/按钮）
+- 近期：为关键 Server Actions 与核心 `utils` 增加单测
+- 中期：补齐模块级集成测试、错误场景与权限校验
+- 远期：按需引入 E2E（Playwright）用于健康检查与关键用户旅程
 
 ## 8. 常见问题
-- `ReferenceError: Request is not defined`：在 Vitest 中缺失 Workers API，需在测试文件中 polyfill 或使用 `@cloudflare/workers-types`。
-- 数据依赖外部 API：使用 `msw` 或自定义 fetch mock，避免真实调用。
-- 覆盖率低：在 PR 中标注未测原因，并在 `release.md` 或 backlog 中登记待补。
+- `ReferenceError: Request is not defined`：在 Node 测试环境中缺少 Workers API；为使用处添加 polyfill 或在测试中 mock
+- 组件测试找不到选择器：优先使用可访问性查询（`getByRole`/`getByLabelText`）
+- 快照频繁变化：减少 UI 细节快照，保留最小结构断言
 
 ---
 
-提交新功能时，请同步更新本文件（若测试策略有调整），并在 PR 描述中声明“测试：✅/❌（原因）”。
+提交新功能时，请同步补充或更新相应测试，并在 PR 描述中附上 `pnpm test` 结果（CI 会自动执行）。
