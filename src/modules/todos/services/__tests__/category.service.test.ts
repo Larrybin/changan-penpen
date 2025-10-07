@@ -1,12 +1,21 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import * as dbModule from "@/db";
+import type { TestDbContext } from "../../../../../tests/fixtures/db";
+import { createTestDb } from "../../../../../tests/fixtures/db";
 import {
     createCategoryForUser,
+    listCategoriesForAdmin,
     listCategoriesForUser,
     updateCategoryForUser,
 } from "../category.service";
-import type { TestDbContext } from "../../../../../tests/fixtures/db";
-import { createTestDb } from "../../../../../tests/fixtures/db";
 
 describe("category.service", () => {
     let ctx: TestDbContext;
@@ -167,5 +176,38 @@ describe("category.service", () => {
         expect(categories.every((item) => item.userId === userId)).toBe(true);
 
         vi.useRealTimers();
+    });
+
+    it("returns empty admin category list when tenant id is missing", async () => {
+        if (skipIfUnavailable()) {
+            return;
+        }
+
+        await createCategoryForUser(userId, { name: "Hidden" });
+
+        const categories = await listCategoriesForAdmin();
+        expect(categories).toEqual([]);
+    });
+
+    it("lists categories for the requested tenant when admin filters by tenant", async () => {
+        if (skipIfUnavailable()) {
+            return;
+        }
+
+        const otherUser = ctx.insertUser({
+            id: "user-admin-tenant",
+            email: "tenant-admin@example.com",
+            name: "Tenant",
+        });
+
+        await createCategoryForUser(userId, { name: "Primary" });
+        await createCategoryForUser(otherUser.id, { name: "Secondary" });
+
+        const categories = await listCategoriesForAdmin({
+            tenantId: otherUser.id,
+        });
+        expect(categories).toHaveLength(1);
+        expect(categories[0]?.userId).toBe(otherUser.id);
+        expect(categories[0]?.name).toBe("Secondary");
     });
 });

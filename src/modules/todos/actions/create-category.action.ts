@@ -18,14 +18,18 @@ export async function createCategory(data: unknown): Promise<Category> {
         if (!name) {
             throw new Error("Category name is required");
         }
+        const sanitizeOptional = (value: unknown) => {
+            if (typeof value !== "string") {
+                return undefined;
+            }
+            const trimmed = value.trim();
+            return trimmed.length > 0 ? trimmed : undefined;
+        };
+
         const category = await createCategoryForUser(user.id, {
             name,
-            description:
-                typeof payload.description === "string"
-                    ? payload.description
-                    : undefined,
-            color:
-                typeof payload.color === "string" ? payload.color : undefined,
+            description: sanitizeOptional(payload.description),
+            color: sanitizeOptional(payload.color),
         });
 
         // Revalidate pages that might show categories
