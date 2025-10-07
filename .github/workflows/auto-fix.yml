@@ -176,6 +176,13 @@ jobs:
             echo "| tsc --noEmit | ${{ steps.tsc.outputs.tsc || 'skipped' }} |";
           } >> "$SUMMARY_FILE"
 
+      - name: Ensure working tree on base branch
+        # 无条件执行，避免 HEAD 停留在将要创建的 PR 分支导致 reset 远端失败
+        run: |
+          set -euo pipefail
+          git fetch origin "${BASE_BRANCH}" --depth=1 || true
+          git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
+
       - name: Create pull request
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
