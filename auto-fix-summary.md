@@ -1,7 +1,7 @@
 ## Auto-fix Summary
-- Source workflow: Deploy Next.js App to Cloudflare (run #166)
-- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18322608400
-- Head SHA: a7337eed02cc51b02349d73421fc63a3c6cde5b1
+- Source workflow: CI (run #34)
+- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18322702528
+- Head SHA: 04e4959f35dfcccfa1a46ecea73ff62a78fd5b56
 
 ### Dependency install
 + react 19.1.0
@@ -28,11 +28,11 @@ devDependencies:
 + vitest 3.2.4
 + wrangler 4.42.0
 
-Done in 9.9s using pnpm v9.15.9
+Done in 9.3s using pnpm v9.15.9
 ### biome format --write
-Formatted 246 files in 145ms. Fixed 13 files.
+Formatted 246 files in 186ms. No fixes applied.
 ### biome check --write
-Checked 246 files in 815ms. Fixed 6 files.
+Checked 246 files in 1016ms. No fixes applied.
 ### tsc --noEmit
 src/modules/admin/providers/__tests__/auth-provider.test.ts(5,25): error TS2558: Expected 0-1 type arguments, but got 2.
 src/modules/admin/providers/__tests__/data-provider.test.ts(5,25): error TS2558: Expected 0-1 type arguments, but got 2.
