@@ -154,8 +154,9 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="autofix/${RUN_ID}"
-          git checkout -B "$BRANCH"
+          # 确保在基准分支上提交，由 create-pull-request 负责创建 PR 分支
+          git fetch origin "${BASE_BRANCH}" --depth=1 || true
+          git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
           git add -A
           git commit -m "chore(auto-fix): automated fixes after failed run ${RUN_ID}"
 
