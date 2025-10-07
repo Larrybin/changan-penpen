@@ -1,26 +1,42 @@
 ﻿#!/usr/bin/env node
-import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
 
 const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {
-    console.error("OPENAI_API_KEY 未设置，跳过 AI 修复。");
+    console.error("OPENAI_API_KEY is not set. Skipping AI auto-fix.");
     process.exit(0);
 }
 
-const repo = process.env.GITHUB_REPOSITORY;
-const runId = process.env.WORKFLOW_RUN_ID;
+const apiBase = (process.env.OPENAI_API_BASE || "https://api.openai.com/v1").replace(/\/$/, "");
+const model = process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-4.1-mini";
+
+const repo = process.env.GITHUB_REPOSITORY || "";
+const runId = process.env.WORKFLOW_RUN_ID || "";
 const headSha = process.env.WORKFLOW_HEAD_SHA || "";
 const baseDir = process.cwd();
+
+const summaryPath = join(baseDir, "ai-fix-summary.txt");
+writeFileSync(summaryPath, "## AI Auto Fix Summary\n\n");
+
+function appendSummary(text) {
+    appendFileSync(summaryPath, `${text}\n`);
+}
+
+function writeOutput(key, value) {
+    const file = process.env.GITHUB_OUTPUT;
+    if (!file) return;
+    appendFileSync(file, `${key}=${value}\n`);
+}
 
 function gatherLogSnippets() {
     const root = join(baseDir, "logs");
     if (!existsSync(root)) {
-        return "未找到日志目录 logs/。";
+        return "No logs directory found (logs/).";
     }
     const snippets = [];
-    const maxChars = 6000;
+    const maxChars = 8000;
 
     function walk(dir) {
         for (const entry of readdirSync(dir)) {
@@ -35,9 +51,9 @@ function gatherLogSnippets() {
                 const matches = [];
                 for (let i = 0; i < lines.length; i++) {
                     const lower = lines[i].toLowerCase();
-                    if (lower.includes("error") || lower.includes("failed") || lower.includes("exception")) {
-                        const start = Math.max(0, i - 10);
-                        const end = Math.min(lines.length, i + 20);
+                    if (lower.includes("error") || lower.includes("failed") || lower.includes("exception") || lower.includes("warning")) {
+                        const start = Math.max(0, i - 8);
+                        const end = Math.min(lines.length, i + 12);
                         matches.push(lines.slice(start, end).join("\n"));
                     }
                 }
@@ -45,7 +61,7 @@ function gatherLogSnippets() {
                 if (matches.length) {
                     snippet = matches.join("\n\n---\n\n");
                 } else {
-                    snippet = lines.slice(-40).join("\n");
+                    snippet = lines.slice(-30).join("\n");
                 }
                 snippets.push(`### ${rel}\n\n${snippet}`);
             }
@@ -58,81 +74,118 @@ function gatherLogSnippets() {
 }
 
 const logSummary = gatherLogSnippets();
+const metaContext = `Repository: ${repo}\nFailed workflow run: ${runId}\nHead commit: ${headSha}`;
 
-const context = `仓库: ${repo}\n失败 workflow run: ${runId}\n(head commit ${headSha})\n`;
-const instructions = `你是资深全栈工程师。根据 CI/CD 失败日志，提供可执行的 git diff 修复方案：
-1. 先分析问题，有必要时查阅仓库内文件。
-2. 输出统一 diff（patch）代码块，适配当前仓库结构。
-3. 只生成必要的改动；禁止修改与问题无关的文件。
-4. 如果无法确定修复方式，请说明原因。`;
+appendSummary(`- Model: ${model}`);
+appendSummary(`- API Base: ${apiBase}`);
+appendSummary(`- Context: ${metaContext}`);
+appendSummary("\n### Log snippets provided to AI\n");
+appendSummary(logSummary);
+appendSummary("\n---\n");
 
-const prompt = `${context}\n\n${instructions}\n\n以下是失败日志片段：\n\n${logSummary}`;
+const systemPrompt = "You are a senior TypeScript/Next.js engineer. Provide precise reasoning and reliable patches.";
+const analysisPrompt = `${metaContext}\n\nReview the following CI/CD failure logs, explain the root cause, and outline a step-by-step fix plan.\n\n${logSummary}`;
+const diffPrompt = "Using the analysis above, produce a minimal unified git diff (with file headers) that resolves the issue. If no change is needed, respond with 'NO_DIFF'.";
 
-async function callOpenAI() {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+async function callOpenAI(messages) {
+    const response = await fetch(`${apiBase}/responses`, {
         method: "POST",
         headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            model: "gpt-4.1-mini",
-            input: [
-                { role: "system", content: "You are a senior TypeScript/Next.js engineer. Always return actionable guidance and accurate diffs." },
-                { role: "user", content: prompt },
-            ],
+            model,
+            input: messages,
             max_output_tokens: 2048,
         }),
     });
     if (!response.ok) {
         const text = await response.text();
-        throw new Error(`OpenAI API 请求失败: ${response.status} ${text}`);
+        throw new Error(`OpenAI API request failed: ${response.status} ${text}`);
     }
     const json = await response.json();
-    const output = json?.output?.[0]?.content?.[0]?.text ?? json?.output_text ?? "";
-    return output;
+    const content = json?.output?.[0]?.content?.[0]?.text ?? json?.output_text ?? "";
+    return content.trim();
 }
 
 function extractDiff(text) {
-    const diffBlock = text.match(/```diff\s+[\s\S]*?```/);
+    const diffBlock = text.match(/```(?:diff|patch)?\s+[\s\S]*?```/);
     if (!diffBlock) return null;
-    return diffBlock[0].replace(/```diff\s*/, "").replace(/```$/, "").trim();
+    return diffBlock[0].replace(/^```(?:diff|patch)?\s*/i, "").replace(/```$/, "").trim();
 }
 
-function writeOutput(key, value) {
-    const file = process.env.GITHUB_OUTPUT;
-    if (file) {
-        appendFileSync(file, `${key}=${value}\n`);
-    }
-}
+let analysisText = "";
+let diffText = "";
 
 try {
-    const aiOutput = await callOpenAI();
-    console.log("AI 生成内容:\n", aiOutput);
-    const diff = extractDiff(aiOutput);
-    if (!diff) {
-        console.warn("未找到 diff，跳过。");
+    analysisText = await callOpenAI([
+        { role: "system", content: systemPrompt },
+        { role: "user", content: analysisPrompt },
+    ]);
+    appendSummary("### AI Analysis\n");
+    appendSummary(analysisText);
+    appendSummary("\n---\n");
+
+    diffText = await callOpenAI([
+        { role: "system", content: systemPrompt },
+        { role: "user", content: analysisPrompt },
+        { role: "assistant", content: analysisText },
+        { role: "user", content: diffPrompt },
+    ]);
+    appendSummary("### AI Proposed Patch\n");
+    appendSummary(diffText);
+    appendSummary("\n---\n");
+
+    const diff = extractDiff(diffText);
+    if (!diff || diff.toUpperCase() === "NO_DIFF") {
+        console.warn("AI did not return a usable diff.");
+        appendSummary("AI did not provide a patch. Exiting without changes.");
         writeOutput("changed", "false");
+        writeOutput("summary_path", summaryPath);
         process.exit(0);
     }
+
     try {
-        execSync("patch -p1", { input: diff, stdio: "inherit" });
+        execSync("git apply --whitespace=fix", { input: diff, stdio: "pipe" });
     } catch (error) {
-        console.error("应用 diff 失败", error.message);
+        console.error("git apply failed, aborting.", error.message);
+        appendSummary(`git apply failed: ${error.message}`);
         writeOutput("changed", "false");
+        writeOutput("summary_path", summaryPath);
         process.exit(0);
     }
+
+    let biomeStatus = "success";
     try {
         execSync("pnpm exec biome format --write .", { stdio: "inherit" });
-    } catch (err) {
-        console.warn("Biome format 失败", err.message);
+        execSync("pnpm exec biome check .", { stdio: "inherit" });
+    } catch (error) {
+        biomeStatus = "failed";
+        appendSummary(`Biome check failed: ${error.message}`);
     }
+
+    let tscStatus = "success";
+    try {
+        execSync("pnpm exec tsc --noEmit", { stdio: "inherit" });
+    } catch (error) {
+        tscStatus = "failed";
+        appendSummary(`tsc failed: ${error.message}`);
+    }
+
+    appendSummary("### Post-fix command status\n");
+    appendSummary(`- biome check: ${biomeStatus}`);
+    appendSummary(`- tsc --noEmit: ${tscStatus}`);
+
     writeOutput("changed", "true");
-    const summaryPath = join(baseDir, "ai-fix-summary.txt");
-    appendFileSync(summaryPath, aiOutput);
     writeOutput("summary_path", summaryPath);
+    writeOutput("analysis_path", summaryPath);
+    writeOutput("biome_status", biomeStatus);
+    writeOutput("tsc_status", tscStatus);
 } catch (error) {
-    console.error("AI 修复流程异常:", error);
+    console.error("AI auto-fix encountered an error:", error);
+    appendSummary(`AI auto-fix error: ${error.message}`);
     writeOutput("changed", "false");
+    writeOutput("summary_path", summaryPath);
     process.exit(0);
 }

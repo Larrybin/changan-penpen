@@ -1,4 +1,4 @@
-name: Notify on CI/CD Failure
+﻿name: Notify on CI/CD Failure
 
 on:
   workflow_run:
@@ -32,24 +32,40 @@ jobs:
               per_page: 100,
             });
 
-            const failedJobs = (jobs.jobs || []).filter(j => j.conclusion && j.conclusion !== 'success');
+            const failedJobs = (jobs.jobs || []).filter((job) => job.conclusion && job.conclusion !== "success");
+            const rerunUrl = `${run.html_url}/rerun`;
+            const logsUrl = `${run.html_url}?check_suite_focus=true`;
+            const commitLine = run.head_commit
+              ? `${run.head_commit.id.slice(0, 7)} — ${run.head_commit.message}`
+              : "n/a";
 
             let body = `❌ Workflow "${run.name}" #${run.run_number} failed\n` +
               `Run: ${run.html_url}\n` +
+              `Re-run (requires permissions): ${rerunUrl}\n` +
+              `Logs: ${logsUrl}\n` +
               `Event: ${run.event}\n` +
-              `Commit: ${run.head_commit?.id?.slice(0,7) || 'n/a'} — ${run.head_commit?.message || ''}` +
-              `\n\n`;
+              `Commit: ${commitLine}\n\n`;
 
-            for (const j of failedJobs) {
-              body += `• Job: ${j.name} — conclusion: ${j.conclusion}\n  Logs: ${j.html_url}\n`;
-              const failedSteps = (j.steps || []).filter(s => s.conclusion === 'failure');
+            for (const job of failedJobs) {
+              body += `• Job: ${job.name} — conclusion: ${job.conclusion}\n  Logs: ${job.html_url}\n`;
+              const failedSteps = (job.steps || []).filter((step) => step.conclusion === "failure");
               if (failedSteps.length) {
                 body += `  Failed steps:\n`;
-                for (const s of failedSteps) body += `    - ${s.name}\n`;
+                for (const step of failedSteps) {
+                  const attempt = step.number ? ` (attempt #${step.number})` : "";
+                  body += `    - ${step.name}${attempt}\n`;
+                }
               }
             }
 
-            core.setOutput('body', body);
+            body += `\nAuto remediation workflows triggered:\n`;
+            body += `- auto-fix.yml (deterministic formatting & lockfile fixes)\n`;
+            body += `- ai-auto-fix.yml (AI patching when OPENAI_API_KEY is configured)\n`;
+
+            const rerunCli = `gh run rerun ${run.id} --repo ${owner}/${repo}`;
+            body += `\nQuick re-run via CLI:\n\`${rerunCli}\`\n`;
+
+            core.setOutput("body", body);
 
       - name: Comment on PR (if available)
         if: ${{ github.event.workflow_run.pull_requests && github.event.workflow_run.pull_requests[0] }}
@@ -76,12 +92,10 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const title = 'CI/CD Failure Tracker';
-            // Find existing open issue
             const { data: issues } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: 'ci-failure' });
-            const existing = issues.find(i => i.title === title);
+            const existing = issues.find((issue) => issue.title === title);
             if (existing) {
               await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: process.env.BODY });
             } else {
               await github.rest.issues.create({ owner, repo, title, body: process.env.BODY, labels: ['ci-failure'] });
             }
-

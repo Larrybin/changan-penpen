@@ -1,4 +1,4 @@
-name: Auto Fix on Failure
+﻿name: Auto Fix on Failure
 
 on:
   workflow_run:
@@ -9,6 +9,14 @@ permissions:
   contents: write
   pull-requests: write
   actions: read
+
+env:
+  SUMMARY_FILE: auto-fix-summary.md
+  RUN_URL: ${{ github.event.workflow_run.html_url }}
+  RUN_ID: ${{ github.event.workflow_run.id }}
+  RUN_NAME: ${{ github.event.workflow_run.name }}
+  RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+  HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
 
 jobs:
   auto-fix:
@@ -21,6 +29,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Prepare summary
+        run: |
+          {
+            echo "## Auto-fix Summary";
+            echo "- Source workflow: ${RUN_NAME} (run #${RUN_NUMBER})";
+            echo "- Run URL: ${RUN_URL}";
+            echo "- Head SHA: ${HEAD_SHA}";
+            echo "";
+          } > "$SUMMARY_FILE"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -32,63 +50,144 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Install deps (frozen), then fallback to update lockfile
+      - name: Install deps with self-healing
         id: deps
         run: |
-          set -e
-          if pnpm install --frozen-lockfile; then
+          set -euo pipefail
+          LOG=$(mktemp)
+          echo "### Dependency install" >> "$SUMMARY_FILE"
+          if pnpm install --frozen-lockfile 2>&1 | tee "$LOG"; then
             echo "lock_updated=false" >> "$GITHUB_OUTPUT"
+            echo "install_status=success" >> "$GITHUB_OUTPUT"
+            tail -n 25 "$LOG" >> "$SUMMARY_FILE"
           else
-            echo "Frozen install failed; updating lockfile..."
-            pnpm install --no-frozen-lockfile
-            echo "lock_updated=true" >> "$GITHUB_OUTPUT"
+            tail -n 80 "$LOG" >> "$SUMMARY_FILE"
+            if grep -E 'ERR_PNPM_OUTDATED_LOCKFILE|ERR_PNPM_LOCKFILE_BREAKING_CHANGE' "$LOG"; then
+              echo "Detected outdated lockfile, re-running without --frozen." | tee -a "$SUMMARY_FILE"
+              pnpm install --no-frozen-lockfile 2>&1 | tee -a "$SUMMARY_FILE"
+              echo "lock_updated=true" >> "$GITHUB_OUTPUT"
+              echo "install_status=lockfile_updated" >> "$GITHUB_OUTPUT"
+            elif grep -E 'ERESOLVE|UND_ERR_CONNECT|ETIMEDOUT' "$LOG"; then
+              echo "Detected dependency resolution/network issue, running pnpm dedupe + reinstall." | tee -a "$SUMMARY_FILE"
+              pnpm dedupe 2>&1 | tee -a "$SUMMARY_FILE" || true
+              pnpm install --no-frozen-lockfile 2>&1 | tee -a "$SUMMARY_FILE"
+              echo "lock_updated=true" >> "$GITHUB_OUTPUT"
+              echo "install_status=dedupe" >> "$GITHUB_OUTPUT"
+              echo "dedupe_ran=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::pnpm install failed. See summary for details." >&2
+              exit 1
+            fi
           fi
 
-      - name: Apply Biome formatting
-        run: pnpm exec biome format --write .
-
-      - name: Apply Biome safe fixes (best effort)
-        run: pnpm exec biome check . --write || true
-
-      - name: Type check (capture errors but continue)
-        run: pnpm exec tsc --noEmit || true
-
-      - name: Commit changes (if any)
-        id: commit
+      - name: Run biome format
+        id: format
         run: |
-          set -e
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="autofix/${{ github.event.workflow_run.id }}"
-          git checkout -B "$BRANCH"
-          git add -A
-          if git diff --cached --quiet; then
+          set -euo pipefail
+          LOG=$(mktemp)
+          if pnpm exec biome format --write . > "$LOG" 2>&1; then
+            echo "biome_format=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "biome_format=failed" >> "$GITHUB_OUTPUT"
+          fi
+          echo "### biome format --write" >> "$SUMMARY_FILE"
+          tail -n 40 "$LOG" >> "$SUMMARY_FILE"
+
+      - name: Run biome check --write
+        id: biome_check
+        run: |
+          set -euo pipefail
+          LOG=$(mktemp)
+          if pnpm exec biome check . --write > "$LOG" 2>&1; then
+            echo "biome_check=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "biome_check=failed" >> "$GITHUB_OUTPUT"
+          fi
+          echo "### biome check --write" >> "$SUMMARY_FILE"
+          tail -n 40 "$LOG" >> "$SUMMARY_FILE"
+
+      - name: Run next lint --fix
+        id: next_lint
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          LOG=$(mktemp)
+          if pnpm exec next lint --fix --max-warnings=0 > "$LOG" 2>&1; then
+            STATUS=success
+          else
+            STATUS=failed
+          fi
+          echo "next_lint=${STATUS}" >> "$GITHUB_OUTPUT"
+          echo "### next lint --fix" >> "$SUMMARY_FILE"
+          tail -n 40 "$LOG" >> "$SUMMARY_FILE"
+
+      - name: Type check (tsc)
+        id: tsc
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          LOG=$(mktemp)
+          if pnpm exec tsc --noEmit > "$LOG" 2>&1; then
+            STATUS=success
+          else
+            STATUS=failed
+          fi
+          echo "tsc=${STATUS}" >> "$GITHUB_OUTPUT"
+          echo "### tsc --noEmit" >> "$SUMMARY_FILE"
+          tail -n 60 "$LOG" >> "$SUMMARY_FILE"
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if git diff --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            git commit -m "chore(auto-fix): formatting/lockfile updates after failed run ${{ github.event.workflow_run.id }}"
+            git status --short
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Commit changes (if any)
+        if: steps.changes.outputs.changed == 'true'
+        id: commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="autofix/${RUN_ID}"
+          git checkout -B "$BRANCH"
+          git add -A
+          git commit -m "chore(auto-fix): automated fixes after failed run ${RUN_ID}"
+
+      - name: Append command status table
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          {
+            echo "";
+            echo "### Command status";
+            echo "| Command | Result |";
+            echo "| --- | --- |";
+            echo "| pnpm install | ${{ steps.deps.outputs.install_status || 'success' }} |";
+            echo "| pnpm dedupe | ${{ steps.deps.outputs.dedupe_ran || 'not-run' }} |";
+            echo "| biome format --write | ${{ steps.format.outputs.biome_format || 'success' }} |";
+            echo "| biome check --write | ${{ steps.biome_check.outputs.biome_check || 'success' }} |";
+            echo "| next lint --fix | ${{ steps.next_lint.outputs.next_lint || 'skipped' }} |";
+            echo "| tsc --noEmit | ${{ steps.tsc.outputs.tsc || 'skipped' }} |";
+          } >> "$SUMMARY_FILE"
+
       - name: Create pull request
-        if: steps.commit.outputs.changed == 'true'
+        if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          branch: ${{ github.ref_name == 'main' && format('autofix/{0}', github.event.workflow_run.id) || format('autofix/{0}', github.event.workflow_run.id) }}
-          title: "chore(auto-fix): apply automated fixes after failed run #${{ github.event.workflow_run.id }}"
-          commit-message: "chore(auto-fix): apply automated fixes after failed run #${{ github.event.workflow_run.id }}"
-          body: |
-            This PR was opened automatically after a failed workflow run.
-
-            - Source workflow: `${{ github.event.workflow_run.name }}` run #${{ github.event.workflow_run.run_number }}
-            - URL: ${{ github.event.workflow_run.html_url }}
-
-            Applied actions:
-            - pnpm install with lockfile update (if needed): `${{ steps.deps.outputs.lock_updated }}`
-            - biome format --write .
-            - biome check . --write (best effort)
-            - tsc --noEmit (diagnostic)
-
-            Merge this PR to re-trigger CI/CD.
+          branch: autofix/${{ env.RUN_ID }}
+          title: "chore(auto-fix): apply automated fixes after failed run #${{ env.RUN_ID }}"
+          commit-message: "chore(auto-fix): automated fixes after failed run #${{ env.RUN_ID }}"
+          body-path: ${{ env.SUMMARY_FILE }}
           labels: autofix,ci
           delete-branch: true
 
+      - name: Upload summary (artifact)
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-fix-summary-${{ env.RUN_ID }}
+          path: ${{ env.SUMMARY_FILE }}

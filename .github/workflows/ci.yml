@@ -1,7 +1,7 @@
-name: CI
+﻿name: CI
 
 on:
-  # 常规 CI：在除 main 外的分支上运行；避免与部署工作流重复
+  # 甯歌 CI锛氬湪闄?main 澶栫殑鍒嗘敮涓婅繍琛岋紱閬垮厤涓庨儴缃插伐浣滄祦閲嶅
   push:
     branches-ignore:
       - main
@@ -14,13 +14,12 @@ on:
     paths-ignore:
       - README.md
       - docs/**
-  # 允许被其他工作流复用（reusable workflow）
-  workflow_call:
+  # 鍏佽琚叾浠栧伐浣滄祦澶嶇敤锛坮eusable workflow锛?  workflow_call:
 
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9'
-  # 提供给 Next.js 预渲染与 SEO 逻辑的基础 URL（仓库 Actions Variables 可覆盖）
+  # 鎻愪緵缁?Next.js 棰勬覆鏌撲笌 SEO 閫昏緫鐨勫熀纭€ URL锛堜粨搴?Actions Variables 鍙鐩栵級
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 jobs:
@@ -41,8 +40,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies\n        run: |\n          set -euo pipefail\n          if pnpm install --frozen-lockfile; then\n            exit 0\n          fi\n          echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"\n          pnpm dedupe || true\n          pnpm install --no-frozen-lockfile
 
       - name: Cache Next.js build cache
         uses: actions/cache@v4
@@ -74,3 +72,4 @@ jobs:
 
       - name: Build (Next.js)
         run: pnpm build
+
