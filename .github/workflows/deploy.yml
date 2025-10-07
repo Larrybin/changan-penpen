@@ -278,7 +278,23 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
-          command: d1 migrations apply next-cf-app
+          command: d1 migrations apply next-cf-app --env production --remote
+
+      - name: Verify D1 migrations applied (list)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: production
+          command: d1 migrations list next-cf-app --env production --remote --verbose
+
+      - name: Verify critical tables exist (site_settings)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: production
+          command: d1 execute next-cf-app --env production --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name='site_settings';"
 
       - name: Deploy to Production (code)
         uses: cloudflare/wrangler-action@v3
@@ -323,7 +339,7 @@ jobs:
         if: vars.SYNC_PRODUCTION_SECRETS != 'true'
         run: echo "Skipping production secret sync (set vars.SYNC_PRODUCTION_SECRETS to 'true' to enable)."
       - name: Wait for deployment
-        run: sleep 10
+        run: sleep 45
 
       - name: Production health check
         env:
