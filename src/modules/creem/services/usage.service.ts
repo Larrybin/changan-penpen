@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { customers } from "@/modules/creem/schemas/billing.schema";
 import { usageDaily, usageEvents } from "@/modules/creem/schemas/usage.schema";
@@ -27,29 +27,9 @@ export async function recordUsage(input: UsageRecordInput) {
         createdAt: nowIso,
     });
 
-    // 聚合到 usage_daily（幂等更新：存在则累加）
-    const existing = await db
-        .select({ id: usageDaily.id, totalAmount: usageDaily.totalAmount })
-        .from(usageDaily)
-        .where(
-            and(
-                eq(usageDaily.userId, input.userId),
-                eq(usageDaily.date, date),
-                eq(usageDaily.feature, input.feature),
-            ),
-        )
-        .limit(1);
-
-    if (existing.length > 0) {
-        await db
-            .update(usageDaily)
-            .set({
-                totalAmount: existing[0].totalAmount + input.amount,
-                updatedAt: nowIso,
-            })
-            .where(eq(usageDaily.id, existing[0].id));
-    } else {
-        await db.insert(usageDaily).values({
+    await db
+        .insert(usageDaily)
+        .values({
             userId: input.userId,
             date,
             feature: input.feature,
@@ -57,8 +37,15 @@ export async function recordUsage(input: UsageRecordInput) {
             unit: input.unit,
             createdAt: nowIso,
             updatedAt: nowIso,
+        })
+        .onConflictDoUpdate({
+            target: [usageDaily.userId, usageDaily.feature, usageDaily.date],
+            set: {
+                totalAmount: sql`${usageDaily.totalAmount} + ${input.amount}`,
+                unit: input.unit,
+                updatedAt: nowIso,
+            },
         });
-    }
 
     let newCredits: number | undefined;
     if (input.consumeCredits && input.consumeCredits > 0) {
@@ -101,12 +88,14 @@ export async function getUsageDaily(
             unit: usageDaily.unit,
         })
         .from(usageDaily)
-        .where(and(eq(usageDaily.userId, userId)))
+        .where(
+            and(
+                eq(usageDaily.userId, userId),
+                gte(usageDaily.date, fromDateInclusive),
+                lte(usageDaily.date, toDateInclusive),
+            ),
+        )
         .orderBy(usageDaily.date);
 
-    // 由于 drizzle 在 D1 上的复杂 where between 写法兼容性差异，这里先在应用层过滤
-    const res = rows.filter(
-        (r) => r.date >= fromDateInclusive && r.date <= toDateInclusive,
-    );
-    return res;
+    return rows;
 }

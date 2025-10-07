@@ -114,13 +114,18 @@ async function checkEnvAndBindings(): Promise<CheckResult> {
     try {
         const { env } = await getCloudflareContext({ async: true });
         const envRecord = env as unknown as Record<string, unknown>;
-        const requiredSecrets = [
-            "BETTER_AUTH_SECRET",
-            "GOOGLE_CLIENT_ID",
-            "GOOGLE_CLIENT_SECRET",
-            "CLOUDFLARE_R2_URL",
-        ];
+        const requiredSecrets = ["BETTER_AUTH_SECRET", "CLOUDFLARE_R2_URL"];
         const missing = requiredSecrets.filter((k) => !envRecord?.[k]);
+        const googleClientId = String(envRecord?.GOOGLE_CLIENT_ID ?? "").trim();
+        const googleClientSecret = String(
+            envRecord?.GOOGLE_CLIENT_SECRET ?? "",
+        ).trim();
+        if (Boolean(googleClientId) !== Boolean(googleClientSecret)) {
+            return {
+                ok: false,
+                error: "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET must both be set to enable Google OAuth",
+            };
+        }
         // Check important bindings presence
         const missingBindings: string[] = [];
         if (!env?.next_cf_app_bucket) {

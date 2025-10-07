@@ -15,46 +15,9 @@ export async function createOrUpdateCustomer(
     userId: string,
 ) {
     const db = await getDb();
-    const byCreem = await db
-        .select()
-        .from(customers)
-        .where(eq(customers.creemCustomerId, creemCustomer.id))
-        .limit(1);
     const now = new Date().toISOString();
 
-    if (byCreem.length > 0) {
-        await db
-            .update(customers)
-            .set({
-                email: creemCustomer.email,
-                name: creemCustomer.name,
-                country: creemCustomer.country,
-                updatedAt: now,
-            })
-            .where(eq(customers.id, byCreem[0].id));
-        return byCreem[0].id;
-    }
-
-    const byUser = await db
-        .select()
-        .from(customers)
-        .where(eq(customers.userId, userId))
-        .limit(1);
-    if (byUser.length > 0) {
-        await db
-            .update(customers)
-            .set({
-                creemCustomerId: creemCustomer.id,
-                email: creemCustomer.email,
-                name: creemCustomer.name,
-                country: creemCustomer.country,
-                updatedAt: now,
-            })
-            .where(eq(customers.id, byUser[0].id));
-        return byUser[0].id;
-    }
-
-    await db.insert(customers).values({
+    const baseValues = {
         userId,
         creemCustomerId: creemCustomer.id,
         email: creemCustomer.email,
@@ -63,7 +26,43 @@ export async function createOrUpdateCustomer(
         credits: 0,
         createdAt: now,
         updatedAt: now,
-    });
+    } as const;
+
+    const updateSet = {
+        userId,
+        creemCustomerId: creemCustomer.id,
+        email: creemCustomer.email,
+        name: creemCustomer.name,
+        country: creemCustomer.country,
+        updatedAt: now,
+    } as const;
+
+    const resultByCreem = await db
+        .insert(customers)
+        .values(baseValues)
+        .onConflictDoUpdate({
+            target: [customers.creemCustomerId],
+            set: updateSet,
+        })
+        .returning({ id: customers.id });
+
+    if (resultByCreem.length > 0) {
+        return resultByCreem[0].id;
+    }
+
+    const resultByUser = await db
+        .insert(customers)
+        .values(baseValues)
+        .onConflictDoUpdate({
+            target: [customers.userId],
+            set: updateSet,
+        })
+        .returning({ id: customers.id });
+
+    if (resultByUser.length > 0) {
+        return resultByUser[0].id;
+    }
+
     const inserted = await db
         .select({ id: customers.id })
         .from(customers)
@@ -74,6 +73,11 @@ export async function createOrUpdateCustomer(
             ),
         )
         .limit(1);
+
+    if (!inserted[0]) {
+        throw new Error("Failed to create or update customer record");
+    }
+
     return inserted[0].id;
 }
 

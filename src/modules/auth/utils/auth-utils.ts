@@ -23,6 +23,20 @@ async function getAuth() {
     const { env } = await getCloudflareContext({ async: true });
     const db = await getDb();
 
+    const googleClientId = env.GOOGLE_CLIENT_ID?.trim();
+    const googleClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
+    const googleConfigured = Boolean(googleClientId && googleClientSecret);
+
+    if (googleClientId && !googleClientSecret) {
+        console.warn(
+            "GOOGLE_CLIENT_SECRET is missing; Google OAuth provider will be disabled.",
+        );
+    } else if (googleClientSecret && !googleClientId) {
+        console.warn(
+            "GOOGLE_CLIENT_ID is missing; Google OAuth provider will be disabled.",
+        );
+    }
+
     cachedAuth = betterAuth({
         secret: env.BETTER_AUTH_SECRET,
         database: drizzleAdapter(db, {
@@ -31,13 +45,15 @@ async function getAuth() {
         emailAndPassword: {
             enabled: true,
         },
-        socialProviders: {
-            google: {
-                enabled: true,
-                clientId: env.GOOGLE_CLIENT_ID!,
-                clientSecret: env.GOOGLE_CLIENT_SECRET!,
-            },
-        },
+        socialProviders: googleConfigured
+            ? {
+                  google: {
+                      enabled: true,
+                      clientId: googleClientId,
+                      clientSecret: googleClientSecret,
+                  },
+              }
+            : undefined,
         plugins: [nextCookies()],
     });
 

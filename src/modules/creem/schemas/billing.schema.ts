@@ -1,19 +1,35 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+    integer,
+    sqliteTable,
+    text,
+    uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { user } from "@/modules/auth/schemas/auth.schema";
 
-export const customers = sqliteTable("customers", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: text("user_id")
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    creemCustomerId: text("creem_customer_id"),
-    email: text("email"),
-    name: text("name"),
-    country: text("country"),
-    credits: integer("credits").notNull().default(0),
-    createdAt: text("created_at").notNull(),
-    updatedAt: text("updated_at").notNull(),
-});
+export const customers = sqliteTable(
+    "customers",
+    {
+        id: integer("id").primaryKey({ autoIncrement: true }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        creemCustomerId: text("creem_customer_id"),
+        email: text("email"),
+        name: text("name"),
+        country: text("country"),
+        credits: integer("credits").notNull().default(0),
+        createdAt: text("created_at").notNull(),
+        updatedAt: text("updated_at").notNull(),
+    },
+    (table) => ({
+        customersUserIdUnique: uniqueIndex("customers_user_id_unique").on(
+            table.userId,
+        ),
+        customersCreemCustomerIdUnique: uniqueIndex(
+            "customers_creem_customer_id_unique",
+        ).on(table.creemCustomerId),
+    }),
+);
 
 export const subscriptions = sqliteTable("subscriptions", {
     id: integer("id").primaryKey({ autoIncrement: true }),

@@ -34,7 +34,11 @@ export default async function AdminEntryPage({
     const { token } = await params;
     const config = await getAdminAccessConfig();
 
-    if (!token || !config.entryToken || !isEntryTokenValid(token, config)) {
+    if (!config.entryToken) {
+        redirect("/login?admin=1&admin-entry=granted");
+    }
+
+    if (!token || !isEntryTokenValid(token, config)) {
         redirect("/login?admin=1&error=invalid-entry");
     }
 
