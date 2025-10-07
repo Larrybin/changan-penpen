@@ -1,6 +1,7 @@
-name: Auto Fix (deterministic + AI)
+﻿name: Auto Fix (deterministic + AI)
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["CI", "Deploy Next.js App to Cloudflare"]
     types: [completed]
@@ -29,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
         with:
           fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_branch || github.event.repository.default_branch }}
@@ -45,12 +46,12 @@ jobs:
           } > "$SUMMARY_FILE"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
         with:
           version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20
           cache: 'pnpm'
@@ -155,7 +156,7 @@ jobs:
 
       - name: Create/Update PR (deterministic)
         if: steps.changes.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
         with:
           base: ${{ env.BASE_BRANCH }}
           branch: autofix/stable
@@ -167,7 +168,7 @@ jobs:
 
       - name: Upload summary (artifact)
         if: steps.changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: auto-fix-summary-${{ env.RUN_ID }}
           path: ${{ env.SUMMARY_FILE }}
@@ -201,7 +202,7 @@ jobs:
 
       - name: Create/Update PR with AI changes (draft)
         if: ${{ steps.ai_fix.outputs.changed == 'true' }}
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
         with:
           base: ${{ env.BASE_BRANCH }}
           branch: autofix/stable
@@ -211,4 +212,5 @@ jobs:
           labels: ai-autofix,ci,ai-generated
           draft: true
           delete-branch: false
+
 
