@@ -235,7 +235,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
 
-      - name: Install dependencies\n        run: |\n          set -euo pipefail\n          if pnpm install --frozen-lockfile; then\n            exit 0\n          fi\n          echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"\n          pnpm dedupe || true\n          pnpm install --no-frozen-lockfile
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          if pnpm install --frozen-lockfile; then
+            exit 0
+          fi
+          echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"
+          pnpm dedupe || true
+          pnpm install --no-frozen-lockfile
 
       - name: Generate Cloudflare types
         run: pnpm run cf-typegen
@@ -384,4 +392,3 @@ jobs:
     steps:
       - name: Cleanup artifacts
         run: echo "Cleaning up temporary files and caches..."
-
