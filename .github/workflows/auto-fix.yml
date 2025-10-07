@@ -156,6 +156,7 @@ jobs:
 
       - name: Create/Update PR (deterministic)
         if: steps.changes.outputs.changed == 'true'
+        id: cppr
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
         with:
           base: ${{ env.BASE_BRANCH }}
@@ -165,6 +166,34 @@ jobs:
           body-path: ${{ env.SUMMARY_FILE }}
           labels: autofix,ci
           delete-branch: false
+
+      - name: Label and enable auto-merge if whitelist-only
+        if: steps.cppr.outputs.pull-request-number != ''
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        continue-on-error: true
+        env:
+          PR_NUMBER: ${{ steps.cppr.outputs.pull-request-number }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = Number(process.env.PR_NUMBER);
+            const { data: files } = await github.rest.pulls.listFiles({ owner, repo, pull_number: prNumber, per_page: 100 });
+            const whitelist = new Set(['pnpm-lock.yaml', 'auto-fix-summary.md']);
+            const extra = files.filter(f => !whitelist.has(f.filename));
+            if (extra.length === 0) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['auto-merge'] });
+              const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+              const nodeId = pr.node_id;
+              try {
+                await github.graphql('mutation($pullRequestId: ID!) { enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) { clientMutationId } }', { pullRequestId: nodeId });
+                core.info('Auto-merge enabled for PR #' + prNumber);
+              } catch (e) {
+                core.warning('Failed to enable auto-merge: ' + (e.message || e));
+              }
+            } else {
+              core.info('Skip auto-merge, non-whitelist files changed: ' + extra.map(x=>x.filename).join(', '));
+            }
 
       - name: Upload summary (artifact)
         if: steps.changes.outputs.changed == 'true'
