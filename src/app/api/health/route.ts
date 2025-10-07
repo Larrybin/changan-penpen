@@ -41,13 +41,20 @@ async function checkR2(): Promise<CheckResult> {
     }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     const startedAt = Date.now();
+    const reqOrigin = (() => {
+        try {
+            return new URL(request.url).origin;
+        } catch {
+            return "";
+        }
+    })();
     const [db, r2, envs, appUrl, external] = await Promise.all([
         checkDb(),
         checkR2(),
         checkEnvAndBindings(),
-        checkAppUrl(),
+        checkAppUrl(reqOrigin),
         checkExternalServices(),
     ]);
     // 外部依赖是否为强制项由开关控制（默认不阻断）
@@ -126,7 +133,7 @@ async function checkEnvAndBindings(): Promise<CheckResult> {
     }
 }
 
-async function checkAppUrl(): Promise<CheckResult> {
+async function checkAppUrl(runtimeOrigin?: string): Promise<CheckResult> {
     try {
         // 优先从环境变量读取基础 URL，避免对 DB 的强依赖
         const { env } = await getCloudflareContext({ async: true });
@@ -134,7 +141,7 @@ async function checkAppUrl(): Promise<CheckResult> {
             (env as unknown as Record<string, unknown>).NEXT_PUBLIC_APP_URL ??
                 "",
         ).trim();
-        let base = fromEnv;
+        let base = fromEnv || String(runtimeOrigin ?? "");
         if (!base) {
             // 回退到数据库配置（若存在）
             const db = await getDb();
