@@ -1,0 +1,89 @@
+﻿name: AI Auto Fix
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+      - Deploy Next.js App to Cloudflare
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  ai-fix:
+    if: ${{ github.event.workflow_run.conclusion != 'success' && secrets.OPENAI_API_KEY != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies (frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: Download failing workflow logs
+        run: |
+          mkdir -p logs
+          gh run download ${{ github.event.workflow_run.id }} --repo ${{ github.repository }} --dir logs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run AI auto fix
+        id: ai_fix
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/ai-auto-fix.mjs
+
+      - name: Display AI summary
+        if: ${{ steps.ai_fix.outputs.summary_path != '' }}
+        run: cat "${{ steps.ai_fix.outputs.summary_path }}"
+
+      - name: Type check after AI fix
+        if: ${{ steps.ai_fix.outputs.changed == 'true' }}
+        run: pnpm exec tsc --noEmit || true
+
+      - name: Commit changes
+        if: ${{ steps.ai_fix.outputs.changed == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="ai-autofix/${{ github.event.workflow_run.id }}"
+          git checkout -B "$BRANCH"
+          git add -A
+          git commit -m "fix(ai): automated patch after failed run #${{ github.event.workflow_run.id }}"
+
+      - name: Create pull request with AI fix
+        if: ${{ steps.ai_fix.outputs.changed == 'true' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ai-autofix/${{ github.event.workflow_run.id }}
+          title: "fix(ai): auto-generated fix for failed run #${{ github.event.workflow_run.id }}"
+          commit-message: "fix(ai): auto-generated fix for failed run #${{ github.event.workflow_run.id }}"
+          body: |
+            This PR was opened automatically after workflow `${{ github.event.workflow_run.name }}` run #${{ github.event.workflow_run.run_number }}` failed.
+
+            - Run URL: ${{ github.event.workflow_run.html_url }}
+            - Head SHA: `${{ github.event.workflow_run.head_sha }}`
+            - AI summary (stored in repo as `ai-fix-summary.txt`).
+
+            Please review the changes and merge to re-trigger CI/CD.
+          labels: ai-autofix,ci
+          delete-branch: true
