@@ -34,6 +34,7 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: [quality-gate-reusable]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: preview
     steps:
       - name: Checkout code
@@ -169,6 +170,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [quality-gate-reusable]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: production
     steps:
       - name: Checkout code

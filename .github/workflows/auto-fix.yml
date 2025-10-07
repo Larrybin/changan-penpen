@@ -137,23 +137,6 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit deterministic fixes (if any)
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin "${BASE_BRANCH}" --depth=1 || true
-          git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
-          git add -A
-          git commit -m "chore(auto-fix): automated fixes after failed run ${RUN_ID}"
-
-      - name: Ensure working tree on base branch
-        run: |
-          set -euo pipefail
-          git fetch origin "${BASE_BRANCH}" --depth=1 || true
-          git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
-
       - name: Create/Update PR (deterministic)
         if: steps.changes.outputs.changed == 'true'
         id: cppr
@@ -223,16 +206,6 @@ jobs:
             echo "AI auto-fix skipped: OPENAI_API_KEY not set"
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Commit AI changes
-        if: ${{ steps.ai_fix.outputs.changed == 'true' }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin "${BASE_BRANCH}" --depth=1 || true
-          git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
-          git add -A
-          git commit -m "fix(ai): auto-generated patch after failed run ${RUN_ID}"
 
       - name: Create/Update PR with AI changes (draft)
         if: ${{ steps.ai_fix.outputs.changed == 'true' }}

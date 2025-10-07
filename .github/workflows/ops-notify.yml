@@ -1,4 +1,4 @@
-﻿name: Ops Notify (Failure/Recovery)
+name: Ops Notify (Failure/Recovery)
 
 on:
   workflow_dispatch:
@@ -29,12 +29,12 @@ jobs:
             const failedJobs = (jobs.jobs || []).filter((job) => job.conclusion && job.conclusion !== 'success');
             const rerunUrl = `${run.html_url}/rerun`;
             const logsUrl = `${run.html_url}?check_suite_focus=true`;
-            const commitLine = run.head_commit ? `${run.head_commit.id.slice(0,7)} 鈥?${run.head_commit.message}` : 'n/a';
-            let body = `鉂?Workflow "${run.name}" #${run.run_number} failed\n` +
+            const commitLine = run.head_commit ? `${run.head_commit.id.slice(0,7)} - ${run.head_commit.message}` : 'n/a';
+            let body = `Workflow "${run.name}" #${run.run_number} failed\n` +
               `Run: ${run.html_url}\nRe-run (requires permissions): ${rerunUrl}\nLogs: ${logsUrl}\n` +
               `Event: ${run.event}\nCommit: ${commitLine}\n\n`;
             for (const job of failedJobs) {
-              body += `鈥?Job: ${job.name} 鈥?conclusion: ${job.conclusion}\n  Logs: ${job.html_url}\n`;
+              body += `Job: ${job.name} - conclusion: ${job.conclusion}\n  Logs: ${job.html_url}\n`;
               const failedSteps = (job.steps || []).filter((step) => step.conclusion === 'failure');
               if (failedSteps.length) {
                 body += `  Failed steps:\n`;
@@ -54,6 +54,24 @@ jobs:
             const run = context.payload.workflow_run;
             const pr = run.pull_requests[0];
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, body: process.env.BODY });
+
+      - name: Ensure 'ci-failure' label exists
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const name = 'ci-failure';
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name });
+              core.info(`Label '${name}' exists.`);
+            } catch (e) {
+              try {
+                await github.rest.issues.createLabel({ owner, repo, name, color: 'B60205', description: 'CI/CD failures' });
+                core.info(`Label '${name}' created.`);
+              } catch (e2) {
+                core.info('Create label ignored: ' + (e2.message || e2));
+              }
+            }
 
       - name: Open/append tracking issue (dedup)
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
@@ -81,7 +99,7 @@ jobs:
             const run = context.payload.workflow_run;
             const { owner, repo } = context.repo;
             const title = 'CI/CD Failure Tracker';
-            const body = [`鉁?Workflow "${run.name}" #${run.run_number} succeeded`,`Run: ${run.html_url}`,`Event: ${run.event}`].join('\n');
+            const body = [`Workflow "${run.name}" #${run.run_number} succeeded`,`Run: ${run.html_url}`,`Event: ${run.event}`].join('\n');
             const { data: issues } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: 'ci-failure' });
             const tracker = issues.find((i) => i.title === title);
             if (!tracker) return;
