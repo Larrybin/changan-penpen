@@ -236,6 +236,8 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Install dependencies (composite)
+        uses: ./.github/actions/install-and-heal
+
       - name: Generate Cloudflare types
         run: pnpm run cf-typegen
         env:
