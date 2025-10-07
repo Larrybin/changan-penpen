@@ -41,7 +41,7 @@ export function isEntryTokenValid(
     config: AdminAccessConfig,
 ) {
     if (!config.entryToken) {
-        return false;
+        return true;
     }
     return token === config.entryToken;
 }
@@ -50,6 +50,10 @@ export async function requireAdminForPage(user: AuthUser) {
     const config = await getAdminAccessConfig();
     if (!isEmailAllowed(user.email, config)) {
         redirect("/login?admin=1");
+    }
+
+    if (!config.entryToken) {
+        return;
     }
 
     const cookieStore = await cookies();
@@ -67,6 +71,10 @@ export async function checkAdminAccessFromHeaders(
     const config = await getAdminAccessConfig();
     if (!isEmailAllowed(email, config)) {
         return false;
+    }
+
+    if (!config.entryToken) {
+        return true;
     }
 
     const cookieHeader = headers.get("cookie") ?? "";
