@@ -133,7 +133,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: preview
-          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}" --var "NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}"
+          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}"
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -286,7 +286,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
-          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}" --var "NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}"
+          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}"
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
