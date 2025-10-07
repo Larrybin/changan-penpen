@@ -1,7 +1,6 @@
-name: CI
+﻿name: CI
 
 on:
-  # 常规 CI：在�?main 外的分支上运行；避免与部署工作流重复
   push:
     branches-ignore:
       - main
@@ -12,14 +11,13 @@ on:
     branches-ignore:
       - main
     paths-ignore:
-  workflow_call:
+      - README.md
       - docs/**
-  # 允许被其他工作流复用（reusable workflow�?  workflow_call:
+  workflow_call:
 
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9'
-  # 提供�?Next.js 预渲染与 SEO 逻辑的基础 URL（仓�?Actions Variables 可覆盖）
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 jobs:
@@ -38,7 +36,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: |
@@ -75,9 +73,7 @@ jobs:
         run: pnpm test
 
       - name: Show NEXT_PUBLIC_APP_URL (diagnostic)
-        run: |
-          echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
+        run: echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
 
       - name: Build (Next.js)
         run: pnpm build
-
