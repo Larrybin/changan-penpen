@@ -83,8 +83,7 @@ jobs:
               body: process.env.BODY,
             });
 
-      - name: Open/append tracking issue (for pushes)
-        if: ${{ !github.event.workflow_run.pull_requests || github.event.workflow_run.pull_requests.length == 0 }}
+      - name: Open/append tracking issue (dedup)
         uses: actions/github-script@v7
         env:
           BODY: ${{ steps.build_summary.outputs.body }}
@@ -93,9 +92,8 @@ jobs:
             const { owner, repo } = context.repo;
             const title = 'CI/CD Failure Tracker';
             const { data: issues } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: 'ci-failure' });
-            const existing = issues.find((issue) => issue.title === title);
-            if (existing) {
-              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: process.env.BODY });
-            } else {
-              await github.rest.issues.create({ owner, repo, title, body: process.env.BODY, labels: ['ci-failure'] });
+            let tracker = issues.find((issue) => issue.title === title);
+            if (!tracker) {
+              tracker = (await github.rest.issues.create({ owner, repo, title, body: 'Tracking CI/CD failures', labels: ['ci-failure'] })).data;
             }
+            await github.rest.issues.createComment({ owner, repo, issue_number: tracker.number, body: process.env.BODY });
