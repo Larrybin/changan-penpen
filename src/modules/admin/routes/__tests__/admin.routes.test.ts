@@ -12,6 +12,8 @@ describe("adminRoutes", () => {
     it("generates dynamic paths", () => {
         expect(adminRoutes.todos.edit(42)).toBe("/admin/todos/edit/42");
         expect(adminRoutes.todos.edit("abc")).toBe("/admin/todos/edit/abc");
-        expect(adminRoutes.tenants.show("tenant-1")).toBe("/admin/tenants/tenant-1");
+        expect(adminRoutes.tenants.show("tenant-1")).toBe(
+            "/admin/tenants/tenant-1",
+        );
     });
 });

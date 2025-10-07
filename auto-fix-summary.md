@@ -1,10 +1,9 @@
 ## Auto-fix Summary
-- Source workflow: Deploy Next.js App to Cloudflare (run #164)
-- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18321877353
-- Head SHA: 48c6ea422d086d16c4e257814b8d3cfae587534b
+- Source workflow: Deploy Next.js App to Cloudflare (run #166)
+- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18322608400
+- Head SHA: a7337eed02cc51b02349d73421fc63a3c6cde5b1
 
 ### Dependency install
-+ next-intl 4.3.9
 + react 19.1.0
 + react-dom 19.1.0
 + react-hook-form 7.62.0
@@ -20,17 +19,53 @@ devDependencies:
 + @types/node 20.19.13
 + @types/react 19.1.12
 + @types/react-dom 19.1.9
++ @vitest/coverage-v8 3.2.4
 + drizzle-kit 0.31.4
-+ jsdom 26.1.0
++ jsdom 27.0.0
 + tailwindcss 4.1.13
 + tw-animate-css 1.3.8
 + typescript 5.9.2
-+ vitest 1.6.1
++ vitest 3.2.4
 + wrangler 4.42.0
 
-Done in 10.4s using pnpm v9.15.9
+Done in 9.9s using pnpm v9.15.9
 ### biome format --write
-Formatted 233 files in 126ms. No fixes applied.
+Formatted 246 files in 145ms. Fixed 13 files.
 ### biome check --write
-Checked 233 files in 682ms. No fixes applied.
+Checked 246 files in 815ms. Fixed 6 files.
 ### tsc --noEmit
+src/modules/admin/providers/__tests__/auth-provider.test.ts(5,25): error TS2558: Expected 0-1 type arguments, but got 2.
+src/modules/admin/providers/__tests__/data-provider.test.ts(5,25): error TS2558: Expected 0-1 type arguments, but got 2.
+src/modules/admin/providers/__tests__/data-provider.test.ts(28,30): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(28,30): error TS18048: 'adminDataProvider.getList' is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(63,30): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(63,30): error TS18048: 'adminDataProvider.getList' is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(65,36): error TS2353: Object literal may only specify known properties, and 'perPage' does not exist in type 'Pagination'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(80,13): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(102,15): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(113,15): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(129,30): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(129,30): error TS18048: 'adminDataProvider.deleteOne' is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(148,30): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/modules/admin/providers/__tests__/data-provider.test.ts(148,30): error TS18048: 'adminDataProvider.custom' is possibly 'undefined'.
+src/modules/creem/services/__tests__/billing.service.test.ts(43,49): error TS2322: Type 'Promise<TestDatabase>' is not assignable to type 'Promise<DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }>'.
+  Type 'TestDatabase' is not assignable to type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }'.
+    Property 'batch' is missing in type 'BetterSQLite3Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/index")>' but required in type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")>'.
+src/modules/creem/services/__tests__/usage.service.test.ts(31,49): error TS2322: Type 'Promise<TestDatabase>' is not assignable to type 'Promise<DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }>'.
+  Type 'TestDatabase' is not assignable to type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }'.
+    Property 'batch' is missing in type 'BetterSQLite3Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/index")>' but required in type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")>'.
+src/modules/todos/services/__tests__/category.service.test.ts(33,49): error TS2322: Type 'Promise<TestDatabase>' is not assignable to type 'Promise<DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }>'.
+  Type 'TestDatabase' is not assignable to type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }'.
+    Property 'batch' is missing in type 'BetterSQLite3Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/index")>' but required in type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")>'.
+src/modules/todos/services/__tests__/todo.service.test.ts(58,49): error TS2322: Type 'Promise<TestDatabase>' is not assignable to type 'Promise<DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }>'.
+  Type 'TestDatabase' is not assignable to type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")> & { $client: D1Database; }'.
+    Property 'batch' is missing in type 'BetterSQLite3Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/index")>' but required in type 'DrizzleD1Database<typeof import("/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/src/db/schema")>'.
+src/modules/todos/services/__tests__/todo.service.test.ts(100,13): error TS2322: Type 'string' is not assignable to type 'number'.
+tests/fixtures/db.ts(1,49): error TS7016: Could not find a declaration file for module 'better-sqlite3'. '/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/node_modules/.pnpm/better-sqlite3@12.2.0/node_modules/better-sqlite3/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/better-sqlite3` if it exists or add a new declaration (.d.ts) file containing `declare module 'better-sqlite3';`
+tests/fixtures/db.ts(44,41): error TS7016: Could not find a declaration file for module 'better-sqlite3'. '/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/node_modules/.pnpm/better-sqlite3@12.2.0/node_modules/better-sqlite3/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/better-sqlite3` if it exists or add a new declaration (.d.ts) file containing `declare module 'better-sqlite3';`
+tests/fixtures/db.ts(54,43): error TS7016: Could not find a declaration file for module 'better-sqlite3'. '/home/runner/work/fullstack-next-cloudflare-main/fullstack-next-cloudflare-main/node_modules/.pnpm/better-sqlite3@12.2.0/node_modules/better-sqlite3/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/better-sqlite3` if it exists or add a new declaration (.d.ts) file containing `declare module 'better-sqlite3';`
+tests/fixtures/db.ts(117,13): error TS2322: Type 'number' is not assignable to type 'Date'.
+tests/fixtures/db.ts(118,13): error TS2322: Type 'number' is not assignable to type 'Date'.

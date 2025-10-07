@@ -16,10 +16,13 @@ describe("adminDataProvider", () => {
 
     it("builds queries with pagination, filters, and sorters", async () => {
         fetchMock.mockResolvedValueOnce(
-            new Response(JSON.stringify({ data: [{ id: 1, name: "Item" }], total: 10 }), {
-                status: 200,
-                headers: { "Content-Type": "application/json" },
-            }),
+            new Response(
+                JSON.stringify({ data: [{ id: 1, name: "Item" }], total: 10 }),
+                {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                },
+            ),
         );
 
         const result = await adminDataProvider.getList({
@@ -87,10 +90,13 @@ describe("adminDataProvider", () => {
                 }),
             )
             .mockResolvedValueOnce(
-                new Response(JSON.stringify({ data: { id: 1, name: "Updated" } }), {
-                    status: 200,
-                    headers: { "Content-Type": "application/json" },
-                }),
+                new Response(
+                    JSON.stringify({ data: { id: 1, name: "Updated" } }),
+                    {
+                        status: 200,
+                        headers: { "Content-Type": "application/json" },
+                    },
+                ),
             );
 
         await adminDataProvider.create({

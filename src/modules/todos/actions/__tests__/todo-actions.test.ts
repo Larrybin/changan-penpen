@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/cache", () => ({
     revalidatePath: vi.fn(),
@@ -35,23 +35,23 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAuth } from "@/modules/auth/utils/auth-utils";
 import {
-    createTodoForUser,
-    updateTodoForUser,
-    deleteTodoForUser,
-    listTodosForUser,
-    getTodoByIdForUser,
-} from "@/modules/todos/services/todo.service";
-import {
     createCategoryForUser,
     listCategoriesForUser,
 } from "@/modules/todos/services/category.service";
+import {
+    createTodoForUser,
+    deleteTodoForUser,
+    getTodoByIdForUser,
+    listTodosForUser,
+    updateTodoForUser,
+} from "@/modules/todos/services/todo.service";
+import { createCategory } from "../create-category.action";
 import { createTodoAction } from "../create-todo.action";
 import { deleteTodoAction } from "../delete-todo.action";
-import { updateTodoAction, updateTodoFieldAction } from "../update-todo.action";
-import getAllTodos from "../get-todos.action";
-import { getTodoById } from "../get-todo-by-id.action";
-import { createCategory } from "../create-category.action";
 import { getAllCategories } from "../get-categories.action";
+import { getTodoById } from "../get-todo-by-id.action";
+import getAllTodos from "../get-todos.action";
+import { updateTodoAction, updateTodoFieldAction } from "../update-todo.action";
 
 const requireAuthMock = vi.mocked(requireAuth);
 const createTodoForUserMock = vi.mocked(createTodoForUser);
@@ -341,7 +341,9 @@ describe("todos actions failure paths", () => {
         });
 
         it("propagates authentication error", async () => {
-            requireAuthMock.mockRejectedValueOnce(new Error("Authentication required"));
+            requireAuthMock.mockRejectedValueOnce(
+                new Error("Authentication required"),
+            );
 
             await expect(createCategory({ name: "Work" })).rejects.toThrow(
                 "Authentication required",
@@ -351,7 +353,9 @@ describe("todos actions failure paths", () => {
 
         it("propagates service error", async () => {
             requireAuthMock.mockResolvedValue({ id: "user-1" } as never);
-            createCategoryForUserMock.mockRejectedValueOnce(new Error("DB failure"));
+            createCategoryForUserMock.mockRejectedValueOnce(
+                new Error("DB failure"),
+            );
 
             await expect(createCategory({ name: "Work" })).rejects.toThrow(
                 "DB failure",
@@ -380,7 +384,9 @@ describe("todos actions failure paths", () => {
         });
 
         it("returns empty array on error", async () => {
-            listCategoriesForUserMock.mockRejectedValueOnce(new Error("DB failure"));
+            listCategoriesForUserMock.mockRejectedValueOnce(
+                new Error("DB failure"),
+            );
 
             const result = await getAllCategories("user-1");
             expect(result).toEqual([]);

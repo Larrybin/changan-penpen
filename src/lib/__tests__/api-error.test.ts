@@ -34,7 +34,10 @@ describe("handleApiError", () => {
     it("falls back to generic errors", async () => {
         const response = handleApiError(new Error("Boom"));
         expect(response.status).toBe(500);
-        expect(await response.json()).toEqual({ success: false, error: "Boom" });
+        expect(await response.json()).toEqual({
+            success: false,
+            error: "Boom",
+        });
     });
 
     it("returns internal server error for unknown types", async () => {

@@ -139,7 +139,9 @@ describe("auth-utils", () => {
     });
 
     it("logs a warning when Google OAuth configuration is incomplete", async () => {
-        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+        const warnSpy = vi
+            .spyOn(console, "warn")
+            .mockImplementation(() => undefined);
         getCloudflareContextMock.mockResolvedValueOnce({
             env: {
                 BETTER_AUTH_SECRET: "secret",
