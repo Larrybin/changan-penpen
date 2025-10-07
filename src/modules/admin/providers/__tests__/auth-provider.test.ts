@@ -71,7 +71,9 @@ describe("adminAuthProvider", () => {
     it("returns current identity when available", async () => {
         fetchMock.mockResolvedValueOnce(
             new Response(
-                JSON.stringify({ user: { id: "admin", email: "admin@example.com" } }),
+                JSON.stringify({
+                    user: { id: "admin", email: "admin@example.com" },
+                }),
                 {
                     status: 200,
                     headers: { "Content-Type": "application/json" },

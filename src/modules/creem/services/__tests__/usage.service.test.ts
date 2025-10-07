@@ -1,11 +1,19 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
+import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import * as dbModule from "@/db";
-import { recordUsage, decrementCredits, getUsageDaily } from "../usage.service";
-import type { TestDbContext } from "../../../../../tests/fixtures/db";
-import { createTestDb } from "../../../../../tests/fixtures/db";
 import { customers } from "@/modules/creem/schemas/billing.schema";
 import { usageDaily, usageEvents } from "@/modules/creem/schemas/usage.schema";
-import { eq } from "drizzle-orm";
+import type { TestDbContext } from "../../../../../tests/fixtures/db";
+import { createTestDb } from "../../../../../tests/fixtures/db";
+import { decrementCredits, getUsageDaily, recordUsage } from "../usage.service";
 
 describe("creem usage service", () => {
     let ctx: TestDbContext;
@@ -70,7 +78,11 @@ describe("creem usage service", () => {
             unit: "tokens",
         });
 
-        expect(result).toEqual({ ok: true, date: "2024-03-01", newCredits: undefined });
+        expect(result).toEqual({
+            ok: true,
+            date: "2024-03-01",
+            newCredits: undefined,
+        });
 
         const events = ctx.db.select().from(usageEvents).all();
         expect(events).toHaveLength(1);
@@ -149,11 +161,26 @@ describe("creem usage service", () => {
 
         vi.useFakeTimers();
         vi.setSystemTime(new Date("2024-04-10T08:00:00.000Z"));
-        await recordUsage({ userId, feature: "ai.generate", amount: 5, unit: "tokens" });
+        await recordUsage({
+            userId,
+            feature: "ai.generate",
+            amount: 5,
+            unit: "tokens",
+        });
         vi.setSystemTime(new Date("2024-04-11T08:00:00.000Z"));
-        await recordUsage({ userId, feature: "ai.generate", amount: 7, unit: "tokens" });
+        await recordUsage({
+            userId,
+            feature: "ai.generate",
+            amount: 7,
+            unit: "tokens",
+        });
         vi.setSystemTime(new Date("2024-04-12T08:00:00.000Z"));
-        await recordUsage({ userId, feature: "ai.generate", amount: 3, unit: "tokens" });
+        await recordUsage({
+            userId,
+            feature: "ai.generate",
+            amount: 3,
+            unit: "tokens",
+        });
 
         const rows = await getUsageDaily(userId, "2024-04-10", "2024-04-11");
         expect(rows).toHaveLength(2);

@@ -10,7 +10,11 @@ async function computeSignature(payload: string, secret: string) {
         false,
         ["sign"],
     );
-    const signature = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+    const signature = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        enc.encode(payload),
+    );
     const bytes = new Uint8Array(signature);
     const hex = Array.from(bytes)
         .map((b) => b.toString(16).padStart(2, "0"))

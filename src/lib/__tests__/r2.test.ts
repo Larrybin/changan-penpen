@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { uploadToR2, getFromR2 } from "../r2";
+import { getFromR2, uploadToR2 } from "../r2";
 
 const getCloudflareContextMock = vi.hoisted(() => vi.fn());
 vi.mock("@opennextjs/cloudflare", () => ({
@@ -11,7 +11,9 @@ function createMockFile(name = "image.png", type = "image/png") {
         name,
         type,
         size: 4,
-        arrayBuffer: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3, 4]).buffer),
+        arrayBuffer: vi
+            .fn()
+            .mockResolvedValue(new Uint8Array([1, 2, 3, 4]).buffer),
     } as unknown as File;
 }
 
@@ -60,7 +62,9 @@ describe("r2 utilities", () => {
     });
 
     it("handles upload errors gracefully", async () => {
-        getCloudflareContextMock.mockRejectedValueOnce(new Error("unavailable"));
+        getCloudflareContextMock.mockRejectedValueOnce(
+            new Error("unavailable"),
+        );
 
         const result = await uploadToR2(createMockFile(), "files");
         expect(result.success).toBe(false);

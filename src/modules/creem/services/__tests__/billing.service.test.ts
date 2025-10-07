@@ -1,15 +1,27 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
+import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import * as dbModule from "@/db";
+import {
+    creditsHistory,
+    customers,
+    subscriptions,
+} from "@/modules/creem/schemas/billing.schema";
+import type { TestDbContext } from "../../../../../tests/fixtures/db";
+import { createTestDb } from "../../../../../tests/fixtures/db";
 import {
     addCreditsToCustomer,
     createOrUpdateCustomer,
     createOrUpdateSubscription,
     getCustomerIdByUserId,
 } from "../billing.service";
-import type { TestDbContext } from "../../../../../tests/fixtures/db";
-import { createTestDb } from "../../../../../tests/fixtures/db";
-import { customers, creditsHistory, subscriptions } from "@/modules/creem/schemas/billing.schema";
 
 interface TestContext extends TestDbContext {
     userId: string;
@@ -75,7 +87,10 @@ describe("creem billing service", () => {
             country: "US",
         } as const;
 
-        const firstId = await createOrUpdateCustomer(customerPayload, ctx.userId);
+        const firstId = await createOrUpdateCustomer(
+            customerPayload,
+            ctx.userId,
+        );
         expect(firstId).toBeGreaterThan(0);
 
         const created = ctx.db
@@ -188,7 +203,10 @@ describe("creem billing service", () => {
             .where(eq(creditsHistory.customerId, customerId))
             .all();
         expect(history).toHaveLength(2);
-        expect(history.map((item) => item.creemOrderId)).toEqual(["order-1", "order-2"]);
+        expect(history.map((item) => item.creemOrderId)).toEqual([
+            "order-1",
+            "order-2",
+        ]);
     });
 
     it("throws when adding credits to a missing customer", async () => {

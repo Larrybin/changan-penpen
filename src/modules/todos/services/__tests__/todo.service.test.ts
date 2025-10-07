@@ -8,8 +8,10 @@ import {
     vi,
 } from "vitest";
 import * as dbModule from "@/db";
-import { categories } from "@/modules/todos/schemas/category.schema";
 import { TodoPriority, TodoStatus } from "@/modules/todos/models/todo.enum";
+import { categories } from "@/modules/todos/schemas/category.schema";
+import type { TestDbContext } from "../../../../../tests/fixtures/db";
+import { createTestDb } from "../../../../../tests/fixtures/db";
 import {
     createTodoForTenant,
     createTodoForUser,
@@ -22,8 +24,6 @@ import {
     updateTodoForAdmin,
     updateTodoForUser,
 } from "../todo.service";
-import type { TestDbContext } from "../../../../../tests/fixtures/db";
-import { createTestDb } from "../../../../../tests/fixtures/db";
 
 describe("todo.service", () => {
     let ctx: TestDbContext;
@@ -245,7 +245,10 @@ describe("todo.service", () => {
         const result = await getTodoByIdForUser(defaultUserId, created.id);
         expect(result).toBeNull();
 
-        const missing = await getTodoByIdForUser(defaultUserId, created.id + 999);
+        const missing = await getTodoByIdForUser(
+            defaultUserId,
+            created.id + 999,
+        );
         expect(missing).toBeNull();
     });
 
@@ -274,9 +277,9 @@ describe("todo.service", () => {
         expect(all.data.map((row) => row.userId)).toEqual(
             expect.arrayContaining([defaultUserId, otherUser.id]),
         );
-        expect(all.data.find((row) => row.userId === defaultUserId)?.categoryName).toBe(
-            "AdminCat",
-        );
+        expect(
+            all.data.find((row) => row.userId === defaultUserId)?.categoryName,
+        ).toBe("AdminCat");
 
         const filtered = await listTodosForAdmin({ tenantId: defaultUserId });
         expect(filtered.total).toBe(1);

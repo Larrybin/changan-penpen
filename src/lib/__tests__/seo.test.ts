@@ -34,7 +34,9 @@ describe("resolveAppUrl", () => {
 
     it("falls back to localhost and logs a warning when nothing configured", async () => {
         process.env.NEXT_PUBLIC_APP_URL = "";
-        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+        const warnSpy = vi
+            .spyOn(console, "warn")
+            .mockImplementation(() => undefined);
         const { resolveAppUrl } = await loadSeoModule();
         const url = resolveAppUrl({ domain: "" } as never);
         expect(url).toBe("http://localhost:3000");
@@ -46,7 +48,9 @@ describe("resolveAppUrl", () => {
 
     it("throws an error when no URL can be resolved", async () => {
         process.env.NEXT_PUBLIC_APP_URL = "";
-        const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+        const errorSpy = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
         class FailingURL extends URL {
             constructor(input: string, base?: string | URL) {
                 if (input.includes("localhost")) {
@@ -57,10 +61,11 @@ describe("resolveAppUrl", () => {
         }
         global.URL = FailingURL as unknown as typeof URL;
 
-        const { resolveAppUrl, AppUrlResolutionError } = (await loadSeoModule()) as {
-            resolveAppUrl: (settings?: unknown) => string;
-            AppUrlResolutionError: typeof AppUrlResolutionErrorType;
-        };
+        const { resolveAppUrl, AppUrlResolutionError } =
+            (await loadSeoModule()) as {
+                resolveAppUrl: (settings?: unknown) => string;
+                AppUrlResolutionError: typeof AppUrlResolutionErrorType;
+            };
 
         expect(() => resolveAppUrl({ domain: "" } as never)).toThrow(
             AppUrlResolutionError,
@@ -72,16 +77,16 @@ describe("resolveAppUrl", () => {
 describe("ensureAbsoluteUrl", () => {
     it("returns absolute values unchanged", async () => {
         const { ensureAbsoluteUrl } = await loadSeoModule();
-        expect(ensureAbsoluteUrl("https://cdn.example/app.js", "https://site.dev")).toBe(
-            "https://cdn.example/app.js",
-        );
+        expect(
+            ensureAbsoluteUrl("https://cdn.example/app.js", "https://site.dev"),
+        ).toBe("https://cdn.example/app.js");
     });
 
     it("converts protocol relative URLs", async () => {
         const { ensureAbsoluteUrl } = await loadSeoModule();
-        expect(ensureAbsoluteUrl("//cdn.example/app.js", "https://site.dev")).toBe(
-            "https://cdn.example/app.js",
-        );
+        expect(
+            ensureAbsoluteUrl("//cdn.example/app.js", "https://site.dev"),
+        ).toBe("https://cdn.example/app.js");
     });
 
     it("resolves root relative URLs using the provided base", async () => {

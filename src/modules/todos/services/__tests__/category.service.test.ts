@@ -1,13 +1,21 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import * as dbModule from "@/db";
+import type { TestDbContext } from "../../../../../tests/fixtures/db";
+import { createTestDb } from "../../../../../tests/fixtures/db";
 import {
     createCategoryForUser,
     listCategoriesForAdmin,
     listCategoriesForUser,
     updateCategoryForUser,
 } from "../category.service";
-import type { TestDbContext } from "../../../../../tests/fixtures/db";
-import { createTestDb } from "../../../../../tests/fixtures/db";
 
 describe("category.service", () => {
     let ctx: TestDbContext;
@@ -189,13 +197,15 @@ describe("category.service", () => {
         const otherUser = ctx.insertUser({
             id: "user-admin-tenant",
             email: "tenant-admin@example.com",
-            name: "Tenant", 
+            name: "Tenant",
         });
 
         await createCategoryForUser(userId, { name: "Primary" });
         await createCategoryForUser(otherUser.id, { name: "Secondary" });
 
-        const categories = await listCategoriesForAdmin({ tenantId: otherUser.id });
+        const categories = await listCategoriesForAdmin({
+            tenantId: otherUser.id,
+        });
         expect(categories).toHaveLength(1);
         expect(categories[0]?.userId).toBe(otherUser.id);
         expect(categories[0]?.name).toBe("Secondary");
