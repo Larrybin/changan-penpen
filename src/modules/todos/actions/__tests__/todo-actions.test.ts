@@ -306,6 +306,31 @@ describe("todos actions failure paths", () => {
             expect(revalidatePathMock).toHaveBeenCalledTimes(2);
         });
 
+        it("omits optional fields that are blank strings", async () => {
+            requireAuthMock.mockResolvedValue({ id: "user-1" } as never);
+            createCategoryForUserMock.mockResolvedValueOnce({
+                id: 2,
+                name: "Work",
+                userId: "user-1",
+                color: "#6366f1",
+                description: null,
+                createdAt: "2024-01-01T00:00:00.000Z",
+                updatedAt: "2024-01-01T00:00:00.000Z",
+            } as never);
+
+            await createCategory({
+                name: "Work",
+                description: "   ",
+                color: "",
+            });
+
+            expect(createCategoryForUserMock).toHaveBeenCalledWith("user-1", {
+                name: "Work",
+                description: undefined,
+                color: undefined,
+            });
+        });
+
         it("throws when name is missing", async () => {
             requireAuthMock.mockResolvedValue({ id: "user-1" } as never);
 

@@ -11,10 +11,15 @@ import * as dbModule from "@/db";
 import { categories } from "@/modules/todos/schemas/category.schema";
 import { TodoPriority, TodoStatus } from "@/modules/todos/models/todo.enum";
 import {
+    createTodoForTenant,
     createTodoForUser,
+    deleteTodoForAdmin,
     deleteTodoForUser,
+    getTodoByIdForAdmin,
     getTodoByIdForUser,
+    listTodosForAdmin,
     listTodosForUser,
+    updateTodoForAdmin,
     updateTodoForUser,
 } from "../todo.service";
 import type { TestDbContext } from "../../../../../tests/fixtures/db";
@@ -242,5 +247,114 @@ describe("todo.service", () => {
 
         const missing = await getTodoByIdForUser(defaultUserId, created.id + 999);
         expect(missing).toBeNull();
+    });
+
+    it("lists todos for admin users with optional tenant filtering", async () => {
+        if (bailIfUnavailable()) {
+            return;
+        }
+
+        const category = await insertCategoryForUser("AdminCat");
+        const otherUser = ctx.insertUser({
+            id: "user-admin-other",
+            email: "admin-other@example.com",
+            name: "Other Tenant",
+        });
+
+        await createTodoForUser(defaultUserId, {
+            title: "Primary tenant todo",
+            categoryId: category.id,
+        });
+        await createTodoForUser(otherUser.id, {
+            title: "Secondary tenant todo",
+        });
+
+        const all = await listTodosForAdmin({ perPage: 10 });
+        expect(all.total).toBe(2);
+        expect(all.data.map((row) => row.userId)).toEqual(
+            expect.arrayContaining([defaultUserId, otherUser.id]),
+        );
+        expect(all.data.find((row) => row.userId === defaultUserId)?.categoryName).toBe(
+            "AdminCat",
+        );
+
+        const filtered = await listTodosForAdmin({ tenantId: defaultUserId });
+        expect(filtered.total).toBe(1);
+        expect(filtered.data).toHaveLength(1);
+        expect(filtered.data[0]?.userId).toBe(defaultUserId);
+    });
+
+    it("retrieves todo details for administrators including user metadata", async () => {
+        if (bailIfUnavailable()) {
+            return;
+        }
+
+        const created = await createTodoForUser(defaultUserId, {
+            title: "Admin detail todo",
+        });
+
+        const result = await getTodoByIdForAdmin(created.id);
+        expect(result?.id).toBe(created.id);
+        expect(result?.userId).toBe(defaultUserId);
+        expect(result?.userEmail).toBe("user-test@example.com");
+    });
+
+    it("allows admins to create todos on behalf of tenants", async () => {
+        if (bailIfUnavailable()) {
+            return;
+        }
+
+        const tenant = ctx.insertUser({
+            id: "tenant-123",
+            email: "tenant-123@example.com",
+            name: "Tenant Admin",
+        });
+
+        const record = await createTodoForTenant(tenant.id, {
+            title: "Admin created todo",
+        });
+
+        expect(record.userId).toBe(tenant.id);
+        expect(record.title).toBe("Admin created todo");
+    });
+
+    it("updates tenant todos via admin workflow and surfaces new data", async () => {
+        if (bailIfUnavailable()) {
+            return;
+        }
+
+        const created = await createTodoForUser(defaultUserId, {
+            title: "Needs update",
+        });
+
+        const updated = await updateTodoForAdmin(created.id, {
+            title: "Updated by admin",
+            status: TodoStatus.COMPLETED,
+        });
+
+        expect(updated.title).toBe("Updated by admin");
+        expect(updated.status).toBe(TodoStatus.COMPLETED);
+
+        await expect(
+            updateTodoForAdmin(created.id + 999, { title: "Missing" }),
+        ).rejects.toThrow("Todo not found");
+    });
+
+    it("deletes tenant todos via admin workflow", async () => {
+        if (bailIfUnavailable()) {
+            return;
+        }
+
+        const created = await createTodoForUser(defaultUserId, {
+            title: "Remove me",
+        });
+
+        await deleteTodoForAdmin(created.id);
+        const lookup = await getTodoByIdForAdmin(created.id);
+        expect(lookup).toBeNull();
+
+        await expect(deleteTodoForAdmin(created.id + 999)).rejects.toThrow(
+            "Todo not found",
+        );
     });
 });
