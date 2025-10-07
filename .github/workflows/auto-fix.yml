@@ -1,4 +1,4 @@
-﻿name: Auto Fix on Failure
+name: Auto Fix (deterministic + AI)
 
 on:
   workflow_run:
@@ -9,6 +9,10 @@ permissions:
   contents: write
   pull-requests: write
   actions: read
+
+concurrency:
+  group: autofix-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   SUMMARY_FILE: auto-fix-summary.md
@@ -21,7 +25,6 @@ env:
 
 jobs:
   auto-fix:
-    name: Attempt Auto Fixes
     if: ${{ github.event.workflow_run.conclusion != 'success' }}
     runs-on: ubuntu-latest
     steps:
@@ -108,21 +111,6 @@ jobs:
           echo "### biome check --write" >> "$SUMMARY_FILE"
           tail -n 40 "$LOG" >> "$SUMMARY_FILE"
 
-      - name: Run next lint --fix
-        id: next_lint
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          LOG=$(mktemp)
-          if pnpm exec next lint --fix --max-warnings=0 > "$LOG" 2>&1; then
-            STATUS=success
-          else
-            STATUS=failed
-          fi
-          echo "next_lint=${STATUS}" >> "$GITHUB_OUTPUT"
-          echo "### next lint --fix" >> "$SUMMARY_FILE"
-          tail -n 40 "$LOG" >> "$SUMMARY_FILE"
-
       - name: Type check (tsc)
         id: tsc
         continue-on-error: true
@@ -148,43 +136,24 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit changes (if any)
+      - name: Commit deterministic fixes (if any)
         if: steps.changes.outputs.changed == 'true'
-        id: commit
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # 确保在基准分支上提交，由 create-pull-request 负责创建 PR 分支
           git fetch origin "${BASE_BRANCH}" --depth=1 || true
           git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
           git add -A
           git commit -m "chore(auto-fix): automated fixes after failed run ${RUN_ID}"
 
-      - name: Append command status table
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          {
-            echo "";
-            echo "### Command status";
-            echo "| Command | Result |";
-            echo "| --- | --- |";
-            echo "| pnpm install | ${{ steps.deps.outputs.install_status || 'success' }} |";
-            echo "| pnpm dedupe | ${{ steps.deps.outputs.dedupe_ran || 'not-run' }} |";
-            echo "| biome format --write | ${{ steps.format.outputs.biome_format || 'success' }} |";
-            echo "| biome check --write | ${{ steps.biome_check.outputs.biome_check || 'success' }} |";
-            echo "| next lint --fix | ${{ steps.next_lint.outputs.next_lint || 'skipped' }} |";
-            echo "| tsc --noEmit | ${{ steps.tsc.outputs.tsc || 'skipped' }} |";
-          } >> "$SUMMARY_FILE"
-
       - name: Ensure working tree on base branch
-        # 无条件执行，避免 HEAD 停留在将要创建的 PR 分支导致 reset 远端失败
         run: |
           set -euo pipefail
           git fetch origin "${BASE_BRANCH}" --depth=1 || true
           git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
 
-      - name: Create pull request
+      - name: Create/Update PR (deterministic)
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
@@ -194,7 +163,7 @@ jobs:
           commit-message: "chore(auto-fix): automated fixes after failed run #${{ env.RUN_ID }}"
           body-path: ${{ env.SUMMARY_FILE }}
           labels: autofix,ci
-          delete-branch: true
+          delete-branch: false
 
       - name: Upload summary (artifact)
         if: steps.changes.outputs.changed == 'true'
@@ -203,4 +172,43 @@ jobs:
           name: auto-fix-summary-${{ env.RUN_ID }}
           path: ${{ env.SUMMARY_FILE }}
 
+      - name: Download failing workflow logs (for AI)
+        run: |
+          mkdir -p logs
+          gh run download ${{ github.event.workflow_run.id }} --repo ${{ github.repository }} --dir logs || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run AI auto fix
+        id: ai_fix
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/ai-auto-fix.mjs
+
+      - name: Commit AI changes
+        if: ${{ steps.ai_fix.outputs.changed == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin "${BASE_BRANCH}" --depth=1 || true
+          git checkout -B "${BASE_BRANCH}" "origin/${BASE_BRANCH}" || git checkout "${BASE_BRANCH}"
+          git add -A
+          git commit -m "fix(ai): auto-generated patch after failed run ${RUN_ID}"
+
+      - name: Create/Update PR with AI changes (draft)
+        if: ${{ steps.ai_fix.outputs.changed == 'true' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          base: ${{ env.BASE_BRANCH }}
+          branch: autofix/stable
+          title: "fix(ai): auto-generated fixes (rolling PR)"
+          commit-message: "fix(ai): auto-generated patch after failed run #${{ env.RUN_ID }}"
+          body-path: ${{ steps.ai_fix.outputs.summary_path }}
+          labels: ai-autofix,ci,ai-generated
+          draft: true
+          delete-branch: false
 

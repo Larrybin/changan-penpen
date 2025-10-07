@@ -1,4 +1,4 @@
-﻿name: Notify on CI/CD Failure
+name: Ops Notify (Failure/Recovery)
 
 on:
   workflow_run:
@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  notify:
+  failure:
     if: ${{ github.event.workflow_run.conclusion != 'success' }}
     runs-on: ubuntu-latest
     steps:
@@ -24,48 +24,24 @@ jobs:
             const run = context.payload.workflow_run;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-
-            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
-              owner,
-              repo,
-              run_id: run.id,
-              per_page: 100,
-            });
-
-            const failedJobs = (jobs.jobs || []).filter((job) => job.conclusion && job.conclusion !== "success");
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({ owner, repo, run_id: run.id, per_page: 100 });
+            const failedJobs = (jobs.jobs || []).filter((job) => job.conclusion && job.conclusion !== 'success');
             const rerunUrl = `${run.html_url}/rerun`;
             const logsUrl = `${run.html_url}?check_suite_focus=true`;
-            const commitLine = run.head_commit
-              ? `${run.head_commit.id.slice(0, 7)} — ${run.head_commit.message}`
-              : "n/a";
-
+            const commitLine = run.head_commit ? `${run.head_commit.id.slice(0,7)} — ${run.head_commit.message}` : 'n/a';
             let body = `❌ Workflow "${run.name}" #${run.run_number} failed\n` +
-              `Run: ${run.html_url}\n` +
-              `Re-run (requires permissions): ${rerunUrl}\n` +
-              `Logs: ${logsUrl}\n` +
-              `Event: ${run.event}\n` +
-              `Commit: ${commitLine}\n\n`;
-
+              `Run: ${run.html_url}\nRe-run (requires permissions): ${rerunUrl}\nLogs: ${logsUrl}\n` +
+              `Event: ${run.event}\nCommit: ${commitLine}\n\n`;
             for (const job of failedJobs) {
               body += `• Job: ${job.name} — conclusion: ${job.conclusion}\n  Logs: ${job.html_url}\n`;
-              const failedSteps = (job.steps || []).filter((step) => step.conclusion === "failure");
+              const failedSteps = (job.steps || []).filter((step) => step.conclusion === 'failure');
               if (failedSteps.length) {
                 body += `  Failed steps:\n`;
-                for (const step of failedSteps) {
-                  const attempt = step.number ? ` (attempt #${step.number})` : "";
-                  body += `    - ${step.name}${attempt}\n`;
-                }
+                for (const step of failedSteps) body += `    - ${step.name}\n`;
               }
             }
-
-            body += `\nAuto remediation workflows triggered:\n`;
-            body += `- auto-fix.yml (deterministic formatting & lockfile fixes)\n`;
-            body += `- ai-auto-fix.yml (AI patching when OPENAI_API_KEY is configured)\n`;
-
-            const rerunCli = `gh run rerun ${run.id} --repo ${owner}/${repo}`;
-            body += `\nQuick re-run via CLI:\n\`${rerunCli}\`\n`;
-
-            core.setOutput("body", body);
+            body += `\nAuto remediation workflows triggered:\n- auto-fix.yml (deterministic formatting & lockfile fixes)\n- ai-auto-fix (built-in in auto-fix when OPENAI_API_KEY configured)\n`;
+            core.setOutput('body', body);
 
       - name: Comment on PR (if available)
         if: ${{ github.event.workflow_run.pull_requests && github.event.workflow_run.pull_requests[0] }}
@@ -76,12 +52,7 @@ jobs:
           script: |
             const run = context.payload.workflow_run;
             const pr = run.pull_requests[0];
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: process.env.BODY,
-            });
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, body: process.env.BODY });
 
       - name: Open/append tracking issue (dedup)
         uses: actions/github-script@v7
@@ -97,3 +68,21 @@ jobs:
               tracker = (await github.rest.issues.create({ owner, repo, title, body: 'Tracking CI/CD failures', labels: ['ci-failure'] })).data;
             }
             await github.rest.issues.createComment({ owner, repo, issue_number: tracker.number, body: process.env.BODY });
+
+  recovery:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close tracker on success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const { owner, repo } = context.repo;
+            const title = 'CI/CD Failure Tracker';
+            const body = [`✅ Workflow "${run.name}" #${run.run_number} succeeded`,`Run: ${run.html_url}`,`Event: ${run.event}`].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: 'ci-failure' });
+            const tracker = issues.find((i) => i.title === title);
+            if (!tracker) return;
+            await github.rest.issues.createComment({ owner, repo, issue_number: tracker.number, body });
+            await github.rest.issues.update({ owner, repo, issue_number: tracker.number, state: 'closed' });
