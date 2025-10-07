@@ -1,7 +1,7 @@
 ## Auto-fix Summary
-- Source workflow: Deploy Next.js App to Cloudflare (run #143)
-- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18304546219
-- Head SHA: b1ecdf08bfad29a4121fc0467ba0c105bc9bd6bf
+- Source workflow: Deploy Next.js App to Cloudflare (run #148)
+- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18313053872
+- Head SHA: f1ca6699fe8a9f013471f332bfc6351fbced124d
 
 ### Dependency install
 + next-intl 4.3.9
@@ -28,24 +28,14 @@ devDependencies:
 + vitest 1.6.1
 + wrangler 4.42.0
 
-Done in 8.3s using pnpm v9.15.9
+Done in 8s using pnpm v9.15.9
 ### biome format --write
-Formatted 233 files in 195ms. Fixed 1 file.
+Formatted 233 files in 127ms. No fixes applied.
 ### biome check --write
-Checked 233 files in 1060ms. No fixes applied.
+Checked 233 files in 736ms. No fixes applied.
 ### next lint --fix
 ? How would you like to configure ESLint? https://nextjs.org/docs/app/api-reference/config/eslint
 [?25l❯  Strict (recommended)
    Base
    Cancel ⚠ If you set up ESLint yourself, we recommend adding the Next.js ESLint plugin. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
 ### tsc --noEmit
-
-### Command status
-| Command | Result |
-| --- | --- |
-| pnpm install | success |
-| pnpm dedupe | not-run |
-| biome format --write | success |
-| biome check --write | success |
-| next lint --fix | failed |
-| tsc --noEmit | success |
