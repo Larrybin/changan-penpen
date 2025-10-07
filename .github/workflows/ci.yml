@@ -40,7 +40,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - name: Install dependencies\n        run: |\n          set -euo pipefail\n          if pnpm install --frozen-lockfile; then\n            exit 0\n          fi\n          echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"\n          pnpm dedupe || true\n          pnpm install --no-frozen-lockfile
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          if pnpm install --frozen-lockfile; then
+            exit 0
+          fi
+          echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"
+          pnpm dedupe || true
+          pnpm install --no-frozen-lockfile
 
       - name: Cache Next.js build cache
         uses: actions/cache@v4
