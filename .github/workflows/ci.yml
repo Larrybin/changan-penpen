@@ -1,4 +1,11 @@
-﻿name: CI
+name: CI
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
   push:
@@ -38,15 +45,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: |
-          set -euo pipefail
-          if pnpm install --frozen-lockfile; then
-            exit 0
-          fi
-          echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"
-          pnpm dedupe || true
-          pnpm install --no-frozen-lockfile
+      - name: Install dependencies (composite)
+        uses: ./.github/actions/install-and-heal
 
       - name: Cache Next.js build cache
         uses: actions/cache@v4
@@ -77,3 +77,4 @@ jobs:
 
       - name: Build (Next.js)
         run: pnpm build
+

@@ -1,0 +1,15 @@
+﻿name: 'Install and Heal'
+description: 'Install dependencies with frozen lockfile first, then self-heal with dedupe and reinstall if needed.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install deps with self-healing
+      shell: bash
+      run: |
+        set -euo pipefail
+        if pnpm install --frozen-lockfile; then
+          exit 0
+        fi
+        echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"
+        pnpm dedupe || true
+        pnpm install --no-frozen-lockfile
