@@ -45,7 +45,11 @@ export async function GET(request: Request) {
     const startedAt = Date.now();
     const urlObj = new URL(request.url);
     const fast = (() => {
-        const v = (urlObj.searchParams.get("fast") || urlObj.searchParams.get("mode") || "").toLowerCase();
+        const v = (
+            urlObj.searchParams.get("fast") ||
+            urlObj.searchParams.get("mode") ||
+            ""
+        ).toLowerCase();
         return v === "1" || v === "true" || v === "fast";
     })();
     const reqOrigin = (() => {
@@ -60,7 +64,9 @@ export async function GET(request: Request) {
         checkR2(),
         checkEnvAndBindings(),
         checkAppUrl(reqOrigin),
-        fast ? Promise.resolve<CheckResult>({ ok: true }) : checkExternalServices(),
+        fast
+            ? Promise.resolve<CheckResult>({ ok: true })
+            : checkExternalServices(),
     ]);
     // 外部依赖是否为强制项由开关控制（默认不阻断）
     const { env } = await getCloudflareContext({ async: true });
@@ -68,19 +74,19 @@ export async function GET(request: Request) {
     const requireExternal = fast
         ? false
         : String(
-                (envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ??
-                    "false",
-            ) === "true";
+              (envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ??
+                  "false",
+          ) === "true";
     const requireDb = fast
         ? false
         : String(
-                (envRecord.HEALTH_REQUIRE_DB as string | undefined) ?? "false",
-            ) === "true";
+              (envRecord.HEALTH_REQUIRE_DB as string | undefined) ?? "false",
+          ) === "true";
     const requireR2 = fast
         ? false
         : String(
-                (envRecord.HEALTH_REQUIRE_R2 as string | undefined) ?? "false",
-            ) === "true";
+              (envRecord.HEALTH_REQUIRE_R2 as string | undefined) ?? "false",
+          ) === "true";
     const ok =
         (!requireDb || db.ok) &&
         (!requireR2 || r2.ok) &&
