@@ -1,4 +1,4 @@
-﻿name: Deploy Next.js App to Cloudflare
+name: Deploy Next.js App to Cloudflare
 
 on:
   workflow_dispatch:
@@ -23,149 +23,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Quality gate（复用自 CI）
+  # Quality gate�������� CI��
   quality-gate-reusable:
     name: Quality Gate
     uses: ./.github/workflows/ci.yml
     secrets: inherit
   # Deploy preview for pull requests
-  deploy-preview:
-    name: Deploy Preview
-    if: github.event_name == 'pull_request'
-    needs: [quality-gate-reusable]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    environment: preview
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Check required secrets
-        id: preview-secrets
-        run: |
-          missing=()
-          for var in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID BETTER_AUTH_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET CLOUDFLARE_R2_URL CREEM_API_KEY CREEM_WEBHOOK_SECRET; do
-            value="${!var}"
-            if [ -z "$value" ]; then
-              missing+=("$var")
-            fi
-          done
-
-          if [ "${#missing[@]}" -eq 0 ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "available=false" >> "$GITHUB_OUTPUT"
-          echo "Preview deployment skipped. Missing secrets: ${missing[*]}"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
-          CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
-          CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
-
-      - name: Cache OpenNext build
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: |
-            .next/cache
-            .open-next
-          key: ${{ runner.os }}-opennext-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx', '**/*.ts', '**/*.tsx') }}
-          restore-keys: |
-            ${{ runner.os }}-opennext-${{ hashFiles('pnpm-lock.yaml') }}-
-
-      - name: Install dependencies (composite)
-        uses: ./.github/actions/install-and-heal
-
-      - name: Generate Cloudflare types
-        if: steps.preview-secrets.outputs.available == 'true'
-        run: pnpm run cf-typegen
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Build Next.js (diagnostic)
-        run: pnpm run build
-        env:
-          # 显式注入以避免 fork PR 缺省环境导致的构建失败
-          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
-
-      - name: Build application
-        if: steps.preview-secrets.outputs.available == 'true'
-        run: pnpm run preview:cf
-        env:
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
-
-      - name: Verify build output
-        if: steps.preview-secrets.outputs.available == 'true'
-        run: |
-          echo "Checking build output..."
-          ls -la .open-next/ || echo "No .open-next directory found"
-          ls -la .next/ || echo "No .next directory found"
-          echo "Build verification complete"
-
-      - name: Run database migrations (Preview)
-        if: steps.preview-secrets.outputs.available == 'true'
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          environment: preview
-          wranglerVersion: '4.42.0'
-          command: d1 migrations apply next-cf-app --env preview
-
-      - name: Deploy to Preview (code)
-        if: steps.preview-secrets.outputs.available == 'true'
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          environment: preview
-          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}" --var "TRANSLATION_PROVIDER=${{ vars.TRANSLATION_PROVIDER || 'gpt' }}" --var "OPENAI_BASE_URL=${{ vars.OPENAI_BASE_URL }}"
-        env:
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
-          CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
-          CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
-      - name: Preview health check
-        if: steps.preview-secrets.outputs.available == 'true'
-        env:
-          HC_SECRET: ${{ secrets.PREVIEW_HEALTHCHECK_URL }}
-          HC_VAR: ${{ vars.PREVIEW_HEALTHCHECK_URL }}
-        run: |
-          url="${HC_SECRET:-${HC_VAR:-${NEXT_PUBLIC_APP_URL%/}/api/health}}"
-          if [ -z "$url" ]; then
-            echo "No preview health check URL configured. Skipping check."
-            exit 0
-          fi
-          echo "Checking preview health at $url"
-          curl -f --retry 3 --retry-delay 5 "$url"
-
-  # Deploy to production
   deploy-production:
     name: Deploy Production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -220,7 +83,7 @@ jobs:
           set -euo pipefail
           url="${{ vars.NEXT_PUBLIC_APP_URL }}"
           if [ -z "$url" ]; then
-            echo "NEXT_PUBLIC_APP_URL is required for production. Set it in: Settings 鈫?Secrets and variables 鈫?Actions 鈫?Variables."
+            echo "NEXT_PUBLIC_APP_URL is required for production. Set it in: Settings �?Secrets and variables �?Actions �?Variables."
             exit 1
           fi
           if echo "$url" | grep -Eqi 'localhost|127\.0\.0\.1'; then
