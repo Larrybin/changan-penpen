@@ -43,9 +43,12 @@ export async function updateTodoAction(todoId: number, formData: FormData) {
                 "todo-images",
             );
 
-            if (uploadResult.success && uploadResult.url) {
-                imageUrl = uploadResult.url;
-                imageAlt = validatedData.imageAlt || file.name;
+            if (uploadResult.success) {
+                const object = uploadResult.object;
+                if (object.url) {
+                    imageUrl = object.url;
+                    imageAlt = validatedData.imageAlt || file.name;
+                }
             } else {
                 console.error("Image upload failed:", uploadResult.error);
             }

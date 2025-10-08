@@ -61,9 +61,10 @@ export async function POST(request: Request) {
             return rateLimitResult.response;
         }
 
+        const envMode = String(env.NEXTJS_ENV ?? "").toLowerCase();
         if (
             env.CREEM_LOG_WEBHOOK_SIGNATURE === "1" &&
-            process.env.NODE_ENV !== "production"
+            envMode !== "production"
         ) {
             console.log("[creem webhook] signature:", signature);
         }

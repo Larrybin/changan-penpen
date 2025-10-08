@@ -25,11 +25,8 @@ const createSiteSettings = (
     enabledLanguages: overrides.enabledLanguages ?? [defaultLocale],
 });
 describe("seo helpers", () => {
-    const originalEnv = { ...process.env };
-
     afterEach(() => {
         vi.restoreAllMocks();
-        process.env = { ...originalEnv };
     });
 
     describe("ensureAbsoluteUrl", () => {
@@ -84,15 +81,16 @@ describe("seo helpers", () => {
         });
 
         it("回退到 NEXT_PUBLIC_APP_URL", async () => {
-            process.env.NEXT_PUBLIC_APP_URL = "https://env.example";
             const module = await import("./seo");
-            expect(module.resolveAppUrl(null)).toBe("https://env.example");
+            expect(
+                module.resolveAppUrl(null, {
+                    envAppUrl: "https://env.example",
+                }),
+            ).toBe("https://env.example");
         });
 
         it("所有候选均无效时抛错", async () => {
             const OriginalURL = URL;
-            const originalEnvAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-            process.env.NEXT_PUBLIC_APP_URL = undefined;
             class FailingURL extends OriginalURL {
                 constructor(input: string | URL, base?: string | URL) {
                     if (String(input).includes("localhost:3000")) {
@@ -104,11 +102,10 @@ describe("seo helpers", () => {
             globalThis.URL = FailingURL;
             try {
                 const module = await import("./seo");
-                expect(() => module.resolveAppUrl(null)).toThrow(
-                    module.AppUrlResolutionError,
-                );
+                expect(() =>
+                    module.resolveAppUrl(null, { envAppUrl: undefined }),
+                ).toThrow(module.AppUrlResolutionError);
             } finally {
-                process.env.NEXT_PUBLIC_APP_URL = originalEnvAppUrl;
                 globalThis.URL = OriginalURL;
             }
         });

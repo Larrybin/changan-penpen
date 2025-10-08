@@ -1,8 +1,10 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { generateAdminMetadata } from "@/modules/admin/metadata";
 import {
+    createAdminEntryCookieInit,
     getAdminAccessConfig,
     isEntryTokenValid,
 } from "@/modules/admin/utils/admin-access";
@@ -43,15 +45,14 @@ export default async function AdminEntryPage({
     }
 
     const cookieStore = await cookies();
-    cookieStore.set({
-        name: "admin-entry",
-        value: config.entryToken,
-        httpOnly: false,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: 60 * 60 * 24,
+    const requestHeaders = await headers();
+    const { env } = await getCloudflareContext({ async: true });
+    const cookieInit = createAdminEntryCookieInit({
+        token: config.entryToken,
+        headers: requestHeaders,
+        env,
     });
+    cookieStore.set(cookieInit.name, cookieInit.value, cookieInit);
 
     redirect("/login?admin=1&admin-entry=granted");
 }

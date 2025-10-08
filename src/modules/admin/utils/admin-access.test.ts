@@ -140,4 +140,33 @@ describe("admin access utils", () => {
         await module.requireAdminForPage(createUser());
         expect(redirectMock).not.toHaveBeenCalled();
     });
+
+    it("createAdminEntryCookieInit 强制 HttpOnly 并基于协议设定 secure", async () => {
+        const { createAdminEntryCookieInit } = await import("./admin-access");
+        const cookie = createAdminEntryCookieInit({
+            token: "secret",
+            headers: new Headers({ "x-forwarded-proto": "https" }),
+            env: {
+                NEXTJS_ENV: "production",
+            } as Parameters<typeof createAdminEntryCookieInit>[0]["env"],
+        });
+
+        expect(cookie.httpOnly).toBe(true);
+        expect(cookie.secure).toBe(true);
+        expect(cookie.sameSite).toBe("lax");
+    });
+
+    it("createAdminEntryCookieInit 在非 https 时遵循环境默认", async () => {
+        const { createAdminEntryCookieInit } = await import("./admin-access");
+        const cookie = createAdminEntryCookieInit({
+            token: "secret",
+            headers: new Headers({}),
+            env: {
+                NEXTJS_ENV: "development",
+                ADMIN_FORCE_SECURE_COOKIES: "true",
+            } as Parameters<typeof createAdminEntryCookieInit>[0]["env"],
+        });
+
+        expect(cookie.secure).toBe(true);
+    });
 });

@@ -1,5 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getFromR2, uploadToR2 } from "../r2";
+import { getFromR2, type UploadResult, uploadToR2 } from "../r2";
+
+function ensureSuccess(
+    result: UploadResult,
+): Extract<UploadResult, { success: true }> {
+    if (!result.success) {
+        throw new Error(
+            `Expected success but received: ${result.error ?? "unknown"}`,
+        );
+    }
+    return result;
+}
+
+function ensureFailure(
+    result: UploadResult,
+): Extract<UploadResult, { success: false }> {
+    if (result.success) {
+        throw new Error("Expected failure but received success result");
+    }
+    return result;
+}
 
 const getCloudflareContextMock = vi.hoisted(() => vi.fn());
 const applyRateLimitMock = vi.hoisted(() => vi.fn());
@@ -66,13 +86,15 @@ describe("r2 utilities", () => {
         });
 
         const file = createMockFile();
-        const result = await uploadToR2(file, "media");
+        const result = ensureSuccess(await uploadToR2(file, "media"));
 
-        expect(result.success).toBe(true);
-        expect(result.key).toBe("media/1700000000000_mock-uuid.png");
-        expect(result.url).toBe(
+        expect(result.object.key).toBe("media/1700000000000_mock-uuid.png");
+        expect(result.object.url).toBe(
             "https://cdn.example.com/media/1700000000000_mock-uuid.png",
         );
+        expect(result.object.contentType).toBe("image/png");
+        expect(result.object.size).toBe(4);
+        expect(result.object.scan).toEqual({ status: "skipped" });
         expect(putMock).toHaveBeenCalled();
         expect(file.arrayBuffer).toHaveBeenCalled();
     });
@@ -87,10 +109,10 @@ describe("r2 utilities", () => {
         });
 
         const file = createMockFile("report.pdf", "application/pdf", 1024);
-        const result = await uploadToR2(file, "docs");
+        const result = ensureSuccess(await uploadToR2(file, "docs"));
 
-        expect(result.success).toBe(true);
-        expect(result.key).toBe("docs/1700000000000_mock-uuid.pdf");
+        expect(result.object.key).toBe("docs/1700000000000_mock-uuid.pdf");
+        expect(result.object.scan.status).toBe("skipped");
         expect(putMock).toHaveBeenCalled();
     });
 
@@ -103,7 +125,9 @@ describe("r2 utilities", () => {
             },
         });
 
-        const result = await uploadToR2(createMockFile(), "files");
+        const result = ensureFailure(
+            await uploadToR2(createMockFile(), "files"),
+        );
         expect(result).toEqual({ success: false, error: "Upload failed" });
     });
 
@@ -114,7 +138,7 @@ describe("r2 utilities", () => {
             12 * 1024 * 1024,
         );
 
-        const result = await uploadToR2(largeFile, "media");
+        const result = ensureFailure(await uploadToR2(largeFile, "media"));
         expect(result).toEqual({
             success: false,
             error: "File size exceeds limit (10.0 MB)",
@@ -139,9 +163,11 @@ describe("r2 utilities", () => {
 
     it("fails when content scanning is required but no scanner provided", async () => {
         const file = createMockFile();
-        const result = await uploadToR2(file, "media", {
-            requireContentScan: true,
-        });
+        const result = ensureFailure(
+            await uploadToR2(file, "media", {
+                requireContentScan: true,
+            }),
+        );
 
         expect(result).toEqual({
             success: false,
@@ -157,16 +183,15 @@ describe("r2 utilities", () => {
             error: "malware detected",
         });
 
-        const result = await uploadToR2(file, "media", {
-            requireContentScan: true,
-            scanFile,
-        });
+        const result = ensureFailure(
+            await uploadToR2(file, "media", {
+                requireContentScan: true,
+                scanFile,
+            }),
+        );
 
         expect(scanFile).toHaveBeenCalledWith({ file });
-        expect(result).toEqual({
-            success: false,
-            error: "malware detected",
-        });
+        expect(result).toEqual({ success: false, error: "malware detected" });
         expect(getCloudflareContextMock).not.toHaveBeenCalled();
     });
 
@@ -180,19 +205,18 @@ describe("r2 utilities", () => {
         });
 
         const file = createMockFile();
-        const result = await uploadToR2(file, "media", {
-            rateLimit: {
-                request: new Request("https://example.com/upload"),
-                identifier: "upload",
-                message: "Too many uploads",
-            },
-        });
+        const result = ensureFailure(
+            await uploadToR2(file, "media", {
+                rateLimit: {
+                    request: new Request("https://example.com/upload"),
+                    identifier: "upload",
+                    message: "Too many uploads",
+                },
+            }),
+        );
 
         expect(applyRateLimitMock).toHaveBeenCalledTimes(1);
-        expect(result).toEqual({
-            success: false,
-            error: "Too many uploads",
-        });
+        expect(result).toEqual({ success: false, error: "Too many uploads" });
         expect(getCloudflareContextMock).not.toHaveBeenCalled();
     });
 
@@ -201,8 +225,9 @@ describe("r2 utilities", () => {
             new Error("unavailable"),
         );
 
-        const result = await uploadToR2(createMockFile(), "files");
-        expect(result.success).toBe(false);
+        const result = ensureFailure(
+            await uploadToR2(createMockFile(), "files"),
+        );
         expect(result.error).toBe("unavailable");
     });
 
@@ -214,16 +239,24 @@ describe("r2 utilities", () => {
                 next_cf_app_bucket: { put: putMock },
             },
         });
-        const scanFile = vi.fn().mockResolvedValue({ ok: true });
-
-        const file = createMockFile("audio.mp3", "audio/mpeg", 4096);
-        const result = await uploadToR2(file, "audio", {
-            scanFile,
+        const scanFile = vi.fn().mockResolvedValue({
+            ok: true,
+            auditId: "audit-1",
         });
 
+        const file = createMockFile("diagram.svg", "image/svg+xml", 4096);
+        const result = ensureSuccess(
+            await uploadToR2(file, "audio", {
+                scanFile,
+            }),
+        );
+
         expect(scanFile).toHaveBeenCalledWith({ file });
-        expect(result.success).toBe(true);
-        expect(result.key).toBe("audio/1700000000000_mock-uuid.mp3");
+        expect(result.object.key).toBe("audio/1700000000000_mock-uuid.svg");
+        expect(result.object.scan).toEqual({
+            status: "passed",
+            auditId: "audit-1",
+        });
         expect(putMock).toHaveBeenCalled();
     });
 

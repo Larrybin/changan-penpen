@@ -10,6 +10,26 @@ export const runtime = "nodejs";
 
 type CheckResult = { ok: true } | { ok: false; error: string };
 
+type CloudflareBindings = Awaited<
+    ReturnType<typeof getCloudflareContext>
+>["env"];
+
+function extractAccessToken(headers: Headers): string {
+    const tokenHeader = headers.get("x-health-token");
+    if (tokenHeader && tokenHeader.trim().length > 0) {
+        return tokenHeader.trim();
+    }
+    const authorization = headers.get("authorization");
+    if (!authorization) {
+        return "";
+    }
+    const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch?.[1]) {
+        return bearerMatch[1]?.trim() ?? "";
+    }
+    return authorization.trim();
+}
+
 async function checkDb(): Promise<CheckResult> {
     try {
         const db = await getDb();
@@ -22,9 +42,8 @@ async function checkDb(): Promise<CheckResult> {
     }
 }
 
-async function checkR2(): Promise<CheckResult> {
+async function checkR2(env: CloudflareBindings): Promise<CheckResult> {
     try {
-        const { env } = await getCloudflareContext({ async: true });
         // Ensure binding exists
         if (!env || !("next_cf_app_bucket" in env)) {
             return {
@@ -59,18 +78,29 @@ export async function GET(request: Request) {
             return "";
         }
     })();
-    const [db, r2, envs, appUrl, external] = await Promise.all([
-        fast ? Promise.resolve<CheckResult>({ ok: true }) : checkDb(),
-        checkR2(),
-        checkEnvAndBindings(),
-        checkAppUrl(reqOrigin),
-        fast
-            ? Promise.resolve<CheckResult>({ ok: true })
-            : checkExternalServices(),
-    ]);
-    // 外部依赖是否为强制项由开关控制（默认不阻断）
     const { env } = await getCloudflareContext({ async: true });
     const envRecord = env as unknown as Record<string, unknown>;
+    const configuredToken = String(envRecord.HEALTH_ACCESS_TOKEN ?? "").trim();
+    const providedToken = extractAccessToken(request.headers);
+    const envMode = String(envRecord.NEXTJS_ENV ?? "").toLowerCase();
+    const allowDetails = configuredToken
+        ? providedToken === configuredToken
+        : envMode !== "production";
+
+    const [db, r2, envs, appUrl, external] = await Promise.all([
+        fast ? Promise.resolve<CheckResult>({ ok: true }) : checkDb(),
+        checkR2(env),
+        checkEnvAndBindings(env, { includeDetails: allowDetails }),
+        checkAppUrl({
+            runtimeOrigin: reqOrigin,
+            env,
+            includeDetails: allowDetails,
+        }),
+        fast
+            ? Promise.resolve<CheckResult>({ ok: true })
+            : checkExternalServices(env),
+    ]);
+    // 外部依赖是否为强制项由开关控制（默认不阻断）
     const requireExternal = fast
         ? false
         : String(
@@ -87,32 +117,58 @@ export async function GET(request: Request) {
         : String(
               (envRecord.HEALTH_REQUIRE_R2 as string | undefined) ?? "false",
           ) === "true";
+    const dbHealthy = allowDetails ? !requireDb || db.ok : db.ok;
+    const r2Healthy = allowDetails ? !requireR2 || r2.ok : r2.ok;
+    const externalHealthy = allowDetails
+        ? !requireExternal || external.ok
+        : external.ok;
     const ok =
-        (!requireDb || db.ok) &&
-        (!requireR2 || r2.ok) &&
-        envs.ok &&
-        appUrl.ok &&
-        (!requireExternal || external.ok);
+        dbHealthy && r2Healthy && envs.ok && appUrl.ok && externalHealthy;
+
+    const checks = allowDetails
+        ? {
+              db,
+              r2,
+              env: envs,
+              appUrl,
+              external,
+          }
+        : {
+              db: { ok: db.ok },
+              r2: { ok: r2.ok },
+              env: { ok: envs.ok },
+              appUrl: { ok: appUrl.ok },
+              external: { ok: external.ok },
+          };
 
     const body = {
         ok,
         time: new Date().toISOString(),
         durationMs: Date.now() - startedAt,
-        checks: {
-            db,
-            r2,
-            env: envs,
-            appUrl,
-            external,
-        },
+        mode: fast ? "fast" : "strict",
+        detailLevel: allowDetails ? "full" : "summary",
+        checks,
     } as const;
+
+    if (!allowDetails && !ok) {
+        return NextResponse.json(
+            {
+                ...body,
+                message:
+                    "One or more checks failed. Provide X-Health-Token for diagnostic details.",
+            },
+            { status: 503 },
+        );
+    }
 
     return NextResponse.json(body, { status: ok ? 200 : 503 });
 }
 
-async function checkEnvAndBindings(): Promise<CheckResult> {
+async function checkEnvAndBindings(
+    env: CloudflareBindings,
+    options: { includeDetails: boolean },
+): Promise<CheckResult> {
     try {
-        const { env } = await getCloudflareContext({ async: true });
         const envRecord = env as unknown as Record<string, unknown>;
         const requiredSecrets = ["BETTER_AUTH_SECRET", "CLOUDFLARE_R2_URL"];
         const missing = requiredSecrets.filter((k) => !envRecord?.[k]);
@@ -139,6 +195,12 @@ async function checkEnvAndBindings(): Promise<CheckResult> {
             // 仅在缺失时标记但不阻断（某些配置可能不直接暴露）
         }
         if (missing.length || missingBindings.length) {
+            if (!options.includeDetails) {
+                return {
+                    ok: false,
+                    error: "Required environment configuration is missing",
+                };
+            }
             return {
                 ok: false,
                 error: `Missing env: ${missing.join(",")} | Missing bindings: ${missingBindings.join(",")}`,
@@ -152,10 +214,17 @@ async function checkEnvAndBindings(): Promise<CheckResult> {
     }
 }
 
-async function checkAppUrl(runtimeOrigin?: string): Promise<CheckResult> {
+async function checkAppUrl({
+    runtimeOrigin,
+    env,
+    includeDetails,
+}: {
+    runtimeOrigin?: string;
+    env: CloudflareBindings;
+    includeDetails: boolean;
+}): Promise<CheckResult> {
     try {
         // 优先从环境变量读取基础 URL，避免对 DB 的强依赖
-        const { env } = await getCloudflareContext({ async: true });
         const fromEnv = String(
             (env as unknown as Record<string, unknown>).NEXT_PUBLIC_APP_URL ??
                 "",
@@ -169,10 +238,17 @@ async function checkAppUrl(runtimeOrigin?: string): Promise<CheckResult> {
             const settings = domain
                 ? ({ domain } as SiteSettingsPayload)
                 : undefined;
-            base = resolveAppUrl(settings) ?? "";
+            base = resolveAppUrl(settings, {
+                envAppUrl: env.NEXT_PUBLIC_APP_URL,
+            });
         }
         if (!base) {
-            return { ok: false, error: "Failed to resolve app base URL" };
+            return {
+                ok: false,
+                error: includeDetails
+                    ? "Failed to resolve app base URL"
+                    : "Application base URL could not be resolved",
+            };
         }
         // Basic shape check
         try {
@@ -196,9 +272,10 @@ async function checkAppUrl(runtimeOrigin?: string): Promise<CheckResult> {
     }
 }
 
-async function checkExternalServices(): Promise<CheckResult> {
+async function checkExternalServices(
+    env: CloudflareBindings,
+): Promise<CheckResult> {
     try {
-        const { env } = await getCloudflareContext({ async: true });
         const base = String(env?.CREEM_API_URL ?? "").trim();
         if (!base) {
             // 未配置则跳过，不阻断
