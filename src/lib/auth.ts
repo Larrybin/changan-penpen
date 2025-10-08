@@ -17,6 +17,15 @@ const createAuth = async () => {
     const googleClientId = env.GOOGLE_CLIENT_ID?.trim();
     const googleClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
     const googleConfigured = Boolean(googleClientId && googleClientSecret);
+    const socialProviders = googleConfigured
+        ? {
+              google: {
+                  enabled: true,
+                  clientId: googleClientId!,
+                  clientSecret: googleClientSecret!,
+              },
+          }
+        : undefined;
 
     if (googleClientId && !googleClientSecret) {
         console.warn(
@@ -36,15 +45,7 @@ const createAuth = async () => {
         emailAndPassword: {
             enabled: true,
         },
-        socialProviders: googleConfigured
-            ? {
-                  google: {
-                      enabled: true,
-                      clientId: googleClientId,
-                      clientSecret: googleClientSecret,
-                  },
-              }
-            : undefined,
+        socialProviders,
         plugins: [nextCookies()],
     });
 
