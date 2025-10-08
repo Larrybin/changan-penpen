@@ -24,7 +24,6 @@ const createSiteSettings = (
     defaultLanguage: overrides.defaultLanguage ?? defaultLocale,
     enabledLanguages: overrides.enabledLanguages ?? [defaultLocale],
 });
-
 describe("seo helpers", () => {
     const originalEnv = { ...process.env };
 
@@ -193,4 +192,3 @@ describe("seo helpers", () => {
         });
     });
 });
-

@@ -144,4 +144,3 @@ describe("translation service", () => {
         expect(translateBatch).toHaveBeenCalledTimes(3);
     });
 });
-
