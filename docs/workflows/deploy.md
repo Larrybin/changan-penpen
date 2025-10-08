@@ -4,6 +4,7 @@
 
 ## Triggers
 - Push to `main`
+- Pull requests targeting `main`
 - Manual dispatch with commit SHA or tag
 
 ## Steps (high level)

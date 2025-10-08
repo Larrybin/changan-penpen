@@ -1,11 +1,11 @@
-﻿# Workflow: CI
+# Workflow: CI
 
 Location: `.github/workflows/ci.yml`. Runs Biome, TypeScript, Vitest, and Next build as the quality gate before any deployment.
 
 ## Triggers
-- `push` to non‑`main` branches (excluding README/docs‑only changes if configured)
-- `pull_request` targeting `main`
-- Manual dispatch (for reruns)
+- `push` to non-`main` branches (docs-only changes ignored if configured)
+- PRs to `main` are handled by the Deploy workflow, which calls this CI via `workflow_call` as a quality gate (CI itself ignores `main` for direct `push`/`pull_request`).
+- Manual dispatch (`workflow_dispatch`) for reruns
 
 ## Steps
 1. Setup Node and pnpm cache
@@ -18,3 +18,4 @@ Location: `.github/workflows/ci.yml`. Runs Biome, TypeScript, Vitest, and Next b
 - Cache pnpm store and `.next/cache`
 
 See also: `docs/ci-cd.md`.
+
