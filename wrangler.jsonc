@@ -15,6 +15,12 @@
     "observability": {
         "enabled": true
     },
+    "rate_limits": [
+        {
+            "binding": "RATE_LIMITER",
+            "namespace": "rate-limiters/creem"
+        }
+    ],
     "d1_databases": [
         {
             "binding": "next_cf_app",
@@ -50,7 +56,13 @@
             ],
             "ai": {
                 "binding": "AI"
-            }
+            },
+            "rate_limits": [
+                {
+                    "binding": "RATE_LIMITER",
+                    "namespace": "rate-limiters/creem"
+                }
+            ]
         }
     }
     /**

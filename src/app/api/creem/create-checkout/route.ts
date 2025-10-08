@@ -5,6 +5,7 @@ import {
     CREDITS_TIERS,
     SUBSCRIPTION_TIERS,
 } from "@/modules/creem/config/subscriptions";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 type Body = {
     productId?: string;
@@ -32,6 +33,17 @@ export async function POST(request: Request) {
         }
 
         const { env } = await getCloudflareContext({ async: true });
+
+        const rateLimitResult = await applyRateLimit({
+            request,
+            identifier: "creem:create-checkout",
+            uniqueToken: session.user.id,
+            env,
+            message: "Too many checkout attempts",
+        });
+        if (!rateLimitResult.ok) {
+            return rateLimitResult.response;
+        }
         const origin = (await headers()).get("origin");
         const body = (await request.json()) as Body;
 
