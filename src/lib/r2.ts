@@ -1,5 +1,16 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
+const DEFAULT_ALLOWED_MIME_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "application/pdf",
+    "text/plain",
+];
+
+const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
 export interface UploadResult {
     success: boolean;
     url?: string;
@@ -7,26 +18,90 @@ export interface UploadResult {
     error?: string;
 }
 
+export interface UploadConstraints {
+    allowedMimeTypes?: string[];
+    maxSizeBytes?: number;
+}
+
+function normalizeFolder(folder: string | undefined) {
+    const normalized = (folder ?? "uploads").trim().replace(/^\/+|\/+$/g, "");
+    return normalized || "uploads";
+}
+
+function createRandomId() {
+    if (
+        typeof globalThis.crypto !== "undefined" &&
+        typeof globalThis.crypto.randomUUID === "function"
+    ) {
+        return globalThis.crypto.randomUUID();
+    }
+    return Math.random().toString(36).slice(2, 15);
+}
+
+function sanitizeExtension(filename: string) {
+    const ext = filename.split(".").pop();
+    if (!ext) return "";
+    const cleaned = ext.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return cleaned ? `.${cleaned}` : "";
+}
+
+function isMimeAllowed(mime: string, allowed: string[]) {
+    if (!allowed.length) {
+        return true;
+    }
+
+    return allowed.some((allowedMime) => {
+        if (allowedMime.endsWith("/*")) {
+            const prefix = allowedMime.slice(0, -1);
+            return mime.startsWith(prefix);
+        }
+        return mime === allowedMime;
+    });
+}
+
+function formatMaxSize(bytes: number) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export async function uploadToR2(
     file: File,
     folder: string = "uploads",
+    constraints: UploadConstraints = {},
 ): Promise<UploadResult> {
     try {
+        const allowedMimeTypes =
+            constraints.allowedMimeTypes ?? DEFAULT_ALLOWED_MIME_TYPES;
+        const maxSizeBytes =
+            constraints.maxSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
+
+        if (file.size > maxSizeBytes) {
+            return {
+                success: false,
+                error: `File size exceeds limit (${formatMaxSize(maxSizeBytes)})`,
+            };
+        }
+
+        const detectedMime = file.type || "application/octet-stream";
+        if (!isMimeAllowed(detectedMime, allowedMimeTypes)) {
+            return {
+                success: false,
+                error: "File type is not permitted",
+            };
+        }
+
         const { env } = await getCloudflareContext({ async: true });
 
-        // Generate unique filename
         const timestamp = Date.now();
-        const randomId = Math.random().toString(36).substring(2, 15);
-        const extension = file.name.split(".").pop() || "bin";
-        const key = `${folder}/${timestamp}_${randomId}.${extension}`;
+        const randomId = createRandomId();
+        const extension = sanitizeExtension(file.name) || ".bin";
+        const normalizedFolder = normalizeFolder(folder);
+        const key = `${normalizedFolder}/${timestamp}_${randomId}${extension}`;
 
-        // Convert File to ArrayBuffer
         const arrayBuffer = await file.arrayBuffer();
 
-        // Upload to R2
         const result = await env.next_cf_app_bucket.put(key, arrayBuffer, {
             httpMetadata: {
-                contentType: file.type,
+                contentType: detectedMime,
                 cacheControl: "public, max-age=31536000", // 1 year
             },
             customMetadata: {
@@ -43,13 +118,15 @@ export async function uploadToR2(
             };
         }
 
-        // Return public URL of R2 (should be using custom domain)
-        const publicUrl = `https://${env.CLOUDFLARE_R2_URL}/${key}`;
+        const publicDomain = env.CLOUDFLARE_R2_URL;
+        const publicUrl = publicDomain
+            ? `https://${publicDomain}/${key}`
+            : undefined;
 
         return {
             success: true,
             url: publicUrl,
-            key: key,
+            key,
         };
     } catch (error) {
         console.error("R2 upload error:", error);

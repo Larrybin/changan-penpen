@@ -28,11 +28,11 @@ export async function POST(request: Request) {
         const feature = (body.feature || "").trim();
         const amount = Number(body.amount ?? 0);
         const unit = (body.unit || "").trim();
-        if (!feature || !unit || !Number.isFinite(amount)) {
+        if (!feature || !unit || !Number.isFinite(amount) || amount <= 0) {
             return new Response(
                 JSON.stringify({
                     success: false,
-                    error: "Invalid feature/amount/unit",
+                    error: "Invalid feature/unit or amount must be positive",
                 }),
                 {
                     status: 400,

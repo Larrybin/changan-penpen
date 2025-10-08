@@ -5,14 +5,29 @@ import { usageDaily, usageEvents } from "@/modules/creem/schemas/usage.schema";
 
 export type UsageRecordInput = {
     userId: string;
-    feature: string; // 业务功能名，如 "ai.generate", "storage.upload"
-    amount: number; // 使用量（整数）
+    feature: string; // 业务功能名，例如 "ai.generate", "storage.upload"
+    amount: number; // 使用量（必须为正数）
     unit: string; // 单位，如 "tokens", "calls", "MB"
     metadata?: Record<string, unknown>;
     consumeCredits?: number; // 可选：同时扣减积分
 };
 
 export async function recordUsage(input: UsageRecordInput) {
+    const feature = input.feature?.trim();
+    const unit = input.unit?.trim();
+
+    if (!feature) {
+        throw new Error("Feature is required for usage records");
+    }
+
+    if (!unit) {
+        throw new Error("Unit is required for usage records");
+    }
+
+    if (!Number.isFinite(input.amount) || input.amount <= 0) {
+        throw new Error("Usage amount must be a positive number");
+    }
+
     const db = await getDb();
     const now = new Date();
     const nowIso = now.toISOString();
@@ -20,9 +35,9 @@ export async function recordUsage(input: UsageRecordInput) {
 
     await db.insert(usageEvents).values({
         userId: input.userId,
-        feature: input.feature,
+        feature,
         amount: input.amount,
-        unit: input.unit,
+        unit,
         metadata: input.metadata ? JSON.stringify(input.metadata) : null,
         createdAt: nowIso,
     });
@@ -32,9 +47,9 @@ export async function recordUsage(input: UsageRecordInput) {
         .values({
             userId: input.userId,
             date,
-            feature: input.feature,
+            feature,
             totalAmount: input.amount,
-            unit: input.unit,
+            unit,
             createdAt: nowIso,
             updatedAt: nowIso,
         })
@@ -42,7 +57,7 @@ export async function recordUsage(input: UsageRecordInput) {
             target: [usageDaily.userId, usageDaily.feature, usageDaily.date],
             set: {
                 totalAmount: sql`${usageDaily.totalAmount} + ${input.amount}`,
-                unit: input.unit,
+                unit,
                 updatedAt: nowIso,
             },
         });

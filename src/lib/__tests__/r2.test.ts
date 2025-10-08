@@ -6,11 +6,11 @@ vi.mock("@opennextjs/cloudflare", () => ({
     getCloudflareContext: getCloudflareContextMock,
 }));
 
-function createMockFile(name = "image.png", type = "image/png") {
+function createMockFile(name = "image.png", type = "image/png", size = 4) {
     return {
         name,
         type,
-        size: 4,
+        size,
         arrayBuffer: vi
             .fn()
             .mockResolvedValue(new Uint8Array([1, 2, 3, 4]).buffer),
@@ -18,15 +18,34 @@ function createMockFile(name = "image.png", type = "image/png") {
 }
 
 describe("r2 utilities", () => {
+    let restoreCrypto: (() => void) | undefined;
+
     beforeEach(() => {
         getCloudflareContextMock.mockReset();
-        vi.clearAllMocks();
         vi.spyOn(Date, "now").mockReturnValue(1700000000000);
-        vi.spyOn(Math, "random").mockReturnValue(0.123456789);
+
+        const existingCrypto = globalThis.crypto as Crypto | undefined;
+        if (existingCrypto) {
+            vi.spyOn(existingCrypto, "randomUUID").mockReturnValue("mock-uuid");
+            restoreCrypto = undefined;
+        } else {
+            const cryptoStub = {
+                randomUUID: vi.fn().mockReturnValue("mock-uuid"),
+            } as unknown as Crypto;
+            Object.defineProperty(globalThis, "crypto", {
+                value: cryptoStub,
+                configurable: true,
+                writable: true,
+            });
+            restoreCrypto = () => {
+                Reflect.deleteProperty(globalThis, "crypto");
+            };
+        }
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
+        restoreCrypto?.();
     });
 
     it("uploads files to R2 and returns public metadata", async () => {
@@ -42,8 +61,10 @@ describe("r2 utilities", () => {
         const result = await uploadToR2(file, "media");
 
         expect(result.success).toBe(true);
-        expect(result.key).toMatch(/^media\/1700000000000_\w+\.png$/);
-        expect(result.url).toMatch(/^https:\/\/cdn\.example\.com\/media\//);
+        expect(result.key).toBe("media/1700000000000_mock-uuid.png");
+        expect(result.url).toBe(
+            "https://cdn.example.com/media/1700000000000_mock-uuid.png",
+        );
         expect(putMock).toHaveBeenCalled();
         expect(file.arrayBuffer).toHaveBeenCalled();
     });
@@ -59,6 +80,36 @@ describe("r2 utilities", () => {
 
         const result = await uploadToR2(createMockFile(), "files");
         expect(result).toEqual({ success: false, error: "Upload failed" });
+    });
+
+    it("rejects files exceeding the size limit", async () => {
+        const largeFile = createMockFile(
+            "large.png",
+            "image/png",
+            12 * 1024 * 1024,
+        );
+
+        const result = await uploadToR2(largeFile, "media");
+        expect(result).toEqual({
+            success: false,
+            error: "File size exceeds limit (10.0 MB)",
+        });
+        expect(getCloudflareContextMock).not.toHaveBeenCalled();
+        expect(largeFile.arrayBuffer).not.toHaveBeenCalled();
+    });
+
+    it("rejects files with disallowed mime types", async () => {
+        const executableFile = createMockFile(
+            "payload.exe",
+            "application/x-msdownload",
+        );
+
+        const result = await uploadToR2(executableFile, "uploads");
+        expect(result).toEqual({
+            success: false,
+            error: "File type is not permitted",
+        });
+        expect(getCloudflareContextMock).not.toHaveBeenCalled();
     });
 
     it("handles upload errors gracefully", async () => {
