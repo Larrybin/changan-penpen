@@ -1,68 +1,68 @@
-# 路由与 API 索引
+# Routes & API Index
 
-> 便于新同事快速查找页面、API、鉴权要求。涉及路径如有变更，请同步更新本文件。
+> Quick reference for pages, APIs, and auth requirements. Update this file whenever a path or policy changes.
 
-## 1. 页面路由（App Router）
-| 路径 | Segment | 描述 | 鉴权 | 相关模块 |
+## 1. Page Routes (App Router)
+| Path | Segment | Description | Auth | Module |
 | --- | --- | --- | --- | --- |
-| `/` | 首页 | Landing + 产品概览 | 公共 | `src/modules/marketing` |
-| `/about` | 静态页 | 团队介绍 | 公共 | `src/app/about/page.tsx` |
-| `/contact` | 静态页 | 联系/支持 | 公共 | `src/app/contact/page.tsx` |
-| `/dashboard` | `(authenticated)` | 主应用控制台 | 要求登录 | `src/modules/dashboard` |
-| `/dashboard/todos` | 同上 | Todos Demo | 要求登录 | `src/modules/todos` |
-| `/billing` | 根 | 账单与订阅（引导登录） | 公共（页面内提示登录） | `src/app/billing/page.tsx`、`src/modules/creem` |
-| `/admin` | `(admin)` | 后台总览 | `ADMIN_ALLOWED_EMAILS` 白名单 | `src/modules/admin` |
-| `/admin/reports` | `(admin)` | 报表 | 同上 | `src/modules/admin/reports` |
-| `/privacy` / `/terms` | 静态 | 合规页面 | 公共 | `src/app/privacy`, `src/app/terms` |
+| `/` | Home | Landing + product overview | Public | `src/modules/marketing` |
+| `/about` | Static | About the team | Public | `src/app/about/page.tsx` |
+| `/contact` | Static | Contact/Support | Public | `src/app/contact/page.tsx` |
+| `/dashboard` | `(authenticated)` | Main console | Login required | `src/modules/dashboard` |
+| `/dashboard/todos` | — | Todos demo | Login required | `src/modules/todos` |
+| `/billing` | Static | Billing & subscriptions | Public (prompts login in page) | `src/app/billing/page.tsx`, `src/modules/creem` |
+| `/admin` | `(admin)` | Admin overview | Allowed emails only | `src/modules/admin` |
+| `/admin/reports` | `(admin)` | Reports | Same as above | `src/modules/admin/reports` |
+| `/privacy` / `/terms` | Static | Legal pages | Public | `src/app/privacy`, `src/app/terms` |
 
-> 统一布局与导航定义在 `src/app/layout.tsx` 与 `src/modules/admin/admin.layout.tsx`。
+> Global layout and navigation live in `src/app/layout.tsx` and `src/modules/admin/admin.layout.tsx`.
 
-## 2. 认证相关路由
+## 2. Auth‑Related
 
-| 路径 | 方法 | 描述 |
+| Path | Method | Description |
 | --- | --- | --- |
-| `/api/auth/[...all]` | `GET/POST` | Better Auth Google OAuth、Session 管理 |
-| `/api/admin/session` | `GET` | 管理端会话校验 |
-| `middleware.ts` | - | 保护 `/dashboard`, `/admin` 等路径 |
+| `/api/auth/[...all]` | `GET/POST` | Better Auth Google OAuth & session management |
+| `/api/admin/session` | `GET` | Admin session check |
+| `middleware.ts` | — | Protects routes like `/dashboard`, `/admin` |
 
-## 3. 核心 API
+## 3. Core APIs
 
-| 路径 | 方法 | 模块 | 描述 | 鉴权 |
+| Path | Method | Module | Description | Auth |
 | --- | --- | --- | --- | --- |
-| `/api/health` | `GET` | 平台 | 健康检查（fast/strict） | 公共 |
-| `/api/creem/create-checkout` | `POST` | `modules/creem` | 创建支付会话 | 登录 |
-| `/api/creem/customer-portal` | `POST` | 同上 | 跳转客户门户 | 登录 |
-| `/api/webhooks/creem` | `POST` | 同上 | 支付回调 | 签名校验 |
-| `/api/summarize` | `POST` | AI 服务 | Workers AI 文本总结 | 登录 |
-| `/api/usage/record` | `POST` | Usage Tracking | 记录用户操作 | 登录 |
-| `/api/usage/stats` | `GET` | 同上 | 获取统计 | 登录 |
-| `/api/admin/*` | `GET/POST` | Admin | 多个资源：`audit-logs`, `orders`, `products`, `site-settings`, `todos` 等 | 仅管理员 |
+| `/api/health` | `GET` | Platform | Health check (fast/strict) | Public |
+| `/api/creem/create-checkout` | `POST` | `modules/creem` | Create checkout session | Login |
+| `/api/creem/customer-portal` | `POST` | `modules/creem` | Redirect to customer portal | Login |
+| `/api/webhooks/creem` | `POST` | `modules/creem` | Payment webhook | Signature required |
+| `/api/summarize` | `POST` | AI | Workers AI summarization | Login |
+| `/api/usage/record` | `POST` | Usage Tracking | Record user actions | Login |
+| `/api/usage/stats` | `GET` | Usage Tracking | Fetch usage stats | Login |
+| `/api/admin/*` | `GET/POST` | Admin | Resources: `audit-logs`, `orders`, `products`, `site-settings`, `todos` | Admin only |
 
-> `src/app/api/admin` 下有多个子路由，请查阅对应 `route.ts` 或模块服务层。
+> See each `route.ts` and related services for details under `src/app/api/*`.
 
-## 4. Server Actions（示例）
+## 4. Server Actions (Examples)
 
-| 文件 | 描述 |
+| File | Description |
 | --- | --- |
-| `src/modules/todos/actions/create-todo.action.ts` | 创建 Todo，调用 Drizzle |
-| `src/modules/dashboard/actions/*` | Dashboard 操作（邀请、配置等） |
-| `src/modules/admin/services/*` | 供页面 Actions 调用的服务 |
+| `src/modules/todos/actions/create-todo.action.ts` | Create Todo, calls Drizzle |
+| `src/modules/dashboard/actions/*` | Dashboard operations (invites, configuration, …) |
+| `src/modules/admin/services/*` | Services used by page actions |
 
-Server Actions 默认在 Edge runtime 执行，并通过 `revalidatePath` 更新 UI。
+Server Actions run on Edge by default and update UI via `revalidatePath`.
 
-## 5. 常见绑定依赖
-- D1：`env.next_cf_app`
-- R2：`env.next_cf_app_bucket`
-- Workers AI：`env.AI`
-- 外部 API：`CREEM_API_URL`、`CREEM_API_KEY`
+## 5. Common Bindings
+- D1: `env.next_cf_app`
+- R2: `env.next_cf_app_bucket`
+- Workers AI: `env.AI`
+- External APIs: `CREEM_API_URL`, `CREEM_API_KEY`
 
-## 6. 路由新增 Checklist
-1. 确认鉴权策略（middleware/Better Auth）
-2. 在对应模块添加文档或注释
-3. 若影响健康检查或监控，更新 `docs/health-and-observability.md`
-4. 如需 PR 模板更新，修改 `.github` 对应文件
+## 6. Checklist for New Routes
+1. Confirm auth policy (middleware/Better Auth)
+2. Add docs/comments in the owning module
+3. If it changes health or monitoring, update `docs/health-and-observability.md`
+4. Update `.github` PR templates if required
 
 ---
 
-若新增路由或更改路径命名，请更新此文档、`docs/00-index.md` 以及相关模块 README（如有）。
+Please keep this file, `docs/00-index.md`, and any module READMEs in sync when adding or renaming routes.
 
