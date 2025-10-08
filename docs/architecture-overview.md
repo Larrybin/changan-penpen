@@ -81,6 +81,7 @@ Browser → Next.js App Router (Edge) → Server Actions / Route Handlers
 - **OpenNext 限制**：不支持直接写入 `fs`；如依赖 Node API，请启用 `nodejs_compat`（已在 `wrangler.jsonc` 配置）。
 - **边缘执行**：避免长时间 CPU 任务；外部请求使用 `fetch` 并设置合理超时。
 
+## 10. 鍏煎鎬ф彁绀?- OpenNext 绾︽潫锛氫笉鏀寔 `fs` 鍐欐搷浣滐紱闇€鐢?Node API 鏃跺惎鐢?`nodejs_compat`锛堝凡鍦?`wrangler.jsonc` 閰嶇疆锛?- 杈圭紭杩愯锛氶伩鍏嶉暱鏃?CPU 浠诲姟锛涘閮ㄨ姹備娇鐢?`fetch` 骞惰缃秴鏃?
 ---
 
 若新增模块、调整目录或拓展运行环境，请同步更新本文件与 `docs/00-index.md`，并在 PR 模板中勾选“文档已更新”。

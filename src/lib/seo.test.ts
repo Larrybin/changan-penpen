@@ -24,7 +24,6 @@ const createSiteSettings = (
     defaultLanguage: overrides.defaultLanguage ?? defaultLocale,
     enabledLanguages: overrides.enabledLanguages ?? [defaultLocale],
 });
-
 describe("seo helpers", () => {
     const originalEnv = { ...process.env };
 
@@ -100,7 +99,6 @@ describe("seo helpers", () => {
                     super(input, base);
                 }
             }
-            // @ts-expect-error override for testing
             globalThis.URL = FailingURL;
             try {
                 const module = await import("./seo");
@@ -193,4 +191,3 @@ describe("seo helpers", () => {
         });
     });
 });
-

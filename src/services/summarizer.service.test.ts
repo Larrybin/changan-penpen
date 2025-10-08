@@ -49,4 +49,3 @@ describe("SummarizerService", () => {
         expect(systemMessage).toContain("150");
     });
 });
-

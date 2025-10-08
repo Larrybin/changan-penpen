@@ -58,4 +58,3 @@ describe("verifyCreemWebhookSignature", () => {
         ).toBe(false);
     });
 });
-

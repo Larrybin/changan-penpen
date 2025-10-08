@@ -6,7 +6,6 @@ const createUser = (overrides: Partial<AuthUser> = {}): AuthUser => ({
     name: overrides.name ?? "User",
     email: overrides.email ?? "user@example.com",
 });
-
 const redirectMock = vi.fn();
 const cookiesMock = vi.fn();
 const getCloudflareContextMock = vi.fn();
@@ -142,4 +141,3 @@ describe("admin access utils", () => {
         expect(redirectMock).not.toHaveBeenCalled();
     });
 });
-

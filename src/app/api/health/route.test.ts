@@ -1,4 +1,63 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
+
+type CheckResult = { ok: true } | { ok: false; error: string };
+
+type HealthResponse = {
+    ok: boolean;
+    time: string;
+    durationMs: number;
+    checks: {
+        db: CheckResult;
+        r2: CheckResult;
+        env: CheckResult;
+        appUrl: CheckResult;
+        external: CheckResult;
+    };
+};
+
+function isCheckResult(value: unknown): value is CheckResult {
+    if (!value || typeof value !== "object") {
+        return false;
+    }
+    const record = value as Record<string, unknown>;
+    if (record.ok !== true && record.ok !== false) {
+        return false;
+    }
+    if (record.ok === false && typeof record.error !== "string") {
+        return false;
+    }
+    return true;
+}
+
+function assertHealthResponse(value: unknown): asserts value is HealthResponse {
+    if (!value || typeof value !== "object") {
+        throw new Error("健康检查响应必须是对象");
+    }
+    const record = value as Record<string, unknown>;
+    if (typeof record.ok !== "boolean") {
+        throw new Error("健康检查响应缺少 ok 字段");
+    }
+    if (typeof record.time !== "string") {
+        throw new Error("健康检查响应缺少 time 字段");
+    }
+    if (typeof record.durationMs !== "number") {
+        throw new Error("健康检查响应缺少 durationMs 字段");
+    }
+    const checks = record.checks;
+    if (!checks || typeof checks !== "object") {
+        throw new Error("健康检查响应缺少 checks 字段");
+    }
+    const { db, r2, env, appUrl, external } = checks as Record<string, unknown>;
+    if (
+        !isCheckResult(db) ||
+        !isCheckResult(r2) ||
+        !isCheckResult(env) ||
+        !isCheckResult(appUrl) ||
+        !isCheckResult(external)
+    ) {
+        throw new Error("健康检查响应包含无效的检查结果");
+    }
+}
 
 const getCloudflareContextMock = vi.fn();
 const getDbMock = vi.fn();
@@ -47,6 +106,7 @@ describe("health route", () => {
         expect(fetchMock).not.toHaveBeenCalled();
         expect(res.status).toBe(200);
         const body = await res.json();
+        assertHealthResponse(body);
         expect(body.ok).toBe(true);
         expect(body.checks.db.ok).toBe(true);
         expect(body.checks.external.ok).toBe(true);
@@ -87,6 +147,7 @@ describe("health route", () => {
         const res = await GET(new Request("https://health.test/api/health"));
         expect(res.status).toBe(503);
         const body = await res.json();
+        assertHealthResponse(body);
         expect(body.ok).toBe(false);
         expect(body.checks.db.ok).toBe(false);
         expect(body.checks.external.ok).toBe(false);
@@ -134,6 +195,7 @@ describe("health route", () => {
         const res = await GET(new Request("https://health.test/api/health"));
         expect(res.status).toBe(200);
         const body = await res.json();
+        assertHealthResponse(body);
         expect(body.ok).toBe(true);
         expect(fetchMock).toHaveBeenCalledTimes(2);
         expect(fetchMock.mock.calls[0]?.[0]).toBe(
@@ -144,4 +206,3 @@ describe("health route", () => {
         );
     });
 });
-
