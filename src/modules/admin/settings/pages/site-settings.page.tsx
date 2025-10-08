@@ -118,35 +118,43 @@ export function SiteSettingsPage() {
         event.preventDefault();
 
         const base = initialSettingsRef.current;
-        const payload: Partial<SiteSettingsState> = {};
+        let payload: Partial<SiteSettingsState>;
 
         if (base) {
-            (Object.keys(settings) as Array<keyof SiteSettingsState>).forEach(
-                (key) => {
-                    const nextValue = settings[key];
-                    const prevValue = base[key];
+            payload = (
+                Object.keys(settings) as Array<keyof SiteSettingsState>
+            ).reduce<Partial<SiteSettingsState>>((accumulator, key) => {
+                const nextValue = settings[key];
+                const prevValue = base[key];
 
-                    if (Array.isArray(nextValue) && Array.isArray(prevValue)) {
-                        const nextLanguages = nextValue as string[];
-                        const prevLanguages = prevValue as string[];
-                        if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
-                            payload[key] = [
-                                ...nextLanguages,
-                            ] as SiteSettingsState[typeof key];
-                        }
-                        return;
+                if (Array.isArray(nextValue) && Array.isArray(prevValue)) {
+                    const nextLanguages = nextValue as string[];
+                    const prevLanguages = prevValue as string[];
+
+                    if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
+                        return {
+                            ...accumulator,
+                            [key]: [...nextLanguages],
+                        } as Partial<SiteSettingsState>;
                     }
 
-                    if (nextValue !== prevValue) {
-                        payload[key] = nextValue;
-                    }
-                },
-            );
+                    return accumulator;
+                }
+
+                if (nextValue !== prevValue) {
+                    return {
+                        ...accumulator,
+                        [key]: nextValue,
+                    } as Partial<SiteSettingsState>;
+                }
+
+                return accumulator;
+            }, {});
         } else {
-            Object.assign(payload, {
+            payload = {
                 ...settings,
                 enabledLanguages: [...settings.enabledLanguages],
-            });
+            };
         }
 
         if (Object.keys(payload).length === 0) {
