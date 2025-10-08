@@ -1,12 +1,28 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 const DEFAULT_ALLOWED_MIME_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
+    "image/*",
+    "image/svg+xml",
+    "video/mp4",
+    "video/quicktime",
+    "audio/mpeg",
+    "audio/wav",
+    "audio/webm",
     "application/pdf",
+    "application/json",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-gzip",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "text/plain",
+    "text/csv",
+    "text/markdown",
 ];
 
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -18,9 +34,21 @@ export interface UploadResult {
     error?: string;
 }
 
+export interface UploadRateLimitOptions {
+    request: Request;
+    identifier: string;
+    uniqueToken?: string | null;
+    message?: string;
+}
+
 export interface UploadConstraints {
     allowedMimeTypes?: string[];
     maxSizeBytes?: number;
+    requireContentScan?: boolean;
+    scanFile?: (options: {
+        file: File;
+    }) => Promise<{ ok: boolean; error?: string }>;
+    rateLimit?: UploadRateLimitOptions;
 }
 
 function normalizeFolder(folder: string | undefined) {
@@ -73,6 +101,9 @@ export async function uploadToR2(
             constraints.allowedMimeTypes ?? DEFAULT_ALLOWED_MIME_TYPES;
         const maxSizeBytes =
             constraints.maxSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
+        const requireContentScan = constraints.requireContentScan ?? false;
+        const scanFile = constraints.scanFile;
+        const rateLimit = constraints.rateLimit;
 
         if (file.size > maxSizeBytes) {
             return {
@@ -87,6 +118,51 @@ export async function uploadToR2(
                 success: false,
                 error: "File type is not permitted",
             };
+        }
+
+        if (rateLimit) {
+            const rateLimitOutcome = await applyRateLimit({
+                request: rateLimit.request,
+                identifier: rateLimit.identifier,
+                uniqueToken: rateLimit.uniqueToken ?? null,
+                message: rateLimit.message ?? "Upload rate limit exceeded",
+            });
+
+            if (!rateLimitOutcome.ok) {
+                return {
+                    success: false,
+                    error: rateLimit.message ?? "Upload rate limit exceeded",
+                };
+            }
+        }
+
+        if (requireContentScan || typeof scanFile === "function") {
+            if (typeof scanFile !== "function") {
+                return {
+                    success: false,
+                    error: "Content scanning is required but no scanner was provided",
+                };
+            }
+            try {
+                const scanResult = await scanFile({ file });
+                if (!scanResult?.ok) {
+                    return {
+                        success: false,
+                        error:
+                            scanResult?.error ??
+                            "File content failed security scan",
+                    };
+                }
+            } catch (error) {
+                console.error("R2 upload content scan error:", error);
+                return {
+                    success: false,
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : "File content failed security scan",
+                };
+            }
         }
 
         const { env } = await getCloudflareContext({ async: true });

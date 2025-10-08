@@ -2,8 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getFromR2, uploadToR2 } from "../r2";
 
 const getCloudflareContextMock = vi.hoisted(() => vi.fn());
+const applyRateLimitMock = vi.hoisted(() => vi.fn());
+
 vi.mock("@opennextjs/cloudflare", () => ({
     getCloudflareContext: getCloudflareContextMock,
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+    applyRateLimit: applyRateLimitMock,
 }));
 
 function createMockFile(name = "image.png", type = "image/png", size = 4) {
@@ -22,6 +28,8 @@ describe("r2 utilities", () => {
 
     beforeEach(() => {
         getCloudflareContextMock.mockReset();
+        applyRateLimitMock.mockReset();
+        applyRateLimitMock.mockResolvedValue({ ok: true, skipped: true });
         vi.spyOn(Date, "now").mockReturnValue(1700000000000);
 
         const existingCrypto = globalThis.crypto as Crypto | undefined;
@@ -69,6 +77,23 @@ describe("r2 utilities", () => {
         expect(file.arrayBuffer).toHaveBeenCalled();
     });
 
+    it("supports newly allowed document mime types", async () => {
+        const putMock = vi.fn().mockResolvedValue({ etag: "etag" });
+        getCloudflareContextMock.mockResolvedValueOnce({
+            env: {
+                CLOUDFLARE_R2_URL: "cdn.example.com",
+                next_cf_app_bucket: { put: putMock },
+            },
+        });
+
+        const file = createMockFile("report.pdf", "application/pdf", 1024);
+        const result = await uploadToR2(file, "docs");
+
+        expect(result.success).toBe(true);
+        expect(result.key).toBe("docs/1700000000000_mock-uuid.pdf");
+        expect(putMock).toHaveBeenCalled();
+    });
+
     it("returns failure result when upload returns null", async () => {
         const putMock = vi.fn().mockResolvedValue(null);
         getCloudflareContextMock.mockResolvedValueOnce({
@@ -112,6 +137,65 @@ describe("r2 utilities", () => {
         expect(getCloudflareContextMock).not.toHaveBeenCalled();
     });
 
+    it("fails when content scanning is required but no scanner provided", async () => {
+        const file = createMockFile();
+        const result = await uploadToR2(file, "media", {
+            requireContentScan: true,
+        });
+
+        expect(result).toEqual({
+            success: false,
+            error: "Content scanning is required but no scanner was provided",
+        });
+        expect(getCloudflareContextMock).not.toHaveBeenCalled();
+    });
+
+    it("rejects uploads when the content scanner flags an issue", async () => {
+        const file = createMockFile();
+        const scanFile = vi.fn().mockResolvedValue({
+            ok: false,
+            error: "malware detected",
+        });
+
+        const result = await uploadToR2(file, "media", {
+            requireContentScan: true,
+            scanFile,
+        });
+
+        expect(scanFile).toHaveBeenCalledWith({ file });
+        expect(result).toEqual({
+            success: false,
+            error: "malware detected",
+        });
+        expect(getCloudflareContextMock).not.toHaveBeenCalled();
+    });
+
+    it("enforces rate limiting when configured", async () => {
+        applyRateLimitMock.mockResolvedValueOnce({
+            ok: false,
+            response: new Response(
+                JSON.stringify({ success: false, error: "Too many uploads" }),
+                { status: 429 },
+            ),
+        });
+
+        const file = createMockFile();
+        const result = await uploadToR2(file, "media", {
+            rateLimit: {
+                request: new Request("https://example.com/upload"),
+                identifier: "upload",
+                message: "Too many uploads",
+            },
+        });
+
+        expect(applyRateLimitMock).toHaveBeenCalledTimes(1);
+        expect(result).toEqual({
+            success: false,
+            error: "Too many uploads",
+        });
+        expect(getCloudflareContextMock).not.toHaveBeenCalled();
+    });
+
     it("handles upload errors gracefully", async () => {
         getCloudflareContextMock.mockRejectedValueOnce(
             new Error("unavailable"),
@@ -120,6 +204,27 @@ describe("r2 utilities", () => {
         const result = await uploadToR2(createMockFile(), "files");
         expect(result.success).toBe(false);
         expect(result.error).toBe("unavailable");
+    });
+
+    it("runs custom content scanner before uploading", async () => {
+        const putMock = vi.fn().mockResolvedValue({ etag: "etag" });
+        getCloudflareContextMock.mockResolvedValueOnce({
+            env: {
+                CLOUDFLARE_R2_URL: "cdn.example.com",
+                next_cf_app_bucket: { put: putMock },
+            },
+        });
+        const scanFile = vi.fn().mockResolvedValue({ ok: true });
+
+        const file = createMockFile("audio.mp3", "audio/mpeg", 4096);
+        const result = await uploadToR2(file, "audio", {
+            scanFile,
+        });
+
+        expect(scanFile).toHaveBeenCalledWith({ file });
+        expect(result.success).toBe(true);
+        expect(result.key).toBe("audio/1700000000000_mock-uuid.mp3");
+        expect(putMock).toHaveBeenCalled();
     });
 
     it("fetches objects from R2", async () => {
