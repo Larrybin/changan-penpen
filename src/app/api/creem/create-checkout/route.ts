@@ -1,11 +1,11 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { headers } from "next/headers";
+import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import {
     CREDITS_TIERS,
     SUBSCRIPTION_TIERS,
 } from "@/modules/creem/config/subscriptions";
-import { applyRateLimit } from "@/lib/rate-limit";
 
 type Body = {
     productId?: string;

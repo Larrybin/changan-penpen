@@ -18,21 +18,24 @@ export type ApplyRateLimitResult =
 
 function getClientIp(request: Request): string | null {
     const cfConnectingIp = request.headers.get("cf-connecting-ip");
-    if (cfConnectingIp && cfConnectingIp.trim()) {
-        return cfConnectingIp.trim();
+    const trimmedCfConnectingIp = cfConnectingIp?.trim();
+    if (trimmedCfConnectingIp) {
+        return trimmedCfConnectingIp;
     }
 
     const xForwardedFor = request.headers.get("x-forwarded-for");
-    if (xForwardedFor && xForwardedFor.trim()) {
-        const first = xForwardedFor.split(",")[0];
+    const trimmedXForwardedFor = xForwardedFor?.trim();
+    if (trimmedXForwardedFor) {
+        const first = trimmedXForwardedFor.split(",")[0];
         if (first) {
             return first.trim();
         }
     }
 
     const realIp = request.headers.get("x-real-ip");
-    if (realIp && realIp.trim()) {
-        return realIp.trim();
+    const trimmedRealIp = realIp?.trim();
+    if (trimmedRealIp) {
+        return trimmedRealIp;
     }
 
     return null;
