@@ -1,11 +1,14 @@
 ﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type CheckResult = { ok: true } | { ok: false; error: string };
+type CheckResult = { ok: true } | { ok: false; error?: string };
 
 type HealthResponse = {
     ok: boolean;
     time: string;
     durationMs: number;
+    mode: string;
+    detailLevel: string;
+    message?: string;
     checks: {
         db: CheckResult;
         r2: CheckResult;
@@ -23,7 +26,11 @@ function isCheckResult(value: unknown): value is CheckResult {
     if (record.ok !== true && record.ok !== false) {
         return false;
     }
-    if (record.ok === false && typeof record.error !== "string") {
+    if (
+        record.ok === false &&
+        record.error !== undefined &&
+        typeof record.error !== "string"
+    ) {
         return false;
     }
     return true;
@@ -42,6 +49,12 @@ function assertHealthResponse(value: unknown): asserts value is HealthResponse {
     }
     if (typeof record.durationMs !== "number") {
         throw new Error("健康检查响应缺少 durationMs 字段");
+    }
+    if (typeof record.mode !== "string") {
+        throw new Error("健康检查响应缺少 mode 字段");
+    }
+    if (typeof record.detailLevel !== "string") {
+        throw new Error("健康检查响应缺少 detailLevel 字段");
     }
     const checks = record.checks;
     if (!checks || typeof checks !== "object") {
@@ -90,10 +103,11 @@ describe("health route", () => {
             BETTER_AUTH_SECRET: "1",
             CLOUDFLARE_R2_URL: "2",
             next_cf_app_bucket: { list: vi.fn().mockResolvedValue({}) },
-            HEALTH_REQUIRE_DB: "false",
+            HEALTH_REQUIRE_DB: "true",
             HEALTH_REQUIRE_R2: "false",
             HEALTH_REQUIRE_EXTERNAL: "false",
             NEXT_PUBLIC_APP_URL: "https://app.example",
+            HEALTH_ACCESS_TOKEN: "token",
         };
         getCloudflareContextMock.mockResolvedValue({ env });
         getDbMock.mockResolvedValue({});
@@ -101,7 +115,9 @@ describe("health route", () => {
         vi.stubGlobal("fetch", fetchMock);
         const { GET } = await import("./route");
         const res = await GET(
-            new Request("https://health.test/api/health?fast=1"),
+            new Request("https://health.test/api/health?fast=1", {
+                headers: { "x-health-token": "token" },
+            }),
         );
         expect(fetchMock).not.toHaveBeenCalled();
         expect(res.status).toBe(200);
@@ -110,6 +126,43 @@ describe("health route", () => {
         expect(body.ok).toBe(true);
         expect(body.checks.db.ok).toBe(true);
         expect(body.checks.external.ok).toBe(true);
+    });
+
+    it("支持通过 Authorization Bearer 令牌开启详细模式", async () => {
+        const env = {
+            BETTER_AUTH_SECRET: "1",
+            CLOUDFLARE_R2_URL: "2",
+            next_cf_app_bucket: { list: vi.fn().mockResolvedValue({}) },
+            HEALTH_REQUIRE_DB: "false",
+            HEALTH_REQUIRE_R2: "false",
+            HEALTH_REQUIRE_EXTERNAL: "false",
+            NEXT_PUBLIC_APP_URL: "https://app.example",
+            HEALTH_ACCESS_TOKEN: "token",
+        };
+        getCloudflareContextMock.mockResolvedValue({ env });
+        const dbMock = {
+            select: () => ({
+                from: () => ({
+                    limit: vi.fn().mockResolvedValue([{ domain: "" }]),
+                }),
+            }),
+        };
+        getDbMock.mockResolvedValue(dbMock);
+        resolveAppUrlMock.mockReturnValue("https://resolved.example");
+
+        const { GET } = await import("./route");
+        const res = await GET(
+            new Request("https://health.test/api/health", {
+                headers: { Authorization: "Bearer token" },
+            }),
+        );
+
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        assertHealthResponse(body);
+        expect(body.detailLevel).toBe("full");
+        expect(body.checks.db.ok).toBe(true);
+        expect(body.checks.env.ok).toBe(true);
     });
 
     it("当要求外部依赖失败时返回 503", async () => {
@@ -121,6 +174,7 @@ describe("health route", () => {
             HEALTH_REQUIRE_R2: "false",
             HEALTH_REQUIRE_EXTERNAL: "true",
             CREEM_API_URL: "https://creem.example",
+            HEALTH_ACCESS_TOKEN: "token",
         };
         getCloudflareContextMock.mockResolvedValue({ env });
         const failingDb = {
@@ -144,7 +198,11 @@ describe("health route", () => {
             );
         vi.stubGlobal("fetch", fetchMock);
         const { GET } = await import("./route");
-        const res = await GET(new Request("https://health.test/api/health"));
+        const res = await GET(
+            new Request("https://health.test/api/health", {
+                headers: { "x-health-token": "token" },
+            }),
+        );
         expect(res.status).toBe(503);
         const body = await res.json();
         assertHealthResponse(body);
@@ -171,6 +229,7 @@ describe("health route", () => {
             HEALTH_REQUIRE_EXTERNAL: "true",
             CREEM_API_URL: "https://creem.example/",
             CREEM_API_KEY: "token",
+            HEALTH_ACCESS_TOKEN: "token",
         };
         getCloudflareContextMock.mockResolvedValue({ env });
         const dbMock = {
@@ -192,7 +251,11 @@ describe("health route", () => {
         vi.stubGlobal("fetch", fetchMock);
         resolveAppUrlMock.mockReturnValue("https://resolved.example");
         const { GET } = await import("./route");
-        const res = await GET(new Request("https://health.test/api/health"));
+        const res = await GET(
+            new Request("https://health.test/api/health", {
+                headers: { "x-health-token": "token" },
+            }),
+        );
         expect(res.status).toBe(200);
         const body = await res.json();
         assertHealthResponse(body);
@@ -204,5 +267,36 @@ describe("health route", () => {
         expect(fetchMock.mock.calls[1]?.[0]).toBe(
             "https://creem.example/status",
         );
+    });
+
+    it("在缺少令牌时仅返回概要信息", async () => {
+        const env = {
+            BETTER_AUTH_SECRET: "1",
+            CLOUDFLARE_R2_URL: "2",
+            next_cf_app_bucket: { list: vi.fn().mockResolvedValue({}) },
+            HEALTH_REQUIRE_DB: "false",
+            HEALTH_REQUIRE_R2: "false",
+            HEALTH_REQUIRE_EXTERNAL: "false",
+            NEXT_PUBLIC_APP_URL: "https://app.example",
+            HEALTH_ACCESS_TOKEN: "token",
+        };
+        getCloudflareContextMock.mockResolvedValue({ env });
+        const failingDb = {
+            select: () => ({
+                from: () => ({
+                    limit: vi.fn().mockRejectedValue(new Error("db down")),
+                }),
+            }),
+        };
+        getDbMock.mockResolvedValue(failingDb);
+        const { GET } = await import("./route");
+        const res = await GET(new Request("https://health.test/api/health"));
+        expect(res.status).toBe(503);
+        const body = await res.json();
+        assertHealthResponse(body);
+        expect(body.detailLevel).toBe("summary");
+        expect(body.checks.db).toEqual({ ok: false });
+        expect(Object.keys(body.checks.env)).toEqual(["ok"]);
+        expect(body.message).toMatch(/Provide X-Health-Token/i);
     });
 });

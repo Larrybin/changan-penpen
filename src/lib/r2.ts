@@ -2,24 +2,12 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 const DEFAULT_ALLOWED_MIME_TYPES = [
-    "image/*",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
     "image/svg+xml",
-    "video/mp4",
-    "video/quicktime",
-    "audio/mpeg",
-    "audio/wav",
-    "audio/webm",
     "application/pdf",
-    "application/json",
-    "application/zip",
-    "application/x-zip-compressed",
-    "application/x-gzip",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-powerpoint",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "text/plain",
     "text/csv",
     "text/markdown",
@@ -27,12 +15,24 @@ const DEFAULT_ALLOWED_MIME_TYPES = [
 
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
-export interface UploadResult {
-    success: boolean;
-    url?: string;
-    key?: string;
-    error?: string;
-}
+export type UploadResult =
+    | {
+          success: true;
+          object: {
+              key: string;
+              url?: string;
+              contentType: string;
+              size: number;
+              scan: {
+                  status: "skipped" | "passed";
+                  auditId?: string;
+              };
+          };
+      }
+    | {
+          success: false;
+          error: string;
+      };
 
 export interface UploadRateLimitOptions {
     request: Request;
@@ -47,7 +47,7 @@ export interface UploadConstraints {
     requireContentScan?: boolean;
     scanFile?: (options: {
         file: File;
-    }) => Promise<{ ok: boolean; error?: string }>;
+    }) => Promise<{ ok: boolean; error?: string; auditId?: string }>;
     rateLimit?: UploadRateLimitOptions;
 }
 
@@ -136,6 +136,9 @@ export async function uploadToR2(
             }
         }
 
+        let scanStatus: "skipped" | "passed" = "skipped";
+        let auditId: string | undefined;
+
         if (requireContentScan || typeof scanFile === "function") {
             if (typeof scanFile !== "function") {
                 return {
@@ -153,6 +156,8 @@ export async function uploadToR2(
                             "File content failed security scan",
                     };
                 }
+                scanStatus = "passed";
+                auditId = scanResult.auditId;
             } catch (error) {
                 console.error("R2 upload content scan error:", error);
                 return {
@@ -184,6 +189,8 @@ export async function uploadToR2(
                 originalName: file.name,
                 uploadedAt: new Date().toISOString(),
                 size: file.size.toString(),
+                scanStatus,
+                ...(auditId ? { scanAuditId: auditId } : {}),
             },
         });
 
@@ -201,8 +208,16 @@ export async function uploadToR2(
 
         return {
             success: true,
-            url: publicUrl,
-            key,
+            object: {
+                key,
+                url: publicUrl,
+                contentType: detectedMime,
+                size: file.size,
+                scan: {
+                    status: scanStatus,
+                    ...(auditId ? { auditId } : {}),
+                },
+            },
         };
     } catch (error) {
         console.error("R2 upload error:", error);

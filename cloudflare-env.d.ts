@@ -3,21 +3,24 @@
 // Runtime types generated with workerd@1.20250906.0 2025-03-01 global_fetch_strictly_public,nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
-		NEXTJS_ENV: string;
-		CLOUDFLARE_ACCOUNT_ID: string;
-		CLOUDFLARE_D1_TOKEN: string;
-		CLOUDFLARE_R2_URL: string;
-		CLOUDFLARE_API_TOKEN: string;
-		BETTER_AUTH_SECRET: string;
-		BETTER_AUTH_URL: string;
-		GOOGLE_CLIENT_ID: string;
-		GOOGLE_CLIENT_SECRET: string;
-		CREEM_API_URL: string;
-		CREEM_API_KEY: string;
-		CREEM_WEBHOOK_SECRET: string;
-		CREEM_SUCCESS_URL: string;
+                NEXTJS_ENV: string;
+                NEXT_PUBLIC_APP_URL: string;
+                CLOUDFLARE_ACCOUNT_ID: string;
+                CLOUDFLARE_D1_TOKEN: string;
+                CLOUDFLARE_R2_URL: string;
+                CLOUDFLARE_API_TOKEN: string;
+                BETTER_AUTH_SECRET: string;
+                BETTER_AUTH_URL: string;
+                GOOGLE_CLIENT_ID: string;
+                GOOGLE_CLIENT_SECRET: string;
+                CREEM_API_URL: string;
+                CREEM_API_KEY: string;
+                CREEM_WEBHOOK_SECRET: string;
+                CREEM_SUCCESS_URL: string;
                 CREEM_CANCEL_URL: string;
                 CREEM_LOG_WEBHOOK_SIGNATURE: string;
+                HEALTH_ACCESS_TOKEN?: string;
+                ADMIN_FORCE_SECURE_COOKIES?: string;
                 RATE_LIMITER: RateLimit;
                 next_cf_app_bucket: R2Bucket;
 		next_cf_app: D1Database;

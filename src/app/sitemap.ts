@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { MetadataRoute } from "next";
 
 import {
@@ -37,7 +38,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         return [];
     }
     const [dynamicEntries] = await Promise.all([getDynamicSitemapEntries()]);
-    const baseUrl = resolveAppUrl(settings);
+    const { env } = await getCloudflareContext({ async: true });
+    const baseUrl = resolveAppUrl(settings, {
+        envAppUrl: env.NEXT_PUBLIC_APP_URL,
+    });
     const locales = getActiveAppLocales(settings);
     const now = new Date();
     const routeConfigs = [...staticRoutes, ...dynamicEntries];

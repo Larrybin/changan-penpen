@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { MetadataRoute } from "next";
 
 import { resolveAppUrl } from "@/lib/seo";
@@ -5,7 +6,17 @@ import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.s
 
 export default async function robots(): Promise<MetadataRoute.Robots | string> {
     const settings = await getSiteSettingsPayload();
-    const baseUrl = resolveAppUrl(settings);
+    let envAppUrl: string | undefined;
+    try {
+        const { env } = await getCloudflareContext({ async: true });
+        envAppUrl = env.NEXT_PUBLIC_APP_URL;
+    } catch (error) {
+        console.warn("Falling back to process env for robots", { error });
+        envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    }
+    const baseUrl = resolveAppUrl(settings, {
+        envAppUrl,
+    });
     const sitemapUrl = `${baseUrl}/sitemap.xml`;
     const sitemapEnabled = Boolean(settings.sitemapEnabled);
     const customRules = settings.robotsRules?.trim();
