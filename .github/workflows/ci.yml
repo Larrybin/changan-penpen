@@ -76,8 +76,17 @@ jobs:
       - name: Type check (tsc)
         run: pnpm exec tsc --noEmit
 
+      - name: List test cases (Vitest)
+        run: |
+          echo "Vitest version: $(pnpm exec vitest --version || true)"
+          # Prefer native list command; fallback to dry-run if unavailable
+          pnpm exec vitest list --reporter=verbose || pnpm exec vitest run --reporter=verbose --dry-run
+
       - name: Test (Vitest with coverage)
-        run: pnpm test -- --coverage
+        env:
+          # Double‑ensure reporters include json-summary for downstream checks
+          VITEST_COVERAGE_REPORTER: json-summary,html,text
+        run: pnpm exec vitest run --coverage
 
       - name: Upload coverage artifact (HTML)
         if: always()
@@ -87,18 +96,52 @@ jobs:
           path: coverage
           if-no-files-found: warn
 
-      - name: Check coverage thresholds (JSON summary)
+      - name: Check coverage thresholds (JSON summary with fallback)
         if: always()
         run: |
+          set -eu
+          echo "Node: $(node -v)"
+          echo "Vitest: $(pnpm exec vitest --version || echo 'unknown')"
+          echo "Listing coverage directory (if any):"
+          ls -la || true
+          ls -la coverage || true
           node -e "
             const fs = require('fs');
             const path = require('path');
-            const sumPath = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
-            if (!fs.existsSync(sumPath)) {
-              console.error('coverage-summary.json not found at', sumPath);
-              process.exit(1);
+            const { createCoverageMap } = (() => { try { return require('istanbul-lib-coverage'); } catch { return {}; } })();
+
+            const covDir = path.join(process.cwd(), 'coverage');
+            const summaryPath = path.join(covDir, 'coverage-summary.json');
+            const finalPath = path.join(covDir, 'coverage-final.json');
+
+            function writeSummaryFromFinal() {
+              if (!createCoverageMap) return false;
+              if (!fs.existsSync(finalPath)) return false;
+              try {
+                const raw = JSON.parse(fs.readFileSync(finalPath, 'utf8'));
+                const map = createCoverageMap(raw);
+                const total = map.getCoverageSummary().toJSON();
+                const out = { total };
+                fs.writeFileSync(summaryPath, JSON.stringify(out, null, 2));
+                console.log('Reconstructed coverage-summary.json from coverage-final.json');
+                return true;
+              } catch (e) {
+                console.error('Failed to reconstruct summary from final:', e && e.message);
+                return false;
+              }
             }
-            const d = JSON.parse(fs.readFileSync(sumPath, 'utf8'));
+
+            if (!fs.existsSync(summaryPath)) {
+              console.warn('coverage-summary.json not found. Attempting fallback...');
+              const ok = writeSummaryFromFinal();
+              if (!ok) {
+                console.error('No coverage summary available. Diagnostics:');
+                try { console.error('coverage dir entries:', fs.readdirSync(covDir)); } catch {}
+                process.exit(1);
+              }
+            }
+
+            const data = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
             const t = {
               lines: Number(process.env.COV_LINES || 0),
               statements: Number(process.env.COV_STATEMENTS || 0),
@@ -106,15 +149,18 @@ jobs:
               functions: Number(process.env.COV_FUNCTIONS || 0),
             };
             const cur = {
-              lines: d.total.lines.pct,
-              statements: d.total.statements.pct,
-              branches: d.total.branches.pct,
-              functions: d.total.functions.pct,
+              lines: data.total?.lines?.pct ?? 0,
+              statements: data.total?.statements?.pct ?? 0,
+              branches: data.total?.branches?.pct ?? 0,
+              functions: data.total?.functions?.pct ?? 0,
             };
+            console.log('Coverage current %:', cur);
+            console.log('Coverage thresholds %:', t);
+
             const ok = cur.lines >= t.lines && cur.statements >= t.statements && cur.branches >= t.branches && cur.functions >= t.functions;
-            console.log('Coverage current:', cur, 'thresholds:', t);
             if (!ok) {
-              console.error('Coverage below thresholds');
+              console.error('Coverage below thresholds. Showing summary JSON for diagnosis:');
+              try { console.error(fs.readFileSync(summaryPath, 'utf8')); } catch {}
               process.exit(1);
             }
           "

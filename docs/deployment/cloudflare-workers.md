@@ -1,12 +1,12 @@
 # Cloudflare Workers 部署手册
 
-> 本文定义预览/生产部署的标准流程、质量闸门与回滚策略。CI 工作流位于 `.github/workflows/deploy.yml`。
+> 本文定义生产部署的标准流程、质量闸门与回滚策略。CI 工作流位于 `.github/workflows/deploy.yml`。
 
 ## 1. 总览
 流程顺序：`Checkout → Setup PNPM → Install → Build (OpenNext) → DB Migrate → Deploy → Health Check → 通知`
 
 - **构建**：`@opennextjs/cloudflare build` 生成 `.open-next`
-- **发布**：`wrangler deploy`（预览加 `--env preview`）
+- **发布**：`wrangler deploy`（生产 `--env production`）
 - **健康检查**：`/api/health?fast=1`
 - **日志**：Cloudflare Workers Dashboard、`wrangler tail`
 
@@ -18,11 +18,7 @@
 5. 准备健康检查所需资源（R2/D1/AI）
 
 ## 3. 触发方式
-- **预览**：
-  ```bash
-  pnpm deploy:preview           # CLI
-  gh workflow run deploy.yml -f target=preview
-  ```
+-（已移除预览部署）
 - **生产**：
   ```bash
   pnpm deploy:cf                # CLI
@@ -44,13 +40,12 @@
   ```
 
 ## 5. 迁移策略
-1. 预览部署前：`pnpm db:migrate:preview`
 2. 生产部署前：`pnpm db:migrate:prod`
 3. 若涉及破坏性变更，需在 `release.md` 附上回滚 SQL / 备份计划
 
 ## 6. 回滚流程
 1. 健康检查失败 → 工作流自动标记失败并触发 `ops-notify`
-2. 手动执行 `wrangler deploy --env preview --rollback <id>` 或在 Dashboard 选择历史版本
+2. 手动执行 `wrangler deploy --env production --rollback <id>` 或在 Dashboard 选择历史版本
 3. 回滚数据库：使用 D1 备份（详见 `docs/db-d1.md`）
 4. 在 `release.md` 记录故障时间线与采取措施
 

@@ -1,6 +1,6 @@
 # 发布与回滚手册
 
-> 记录版本管理、发布流程、变更日志与回滚策略，确保从预览到生产的闭环可追溯。
+> 记录版本管理、发布流程、变更日志与回滚策略，确保生产环境变更可追溯。
 
 ## 1. 发布节奏
 - 建议按需求批次合并到 `main`，触发自动部署
@@ -9,7 +9,7 @@
 
 ## 2. 发布前检查
 - [ ] CI（Biome、tsc、Vitest、build）通过
-- [ ] 数据库迁移已在 Preview 环境验证
+ 
 - [ ] README / 文档更新完毕
 - [ ] Secrets/Vars 最新（参考 [`docs/env-and-secrets.md`](env-and-secrets.md)）
 - [ ] `docs/release.md` 更新 changelog 草稿
@@ -34,7 +34,7 @@
 - docs: ...
 影响：
 - 数据库迁移：`20251007_add_table.sql`
-- 环境变量：新增 `FOO_BAR`（预览/生产已同步）
+- 环境变量：新增 `FOO_BAR`（生产已同步）
 - 回滚命令：`wrangler deploy --env production --rollback <id>`
 ```
 
@@ -55,7 +55,7 @@
 
 ## 7. 紧急修复（Hotfix）
 - 从最新 `main` 切出 `hotfix/<issue>`，完成修复
-- 走完整 CI/CD 流程，必要时跳过预览直接部署生产（仍需质量门）
+- 走完整 CI/CD 流程，部署至生产（仍需质量门）
 - 发布后在这里记录：
   ```
   ### Hotfix 2025-10-08

@@ -42,18 +42,6 @@ function shouldRunRemoteMigrations(env) {
     return hasRemoteCredentials(env);
 }
 
-function shouldRunPreviewMigrations(env) {
-    if (!shouldRunRemoteMigrations(env)) {
-        return false;
-    }
-
-    if (env.CLOUDFLARE_RUN_PREVIEW_MIGRATIONS === "true") {
-        return true;
-    }
-
-    return env.CF_PAGES === "1";
-}
-
 const env = process.env ?? {};
 let isSuccessful = true;
 
@@ -70,17 +58,8 @@ if (shouldRunRemoteMigrations(env)) {
         "remote",
     );
 
-    if (shouldRunPreviewMigrations(env)) {
-        console.log("[info] Syncing preview D1 database migrations...");
-        isSuccessful &&= runWranglerMigration(
-            ["d1", "migrations", "apply", "next-cf-app", "--env", "preview"],
-            "preview",
-        );
-    }
 } else {
-    console.log(
-        "[info] Skipping remote and preview D1 migrations. Set CLOUDFLARE_RUN_REMOTE_MIGRATIONS=true to enable.",
-    );
+    console.log("[info] Skipping remote D1 migrations. Set CLOUDFLARE_RUN_REMOTE_MIGRATIONS=true to enable.");
 }
 
 if (!isSuccessful) {

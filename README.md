@@ -14,14 +14,14 @@ Production-ready template for building full-stack applications on Next.js 15 + C
 3. `pnpm dev`
 4. 打开 `http://localhost:3000`
 
-需要预览或生产部署？前往 Actions 触发 `Deploy` 工作流，或执行 `pnpm deploy:preview` / `pnpm deploy:cf`。使用 `gh run watch` 跟踪 CI 状态。
+需要生产部署？前往 Actions 触发 `Deploy` 工作流，或执行 `pnpm deploy:cf`。使用 `gh run watch` 跟踪 CI 状态。
 
 ---
 
 ## 核心特性
 - Edge 原生体验：OpenNext 构建，部署到 Cloudflare Workers（100+ PoP）
 - 数据层 + 存储：Cloudflare D1 + R2，使用 Drizzle ORM 封装
-- CI/CD 套件：Biome Lint、Vitest（已集成）、自动预览与生产发布
+- CI/CD 套件：Biome Lint、Vitest（已集成）、生产发布
 - 自动修复 & 合并：`auto-fix` + `auto-merge-lite` 工作流支持白名单滚动 PR
 - 健康检查：`/api/health` fast/strict 模式，部署前自动验证
 - Observability：Workers Analytics、可选 Sentry、日志聚合
@@ -36,11 +36,6 @@ Production-ready template for building full-stack applications on Next.js 15 + C
 - `pnpm dev:cf`：OpenNext + Wrangler，模拟 Workers 行为
 - `pnpm lint` / `pnpm test`：提交前质量门（已提供基础单测）
 - 详细调试说明见 `docs/local-dev.md`
-
-### 预览部署
-1. 在 GitHub Secrets 中配置 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`BETTER_AUTH_SECRET` 等凭据
-2. 运行 `Deploy` 工作流或执行 `pnpm deploy:preview`
-3. 使用 `gh run watch --exit-status` 跟踪结果
 
 ### 生产部署
 - 默认对 `main` 分支 push 触发 `Deploy` 工作流
@@ -85,7 +80,7 @@ Production-ready template for building full-stack applications on Next.js 15 + C
 
 ## 自动化与 DevOps
 - `.github/workflows/ci.yml`：Biome、TypeScript、Vitest
-- `.github/workflows/deploy.yml`：预览 / 生产部署流水线，包含数据库迁移、健康检查
+- `.github/workflows/deploy.yml`：生产部署流水线，包含数据库迁移、健康检查
 - `.github/workflows/auto-fix.yml`：针对白名单文件自动创建修复 PR
 - `.github/workflows/auto-merge-lite.yml`：满足条件自动合并
 - `.github/workflows/ops-notify.yml`：失效/恢复时通知并维护 Tracker Issue
@@ -106,4 +101,3 @@ Production-ready template for building full-stack applications on Next.js 15 + C
 ## 许可
 
 MIT © 2025 Muhammad Arifin
-
