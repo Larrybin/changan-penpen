@@ -8,7 +8,7 @@
 
 ## 入门与开发基础
 1. [architecture-overview.md](architecture-overview.md) — App Router 结构、模块职责、数据流
-2. [getting-started.md](getting-started.md) — 5 分钟快速开始（本地 & 预览）
+2. [getting-started.md](getting-started.md) — 5 分钟快速开始（本地 & 生产）
 3. [local-dev.md](local-dev.md) — 本地开发与调试技巧
 4. [testing.md](testing.md) — 测试现状、Vitest 规划与 mock 策略
 

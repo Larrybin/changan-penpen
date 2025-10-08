@@ -63,13 +63,13 @@ Browser → Next.js App Router (Edge) → Server Actions / Route Handlers
 
 ## 环境与绑定
 - Worker bindings 定义于 `wrangler.jsonc`：`next_cf_app`（D1）、`next_cf_app_bucket`（R2）、`AI`（Workers AI）。
-- 预览环境使用 `env.preview` 中的资源 ID，生产环境使用默认顶层配置。
+- 生产环境使用默认顶层配置。
 - 任何新增 binding 后必须运行 `pnpm cf-typegen` 以刷新 `cloudflare-env.d.ts`。
 
 ## 关键执行路径
 1. **本地开发**：`pnpm dev`（Node runtime）或 `pnpm dev:cf`（OpenNext + Workers 模拟）。
 2. **构建部署**：GitHub Actions `deploy.yml` 或手动 `pnpm deploy:cf` → 触发 OpenNext 构建 → Wrangler 发布。
-3. **迁移执行**：`pnpm db:migrate:local|preview|prod` 通过 Wrangler 调用 D1 migrations。
+3. **迁移执行**：`pnpm db:migrate:local|prod` 通过 Wrangler 调用 D1 migrations。
 4. **自动化修复**：`.github/workflows/auto-fix.yml` 会在指定文件变动时创建 rolling PR。
 
 ## 常见扩展点
@@ -81,7 +81,7 @@ Browser → Next.js App Router (Edge) → Server Actions / Route Handlers
 ## 兼容性提示
 - **OpenNext 约束**：不支持 `fs` 写操作；依赖 Node API 时需启用 `nodejs_compat`（已在 `wrangler.jsonc` 配置）。
 - **边缘运行**：尽量避免长时 CPU 任务；AI/外部请求使用 `fetch` 并设置超时。
-- **多环境**：Preview 与 Production 的 binding 名称一致但资源 ID 不同，代码层无需条件判断。
+
 
 ---
 

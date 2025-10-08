@@ -33,28 +33,6 @@
         "binding": "AI"
     },
     "env": {
-        "preview": {
-            "vars": {
-                "CREEM_LOG_WEBHOOK_SIGNATURE": "1"
-            },
-            "d1_databases": [
-                {
-                    "binding": "next_cf_app",
-                    "database_name": "next-cf-app-preview",
-                    "database_id": "PREVIEW_D1_DATABASE_ID",
-                    "migrations_dir": "./src/drizzle"
-                }
-            ],
-            "r2_buckets": [
-                {
-                    "bucket_name": "next-cf-app-preview-bucket",
-                    "binding": "next_cf_app_bucket"
-                }
-            ],
-            "ai": {
-                "binding": "AI"
-            }
-        },
         "production": {
             "d1_databases": [
                 {

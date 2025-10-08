@@ -27,7 +27,7 @@
 
 ## 5. 权限/认证
 - 管理后台返回 403：检查 `.dev.vars` 中 `ADMIN_ALLOWED_EMAILS` 是否包含当前账号
-- OAuth 失败：确认 `BETTER_AUTH_URL` 与实际请求域名一致（预览环境需要 `workers.dev` 域）
+- OAuth 失败：确认 `BETTER_AUTH_URL` 与实际请求域名一致（生产域名或自定义域）
 - GitHub auto merge 无法启用：仓库未开启自动合并，`auto-merge-lite` 会作为替代
 
 ## 6. 健康检查失败

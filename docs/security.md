@@ -25,7 +25,7 @@
 ## 3. Secrets 管理
 - 参见 [`docs/env-and-secrets.md`](env-and-secrets.md) 的矩阵
 - 轮换策略：90 天一次、人员变动时立即轮换
-- 生产 Secrets 与预览分离，设置 `SYNC_PRODUCTION_SECRETS` 控制自动同步
+- 生产 Secrets 独立管理，设置 `SYNC_PRODUCTION_SECRETS` 控制自动同步
 - 禁止在 `.dev.vars.example` 填写真实值，使用占位字符串
 
 ## 4. 依赖安全

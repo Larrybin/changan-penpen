@@ -25,7 +25,6 @@
 - 应用迁移：
   ```bash
   pnpm db:migrate:local    # 使用本地 SQLite
-  pnpm db:migrate:preview  # 连接 preview 数据库
   pnpm db:migrate:prod     # 连接 production（需 Wrangler 登录 + Token）
   ```
 - 查看结构：`pnpm db:inspect:local`
@@ -34,7 +33,7 @@
 
 ## 4. Cloudflare 绑定
 - 调整 `wrangler.jsonc` 后务必执行 `pnpm cf-typegen`，确保 `cloudflare-env.d.ts` 同步更新。
-- 预览环境的 D1/R2 binding 名称与生产一致，但资源 ID 不同；代码无需做条件判断。
+ 
 - 若需要新增 KV/Durable Object 等资源，请在 PR 中同步更新 `docs/opennext.md` 与 `docs/deployment/cloudflare-workers.md`。
 
 ## 5. UI 与国际化
@@ -56,7 +55,7 @@
 1. 运行 `pnpm lint`
 2. 运行 `pnpm test`（若新增测试）
 3. 若改动数据库/配置/文档，顺手更新对应文档并在 PR 中引用
-4. 使用 `gh run watch` 跟踪 CI 与 Preview Deploy 结果
+4. 使用 `gh run watch` 跟踪 CI 与 Deploy 结果
 
 ---
 

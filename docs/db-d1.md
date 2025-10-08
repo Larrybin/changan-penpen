@@ -18,7 +18,6 @@ pnpm db:generate:named "add_users_table"
 
 # 应用迁移
 pnpm db:migrate:local      # 本地 SQLite
-pnpm db:migrate:preview    # Cloudflare preview 环境
 pnpm db:migrate:prod       # Cloudflare production（--remote）
 ```
 
@@ -33,8 +32,6 @@ pnpm db:migrate:prod       # Cloudflare production（--remote）
 ## 4. 备份与恢复
 - **定期备份**：
   ```bash
-  # 预览环境
-  wrangler d1 export next-cf-app --env preview --output preview-backup.sqlite
   # 生产环境
   wrangler d1 export next-cf-app --remote --output prod-backup-$(date +%Y%m%d).sqlite
   ```
@@ -48,7 +45,6 @@ pnpm db:migrate:prod       # Cloudflare production（--remote）
 ```bash
 # 列出表
 pnpm db:inspect:local
-pnpm db:inspect:preview
 pnpm db:inspect:prod
 
 # 执行 SQL
@@ -64,13 +60,12 @@ wrangler d1 migrations list next-cf-app --remote
 | 症状 | 原因 | 修复 |
 | --- | --- | --- |
 | `database is locked` | 本地 SQLite 被占用 | 停止其他 `wrangler dev` 实例或删除 `.wrangler/state` |
-| `no such table: <name>` | 漏跑迁移 / 环境错误 | 先 `pnpm db:migrate:*`，确认是否指向 preview/production |
+| `no such table: <name>` | 漏跑迁移 / 环境错误 | 先 `pnpm db:migrate:*`，确认是否指向 production |
 | `AuthenticationError` | API Token 权限不足 | 为 Token 增加 `Account - D1:Edit`、`Account - D1:Read` |
 | CI 中迁移失败 | 未运行 `pnpm cf-typegen` 导致类型不一致 | 重新生成类型文件并提交 |
 
 ## 7. 多环境约定
-- `wrangler.jsonc` 中的 binding 名称统一为 `next_cf_app`，不同环境通过 `env.preview`、`env.production` 切换资源 ID。
-- 预览数据库使用 `next-cf-app-preview`，生产使用 `next-cf-app`。
+- `wrangler.jsonc` 中的 binding 名称统一为 `next_cf_app`，生产环境使用 `env.production` 切换资源 ID。
 - 在 Server 代码中无需硬编码环境，直接通过 binding 访问。
 
 ## 8. 代码评审 Check-list
