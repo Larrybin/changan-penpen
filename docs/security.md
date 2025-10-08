@@ -51,6 +51,12 @@
 - 对关键环境变量启用自动提醒（CI 中检测未同步的文档/配置）
 - 规划权限矩阵表格（人员角色 → 资源）
 
+## Edge rate limiting (English update)
+- **Rate limiter binding**: Configure a Cloudflare Rate Limiting namespace and attach it as `RATE_LIMITER` in `wrangler.jsonc` (both default and `production` environments). Keep the namespace ID in the private ops runbook, not in Git.
+- **Protected entry points**: `/api/creem/create-checkout` enforces per-user quotas; `/api/webhooks/creem` enforces per-source throttling so replayed payloads cannot exhaust workers.
+- **Incident response**: If valid customers are blocked, capture the failing key (`rate-limit` warning in logs), temporarily raise the quota in Cloudflare Dashboard, and add a follow-up task to review long-term limits.
+- **Change control**: Any adjustment to thresholds or bypass lists must be reflected in PR descriptions and this section, with a link to the incident or request ticket.
+
 ---
 
 若新增安全措施（如 WAF 规则、Access Policy、Sentry DSN），请在 PR 中说明并同步此文档。

@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { headers } from "next/headers";
+import { applyRateLimit } from "@/lib/rate-limit";
 import type {
     CreemCheckout,
     CreemCustomer,
@@ -48,6 +49,17 @@ export async function POST(request: Request) {
         const raw = await request.text();
         const signature = (await headers()).get("creem-signature") || "";
         const { env } = await getCloudflareContext({ async: true });
+
+        const rateLimitResult = await applyRateLimit({
+            request,
+            identifier: "creem:webhook",
+            uniqueToken: signature,
+            env,
+            message: "Too many webhook requests",
+        });
+        if (!rateLimitResult.ok) {
+            return rateLimitResult.response;
+        }
 
         if (
             env.CREEM_LOG_WEBHOOK_SIGNATURE === "1" &&

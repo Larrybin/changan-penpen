@@ -16,9 +16,10 @@ declare namespace Cloudflare {
 		CREEM_API_KEY: string;
 		CREEM_WEBHOOK_SECRET: string;
 		CREEM_SUCCESS_URL: string;
-		CREEM_CANCEL_URL: string;
-		CREEM_LOG_WEBHOOK_SIGNATURE: string;
-		next_cf_app_bucket: R2Bucket;
+                CREEM_CANCEL_URL: string;
+                CREEM_LOG_WEBHOOK_SIGNATURE: string;
+                RATE_LIMITER: RateLimit;
+                next_cf_app_bucket: R2Bucket;
 		next_cf_app: D1Database;
 		AI: Ai;
 		ASSETS: Fetcher;

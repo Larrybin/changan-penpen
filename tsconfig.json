@@ -21,7 +21,8 @@
         "paths": {
             "@/*": ["./src/*"],
             "@refinedev/core": ["./src/lib/stubs/refine-core"],
-            "@standard-schema/utils": ["./stubs/standard-schema-utils"]
+            "@standard-schema/utils": ["./stubs/standard-schema-utils"],
+            "@sentry/nextjs": ["./stubs/sentry-nextjs"]
         }
     },
     "include": [

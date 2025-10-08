@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "../../sentry.client.config";
 import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
