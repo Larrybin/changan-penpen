@@ -1,7 +1,7 @@
 "use client";
 
 import { useNotification } from "@refinedev/core";
-import React, { useEffect, useId, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,35 +44,120 @@ const defaultSettings: SiteSettingsState = {
     enabledLanguages: ["zh-CN"],
 };
 
+function arraysShallowEqual<T>(left: T[], right: T[]) {
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((value, index) => value === right[index]);
+}
+
 export function SiteSettingsPage() {
     const [settings, setSettings] =
         useState<SiteSettingsState>(defaultSettings);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const initialSettingsRef = useRef<SiteSettingsState | null>(null);
     const { open } = useNotification();
 
     useEffect(() => {
         async function fetchSettings() {
             setLoading(true);
-            const response = await fetch("/api/admin/site-settings", {
-                credentials: "include",
-            });
-            if (response.ok) {
-                const payload = (await response.json()) as {
-                    data?: Partial<SiteSettingsState>;
-                };
-                setSettings({
-                    ...defaultSettings,
-                    ...(payload.data as SiteSettingsState),
+            try {
+                const response = await fetch("/api/admin/site-settings", {
+                    credentials: "include",
                 });
+                if (response.ok) {
+                    const payload = (await response.json()) as {
+                        data?: Partial<SiteSettingsState>;
+                    };
+                    const incoming = payload.data ?? {};
+                    const merged: SiteSettingsState = {
+                        ...defaultSettings,
+                        ...(incoming as SiteSettingsState),
+                        enabledLanguages: Array.isArray(
+                            incoming.enabledLanguages,
+                        )
+                            ? [...incoming.enabledLanguages]
+                            : [...defaultSettings.enabledLanguages],
+                    };
+                    setSettings(merged);
+                    initialSettingsRef.current = {
+                        ...merged,
+                        enabledLanguages: [...merged.enabledLanguages],
+                    };
+                } else {
+                    const fallback: SiteSettingsState = {
+                        ...defaultSettings,
+                        enabledLanguages: [...defaultSettings.enabledLanguages],
+                    };
+                    setSettings(fallback);
+                    initialSettingsRef.current = {
+                        ...fallback,
+                        enabledLanguages: [...fallback.enabledLanguages],
+                    };
+                }
+            } catch (error) {
+                console.error("Failed to fetch site settings", error);
+                const fallback: SiteSettingsState = {
+                    ...defaultSettings,
+                    enabledLanguages: [...defaultSettings.enabledLanguages],
+                };
+                setSettings(fallback);
+                initialSettingsRef.current = {
+                    ...fallback,
+                    enabledLanguages: [...fallback.enabledLanguages],
+                };
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         }
         fetchSettings();
     }, []);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+
+        const base = initialSettingsRef.current;
+        const payload: Partial<SiteSettingsState> = {};
+
+        if (base) {
+            (Object.keys(settings) as Array<keyof SiteSettingsState>).forEach(
+                (key) => {
+                    const nextValue = settings[key];
+                    const prevValue = base[key];
+
+                    if (Array.isArray(nextValue) && Array.isArray(prevValue)) {
+                        const nextLanguages = nextValue as string[];
+                        const prevLanguages = prevValue as string[];
+                        if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
+                            payload[key] = [
+                                ...nextLanguages,
+                            ] as SiteSettingsState[typeof key];
+                        }
+                        return;
+                    }
+
+                    if (nextValue !== prevValue) {
+                        payload[key] = nextValue;
+                    }
+                },
+            );
+        } else {
+            Object.assign(payload, {
+                ...settings,
+                enabledLanguages: [...settings.enabledLanguages],
+            });
+        }
+
+        if (Object.keys(payload).length === 0) {
+            open?.({ message: "未检测到任何更改", type: "info" });
+            return;
+        }
+
+        if (payload.enabledLanguages) {
+            payload.enabledLanguages = [...payload.enabledLanguages];
+        }
+
         setSaving(true);
         try {
             const response = await fetch("/api/admin/site-settings", {
@@ -81,14 +166,30 @@ export function SiteSettingsPage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    ...settings,
-                    enabledLanguages: settings.enabledLanguages,
-                }),
+                body: JSON.stringify(payload),
             });
             if (!response.ok) {
                 throw new Error("保存站点设置失败");
             }
+            const result = (await response.json()) as {
+                data?: Partial<SiteSettingsState>;
+            };
+            const incoming = result.data ?? {};
+            const merged: SiteSettingsState = {
+                ...defaultSettings,
+                ...(incoming as SiteSettingsState),
+                enabledLanguages: Array.isArray(incoming.enabledLanguages)
+                    ? [...incoming.enabledLanguages]
+                    : [
+                          ...(payload.enabledLanguages ??
+                              settings.enabledLanguages),
+                      ],
+            };
+            setSettings(merged);
+            initialSettingsRef.current = {
+                ...merged,
+                enabledLanguages: [...merged.enabledLanguages],
+            };
             open?.({ message: "站点设置已保存", type: "success" });
         } catch (error) {
             open?.({
