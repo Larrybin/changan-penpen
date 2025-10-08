@@ -91,6 +91,8 @@ describe("seo helpers", () => {
 
         it("所有候选均无效时抛错", async () => {
             const OriginalURL = URL;
+            const originalEnvAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+            process.env.NEXT_PUBLIC_APP_URL = undefined;
             class FailingURL extends OriginalURL {
                 constructor(input: string | URL, base?: string | URL) {
                     if (String(input).includes("localhost:3000")) {
@@ -106,6 +108,7 @@ describe("seo helpers", () => {
                     module.AppUrlResolutionError,
                 );
             } finally {
+                process.env.NEXT_PUBLIC_APP_URL = originalEnvAppUrl;
                 globalThis.URL = OriginalURL;
             }
         });

@@ -2,7 +2,6 @@ import type { AppLocale } from "@/i18n/config";
 import { defaultLocale, locales } from "@/i18n/config";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
-const FALLBACK_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 const LOCAL_DEV_APP_URL = "http://localhost:3000";
 
 export class AppUrlResolutionError extends Error {
@@ -94,7 +93,8 @@ export function resolveAppUrl(settings?: SiteSettingsPayload | null): string {
     if (configured) {
         return configured;
     }
-    const fallback = normalizeBaseUrl(FALLBACK_APP_URL ?? "");
+    const envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const fallback = normalizeBaseUrl(envAppUrl ?? "");
     if (fallback) {
         return fallback;
     }
@@ -102,7 +102,7 @@ export function resolveAppUrl(settings?: SiteSettingsPayload | null): string {
     if (normalizedLocal) {
         console.warn("Falling back to default development URL", {
             domain: settings?.domain,
-            hasEnvFallback: Boolean(FALLBACK_APP_URL),
+            hasEnvFallback: Boolean(envAppUrl),
             fallback: normalizedLocal,
         });
         return normalizedLocal;
@@ -110,7 +110,7 @@ export function resolveAppUrl(settings?: SiteSettingsPayload | null): string {
     const error = new AppUrlResolutionError();
     console.error(error.message, {
         domain: settings?.domain,
-        hasEnvFallback: Boolean(FALLBACK_APP_URL),
+        hasEnvFallback: Boolean(envAppUrl),
     });
     throw error;
 }
