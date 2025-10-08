@@ -24,7 +24,7 @@ describe("health route", () => {
         getDbMock.mockReset();
         resolveAppUrlMock.mockReset();
         vi.unstubAllGlobals();
-});
+    });
     it("fast 模式跳过耗时检查", async () => {
         const env = {
             BETTER_AUTH_SECRET: "1",
