@@ -1,7 +1,7 @@
 ## Auto-fix Summary
-- Source workflow: CI (run #40)
-- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18332227216
-- Head SHA: 5535f5b2e0d7513b266bc2fb23320059dc7a5f69
+- Source workflow: CI (run #41)
+- Run URL: https://github.com/Larrybin/fullstack-next-cloudflare-main/actions/runs/18332269411
+- Head SHA: 0b7e317465af1f05840c699b7772997e99c57778
 
 ### Dependency install
 + react 19.1.0
@@ -28,11 +28,11 @@ devDependencies:
 + vitest 3.2.4
 + wrangler 4.42.0
 
-Done in 8.4s using pnpm v9.15.9
+Done in 7.9s using pnpm v9.15.9
 ### biome format --write
-Formatted 246 files in 299ms. No fixes applied.
+Formatted 246 files in 169ms. No fixes applied.
 ### biome check --write
-Checked 246 files in 1220ms. No fixes applied.
+Checked 246 files in 787ms. No fixes applied.
 ### tsc --noEmit
 src/modules/admin/providers/__tests__/auth-provider.test.ts(5,25): error TS2558: Expected 0-1 type arguments, but got 2.
 src/modules/admin/providers/__tests__/data-provider.test.ts(5,25): error TS2558: Expected 0-1 type arguments, but got 2.
