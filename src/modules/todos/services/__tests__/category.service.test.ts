@@ -30,7 +30,12 @@ describe("category.service", () => {
             ctx = await createTestDb();
             getDbMock = vi
                 .spyOn(dbModule, "getDb")
-                .mockImplementation(async () => ctx.db);
+                .mockImplementation(
+                    async () =>
+                        ctx.db as unknown as Awaited<
+                            ReturnType<typeof dbModule.getDb>
+                        >,
+                );
         } catch (error) {
             shouldSkip = true;
             console.warn(
@@ -55,7 +60,10 @@ describe("category.service", () => {
         userId = user.id;
 
         getDbMock?.mockClear();
-        getDbMock?.mockImplementation(async () => ctx.db);
+        getDbMock?.mockImplementation(
+            async () =>
+                ctx.db as unknown as Awaited<ReturnType<typeof dbModule.getDb>>,
+        );
     });
 
     afterAll(() => {
