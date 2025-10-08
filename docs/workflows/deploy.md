@@ -1,58 +1,59 @@
-# Workflow：Deploy Next.js App to Cloudflare（Production）
+﻿# Workflow锛欴eploy Next.js App to Cloudflare锛圥roduction锛?
 
-> 对应文件：`.github/workflows/deploy.yml`。负责在通过质量门后，将 OpenNext 构建的应用部署到 Cloudflare Workers。
+> 瀵瑰簲鏂囦欢锛歚.github/workflows/deploy.yml`銆傝礋璐ｅ湪閫氳繃璐ㄩ噺闂ㄥ悗锛屽皢 OpenNext 鏋勫缓鐨勫簲鐢ㄩ儴缃插埌 Cloudflare Workers銆?
 
-## 触发
-- `push` 到 `main`（忽略纯文档改动）。
-- `pull_request` 触发仅用于验证质量门（不会执行部署）。
-- `workflow_dispatch` 支持手动运行生产部署。
+## 瑙﹀彂
+- `push` 鍒?`main`锛堝拷鐣ョ函鏂囨。鏀瑰姩锛夈€?
+- `pull_request` 瑙﹀彂浠呯敤浜庨獙璇佽川閲忛棬锛堜笉浼氭墽琛岄儴缃诧級銆?
+- `workflow_dispatch` 鏀寔鎵嬪姩杩愯鐢熶骇閮ㄧ讲銆?
 
-## 并发与复用
-- `concurrency: deploy-${{ github.ref }}`：同一分支仅保留最新运行，避免重复部署。
-- 第一个 Job `quality-gate-reusable` 直接 `uses: ./.github/workflows/ci.yml`，与 CI 保持完全一致。
+## 骞跺彂涓庡鐢?
+- `concurrency: deploy-${{ github.ref }}`锛氬悓涓€鍒嗘敮浠呬繚鐣欐渶鏂拌繍琛岋紝閬垮厤閲嶅閮ㄧ讲銆?
+- 绗竴涓?Job `quality-gate-reusable` 鐩存帴 `uses: ./.github/workflows/ci.yml`锛屼笌 CI 淇濇寔瀹屽叏涓€鑷淬€?
 
-## deploy-production Job 拆解
-| 步骤 | 说明 |
+## deploy-production Job 鎷嗚В
+| 姝ラ | 璇存槑 |
 | --- | --- |
-| Checkout / Setup | 固定 SHA 的 `actions/checkout`、`pnpm/action-setup`、`actions/setup-node`，并开启 pnpm 缓存。 |
-| Secrets 校验 | 自定义脚本检查生产部署必须的 Secrets（Cloudflare、Auth、R2、Creem）。缺失时直接失败。 |
-| 检查 `NEXT_PUBLIC_APP_URL` | 禁止在生产使用 localhost。 |
-| 安装依赖 | 复用 `./.github/actions/install-and-heal`（`pnpm install --frozen-lockfile`，失败时 `pnpm dedupe` 后重试）。 |
-| 生成类型 | `pnpm run cf-typegen` 更新 `cloudflare-env.d.ts`，与 Cloudflare 绑定保持一致。 |
-| 诊断构建 | `pnpm run build` 作为早期失败信号。 |
-| OpenNext 构建 | `pnpm run build:cf` 生成 `.open-next` Worker 产物。 |
-| 备份数据库 | `wrangler d1 export`，生成 `backup_prod_<timestamp>.sql` 并上传 artifact。 |
-| 迁移验证 | `d1 migrations apply/list` 与 `d1 execute` 校验关键表存在。 |
-| 部署 | `wrangler deploy --env production --var ...`，同步必要的运行时变量。 |
-| Secret 同步 | 根据 `vars.SYNC_PRODUCTION_SECRETS` 调用 `wrangler secret put`。 |
-| 健康检查 | `sleep 45` 后 `curl /api/health?fast=1`，支持自定义 URL。 |
-| 版本确认 | `wrangler-action --version`，用于记录 CLI 版本（排查问题）。 |
+| Checkout / Setup | 鍥哄畾 SHA 鐨?`actions/checkout`銆乣pnpm/action-setup`銆乣actions/setup-node`锛屽苟寮€鍚?pnpm 缂撳瓨銆?|
+| Secrets 鏍￠獙 | 鑷畾涔夎剼鏈鏌ョ敓浜ч儴缃插繀椤荤殑 Secrets锛圕loudflare銆丄uth銆丷2銆丆reem锛夈€傜己澶辨椂鐩存帴澶辫触銆?|
+| 妫€鏌?`NEXT_PUBLIC_APP_URL` | 绂佹鍦ㄧ敓浜т娇鐢?localhost銆?|
+| 瀹夎渚濊禆 | 澶嶇敤 `./.github/actions/install-and-heal`锛坄pnpm install --frozen-lockfile`锛屽け璐ユ椂 `pnpm dedupe` 鍚庨噸璇曪級銆?|
+| 鐢熸垚绫诲瀷 | `pnpm run cf-typegen` 鏇存柊 `cloudflare-env.d.ts`锛屼笌 Cloudflare 缁戝畾淇濇寔涓€鑷淬€?|
+| 璇婃柇鏋勫缓 | `pnpm run build` 浣滀负鏃╂湡澶辫触淇″彿銆?|
+| OpenNext 鏋勫缓 | `pnpm run build:cf` 鐢熸垚 `.open-next` Worker 浜х墿銆?|
+| 澶囦唤鏁版嵁搴?| `wrangler d1 export`锛岀敓鎴?`backup_prod_<timestamp>.sql` 骞朵笂浼?artifact銆?|
+| 杩佺Щ楠岃瘉 | `d1 migrations apply/list` 涓?`d1 execute` 鏍￠獙鍏抽敭琛ㄥ瓨鍦ㄣ€?|
+| 閮ㄧ讲 | `wrangler deploy --env production --var ...`锛屽悓姝ュ繀瑕佺殑杩愯鏃跺彉閲忋€?|
+| Secret 鍚屾 | 鏍规嵁 `vars.SYNC_PRODUCTION_SECRETS` 璋冪敤 `wrangler secret put`銆?|
+| 鍋ュ悍妫€鏌?| `sleep 45` 鍚?`curl /api/health?fast=1`锛屾敮鎸佽嚜瀹氫箟 URL銆?|
+| 鐗堟湰纭 | `wrangler-action --version`锛岀敤浜庤褰?CLI 鐗堟湰锛堟帓鏌ラ棶棰橈級銆?|
 
 ## Secrets / Vars
-- **必须**（Secrets）：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`BETTER_AUTH_SECRET`、`GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`CLOUDFLARE_R2_URL`、`CREEM_API_KEY`、`CREEM_WEBHOOK_SECRET`、`OPENAI_API_KEY`（若使用 Workers AI / OpenAI）。
-- **必须**（Vars）：`NEXT_PUBLIC_APP_URL`（生产域名）。
-- **可选**：`CREEM_API_URL_PRODUCTION`、`PRODUCTION_HEALTHCHECK_URL`、`SYNC_PRODUCTION_SECRETS`、`TRANSLATION_PROVIDER`、`OPENAI_BASE_URL`。
+- **蹇呴』**锛圫ecrets锛夛細`CLOUDFLARE_API_TOKEN`銆乣CLOUDFLARE_ACCOUNT_ID`銆乣BETTER_AUTH_SECRET`銆乣GOOGLE_CLIENT_ID`銆乣GOOGLE_CLIENT_SECRET`銆乣CLOUDFLARE_R2_URL`銆乣CREEM_API_KEY`銆乣CREEM_WEBHOOK_SECRET`銆乣OPENAI_API_KEY`锛堣嫢浣跨敤 Workers AI / OpenAI锛夈€?
+- **蹇呴』**锛圴ars锛夛細`NEXT_PUBLIC_APP_URL`锛堢敓浜у煙鍚嶏級銆?
+- **鍙€?*锛歚CREEM_API_URL_PRODUCTION`銆乣PRODUCTION_HEALTHCHECK_URL`銆乣SYNC_PRODUCTION_SECRETS`銆乣TRANSLATION_PROVIDER`銆乣OPENAI_BASE_URL`銆?
 
-## 常见失败信号
-| 场景 | 日志表现 | 处理办法 |
+## 甯歌澶辫触淇″彿
+| 鍦烘櫙 | 鏃ュ織琛ㄧ幇 | 澶勭悊鍔炴硶 |
 | --- | --- | --- |
-| 必要 Secrets 缺失 | `Production deployment aborted. Missing secrets: ...` | 在仓库 Settings → Secrets and variables → Actions 补齐。 |
-| `pnpm run build` 失败 | Next.js 构建报错 | 本地复现，确认依赖、环境变量或 API 兼容性。 |
-| 迁移失败 | Wrangler 步骤退出码非 0，日志包含 SQL 错误 | 检查 `src/drizzle` 迁移与目标数据库状态。 |
-| 健康检查失败 | `curl` 返回非 2xx 或超时 | 使用 `wrangler tail`、`/api/health` JSON 排查环境变量/绑定。 |
-| Secret 同步失败 | `wrangler secret put` 抛错 | 确认 API Token 是否具备 `Workers Scripts:Edit` 权限。 |
+| 蹇呰 Secrets 缂哄け | `Production deployment aborted. Missing secrets: ...` | 鍦ㄤ粨搴?Settings 鈫?Secrets and variables 鈫?Actions 琛ラ綈銆?|
+| `pnpm run build` 澶辫触 | Next.js 鏋勫缓鎶ラ敊 | 鏈湴澶嶇幇锛岀‘璁や緷璧栥€佺幆澧冨彉閲忔垨 API 鍏煎鎬с€?|
+| 杩佺Щ澶辫触 | Wrangler 姝ラ閫€鍑虹爜闈?0锛屾棩蹇楀寘鍚?SQL 閿欒 | 妫€鏌?`src/drizzle` 杩佺Щ涓庣洰鏍囨暟鎹簱鐘舵€併€?|
+| 鍋ュ悍妫€鏌ュけ璐?| `curl` 杩斿洖闈?2xx 鎴栬秴鏃?| 浣跨敤 `wrangler tail`銆乣/api/health` JSON 鎺掓煡鐜鍙橀噺/缁戝畾銆?|
+| Secret 鍚屾澶辫触 | `wrangler secret put` 鎶涢敊 | 纭 API Token 鏄惁鍏峰 `Workers Scripts:Edit` 鏉冮檺銆?|
 
-## 回滚
-1. 记录失败部署的 commit / Deployment ID。
-2. 在 Cloudflare Dashboard 或 CLI 执行 `wrangler deploy --env production --rollback <id>`。
-3. 若数据库受影响，下载对应 artifact 并执行恢复（参考 `docs/deployment/cloudflare-workers.md`）。
-4. 在 `release.md` 与相关 Issue 中补充事故记录。
+## 鍥炴粴
+1. 璁板綍澶辫触閮ㄧ讲鐨?commit / Deployment ID銆?
+2. 鍦?Cloudflare Dashboard 鎴?CLI 鎵ц `wrangler deploy --env production --rollback <id>`銆?
+3. 鑻ユ暟鎹簱鍙楀奖鍝嶏紝涓嬭浇瀵瑰簲 artifact 骞舵墽琛屾仮澶嶏紙鍙傝€?`docs/deployment/cloudflare-workers.md`锛夈€?
+4. 鍦?`release.md` 涓庣浉鍏?Issue 涓ˉ鍏呬簨鏁呰褰曘€?
 
-## 后续改进建议
-- 支持 Canary/Preview 环境：引入额外 `env.<name>` 配置与触发条件。
-- 增加 D1 结构 diff 报告或 Slack 通知。
-- 视需要接入 Playwright 冒烟测试，放在健康检查之后。
+## 鍚庣画鏀硅繘寤鸿
+- 鏀寔 Canary/Preview 鐜锛氬紩鍏ラ澶?`env.<name>` 閰嶇疆涓庤Е鍙戞潯浠躲€?
+- 澧炲姞 D1 缁撴瀯 diff 鎶ュ憡鎴?Slack 閫氱煡銆?
+- 瑙嗛渶瑕佹帴鍏?Playwright 鍐掔儫娴嬭瘯锛屾斁鍦ㄥ仴搴锋鏌ヤ箣鍚庛€?
 
 ---
 
-修改工作流时，务必同步更新本文、`docs/deployment/cloudflare-workers.md` 与 `docs/ci-cd.md`，保持文档与自动化一致。
+淇敼宸ヤ綔娴佹椂锛屽姟蹇呭悓姝ユ洿鏂版湰鏂囥€乣docs/deployment/cloudflare-workers.md` 涓?`docs/ci-cd.md`锛屼繚鎸佹枃妗ｄ笌鑷姩鍖栦竴鑷淬€?
+

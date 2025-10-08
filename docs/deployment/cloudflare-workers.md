@@ -1,74 +1,75 @@
-# Cloudflare Workers 部署手册
+﻿# Cloudflare Workers 閮ㄧ讲鎵嬪唽
 
-> 说明生产环境的部署流程、健康检查、数据库策略与回滚方法。对应工作流位于 `.github/workflows/deploy.yml`。
+> 璇存槑鐢熶骇鐜鐨勯儴缃叉祦绋嬨€佸仴搴锋鏌ャ€佹暟鎹簱绛栫暐涓庡洖婊氭柟娉曘€傚搴斿伐浣滄祦浣嶄簬 `.github/workflows/deploy.yml`銆?
 
-## 1. 流程总览
-部署顺序：Checkout → 安装依赖 → `pnpm run build`（诊断）→ `pnpm run build:cf` → 备份 D1 → 应用迁移 → `wrangler deploy` → 同步 Secrets（可选）→ `/api/health?fast=1`。
+## 1. 娴佺▼鎬昏
+閮ㄧ讲椤哄簭锛欳heckout 鈫?瀹夎渚濊禆 鈫?`pnpm run build`锛堣瘖鏂級鈫?`pnpm run build:cf` 鈫?澶囦唤 D1 鈫?搴旂敤杩佺Щ 鈫?`wrangler deploy` 鈫?鍚屾 Secrets锛堝彲閫夛級鈫?`/api/health?fast=1`銆?
 
-- **构建**：`@opennextjs/cloudflare build` 生成 `.open-next` Worker 产物。
-- **部署**：`wrangler deploy --env production`，附带 `--var` 注入运行时变量。
-- **健康检查**：`curl /api/health?fast=1`，确保绑定与环境变量生效。
-- **日志**：通过 `wrangler tail` 或 Cloudflare Dashboard 追踪。
+- **鏋勫缓**锛歚@opennextjs/cloudflare build` 鐢熸垚 `.open-next` Worker 浜х墿銆?
+- **閮ㄧ讲**锛歚wrangler deploy --env production`锛岄檮甯?`--var` 娉ㄥ叆杩愯鏃跺彉閲忋€?
+- **鍋ュ悍妫€鏌?*锛歚curl /api/health?fast=1`锛岀‘淇濈粦瀹氫笌鐜鍙橀噺鐢熸晥銆?
+- **鏃ュ織**锛氶€氳繃 `wrangler tail` 鎴?Cloudflare Dashboard 杩借釜銆?
 
-## 2. 部署前检查
-1. `pnpm lint`、`pnpm test` 本地通过（CI 亦会执行）。
-2. 若改动数据库，确认迁移已生成并在本地执行过 `pnpm db:migrate:local`。
-3. Secrets / Variables 已在 GitHub Actions 与 Cloudflare 中更新。
-4. 变更绑定后执行 `pnpm cf-typegen`，提交 `cloudflare-env.d.ts`。
-5. 检查 `NEXT_PUBLIC_APP_URL` 是否指向真实域名（生产禁止 localhost）。
-6. `docs/deployment/cloudflare-workers.md`、`docs/env-and-secrets.md` 是否已同步更新流程与矩阵。
+## 2. 閮ㄧ讲鍓嶆鏌?
+1. `pnpm lint`銆乣pnpm test` 鏈湴閫氳繃锛圕I 浜︿細鎵ц锛夈€?
+2. 鑻ユ敼鍔ㄦ暟鎹簱锛岀‘璁よ縼绉诲凡鐢熸垚骞跺湪鏈湴鎵ц杩?`pnpm db:migrate:local`銆?
+3. Secrets / Variables 宸插湪 GitHub Actions 涓?Cloudflare 涓洿鏂般€?
+4. 鍙樻洿缁戝畾鍚庢墽琛?`pnpm cf-typegen`锛屾彁浜?`cloudflare-env.d.ts`銆?
+5. 妫€鏌?`NEXT_PUBLIC_APP_URL` 鏄惁鎸囧悜鐪熷疄鍩熷悕锛堢敓浜х姝?localhost锛夈€?
+6. `docs/deployment/cloudflare-workers.md`銆乣docs/env-and-secrets.md` 鏄惁宸插悓姝ユ洿鏂版祦绋嬩笌鐭╅樀銆?
 
-## 3. 触发方式
-- 推送到 `main`（忽略纯文档变更）。
-- GitHub 手动运行 `Deploy Next.js App to Cloudflare`，选择 `production` 目标。
-- 本地调试：`pnpm deploy:cf`（需要 Cloudflare 登录与必要 Secrets）。
+## 3. 瑙﹀彂鏂瑰紡
+- 鎺ㄩ€佸埌 `main`锛堝拷鐣ョ函鏂囨。鍙樻洿锛夈€?
+- GitHub 鎵嬪姩杩愯 `Deploy Next.js App to Cloudflare`锛岄€夋嫨 `production` 鐩爣銆?
+- 鏈湴璋冭瘯锛歚pnpm deploy:cf`锛堥渶瑕?Cloudflare 鐧诲綍涓庡繀瑕?Secrets锛夈€?
 
-## 4. 健康检查策略
-- 默认 `fast` 模式校验：环境变量、R2 绑定、`NEXT_PUBLIC_APP_URL` 解析。
-- 严格模式 `/api/health` 额外验证 D1 查询、外部服务（Creem），并根据环境变量 `HEALTH_REQUIRE_DB/R2/EXTERNAL` 决定是否阻断。
-- 推荐命令：
+## 4. 鍋ュ悍妫€鏌ョ瓥鐣?
+- 榛樿 `fast` 妯″紡鏍￠獙锛氱幆澧冨彉閲忋€丷2 缁戝畾銆乣NEXT_PUBLIC_APP_URL` 瑙ｆ瀽銆?
+- 涓ユ牸妯″紡 `/api/health` 棰濆楠岃瘉 D1 鏌ヨ銆佸閮ㄦ湇鍔★紙Creem锛夛紝骞舵牴鎹幆澧冨彉閲?`HEALTH_REQUIRE_DB/R2/EXTERNAL` 鍐冲畾鏄惁闃绘柇銆?
+- 鎺ㄨ崘鍛戒护锛?
   ```bash
   curl -fsS --retry 3 --retry-all-errors --retry-delay 5 \
     --connect-timeout 5 --max-time 20 \
     "https://<domain>/api/health?fast=1"
   ```
-- 若健康检查失败，部署会返回非 0，需查看 Worker 日志或 Secrets 配置。
+- 鑻ュ仴搴锋鏌ュけ璐ワ紝閮ㄧ讲浼氳繑鍥為潪 0锛岄渶鏌ョ湅 Worker 鏃ュ織鎴?Secrets 閰嶇疆銆?
 
-## 5. 数据库策略
-1. 部署前自动执行 `wrangler d1 export`，生成 `backup_prod_<timestamp>.sql` 并上传为 artifact（保留 14 天）。
-2. 迁移步骤：
+## 5. 鏁版嵁搴撶瓥鐣?
+1. 閮ㄧ讲鍓嶈嚜鍔ㄦ墽琛?`wrangler d1 export`锛岀敓鎴?`backup_prod_<timestamp>.sql` 骞朵笂浼犱负 artifact锛堜繚鐣?14 澶╋級銆?
+2. 杩佺Щ姝ラ锛?
    ```bash
    wrangler d1 migrations apply next-cf-app --env production --remote
    wrangler d1 migrations list next-cf-app --env production --remote
    wrangler d1 execute next-cf-app --env production --remote \
      --command "SELECT name FROM sqlite_master WHERE type='table' AND name='site_settings';"
    ```
-3. 新增迁移后务必在 PR 描述附上执行说明，并确保本地 / 远程均验证通过。
+3. 鏂板杩佺Щ鍚庡姟蹇呭湪 PR 鎻忚堪闄勪笂鎵ц璇存槑锛屽苟纭繚鏈湴 / 杩滅▼鍧囬獙璇侀€氳繃銆?
 
-## 6. 回滚流程
-1. 立即停止自动化：关闭正在运行的 Deploy workflow 或阻止进一步推送。
-2. 使用 `wrangler deploy --env production --rollback <deployment-id>` 回滚代码。
-3. 如需恢复数据库，下载最近的 `backup_prod_*.sql`，执行 `wrangler d1 execute ... --file` 进行恢复或手动导入。
-4. 在 `release.md` 与相关 Issue 中记录事故、恢复步骤与后续改进。
+## 6. 鍥炴粴娴佺▼
+1. 绔嬪嵆鍋滄鑷姩鍖栵細鍏抽棴姝ｅ湪杩愯鐨?Deploy workflow 鎴栭樆姝㈣繘涓€姝ユ帹閫併€?
+2. 浣跨敤 `wrangler deploy --env production --rollback <deployment-id>` 鍥炴粴浠ｇ爜銆?
+3. 濡傞渶鎭㈠鏁版嵁搴擄紝涓嬭浇鏈€杩戠殑 `backup_prod_*.sql`锛屾墽琛?`wrangler d1 execute ... --file` 杩涜鎭㈠鎴栨墜鍔ㄥ鍏ャ€?
+4. 鍦?`release.md` 涓庣浉鍏?Issue 涓褰曚簨鏁呫€佹仮澶嶆楠や笌鍚庣画鏀硅繘銆?
 
-## 7. 日志与可观测性
-- `wrangler tail next-cf-app --env production`：实时 Worker 日志。
-- Cloudflare Dashboard → Workers → Deployments：查看历史版本与流量图。
-- D1 Insights / Logs：检查慢查询或失败。
-- 若启用 Sentry/Logpush，请在 `docs/health-and-observability.md` 中同步说明。
+## 7. 鏃ュ織涓庡彲瑙傛祴鎬?
+- `wrangler tail next-cf-app --env production`锛氬疄鏃?Worker 鏃ュ織銆?
+- Cloudflare Dashboard 鈫?Workers 鈫?Deployments锛氭煡鐪嬪巻鍙茬増鏈笌娴侀噺鍥俱€?
+- D1 Insights / Logs锛氭鏌ユ參鏌ヨ鎴栧け璐ャ€?
+- 鑻ュ惎鐢?Sentry/Logpush锛岃鍦?`docs/health-and-observability.md` 涓悓姝ヨ鏄庛€?
 
-## 8. 权限与 Secrets
-- 必须的 GitHub Secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`BETTER_AUTH_SECRET`、`GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`CLOUDFLARE_R2_URL`、`CREEM_API_KEY`、`CREEM_WEBHOOK_SECRET`、`OPENAI_API_KEY`（若启用 AI）。
-- 可选 Vars：`NEXT_PUBLIC_APP_URL`、`CREEM_API_URL_PRODUCTION`、`PRODUCTION_HEALTHCHECK_URL`、`SYNC_PRODUCTION_SECRETS`、`TRANSLATION_PROVIDER`、`OPENAI_BASE_URL`。
-- `SYNC_PRODUCTION_SECRETS='true'` 时，会调用 `wrangler secret put` 同步 Secrets 到 Workers，请确保本地/生产口令一致。
+## 8. 鏉冮檺涓?Secrets
+- 蹇呴』鐨?GitHub Secrets锛歚CLOUDFLARE_API_TOKEN`銆乣CLOUDFLARE_ACCOUNT_ID`銆乣BETTER_AUTH_SECRET`銆乣GOOGLE_CLIENT_ID`銆乣GOOGLE_CLIENT_SECRET`銆乣CLOUDFLARE_R2_URL`銆乣CREEM_API_KEY`銆乣CREEM_WEBHOOK_SECRET`銆乣OPENAI_API_KEY`锛堣嫢鍚敤 AI锛夈€?
+- 鍙€?Vars锛歚NEXT_PUBLIC_APP_URL`銆乣CREEM_API_URL_PRODUCTION`銆乣PRODUCTION_HEALTHCHECK_URL`銆乣SYNC_PRODUCTION_SECRETS`銆乣TRANSLATION_PROVIDER`銆乣OPENAI_BASE_URL`銆?
+- `SYNC_PRODUCTION_SECRETS='true'` 鏃讹紝浼氳皟鐢?`wrangler secret put` 鍚屾 Secrets 鍒?Workers锛岃纭繚鏈湴/鐢熶骇鍙ｄ护涓€鑷淬€?
 
-## 9. 审阅清单
-- [ ] PR 描述列出部署影响、数据库迁移与文档更新。
-- [ ] `pnpm lint` / `pnpm test` / `pnpm build` 结果已附上。
-- [ ] 新增或修改的 Secrets / Vars 已在 PR 中标记，并在 GitHub 设置完成配置。
-- [ ] 必要的健康检查步骤（登录、CRUD、支付回调等）已在 `docs/health-and-observability.md` 更新。
-- [ ] 部署后执行 `curl /api/health?fast=1` 并将结果附在评论或 Issue 中。
+## 9. 瀹￠槄娓呭崟
+- [ ] PR 鎻忚堪鍒楀嚭閮ㄧ讲褰卞搷銆佹暟鎹簱杩佺Щ涓庢枃妗ｆ洿鏂般€?
+- [ ] `pnpm lint` / `pnpm test` / `pnpm build` 缁撴灉宸查檮涓娿€?
+- [ ] 鏂板鎴栦慨鏀圭殑 Secrets / Vars 宸插湪 PR 涓爣璁帮紝骞跺湪 GitHub 璁剧疆瀹屾垚閰嶇疆銆?
+- [ ] 蹇呰鐨勫仴搴锋鏌ユ楠わ紙鐧诲綍銆丆RUD銆佹敮浠樺洖璋冪瓑锛夊凡鍦?`docs/health-and-observability.md` 鏇存柊銆?
+- [ ] 閮ㄧ讲鍚庢墽琛?`curl /api/health?fast=1` 骞跺皢缁撴灉闄勫湪璇勮鎴?Issue 涓€?
 
 ---
 
-部署策略如有调整，请在合并前更新本文与 `docs/workflows/deploy.md`，保持 Runbook 与自动化流程一致。
+閮ㄧ讲绛栫暐濡傛湁璋冩暣锛岃鍦ㄥ悎骞跺墠鏇存柊鏈枃涓?`docs/workflows/deploy.md`锛屼繚鎸?Runbook 涓庤嚜鍔ㄥ寲娴佺▼涓€鑷淬€?
+

@@ -1,8 +1,3 @@
-# Workflow：Ops Notify（已移除）
-
-该工作流（`.github/workflows/ops-notify.yml`）已从仓库中移除，不再自动汇总 CI/CD 失败或维护 Tracker Issue。
-
-推荐替代做法：
-- 在 GitHub Actions Run / Checks 中查看失败步骤与日志，必要时手动 rerun；
-- 需要外部告警（邮件/Slack）时，使用组织统一的告警渠道（如 ChatOps / 监控平台）配置通知；
-- 在团队约定的 Issue 中记录故障排查过程与结论。
+﻿# Workflow锛歄ps Notify锛堝凡绉婚櫎锛?
+璇ュ伐浣滄祦锛坄.github/workflows/ops-notify.yml`锛夊凡浠庝粨搴撲腑绉婚櫎锛屼笉鍐嶈嚜鍔ㄦ眹鎬?CI/CD 澶辫触鎴栫淮鎶?Tracker Issue銆?
+鎺ㄨ崘鏇夸唬鍋氭硶锛?- 鍦?GitHub Actions Run / Checks 涓煡鐪嬪け璐ユ楠や笌鏃ュ織锛屽繀瑕佹椂鎵嬪姩 rerun锛?- 闇€瑕佸閮ㄥ憡璀︼紙閭欢/Slack锛夋椂锛屼娇鐢ㄧ粍缁囩粺涓€鐨勫憡璀︽笭閬擄紙濡?ChatOps / 鐩戞帶骞冲彴锛夐厤缃€氱煡锛?- 鍦ㄥ洟闃熺害瀹氱殑 Issue 涓褰曟晠闅滄帓鏌ヨ繃绋嬩笌缁撹銆?
