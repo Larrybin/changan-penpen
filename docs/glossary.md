@@ -1,21 +1,22 @@
-﻿# 鏈琛紙Glossary锛?
-| 鏈 | 璇存槑 |
+# 术语表（Glossary）
+
+| 术语 | 说明 |
 | --- | --- |
-| **OpenNext** | 绀惧尯缁存姢鐨?Next.js 鈫?Cloudflare/AWS 杩愯鏃堕€傞厤灞傦紝鏈」鐩娇鐢?`@opennextjs/cloudflare` 閮ㄧ讲鍒?Workers |
-| **Workers** | Cloudflare 鐨勬棤鏈嶅姟鍣ㄨ竟缂樿绠楀钩鍙帮紝鎵胯浇搴旂敤閫昏緫 |
-| **D1** | Cloudflare 鎻愪緵鐨勫垎甯冨紡 SQLite 鏁版嵁搴擄紝缁撳悎 Drizzle 浣跨敤 |
-| **R2** | Cloudflare 瀵硅薄瀛樺偍鏈嶅姟锛屽吋瀹?S3 鍗忚 |
-| **Fast Health** | `/api/health?fast=1`锛屼粎楠岃瘉鐜鍙橀噺鍜屽叧閿粦瀹氾紝鐢ㄤ簬閮ㄧ讲鍓嶅揩閫熸娴?|
-| **Strict Health** | `/api/health` 榛樿妯″紡锛岄澶栨鏌?D1銆佸閮ㄦ湇鍔★紱鍙€氳繃 `HEALTH_REQUIRE_*` 鎺у埗 gating |
-| **Better Auth** | 韬唤璁よ瘉搴擄紝璐熻矗 Google OAuth 绛夋祦绋?|
-| **Workers AI** | Cloudflare AI 鎺ㄧ悊鏈嶅姟锛屾湰椤圭洰鐢ㄤ簬鏂囨湰鎬荤粨銆佺炕璇戠瓑 |
-| **Wrangler** | Cloudflare 瀹樻柟 CLI锛岀敤浜庨儴缃层€佽縼绉汇€佺鐞嗙粦瀹?|
-| **Code Owners** | GitHub 鍔熻兘锛屾寚瀹氱洰褰曠殑榛樿瀹￠槄鑰咃紝鏂囦欢鍦?`.github/CODEOWNERS` |
-| **Quality Gate** | 閮ㄧ讲鍓嶅鐢?`ci.yml` 鐨勮川閲忔鏌ユ楠?|
-| **HEALTH_REQUIRE_DB / R2 / EXTERNAL** | 鎺у埗鍋ュ悍妫€鏌ユ槸鍚﹀皢瀵瑰簲妫€鏌ヤ綔涓虹‖鎬ф潯浠剁殑鐜鍙橀噺 |
-| **NEXT_PUBLIC_APP_URL** | 搴旂敤鍩虹 URL锛屽奖鍝?SEO銆佸仴搴锋鏌ュ拰閮ㄧ讲閰嶇疆 |
-| **Creem** | 鏀粯鏈嶅姟闆嗘垚妯″潡锛岀浉鍏?API 浣嶄簬 `src/app/api/creem` |
+| **OpenNext** | 适配 Next.js 到 Cloudflare/AWS 的构建工具，本项目使用 `@opennextjs/cloudflare` 输出 Worker 与静态资源。 |
+| **Workers** | Cloudflare 的无服务器计算平台，负责运行本仓库生成的 Worker 代码。 |
+| **D1** | Cloudflare 提供的 SQLite 兼容数据库，通过 `src/db` + Drizzle ORM 访问。 |
+| **R2** | Cloudflare 对象存储，封装在 `src/lib/r2.ts`，用于静态资产或备份。 |
+| **Fast Health** | `/api/health?fast=1`，仅校验环境变量与关键绑定，部署前快速确认环境是否就绪。 |
+| **Strict Health** | `/api/health` 默认模式，额外检查 D1 查询、外部依赖（如 Creem），可通过 `HEALTH_REQUIRE_*` 控制是否阻断。 |
+| **Better Auth** | 认证框架，负责 Google OAuth、Session 管理，入口在 `src/app/api/auth/[...all]/route.ts` 与 `src/modules/auth`。 |
+| **Workers AI** | Cloudflare AI 推理服务，绑定名为 `AI`，可选用于文本总结与翻译。 |
+| **Wrangler** | Cloudflare 官方 CLI，用于开发、迁移、部署与日志查看。 |
+| **Code Owners** | GitHub 功能，用于指定默认审阅人，本仓库在 `.github/CODEOWNERS` 中定义。 |
+| **Quality Gate** | CI 工作流中的质量闸门：Biome、TypeScript、Vitest、Next 构建均需通过后方可部署。 |
+| **HEALTH_REQUIRE_DB/R2/EXTERNAL** | 切换严格健康检查时的必选项，开启后对应子检查失败将返回 503。 |
+| **NEXT_PUBLIC_APP_URL** | 站点基准 URL，影响 SEO、结构化数据与健康检查校验，生产环境禁止使用 localhost。 |
+| **Creem** | 支付与订阅集成模块，相关 API 位于 `src/app/api/creem/*` 与 `src/app/api/webhooks/creem/route.ts`。 |
+| **TanStack Query** | React 数据获取库，用于客户端缓存与请求状态管理，封装在多个模块中。 |
+| **Install & Heal** | `.github/actions/install-and-heal` 组合 Action，执行 `pnpm install --frozen-lockfile`，失败时自动 `pnpm dedupe` 后重试。 |
 
----
-
-鏂板姒傚康銆佺缉鍐欐垨澶栭儴鏈嶅姟鏃讹紝璇峰湪姝よˉ鍏呰鏄庯紝淇濇寔鍥㈤槦鍏辫瘑銆?
+> 如有新增术语，请更新此表并在 `docs/00-index.md` 中同步说明。

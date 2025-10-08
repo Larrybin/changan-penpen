@@ -11,7 +11,7 @@
 | `/contact` | 静态页 | 联系/支持 | 公共 | `src/app/contact/page.tsx` |
 | `/dashboard` | `(authenticated)` | 主应用控制台 | 要求登录 | `src/modules/dashboard` |
 | `/dashboard/todos` | 同上 | Todos Demo | 要求登录 | `src/modules/todos` |
-| `/billing` | `(authenticated)` | 账单与订阅 | 要求登录 | `src/modules/dashboard/billing` |
+| `/billing` | 根 | 账单与订阅（引导登录） | 公共（页面内提示登录） | `src/app/billing/page.tsx`、`src/modules/creem` |
 | `/admin` | `(admin)` | 后台总览 | `ADMIN_ALLOWED_EMAILS` 白名单 | `src/modules/admin` |
 | `/admin/reports` | `(admin)` | 报表 | 同上 | `src/modules/admin/reports` |
 | `/privacy` / `/terms` | 静态 | 合规页面 | 公共 | `src/app/privacy`, `src/app/terms` |

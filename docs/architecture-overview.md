@@ -1,88 +1,81 @@
-﻿# 鏋舵瀯鎬昏锛圓rchitecture Overview锛?
+# 架构概览（Architecture Overview）
 
-> 鏈枃甯姪鏂版垚鍛樺湪 15 鍒嗛挓鍐呭紕娓呪€滀唬鐮侀暱浠€涔堟牱鈥濃€滆姹傛€庝箞璧扳€濃€滄敼鍔ㄨ鍔ㄥ摢閲屸€濄€傛秹鍙婄殑璺緞鍧囦綅浜?`src/`銆?
+> 15 分钟快速掌握仓库内的技术决策、代码分层与运行流程。新增模块或调整目录结构时，请同步维护本文与 `docs/00-index.md`。
 
-## 鎶€鏈爤閫熻
-- **Next.js 15 App Router**锛氫娇鐢?Server Components + Server Actions锛屽叆鍙ｄ綅浜?`src/app`
-- **Cloudflare Workers + OpenNext**锛氶€氳繃 `@opennextjs/cloudflare` 鏋勫缓锛屽叆鍙?Worker 鍦?`.open-next/worker.js`
-- **鏁版嵁搴撳眰**锛欳loudflare D1锛屼娇鐢?Drizzle ORM锛坄src/db`銆乣src/drizzle`锛?
-- **瀵硅薄瀛樺偍**锛欳loudflare R2锛堝皝瑁呭湪 `src/lib/r2.ts` 绛夊伐鍏峰唴锛?
-- **璁よ瘉**锛欱etter Auth Google OAuth 闆嗘垚锛坄src/modules/auth`銆乣src/services/auth`锛?
-- **UI 涓庣姸鎬?*锛歋hadcn UI銆丷eact Hook Form銆乑od銆乀anStack Query
-- **缈昏瘧**锛氬熀浜庤嚜瀹氫箟鑴氭湰锛屾敮鎸?Gemini / OpenAI锛岃剼鏈湪 `scripts/` 涓?`src/services/translation`
+## 技术栈与运行环境
+- **Next.js 15 App Router**：大量使用 Server Components 与 Server Actions，入口位于 `src/app`。
+- **Cloudflare Workers + OpenNext**：通过 `@opennextjs/cloudflare` 构建，产物写入 `.open-next/`，由 `wrangler` 部署。
+- **数据层**：Cloudflare D1（SQLite）+ Drizzle ORM（`src/db`、`src/drizzle`）。
+- **对象存储**：Cloudflare R2，封装在 `src/lib/r2.ts`。
+- **认证**：Better Auth + Google OAuth，Server 端入口集中在 `src/modules/auth`。
+- **UI & 状态**：Tailwind CSS、shadcn/ui、React Hook Form、TanStack Query。
+- **可选 AI**：Cloudflare Workers AI / Gemini / OpenAI，通过 `src/services` 与 `scripts/translate-*` 使用。
 
-## 杩愯鏃舵嫇鎵?
+## 运行时拓扑
 ```
-Browser 鈫?Next.js App Router (Edge) 鈫?Server Actions / Route Handlers
-     鈹斺攢鈹€ 璋冪敤 Drizzle ORM 鈫?Cloudflare D1
-     鈹斺攢鈹€ 璁块棶 Cloudflare R2 / AI bindings
-     鈹斺攢鈹€ 鍏变韩 libs (璁よ瘉銆佺紦瀛樸€佹棩蹇?
+Browser ─▶ Next.js App Router (Edge/SSR) ─▶ Server Actions / Route Handlers
+      └───────────────▶ Drizzle ORM ─▶ Cloudflare D1
+      └───────────────▶ R2 / Workers AI / 外部服务（Creem）
+      └───────────────▶ 平台工具（认证、缓存、日志）
 ```
+- **Edge First**：页面、Server Actions、API 默认在 Workers 上执行，必要时切换 `runtime = "nodejs"`（如 `api/health`）。
+- **静态资源**：OpenNext 将静态资源写入 `.open-next/assets`，通过 Worker `ASSETS` 绑定暴露。
+- **API 路由**：位于 `src/app/api/*/*.route.ts` 或 `route.ts`，与页面共享模块层。
+- **健康检查**：`/api/health` 同时支持 fast / strict 模式，部署与告警依赖该接口。
 
-- **Edge First**锛氭墍鏈夎姹傚湪 Cloudflare Workers 涓婃墽琛岋紝SSR銆丼erver Actions 鍧囪窇鍦ㄨ竟缂樸€?
-- **闈欐€佽祫婧?*锛氱敱 OpenNext 鏋勫缓浜х墿 `.open-next/assets` 閫氳繃 Worker `ASSETS` binding 鎻愪緵銆?
-- **API 璺敱**锛氫綅浜?`src/app/api/*/*.route.ts`锛屼笌椤甸潰缁勪欢鍏变韩鍚屼竴杩愯鏃躲€?
-- **鍋ュ悍妫€鏌?*锛歚/api/health` 鎻愪緵 fast / strict 妯″紡锛岀敤浜庨儴缃茶川閲忛椄闂ㄣ€?
-
-## 鐩綍瀵艰
-
-| 鐩綍 | 璇存槑 |
+## 目录速查
+| 目录 | 说明 |
 | --- | --- |
-| `src/app` | App Router 鍏ュ彛锛屽寘鍚〉闈€佸竷灞€銆丄PI route銆傛寜鐓?`(segment)` 缁勭粐鏉冮檺鍩燂紝濡?`(auth)`銆乣(admin)` |
-| `src/modules/<feature>` | 涓氬姟妯″潡锛坅ctions/components/hooks/models/schemas/utils锛夛紝鍙湪椤甸潰涓粍鍚堝鐢?|
-| `src/components` | 鍏ㄥ眬鍏辩敤缁勪欢锛堝惈 `ui/` 灏佽 shadcn锛夛紝浠ュ強 SEO/瀵艰埅绛夊熀纭€浠?|
-| `src/lib` | 骞冲彴绾у伐鍏凤紙Cloudflare binding銆佹棩蹇椼€佺紦瀛樸€乭ttp client 绛夛級 |
-| `src/db` | Drizzle schema + 鏌ヨ杈呭姪锛屼笅娓哥敱 `src/modules/*/services` 浣跨敤 |
-| `src/drizzle` | 鏁版嵁搴撹縼绉伙紙SQL锛変笌 `drizzle.config.ts` 閰嶇疆 |
-| `src/services` | 璺ㄦā鍧椾笟鍔℃湇鍔★紙渚嬪 `auth.service.ts`銆乣billing.service.ts`锛?|
-| `scripts/` | 鏋勫缓銆佸浗闄呭寲銆侀澶勭悊鑴氭湰锛屽 `prebuild-cf.mjs`銆乣fix-i18n-encoding.mjs` |
+| `src/app` | App Router 入口，包含页面、布局、路由处理。按照 `(segment)` 划分权限，如 `(auth)`、`(admin)`。
+| `src/modules/<feature>` | 领域模块：actions / components / hooks / services / schemas / utils。
+| `src/components` | 跨模块复用组件；`ui/` 存放二次封装的 shadcn 组件。
+| `src/lib` | 平台级工具（Cloudflare bindings、日志、SEO、缓存等）。
+| `src/db` | Drizzle schema 与数据库助手函数。
+| `src/drizzle` | SQL 迁移（由 `drizzle-kit` 生成），`drizzle.config.ts` 负责配置。
+| `src/services` | 跨领域服务（如 `auth.service.ts`、`billing.service.ts`）。
+| `scripts/` | 构建、部署、国际化等辅助脚本。
+| `tests/` | 全局测试夹具与工具。
 
-### App Router 灞?
-- `layout.tsx`锛氬叏灞€甯冨眬锛屾寕杞借瑷€鍖呫€佷富棰樸€佸叏灞€ provider銆?
-- `(segment)/layout.tsx`锛氬尯鍩熺骇甯冨眬锛堜緥濡傚悗鍙扮鐞?`src/modules/admin/admin.layout.tsx`锛夈€?
-- `page.tsx`锛氶〉闈㈠叆鍙ｏ紝浠ョ粍鍚堟ā鍧楃粍浠朵负涓汇€?
-- `api/*/*.route.ts`锛歊ESTful 鏍峰紡鎴?Server Actions 鏆撮湶銆?
+> 示例：`src/app/dashboard/page.tsx` 渲染 `src/modules/dashboard/dashboard.page.tsx`，后者再调用 `modules/todos` 与 `modules/creem`。
 
-### 妯″潡鍒嗗眰
-浠?`src/modules/todos` 涓轰緥锛?
-- `actions/`锛歋erver Actions锛屽皝瑁呰緭鍏ラ獙璇?+ 璋冩湇鍔″眰銆?
-- `components/`锛歎I 缁勪欢锛屽彲琚〉闈€佸叾浠栫粍浠跺鐢ㄣ€?
-- `schemas/`锛歓od schema锛岀敤浜庡墠鍚庣鍏变韩銆?
-- `services/`锛氭墽琛屼笟鍔￠€昏緫锛岃皟鐢?`src/db` 鎴栧閮ㄦ湇鍔°€?
-- `utils/`锛氭ā鍧楃骇宸ュ叿鍑芥暟銆?
+## 模块分层范式
+1. **页面 / 布局（`page.tsx` / `layout.tsx`）**：组合 Server/Client 组件，负责路由与 SEO。
+2. **领域模块（`src/modules/<feature>`）**：将 UI、动作与 schema 聚合，Server Actions 默认位于 `actions/`。
+3. **服务层（`services/`）**：处理业务逻辑，协调数据库与外部 API。例如 `modules/admin/services/site-settings.service.ts`。
+4. **数据层（`src/db`）**：封装 Drizzle 查询，禁止直接在 UI 中访问数据库。
+5. **基础设施（`src/lib`）**：提供 Cloudflare binding、缓存、日志、SEO、国际化等通用能力。
 
-瑙勮寖锛氳皟鐢ㄤ粠 `page` 鈫?`module components` 鈫?`actions/services` 鈫?`db/lib`锛岄伩鍏嶇粍浠剁洿鎺ヨЕ杈炬暟鎹簱銆?
+## 数据流与依赖
+1. **请求进入**：Edge Runtime 匹配页面或 API Route。
+2. **认证与中间件**：`middleware.ts` 和 Better Auth session 校验 `/dashboard`、`/admin` 等路径。
+3. **Server Action / Route Handler**：调用对应 `modules/*/services` 与 `src/services`。
+4. **数据库访问**：通过 `getDb()` 获取与环境匹配的 D1 连接；迁移由 `src/drizzle` 管理。
+5. **缓存与再验证**：`revalidatePath` + TanStack Query，结合 Cloudflare Cache（后续可拓展）。
+6. **外部依赖**：R2、Creem、Workers AI 通过 `CloudflareEnv` 绑定与环境变量访问。
 
-## 鏁版嵁娴佽鏄?
-1. **璇锋眰杩涙潵**锛歂ext.js Edge runtime 鎺ユ敹锛屾寜 route 鍖归厤椤甸潰鎴?API銆?
-2. **閴存潈**锛欱etter Auth 鐨?middleware锛坄src/middleware.ts`锛夊湪杈圭紭鎷︽埅銆佹敞鍏?session銆?
-3. **涓氬姟閫昏緫**锛氶〉闈㈣Е鍙?Server Action 鈫?`modules/*/actions` 璋冪敤 `services` 鈫?`db`銆?
-4. **鏁版嵁璁块棶**锛歚src/db/index.ts` 鏆撮湶 `db` 瀹炰緥锛岃嚜鍔ㄨ繛鎺ュ埌瀵瑰簲鐜鐨?D1銆?
-5. **缂撳瓨涓庡苟鍙?*锛歍anStack Query + Next.js revalidate锛屽疄鐜板鎴风缂撳瓨涓?ISR銆?
-6. **闈欐€佽祫婧?*锛歊2 閫氳繃 binding `next_cf_app_bucket` 鏌ヨ锛屽皝瑁呭湪 `src/lib`銆?
+## Cloudflare 绑定与环境
+- **Wrangler 配置**：`wrangler.jsonc` 启用 `nodejs_compat` 与 `global_fetch_strictly_public`。
+- **绑定**：`next_cf_app` (D1)、`next_cf_app_bucket` (R2)、`AI`、`ASSETS`。
+- **环境变量**：`cloudflare-env.d.ts` 定义运行时类型，更新绑定后务必运行 `pnpm cf-typegen`。
+- **部署脚本**：`package.json` 中 `build:cf` / `deploy:cf` 由 OpenNext + Wrangler 执行。
 
-## 鐜涓庣粦瀹?
-- Worker bindings 瀹氫箟浜?`wrangler.jsonc`锛歚next_cf_app`锛圖1锛夈€乣next_cf_app_bucket`锛圧2锛夈€乣AI`锛圵orkers AI锛夈€?
-- 鐢熶骇鐜浣跨敤榛樿椤跺眰閰嶇疆銆?
-- 浠讳綍鏂板 binding 鍚庡繀椤昏繍琛?`pnpm cf-typegen` 浠ュ埛鏂?`cloudflare-env.d.ts`銆?
+## 开发到部署流程
+1. **本地**：`pnpm dev`（Node runtime）或 `pnpm dev:cf`（OpenNext + Wrangler）启动；调试技巧详见 `docs/local-dev.md`。
+2. **质量闸门**：`pnpm lint`、`pnpm test`、`pnpm build`；CI (`ci.yml`) 自动执行。
+3. **部署**：推送 `main` 触发 `deploy.yml`，执行备份 → 迁移 → OpenNext 构建 → `wrangler deploy` → `/api/health` 校验。
+4. **回滚**：使用 `wrangler deploy --rollback`，并从 artifact 中恢复 D1 备份；流程详见 `docs/deployment/cloudflare-workers.md`。
 
-## 鍏抽敭鎵ц璺緞
-1. **鏈湴寮€鍙?*锛歚pnpm dev`锛圢ode runtime锛夋垨 `pnpm dev:cf`锛圤penNext + Workers 妯℃嫙锛夈€?
-2. **鏋勫缓閮ㄧ讲**锛欸itHub Actions `deploy.yml` 鎴栨墜鍔?`pnpm deploy:cf` 鈫?瑙﹀彂 OpenNext 鏋勫缓 鈫?Wrangler 鍙戝竷銆?
-3. **杩佺Щ鎵ц**锛歚pnpm db:migrate:local|prod` 閫氳繃 Wrangler 璋冪敤 D1 migrations銆?\n
-## 甯歌鎵╁睍鐐?
-- 鏂伴〉闈細鍦?`src/app/<route>/page.tsx` 鍒涘缓锛屽鐢ㄦā鍧楃粍浠躲€?
-- 鏂颁笟鍔″煙锛氬湪 `src/modules/<feature>` 涓嬭ˉ榻?`components | services | schemas` 瀛愮洰褰曘€?
-- 鏂?API锛氫紭鍏堜娇鐢?Server Action锛涜嫢闇€瑕?REST endpoint锛屽垯鍦?`src/app/api/<name>/<verb>.route.ts`銆?
-- 瀹氭椂浠诲姟锛氶€氳繃 Cron Triggers锛堝悗缁鍒掞級鎴栧閮?Worker锛屾枃妗ｆ洿鏂板悗鍚屾鑷?`docs/`.
+## 扩展指南
+- 新建页面 → `src/app/<route>/page.tsx`，尽量复用模块组件。
+- 新建领域模块 → 在 `src/modules/<feature>` 下创建 `components/services/schemas`。
+- 新增 API → 优先考虑 Server Actions；若需 REST，放在 `src/app/api/<name>/<action>.route.ts`。
+- 新增定时任务或额外 Worker → 更新 `wrangler.jsonc`、`docs/opennext.md` 以及部署文档。
 
-## 鍏煎鎬ф彁绀?
-- **OpenNext 绾︽潫**锛氫笉鏀寔 `fs` 鍐欐搷浣滐紱渚濊禆 Node API 鏃堕渶鍚敤 `nodejs_compat`锛堝凡鍦?`wrangler.jsonc` 閰嶇疆锛夈€?
-- **杈圭紭杩愯**锛氬敖閲忛伩鍏嶉暱鏃?CPU 浠诲姟锛汚I/澶栭儴璇锋眰浣跨敤 `fetch` 骞惰缃秴鏃躲€?
-
+## 兼容性与注意事项
+- OpenNext Worker 中禁止使用 Node `fs` 写操作；如需，请启用 `nodejs_compat` 并确认 Cloudflare 支持。
+- 谨慎执行长时 CPU 或外部请求，必要时设置超时并捕获异常。
+- 任何变更必须同步更新对应文档、`.dev.vars.example` 以及 `docs/env-and-secrets.md`，保持“文档即运行手册”。
 
 ---
 
-濡傞渶鏇存柊鏋舵瀯锛堟柊澧炴ā鍧椼€佽皟鏁寸洰褰曪級锛岃鍚屾淇敼鏈枃浠朵笌 `docs/00-index.md`锛屽苟鍦?PR 妯℃澘涓嬀閫夆€滄枃妗ｅ凡鏇存柊鈥濄€?
-
-
+遇到架构层面的新增或重构，请在 PR 中链接此文档并说明差异，确保团队成员获得最新上下文。
