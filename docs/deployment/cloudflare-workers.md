@@ -1,73 +1,74 @@
-# Cloudflare Workers 部署手册
+﻿# Cloudflare Workers 閮ㄧ讲鎵嬪唽
 
-> 本文定义生产部署的标准流程、质量闸门与回滚策略。CI 工作流位于 `.github/workflows/deploy.yml`。
+> 鏈枃瀹氫箟鐢熶骇閮ㄧ讲鐨勬爣鍑嗘祦绋嬨€佽川閲忛椄闂ㄤ笌鍥炴粴绛栫暐銆侰I 宸ヤ綔娴佷綅浜?`.github/workflows/deploy.yml`銆?
 
-## 1. 总览
-流程顺序：`Checkout → Setup PNPM → Install → Build (OpenNext) → DB Migrate → Deploy → Health Check → 通知`
+## 1. 鎬昏
+娴佺▼椤哄簭锛歚Checkout 鈫?Setup PNPM 鈫?Install 鈫?Build (OpenNext) 鈫?DB Migrate 鈫?Deploy 鈫?Health Check 鈫?閫氱煡`
 
-- **构建**：`@opennextjs/cloudflare build` 生成 `.open-next`
-- **发布**：`wrangler deploy`（生产 `--env production`）
-- **健康检查**：`/api/health?fast=1`
-- **日志**：Cloudflare Workers Dashboard、`wrangler tail`
+- **鏋勫缓**锛歚@opennextjs/cloudflare build` 鐢熸垚 `.open-next`
+- **鍙戝竷**锛歚wrangler deploy`锛堢敓浜?`--env production`锛?
+- **鍋ュ悍妫€鏌?*锛歚/api/health?fast=1`
+- **鏃ュ織**锛欳loudflare Workers Dashboard銆乣wrangler tail`
 
-## 2. 预部署检查（手动/CI）
-1. 确保 `pnpm lint`、`pnpm test`（若有）通过
-2. 迁移文件与 `src/db/schema.ts` 一致
-3. Secrets/Variables 已在 GitHub Actions & Wrangler 中更新
-4. 运行 `pnpm cf-typegen` 后提交 `cloudflare-env.d.ts`
-5. 准备健康检查所需资源（R2/D1/AI）
+## 2. 棰勯儴缃叉鏌ワ紙鎵嬪姩/CI锛?
+1. 纭繚 `pnpm lint`銆乣pnpm test`锛堣嫢鏈夛級閫氳繃
+2. 杩佺Щ鏂囦欢涓?`src/db/schema.ts` 涓€鑷?
+3. Secrets/Variables 宸插湪 GitHub Actions & Wrangler 涓洿鏂?
+4. 杩愯 `pnpm cf-typegen` 鍚庢彁浜?`cloudflare-env.d.ts`
+5. 鍑嗗鍋ュ悍妫€鏌ユ墍闇€璧勬簮锛圧2/D1/AI锛?
 
-## 3. 触发方式
--（已移除预览部署）
-- **生产**：
+## 3. 瑙﹀彂鏂瑰紡
+-锛堝凡绉婚櫎棰勮閮ㄧ讲锛?
+- **鐢熶骇**锛?
   ```bash
   pnpm deploy:cf                # CLI
   gh workflow run deploy.yml -f target=production
-  git push origin main          # 默认触发
+  git push origin main          # 榛樿瑙﹀彂
   ```
 
-## 4. 健康检查
-- 初始只执行 fast 模式：`GET https://<domain>/api/health?fast=1`
-- Fast 模式校验：
-  - Cloudflare bindings 已加载
-  - 必需环境变量存在
-  - R2/AI 连接就绪（轻量探测）
-- Strict 模式（人工/夜间任务执行）：`/api/health`，额外检查 D1 查询、外部依赖
-- 建议在 `health-and-observability.md` 中维护 curl 示例：
+## 4. 鍋ュ悍妫€鏌?
+- 鍒濆鍙墽琛?fast 妯″紡锛歚GET https://<domain>/api/health?fast=1`
+- Fast 妯″紡鏍￠獙锛?
+  - Cloudflare bindings 宸插姞杞?
+  - 蹇呴渶鐜鍙橀噺瀛樺湪
+  - R2/AI 杩炴帴灏辩华锛堣交閲忔帰娴嬶級
+- Strict 妯″紡锛堜汉宸?澶滈棿浠诲姟鎵ц锛夛細`/api/health`锛岄澶栨鏌?D1 鏌ヨ銆佸閮ㄤ緷璧?
+- 寤鸿鍦?`health-and-observability.md` 涓淮鎶?curl 绀轰緥锛?
   ```bash
   curl -fsS --retry 3 --connect-timeout 2 --max-time 5 \
     "https://<domain>/api/health?fast=1"
   ```
 
-## 5. 迁移策略
-2. 生产部署前：`pnpm db:migrate:prod`
-3. 若涉及破坏性变更，需在 `release.md` 附上回滚 SQL / 备份计划
+## 5. 杩佺Щ绛栫暐
+2. 鐢熶骇閮ㄧ讲鍓嶏細`pnpm db:migrate:prod`
+3. 鑻ユ秹鍙婄牬鍧忔€у彉鏇达紝闇€鍦?`release.md` 闄勪笂鍥炴粴 SQL / 澶囦唤璁″垝
 
-## 6. 回滚流程
-1. 健康检查失败 → 工作流自动标记失败并触发 `ops-notify`
-2. 手动执行 `wrangler deploy --env production --rollback <id>` 或在 Dashboard 选择历史版本
-3. 回滚数据库：使用 D1 备份（详见 `docs/db-d1.md`）
-4. 在 `release.md` 记录故障时间线与采取措施
+## 6. 鍥炴粴娴佺▼
+1. 鍋ュ悍妫€鏌ュけ璐?鈫?宸ヤ綔娴佽嚜鍔ㄦ爣璁板け璐ュ苟瑙﹀彂 ``
+2. 鎵嬪姩鎵ц `wrangler deploy --env production --rollback <id>` 鎴栧湪 Dashboard 閫夋嫨鍘嗗彶鐗堟湰
+3. 鍥炴粴鏁版嵁搴擄細浣跨敤 D1 澶囦唤锛堣瑙?`docs/db-d1.md`锛?
+4. 鍦?`release.md` 璁板綍鏁呴殰鏃堕棿绾夸笌閲囧彇鎺柦
 
-## 7. 日志与监控
-- 调用 `wrangler tail next-cf-app` 实时查看日志
-- Cloudflare Dashboard → Workers → Deployments 查看历史
-- 建议在后续迭代接入 Sentry 或 Logpush，并在 `health-and-observability.md` 中记录
+## 7. 鏃ュ織涓庣洃鎺?
+- 璋冪敤 `wrangler tail next-cf-app` 瀹炴椂鏌ョ湅鏃ュ織
+- Cloudflare Dashboard 鈫?Workers 鈫?Deployments 鏌ョ湅鍘嗗彶
+- 寤鸿鍦ㄥ悗缁凯浠ｆ帴鍏?Sentry 鎴?Logpush锛屽苟鍦?`health-and-observability.md` 涓褰?
 
-## 8. 权限与安全
-- GitHub Actions 需要具有以下权限的 Token：
+## 8. 鏉冮檺涓庡畨鍏?
+- GitHub Actions 闇€瑕佸叿鏈変互涓嬫潈闄愮殑 Token锛?
   - `Account.Access:Workers Scripts:Edit`
   - `Account.Access:D1:Edit/Read`
   - `Account.Access:R2:Edit`
-- 在 `security.md` 中维护 Token 轮换与权限矩阵
-- 禁止在工作流日志中输出敏感数据，必要时使用 `::add-mask::` 隐藏
+- 鍦?`security.md` 涓淮鎶?Token 杞崲涓庢潈闄愮煩闃?
+- 绂佹鍦ㄥ伐浣滄祦鏃ュ織涓緭鍑烘晱鎰熸暟鎹紝蹇呰鏃朵娇鐢?`::add-mask::` 闅愯棌
 
-## 9. 审核清单
-- [ ] PR 描述列出部署影响与对应文档
-- [ ] `docs/deployment/cloudflare-workers.md` 如有流程变动需同步更新
-- [ ] 附上 `gh run watch` 截图或输出
-- [ ] 部署后验证核心路径（登陆、CRUD、支付回调）
+## 9. 瀹℃牳娓呭崟
+- [ ] PR 鎻忚堪鍒楀嚭閮ㄧ讲褰卞搷涓庡搴旀枃妗?
+- [ ] `docs/deployment/cloudflare-workers.md` 濡傛湁娴佺▼鍙樺姩闇€鍚屾鏇存柊
+- [ ] 闄勪笂 `gh run watch` 鎴浘鎴栬緭鍑?
+- [ ] 閮ㄧ讲鍚庨獙璇佹牳蹇冭矾寰勶紙鐧婚檰銆丆RUD銆佹敮浠樺洖璋冿級
 
 ---
 
-部署链路调整时，务必同步 `docs/ci-cd.md`、`docs/workflows/deploy.md` 与 `docs-maintenance.md`，保持“文档 → 命令”一致。
+閮ㄧ讲閾捐矾璋冩暣鏃讹紝鍔″繀鍚屾 `docs/ci-cd.md`銆乣docs/workflows/deploy.md` 涓?`docs-maintenance.md`锛屼繚鎸佲€滄枃妗?鈫?鍛戒护鈥濅竴鑷淬€?
+

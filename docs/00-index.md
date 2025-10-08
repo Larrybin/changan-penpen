@@ -2,7 +2,7 @@
 
 > 统一文档入口，便于快速定位信息。新增或调整流程时请同步更新本页。
 
-## 快速入口
+## 快速入门
 - [仓库 README](../README.md)
 - [文档维护手册](docs-maintenance.md)
 
@@ -21,11 +21,11 @@
 ## 部署与运维
 1. [deployment/cloudflare-workers.md](deployment/cloudflare-workers.md) — 构建、部署、回滚、健康检查
 2. [ci-cd.md](ci-cd.md) — 流水线总览（含权限矩阵与质量闸门）
-3. [workflows/ci.md](workflows/ci.md)、[workflows/deploy.md](workflows/deploy.md)、[workflows/auto-fix.md](workflows/auto-fix.md)、[workflows/ops-notify.md](workflows/ops-notify.md)、[workflows/auto-merge-lite.md](workflows/auto-merge-lite.md)
+3. [workflows/ci.md](workflows/ci.md)、[workflows/deploy.md](workflows/deploy.md)
 4. [health-and-observability.md](health-and-observability.md) — 健康检查、日志、Sentry、Workers Analytics
 5. [api-index.md](api-index.md) — 关键页面与 API 路由索引
 
-## 风险控制与排错
+## 风险控制与排障
 1. [troubleshooting.md](troubleshooting.md) — 常见错误、诊断命令、修复脚本
 2. [security.md](security.md) — 权限最小化、依赖安全、Action 固定 SHA
 3. [style-guide.md](style-guide.md) — 代码、提交与文档风格
