@@ -1,10 +1,15 @@
-﻿# 鍋ュ悍妫€鏌ヤ笌鍙娴嬫€?
-> 鏈枃瀹氫箟 `/api/health` 鐨勪娇鐢ㄦ柟寮忋€佺洃鎺ф寚鏍囥€佹棩蹇楁敹闆嗕笌鏁呴殰鎺掓煡璺緞銆?
-## 1. 鍋ュ悍妫€鏌ユ帴鍙?- 璺緞锛歚/api/health`
-- 杩愯鏃讹細`runtime = "nodejs"`锛堜繚璇佸湪 Workers 涓彲鐢級
-- 妫€鏌ラ」锛?  - **fast 妯″紡**锛坄?fast=1` 鎴?`?mode=fast`锛夛細楠岃瘉鐜鍙橀噺銆丷2 缁戝畾
-  - **strict 妯″紡**锛氶澶栨鏌?D1 杞婚噺鏌ヨ銆佸閮ㄤ緷璧栵紙濡?Creem API锛?  - 鐜鍙橀噺 `HEALTH_REQUIRE_DB/R2/EXTERNAL` 鎺у埗鏄惁寮哄埗閫氳繃
-- 鍝嶅簲绀轰緥锛?```json
+# 健康检查与可观测性
+> 本文定义 `/api/health` 的使用方式、观测指标、日志汇集与故障排查路径。
+
+## 1. 健康检查接口
+- 路径：`/api/health`
+- 运行时：`runtime = "nodejs"`（确保在 Workers 中仍可使用）
+- 检查项：
+  - **Fast 模式**：`?fast=1` 或 `?mode=fast`。仅验证环境变量、R2 绑定与基本算力，适合部署后快速验证。
+  - **Strict 模式**：默认模式。额外检查 D1 查询、外部依赖（例如 Creem API）与可选的队列/AI 服务。
+  - 环境变量 `HEALTH_REQUIRE_DB/R2/EXTERNAL` 用于控制是否强制通过对应检查。
+- 响应示例：
+```json
 {
   "ok": true,
   "time": "2025-10-07T12:34:56.789Z",
@@ -19,51 +24,62 @@
 }
 ```
 
-## 2. curl 绀轰緥
+## 2. curl 示例
 ```bash
-# Fast 鍋ュ悍锛堥儴缃茬閬撲娇鐢級
+# Fast 模式（用于部署后自检）
 curl -fsS --retry 3 --retry-all-errors --retry-delay 5 \
   --connect-timeout 3 --max-time 8 \
   "https://<domain>/api/health?fast=1"
 
-# Strict 鍋ュ悍锛堜汉宸?瀹氭椂浠诲姟锛?curl -fsS --retry 2 --retry-delay 3 \
+# Strict 模式（CI / 运维例行作业）
+curl -fsS --retry 2 --retry-delay 3 \
   "https://<domain>/api/health"
 ```
 
-## 3. 鐩戞帶寤鸿
-| 鎸囨爣 | 鎻忚堪 | 閲囬泦閫斿緞 |
+## 3. 监控建议
+| 指标 | 说明 | 汇聚渠道 |
 | --- | --- | --- |
-| 鍋ュ悍妫€鏌ュ搷搴旀椂闂?| `durationMs` | CI銆丆ron銆佸閮ㄧ洃鎺?|
-| Workers 璇锋眰閿欒鐜?| HTTP status銆乪xceptions | Cloudflare Workers Analytics |
-| D1 鏌ヨ鑰楁椂 / 閿欒 | 鎴愬姛鐜囥€侀攣绛夊緟 | `wrangler d1 insights` / Dashboard |
-| R2 鎿嶄綔 | `put/get` 鎴愬姛鐜?| R2 Analytics |
-| AI 璋冪敤 | 鎴愬姛/澶辫触娆℃暟銆佽垂鐢?| Cloudflare Workers AI Dashboard 鎴栬嚜瀹氫箟鏃ュ織 |
+| 健康检查响应时长 | `durationMs` | CI、Cron、外部监控平台 |
+| Workers 请求错误率 | HTTP status、捕获的异常 | Cloudflare Workers Analytics |
+| D1 查询耗时 / 错误 | 成功率、平均等待时长 | `wrangler d1 insights` / Dashboard |
+| R2 操作 | `put/get` 成功率 | R2 Analytics |
+| AI 调用 | 成功/失败次数、费用 | Cloudflare Workers AI Dashboard 或自建日志 |
 
-## 4. 鏃ュ織鏂规
-- **Cloudflare Workers Tail**锛?  ```bash
+## 4. 日志方案
+- **Cloudflare Workers Tail**：
+  ```bash
   wrangler tail next-cf-app --env production
   ```
-- **Structured Logging**锛氬缓璁粺涓€浣跨敤 `console.log(JSON.stringify({level:'info', ...}))`
-- **Logpush / 澶栭儴瀛樺偍**锛氬彲閰嶇疆鑷?R2銆並afka銆丼plunk锛堝悗缁墿灞曪級
-- **Sentry**锛堝缓璁級锛?  - 閫氳繃 `@sentry/nextjs` Edge 鏀寔
-  - 鍦?`env-and-secrets.md` 涓柊澧?DSN 骞舵洿鏂板仴搴锋鏌ュ彲閫夐」
+- **结构化日志**：推荐统一使用 `console.log(JSON.stringify({ level: "info", ... }))` 输出，方便 Logpush 或第三方检索。
+- **Logpush / 外部存储**：可配置推送到 R2、Kafka、Splunk 等，确保日志保留策略满足合规要求。
+- **Sentry**（已接入）：
+  - `sentry.client.config.ts` / `sentry.server.config.ts` / `sentry.edge.config.ts` 在对应运行时初始化 SDK，自动采集错误和性能数据。
+  - `instrumentation.ts` 负责在 Edge 与 Node Runtime 启动阶段注册监控，确保 App Router 与 Workers 共享同一配置。
+  - 在 `.dev.vars` / Cloudflare Secrets 中填写 `SENTRY_DSN` 与 `NEXT_PUBLIC_SENTRY_DSN`，并参考 `docs/env-and-secrets.md` 完成样例配置。
+  - 通过 `SENTRY_TRACES_SAMPLE_RATE`、`SENTRY_PROFILES_SAMPLE_RATE`、`SENTRY_REPLAYS_*` 调整采样率，默认配置应避免产生过多事件。
 
-## 5. 鍛婅绛栫暐
-- **鍗虫椂鍛婅**锛氬仴搴锋鏌ュけ璐?鈫?`外部告警` Issue + 閭欢/Slack锛堥渶瑕佹坊鍔犻澶栨楠わ級
-- **瓒嬪娍鍛婅**锛氶€氳繃 Cloudflare Analytics 璁惧畾闃堝€煎憡璀︼紙閿欒鐜囥€丆PU 鏃堕棿锛?- **鎵嬪姩宸℃**锛歚docs-maintenance.md` 鍒楀嚭浜嗘湀搴︽鏌ユ竻鍗?
-## 6. 鏁呴殰鎺掓煡娓呭崟
-1. 鏌ョ湅 `外部告警` Tracker Issue 鎴?PR 璇勮
-2. 浣跨敤 `wrangler tail` 鑾峰彇瀹炴椂鏃ュ織
-3. 鍛戒护琛岄獙璇侊細
+## 5. 告警策略
+- **即时告警**：健康检查失败或 Sentry 出现新的高优先级事件时，创建 “外部告警” Issue，并同时推送到邮件/Slack。
+- **阈值告警**：在 Cloudflare Analytics 中设置错误率、CPU 时间阈值，触发时通知运维值班人。
+- **人工巡检**：参考 `docs-maintenance.md` 的月度检查清单，定期确认监控、日志管道与告警渠道处于有效状态。
+
+## 6. 故障排查流程
+1. 查看 “外部告警” Tracker Issue 或相关 PR 评论，确认影响范围。
+2. 使用 `wrangler tail` 获取实时日志，定位异常请求。
+3. 通过命令行验证：
    ```bash
    wrangler d1 execute next-cf-app --remote --command "SELECT COUNT(*) FROM todos;"
    wrangler r2 object list next-cf-app-bucket --limit 1
    ```
-4. 妫€鏌ユ渶杩戦儴缃诧紙Cloudflare Dashboard 鈫?Workers 鈫?Deployments锛?5. 鑻ュ閮ㄤ緷璧栧紓甯革紝纭 `HEALTH_REQUIRE_EXTERNAL` 鏄惁褰卞搷鍙敤鎬?
-## 7. 瀹氭湡浠诲姟寤鸿
-- 姣忔棩/姣忓皬鏃讹細鐩戞帶 `/api/health?fast=1`锛屽け璐ヨ嚜鍔ㄩ€氱煡
-- 姣忔棩锛氳繍琛?Strict 鍋ュ悍 + 鍏抽敭涓氬姟娴佺▼锛堝彲浣跨敤 Playwright锛?- 姣忓懆锛氭鏌?Workers Analytics銆丏1 Insights
-- 姣忔湀锛氭墜宸ラ獙璇佸浠?鎭㈠娴佺▼锛堣瑙?`docs/db-d1.md`锛?
+4. 检查 Cloudflare Dashboard（Workers → Deployments）中的最近部署，确认是否与发布相关。
+5. 若涉及外部依赖，确认 `HEALTH_REQUIRE_EXTERNAL` 是否导致阻塞，并评估该依赖可用性。
+
+## 7. 定期任务建议
+- 每日/每小时：监控 `/api/health?fast=1`，失败后自动触发告警。
+- 每日：运行 Strict 模式并执行核心业务流程（可结合 Playwright 等 E2E 测试）。
+- 每周：审查 Workers Analytics、D1 Insights 与 R2 报表。
+- 每月：执行灾备演练，验证恢复流程，详细步骤见 `docs/db-d1.md`。
+
 ---
 
-鏂板鐩戞帶椤规垨鏇存敼鍋ュ悍妫€鏌ラ€昏緫鏃讹紝璇峰悓姝ユ洿鏂版湰鏂囦笌 `docs/deployment/cloudflare-workers.md`銆?
+新增监控项或调整健康检查策略后，请同步更新本文件与 `docs/deployment/cloudflare-workers.md`，确保文档与实际配置一致。
