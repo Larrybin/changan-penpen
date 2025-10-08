@@ -38,7 +38,7 @@ export async function POST(request: Request) {
             request,
             identifier: "creem:create-checkout",
             uniqueToken: session.user.id,
-            env,
+            env: { RATE_LIMITER: env.RATE_LIMITER },
             message: "Too many checkout attempts",
         });
         if (!rateLimitResult.ok) {
