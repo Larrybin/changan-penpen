@@ -28,7 +28,12 @@ describe("creem usage service", () => {
             ctx = await createTestDb();
             getDbSpy = vi
                 .spyOn(dbModule, "getDb")
-                .mockImplementation(async () => ctx.db);
+                .mockImplementation(
+                    async () =>
+                        ctx.db as unknown as Awaited<
+                            ReturnType<typeof dbModule.getDb>
+                        >,
+                );
         } catch (error) {
             shouldSkip = true;
             console.warn(
@@ -51,7 +56,10 @@ describe("creem usage service", () => {
         });
         userId = user.id;
         getDbSpy?.mockClear();
-        getDbSpy?.mockImplementation(async () => ctx.db);
+        getDbSpy?.mockImplementation(
+            async () =>
+                ctx.db as unknown as Awaited<ReturnType<typeof dbModule.getDb>>,
+        );
     });
 
     afterAll(() => {

@@ -37,6 +37,16 @@ async function getAuth() {
         );
     }
 
+    const socialProviders = googleConfigured
+        ? {
+              google: {
+                  enabled: true,
+                  clientId: googleClientId!,
+                  clientSecret: googleClientSecret!,
+              },
+          }
+        : undefined;
+
     cachedAuth = betterAuth({
         secret: env.BETTER_AUTH_SECRET,
         database: drizzleAdapter(db, {
@@ -45,15 +55,7 @@ async function getAuth() {
         emailAndPassword: {
             enabled: true,
         },
-        socialProviders: googleConfigured
-            ? {
-                  google: {
-                      enabled: true,
-                      clientId: googleClientId,
-                      clientSecret: googleClientSecret,
-                  },
-              }
-            : undefined,
+        socialProviders,
         plugins: [nextCookies()],
     });
 

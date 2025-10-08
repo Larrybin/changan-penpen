@@ -106,7 +106,7 @@ export async function createTestDb(
         overrides: Partial<typeof schema.user.$inferInsert> = {},
     ): typeof schema.user.$inferSelect => {
         const id = overrides.id ?? randomUUID();
-        const now = Date.now();
+        const now = new Date();
 
         const baseRecord: typeof schema.user.$inferInsert = {
             id,
