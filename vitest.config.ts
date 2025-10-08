@@ -10,6 +10,7 @@ export default defineConfig({
         setupFiles: "./vitest.setup.ts",
         globals: true,
         coverage: {
+            enabled: true,
             provider: "v8",
             reporter: ["text", "html", "json-summary"],
             reportsDirectory: "coverage",
