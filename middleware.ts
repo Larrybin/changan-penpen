@@ -1,3 +1,4 @@
+import { withSentry } from "@sentry/nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { getAuth } from "./src/lib/auth";
@@ -9,7 +10,7 @@ const handleI18nRouting = createMiddleware({
     localePrefix: "as-needed",
 });
 
-export async function middleware(request: NextRequest) {
+async function middlewareImpl(request: NextRequest) {
     // Run i18n routing first
     const i18nResponse = handleI18nRouting(request);
 
@@ -38,6 +39,8 @@ export async function middleware(request: NextRequest) {
 
     return i18nResponse;
 }
+
+export const middleware = withSentry(middlewareImpl, { name: "middleware" });
 
 export const config = {
     // Run on all app routes, exclude Next internals, files and API

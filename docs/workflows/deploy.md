@@ -1,54 +1,52 @@
-﻿# Workflow锛欴eploy Next.js App to Cloudflare锛圥roduction锛?
+# Workflow：Deploy Next.js App to Cloudflare（Production）
 
-> 浣嶇疆锛歚.github/workflows/deploy.yml`銆傝礋璐ｄ富骞茬敓浜ч儴缃诧紝鍐呯疆璐ㄩ噺闂ㄣ€佹暟鎹簱杩佺Щ銆佸浠戒笌鍋ュ悍妫€鏌ャ€?
+> 位置：`.github/workflows/deploy.yml`。适用于生产分支的自动化部署，负责数据库迁移、静态资源构建与健康检查。
 
-## 瑙﹀彂
-- `push` 鍒?`main`
-- `workflow_dispatch`锛堟墜鍔級
+## 触发
+- 推送到 `main`
+- `workflow_dispatch`（手动触发）
 
-## 骞跺彂涓庡鐢?
-- `concurrency: deploy-${{ github.ref }}` 閬垮厤骞惰閮ㄧ讲锛?
-- 棣栦釜 Job `quality-gate-reusable` 鐩存帴 `uses: ./.github/workflows/ci.yml`锛屽畬鍏ㄥ鐢?CI銆?
+## 并发与复用
+- `concurrency: deploy-${{ github.ref }}` 防止同一分支的部署并行执行。
+- 首个 Job `quality-gate-reusable` 直接 `uses: ./.github/workflows/ci.yml`，完整复用 CI 质量门。
 
-## 鐢熶骇閮ㄧ讲锛坄deploy-production`锛?
-1. 澶囦唤 D1锛歚wrangler d1 export` 骞朵笂浼?Artifact锛堜繚鐣?14 澶╋級锛?
-2. 搴旂敤杩佺Щ + 鏍￠獙鍏抽敭琛紱
-3. `wrangler deploy --env production`锛堜紶鍏?`CREEM_API_URL`銆乣NEXT_PUBLIC_APP_URL` 绛夛級锛?
-4. 鍙€夊悓姝?Secrets锛氱敱 `vars.SYNC_PRODUCTION_SECRETS` 鎺у埗锛?
-5. 绛夊緟 45s 鍚庢墽琛屽仴搴锋鏌ワ細`curl /api/health?fast=1`銆?
+## 生产部署 Job（`deploy-production`）
+1. 备份 D1：`wrangler d1 export` 并上传 Artifact（保留 14 天）。
+2. 执行构建与关键检查。
+3. `wrangler deploy --env production`（注入 `CREEM_API_URL`、`NEXT_PUBLIC_APP_URL` 等变量）。
+4. 可选同步 Secrets：由 `vars.SYNC_PRODUCTION_SECRETS` 控制。
+5. 等待 45s 后执行健康检查：`curl /api/health?fast=1`。
 
 ## Secrets / Vars
-- 鍙傝 `docs/env-and-secrets.md` 涓殑鐭╅樀锛?
-- 棰濆鍙橀噺锛?
-  - `PRODUCTION_HEALTHCHECK_URL`锛堝彲閫夛紝瑕嗙洊榛樿 URL锛夛紱
-  - `SYNC_PRODUCTION_SECRETS`锛坴ar锛屽瓧绗︿覆 `'true'` 鏃跺惎鐢?secret sync锛夛紱
-  - `CREEM_API_URL_PRODUCTION`锛坴ar锛岀敓浜т笓鐢級銆?
+- 详见 `docs/env-and-secrets.md`。
+- 额外变量：
+  - `PRODUCTION_HEALTHCHECK_URL`（可选，自定义健康检查 URL）。
+  - `SYNC_PRODUCTION_SECRETS`（Var，字符串 `'true'` 时开启 secret sync）。
+  - `CREEM_API_URL_PRODUCTION`（Var，生产专用）。
 
-## 鏉冮檺
-- 榛樿浣跨敤 `GITHUB_TOKEN` + Cloudflare API Token锛堥渶 `Workers`, `D1`, `R2` 鏉冮檺锛夛紱
-- 涓婁紶 Artifact锛歚actions/upload-artifact`锛?
-- 鎵€鏈?Action 鍧囬攣瀹?commit SHA锛屼繚璇侀噸澶嶆瀯寤轰竴鑷淬€?
+## 权限
+- 默认使用 `GITHUB_TOKEN` + Cloudflare API Token（需 `Workers`, `D1`, `R2` 权限）。
+- 上传 Artifact：`actions/upload-artifact`。
+- 所有 Action 必须锁定到具体 commit SHA 以保证可重复性。
 
-## 甯歌澶辫触椤?
-| 姝ラ | 鎸囨爣 | 淇 |
+## 常见失败项
+| 场景 | 指标 | 修复 |
 | --- | --- | --- |
-| Secret 妫€鏌?| Step 杈撳嚭 `Missing secrets` | 琛ラ綈 GitHub Secrets |
-| Migrations | `wrangler` 鍛戒护闈?0 | 妫€鏌?SQL / Token 鏉冮檺 |
-| 鍋ュ悍妫€鏌?| `curl` 杩斿洖闈?200 | 鏌ョ湅閮ㄧ讲鏃ュ織/`/api/health` JSON |
-| Build | `pnpm build:cf` 澶辫触 | 鍏堝湪鏈湴璺戦€?`pnpm build:cf` |
+| Secret 缺失 | Step 输出 `Missing secrets` | 补全 GitHub Secrets |
+| Migrations 失败 | `wrangler` 命令返回非 0 | 检查 SQL / Token 权限 |
+| 健康检查失败 | `curl` 返回非 200 | 查看部署日志或直接访问 `/api/health` JSON |
+| 构建失败 | `pnpm build:cf` 报错 | 先在本地运行 `pnpm build:cf` 复现 |
 
-## 鍥炴粴
-- 閮ㄧ讲澶辫触 鈫?workflow 缁堟 鈫?瑙﹀彂 ``锛?
-- 鍙湪 Cloudflare Dashboard 鈫?Workers 鈫?Deployments 閫夋嫨鍘嗗彶鐗堟湰鍥炴粴锛?
-- 鏁版嵁搴撲娇鐢ㄥ浠芥枃浠?`backup_prod_<timestamp>.sql`銆?
+## 回滚
+- 部署失败 → workflow 终止 → 触发 Issue 通知。
+- 可在 Cloudflare Dashboard → Workers → Deployments 选择历史版本回滚。
+- 数据库使用备份文件 `backup_prod_<timestamp>.sql` 进行恢复。
 
-## 鎵╁睍寤鸿
-- 鍙姞鍏?Canary 姝ラ锛堟寜鏍囩閮ㄧ讲閮ㄥ垎娴侀噺锛夛紱
-- 闇€瑕佸鐜鏃舵墿灞?`env.<name>` 鑺傜偣涓?CLI flags锛?
-- 鑻ュ紑鍚?Playwright/鍚堟垚鐩戞帶锛屽湪鐢熶骇閮ㄧ讲鍚庤拷鍔?job銆?
+## 拓展建议
+- 可以加入 Canary 步骤（按标签部署部分流量）。
+- 若需要多环境，新增 `env.<name>` 节点并配合 CLI flags。
+- 如启用 Playwright/E2E，可在生产部署后追加验证 Job。
 
 ---
 
-淇敼閮ㄧ讲娴佺▼鏃讹紝璇峰悓姝ユ洿鏂?`docs/deployment/cloudflare-workers.md` 涓庢湰鏂囦欢锛岀‘淇濇枃妗ｄ笌宸ヤ綔娴佷竴鑷淬€?
-
-
+调整部署流程时，请同步更新本文件与 `docs/deployment/cloudflare-workers.md`，保证文档与实际操作一致。

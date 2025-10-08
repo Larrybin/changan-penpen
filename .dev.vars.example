@@ -4,6 +4,18 @@ NEXTJS_ENV=development
 # Base URL used for canonical tags and structured data
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
+# Observability / Monitoring
+SENTRY_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_TRACES_SAMPLE_RATE=0.1
+NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.05
+SENTRY_PROFILES_SAMPLE_RATE=0
+SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=0.1
+SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0
+SENTRY_TUNNEL_ROUTE=
+SENTRY_ENABLED=1
+SENTRY_DEBUG=0
+
 # Drizzle Kit credentials for D1
 # Get your Account ID from: https://dash.cloudflare.com/ (right sidebar)
 # Get your API Token from: https://dash.cloudflare.com/profile/api-tokens
