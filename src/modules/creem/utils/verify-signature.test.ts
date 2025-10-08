@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { verifyCreemWebhookSignature } from "./verify-signature";
 
 describe("verifyCreemWebhookSignature", () => {
-    const payload = "{\"id\":1}";
+    const payload = '{"id":1}';
     const secret = "top-secret";
 
     it("接受十六进制签名", async () => {
@@ -23,7 +23,9 @@ describe("verifyCreemWebhookSignature", () => {
         const hex = Array.from(bytes)
             .map((b) => b.toString(16).padStart(2, "0"))
             .join("");
-        expect(await verifyCreemWebhookSignature(payload, hex, secret)).toBe(true);
+        expect(await verifyCreemWebhookSignature(payload, hex, secret)).toBe(
+            true,
+        );
     });
 
     it("接受 base64 签名与 header 格式", async () => {
@@ -56,3 +58,4 @@ describe("verifyCreemWebhookSignature", () => {
         ).toBe(false);
     });
 });
+

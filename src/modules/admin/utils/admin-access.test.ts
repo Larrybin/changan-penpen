@@ -1,4 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthUser } from "@/modules/auth/models/user.model";
+
+const createUser = (overrides: Partial<AuthUser> = {}): AuthUser => ({
+    id: overrides.id ?? "user-id",
+    name: overrides.name ?? "User",
+    email: overrides.email ?? "user@example.com",
+});
 
 const redirectMock = vi.fn();
 const cookiesMock = vi.fn();
@@ -48,7 +55,10 @@ describe("admin access utils", () => {
 
     it("isEmailAllowed 支持大小写", async () => {
         const { isEmailAllowed } = await import("./admin-access");
-        const config = { allowedEmails: ["user@example.com"], entryToken: null };
+        const config = {
+            allowedEmails: ["user@example.com"],
+            entryToken: null,
+        };
         expect(isEmailAllowed("USER@EXAMPLE.COM", config)).toBe(true);
         expect(isEmailAllowed("", config)).toBe(false);
     });
@@ -77,8 +87,9 @@ describe("admin access utils", () => {
     it("checkAdminAccessFromHeaders 正确校验 token", async () => {
         const { checkAdminAccessFromHeaders } = await import("./admin-access");
         const headers = new Headers({ cookie: "admin-entry=secret" });
-        expect(await checkAdminAccessFromHeaders(headers, "admin@example.com"))
-            .toBe(true);
+        expect(
+            await checkAdminAccessFromHeaders(headers, "admin@example.com"),
+        ).toBe(true);
 
         const invalid = new Headers({ cookie: "admin-entry=wrong" });
         expect(
@@ -94,7 +105,10 @@ describe("admin access utils", () => {
             },
         });
         const module = await import("./admin-access");
-        await module.requireAdminForPage({ email: null } as any);
+        await module.requireAdminForPage({
+            ...createUser({ email: "" }),
+            email: null,
+        } as unknown as AuthUser);
         expect(redirectMock).toHaveBeenCalledWith("/login?admin=1");
     });
 
@@ -109,7 +123,7 @@ describe("admin access utils", () => {
         cookiesMock.mockImplementation(async () => ({
             get: () => ({ value: "wrong" }),
         }));
-        await module.requireAdminForPage({ email: "user@example.com" } as any);
+        await module.requireAdminForPage(createUser());
         expect(redirectMock).toHaveBeenCalledWith("/login?admin=1");
     });
 
@@ -124,7 +138,8 @@ describe("admin access utils", () => {
         cookiesMock.mockImplementation(async () => ({
             get: () => ({ value: "secret" }),
         }));
-        await module.requireAdminForPage({ email: "user@example.com" } as any);
+        await module.requireAdminForPage(createUser());
         expect(redirectMock).not.toHaveBeenCalled();
     });
 });
+

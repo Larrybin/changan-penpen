@@ -1,5 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
+import type { AppLocale } from "../i18n/config";
 import { defaultLocale, locales } from "../i18n/config";
+
+const createSiteSettings = (
+    overrides: Partial<SiteSettingsPayload> = {},
+): SiteSettingsPayload => ({
+    id: overrides.id,
+    siteName: overrides.siteName ?? "",
+    domain: overrides.domain ?? "",
+    logoUrl: overrides.logoUrl ?? "",
+    faviconUrl: overrides.faviconUrl ?? "",
+    seoTitle: overrides.seoTitle ?? "",
+    seoDescription: overrides.seoDescription ?? "",
+    seoOgImage: overrides.seoOgImage ?? "",
+    sitemapEnabled: overrides.sitemapEnabled ?? false,
+    robotsRules: overrides.robotsRules ?? "",
+    brandPrimaryColor: overrides.brandPrimaryColor ?? "#2563eb",
+    brandSecondaryColor: overrides.brandSecondaryColor ?? "#0f172a",
+    brandFontFamily: overrides.brandFontFamily ?? "Inter",
+    headHtml: overrides.headHtml ?? "",
+    footerHtml: overrides.footerHtml ?? "",
+    defaultLanguage: overrides.defaultLanguage ?? defaultLocale,
+    enabledLanguages: overrides.enabledLanguages ?? [defaultLocale],
+});
 
 describe("seo helpers", () => {
     const originalEnv = { ...process.env };
@@ -40,9 +64,9 @@ describe("seo helpers", () => {
 
         it("遇到非法基础地址时回退原值", async () => {
             const { ensureAbsoluteUrl } = await import("./seo");
-            expect(
-                ensureAbsoluteUrl("javascript:alert(1)", ":::::"),
-            ).toBe("javascript:alert(1)");
+            expect(ensureAbsoluteUrl("javascript:alert(1)", ":::::")).toBe(
+                "javascript:alert(1)",
+            );
         });
     });
 
@@ -54,7 +78,9 @@ describe("seo helpers", () => {
         it("优先返回站点配置域名", async () => {
             const module = await import("./seo");
             expect(
-                module.resolveAppUrl({ domain: "https://my.app" } as any),
+                module.resolveAppUrl(
+                    createSiteSettings({ domain: "https://my.app" }),
+                ),
             ).toBe("https://my.app");
         });
 
@@ -96,9 +122,11 @@ describe("seo helpers", () => {
         it("过滤无效语言并去重", async () => {
             const { getActiveAppLocales } = await import("./seo");
             expect(
-                getActiveAppLocales({
-                    enabledLanguages: ["en", "fr", "jp", "fr"],
-                } as any),
+                getActiveAppLocales(
+                    createSiteSettings({
+                        enabledLanguages: ["en", "fr", "jp", "fr"],
+                    }),
+                ),
             ).toEqual(["en", "fr"]);
         });
     });
@@ -158,10 +186,11 @@ describe("seo helpers", () => {
 
         it("其他语言加前缀且处理根路径", async () => {
             const { buildLocalizedPath } = await import("./seo");
-            expect(buildLocalizedPath("fr" as any, "/")).toBe("/fr");
-            expect(buildLocalizedPath("de" as any, "pricing")).toBe(
+            expect(buildLocalizedPath("fr" as AppLocale, "/")).toBe("/fr");
+            expect(buildLocalizedPath("de" as AppLocale, "pricing")).toBe(
                 "/de/pricing",
             );
         });
     });
 });
+

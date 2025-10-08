@@ -25,7 +25,7 @@ describe("adminDataProvider", () => {
             ),
         );
 
-        const result = await adminDataProvider.getList!({
+        const result = await adminDataProvider.getList?.({
             resource: "todos",
             pagination: { current: 2, pageSize: 10 },
             filters: [
@@ -48,8 +48,9 @@ describe("adminDataProvider", () => {
                 credentials: "include",
             },
         );
-        expect(result.total).toBe(10);
-        expect(result.data).toHaveLength(1);
+        expect(result).toBeDefined();
+        expect(result?.total).toBe(10);
+        expect(result?.data).toHaveLength(1);
     });
 
     it("falls back to array length when total is missing", async () => {
@@ -60,12 +61,12 @@ describe("adminDataProvider", () => {
             }),
         );
 
-        const result = await adminDataProvider.getList!({
+        const result = await adminDataProvider.getList?.({
             resource: "todos",
             pagination: { page: 1, pageSize: 20 },
         });
 
-        expect(result.total).toBe(2);
+        expect(result?.total).toBe(2);
     });
 
     it("throws errors from parseResponse when response is not ok", async () => {
@@ -77,7 +78,7 @@ describe("adminDataProvider", () => {
         );
 
         await expect(
-            adminDataProvider.getOne!({ resource: "todos", id: 1 }),
+            adminDataProvider.getOne?.({ resource: "todos", id: 1 }),
         ).rejects.toThrow("Not found");
     });
 
@@ -99,7 +100,7 @@ describe("adminDataProvider", () => {
                 ),
             );
 
-        await adminDataProvider.create!({
+        await adminDataProvider.create?.({
             resource: "todos",
             variables: { title: "Task" },
         });
@@ -110,7 +111,7 @@ describe("adminDataProvider", () => {
             body: JSON.stringify({ title: "Task" }),
         });
 
-        await adminDataProvider.update!({
+        await adminDataProvider.update?.({
             resource: "todos",
             id: 1,
             variables: { title: "Updated" },
@@ -126,7 +127,7 @@ describe("adminDataProvider", () => {
     it("deletes resources and returns deleted id", async () => {
         fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
 
-        const result = await adminDataProvider.deleteOne!({
+        const result = await adminDataProvider.deleteOne?.({
             resource: "todos",
             id: 7,
         });
@@ -134,7 +135,7 @@ describe("adminDataProvider", () => {
             method: "DELETE",
             credentials: "include",
         });
-        expect(result.data).toEqual({ id: 7 });
+        expect(result?.data).toEqual({ id: 7 });
     });
 
     it("supports custom requests with meta headers", async () => {
@@ -145,7 +146,7 @@ describe("adminDataProvider", () => {
             }),
         );
 
-        const result = await adminDataProvider.custom!({
+        const result = await adminDataProvider.custom?.({
             url: "/reports",
             method: "POST",
             payload: { type: "summary" },

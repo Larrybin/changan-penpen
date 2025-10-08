@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-    normalizePagination,
-    parsePaginationParams,
-} from "./pagination";
+import { normalizePagination, parsePaginationParams } from "./pagination";
 
 describe("pagination utils", () => {
     describe("normalizePagination", () => {
@@ -13,9 +10,10 @@ describe("pagination utils", () => {
         });
 
         it("允许自定义默认值", () => {
-            expect(
-                normalizePagination({}, { page: 2, perPage: 15 }),
-            ).toEqual({ page: 2, perPage: 15 });
+            expect(normalizePagination({}, { page: 2, perPage: 15 })).toEqual({
+                page: 2,
+                perPage: 15,
+            });
         });
 
         it("保留有效数字", () => {
@@ -46,10 +44,13 @@ describe("pagination utils", () => {
 
         it("处理非数字", () => {
             const params = new URLSearchParams("page=abc&perPage=9999999999");
-            expect(parsePaginationParams(params, { page: 2, perPage: 30 })).toEqual({
+            expect(
+                parsePaginationParams(params, { page: 2, perPage: 30 }),
+            ).toEqual({
                 page: 2,
                 perPage: 9999999999,
             });
         });
     });
 });
+

@@ -41,7 +41,9 @@ describe("health route", () => {
         const fetchMock = vi.fn();
         vi.stubGlobal("fetch", fetchMock);
         const { GET } = await import("./route");
-        const res = await GET(new Request("https://health.test/api/health?fast=1"));
+        const res = await GET(
+            new Request("https://health.test/api/health?fast=1"),
+        );
         expect(fetchMock).not.toHaveBeenCalled();
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -76,7 +78,9 @@ describe("health route", () => {
         const fetchMock = vi
             .fn()
             .mockImplementation(() =>
-                Promise.resolve(responses.shift() ?? { status: 503, ok: false }),
+                Promise.resolve(
+                    responses.shift() ?? { status: 503, ok: false },
+                ),
             );
         vi.stubGlobal("fetch", fetchMock);
         const { GET } = await import("./route");
@@ -87,8 +91,12 @@ describe("health route", () => {
         expect(body.checks.db.ok).toBe(false);
         expect(body.checks.external.ok).toBe(false);
         expect(fetchMock).toHaveBeenCalledTimes(3);
-        expect(fetchMock.mock.calls[0]?.[0]).toBe("https://creem.example/status");
-        expect(fetchMock.mock.calls[1]?.[0]).toBe("https://creem.example/status");
+        expect(fetchMock.mock.calls[0]?.[0]).toBe(
+            "https://creem.example/status",
+        );
+        expect(fetchMock.mock.calls[1]?.[0]).toBe(
+            "https://creem.example/status",
+        );
         expect(fetchMock.mock.calls[2]?.[0]).toBe("https://creem.example");
     });
 
@@ -106,7 +114,9 @@ describe("health route", () => {
         getCloudflareContextMock.mockResolvedValue({ env });
         const dbMock = {
             select: () => ({
-                from: () => ({ limit: vi.fn().mockResolvedValue([{ domain: "" }]) }),
+                from: () => ({
+                    limit: vi.fn().mockResolvedValue([{ domain: "" }]),
+                }),
             }),
         };
         getDbMock.mockResolvedValue(dbMock);
@@ -126,7 +136,12 @@ describe("health route", () => {
         const body = await res.json();
         expect(body.ok).toBe(true);
         expect(fetchMock).toHaveBeenCalledTimes(2);
-        expect(fetchMock.mock.calls[0]?.[0]).toBe("https://creem.example/status");
-        expect(fetchMock.mock.calls[1]?.[0]).toBe("https://creem.example/status");
+        expect(fetchMock.mock.calls[0]?.[0]).toBe(
+            "https://creem.example/status",
+        );
+        expect(fetchMock.mock.calls[1]?.[0]).toBe(
+            "https://creem.example/status",
+        );
     });
 });
+

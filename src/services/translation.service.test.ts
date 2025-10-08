@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+    TranslationProvider,
+    TranslationProviderName,
+} from "./translation.service";
 import {
+    createTranslationServiceFromEnv,
     TranslationError,
     TranslationService,
-    createTranslationServiceFromEnv,
 } from "./translation.service";
 
 describe("translation service", () => {
@@ -33,10 +37,11 @@ describe("translation service", () => {
     });
 
     it("未知 provider 抛错", () => {
+        const invalidProvider = "unknown" as unknown as TranslationProviderName;
         expect(() =>
             createTranslationServiceFromEnv(
                 { GEMINI_API_KEY: "a" },
-                { provider: "unknown" as any },
+                { provider: invalidProvider },
             ),
         ).toThrowError(TranslationError);
     });
@@ -48,8 +53,7 @@ describe("translation service", () => {
                 choices: [
                     {
                         message: {
-                            content:
-                                "噪声前缀 {\"welcome\": \"你好\"}\n多余文本",
+                            content: '噪声前缀 {"welcome": "你好"}\n多余文本',
                         },
                     },
                 ],
@@ -66,9 +70,7 @@ describe("translation service", () => {
             sourceLocale: "en",
             targetLocale: "zh-CN",
         });
-        expect(result).toEqual([
-            { key: "welcome", translatedText: "你好" },
-        ]);
+        expect(result).toEqual([{ key: "welcome", translatedText: "你好" }]);
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
@@ -95,26 +97,26 @@ describe("translation service", () => {
     });
 
     it("空 entries 直接返回空数组", async () => {
-        const provider = { translateBatch: vi.fn() };
-        const service = new TranslationService(provider as any);
+        const translateBatch = vi.fn<TranslationProvider["translateBatch"]>();
+        const provider = { translateBatch } satisfies TranslationProvider;
+        const service = new TranslationService(provider);
         const result = await service.translateBatch({
             entries: [],
             sourceLocale: "en",
             targetLocale: "fr",
         });
         expect(result).toEqual([]);
-        expect(provider.translateBatch).not.toHaveBeenCalled();
+        expect(translateBatch).not.toHaveBeenCalled();
     });
 
     it("失败重试后成功", async () => {
-        const provider = {
-            translateBatch: vi
-                .fn()
-                .mockRejectedValueOnce(new Error("boom"))
-                .mockRejectedValueOnce(new Error("boom2"))
-                .mockResolvedValue([{ key: "a", translatedText: "b" }]),
-        };
-        const service = new TranslationService(provider as any);
+        const translateBatch = vi
+            .fn<TranslationProvider["translateBatch"]>()
+            .mockRejectedValueOnce(new Error("boom"))
+            .mockRejectedValueOnce(new Error("boom2"))
+            .mockResolvedValue([{ key: "a", translatedText: "b" }]);
+        const provider = { translateBatch } satisfies TranslationProvider;
+        const service = new TranslationService(provider);
         const promise = service.translateBatch({
             entries: [{ key: "a", text: "A" }],
             sourceLocale: "en",
@@ -122,14 +124,15 @@ describe("translation service", () => {
         });
         await vi.runAllTimersAsync();
         expect(await promise).toEqual([{ key: "a", translatedText: "b" }]);
-        expect(provider.translateBatch).toHaveBeenCalledTimes(3);
+        expect(translateBatch).toHaveBeenCalledTimes(3);
     });
 
     it("重试耗尽后抛错", async () => {
-        const provider = {
-            translateBatch: vi.fn().mockRejectedValue(new Error("fail")),
-        };
-        const service = new TranslationService(provider as any);
+        const translateBatch = vi
+            .fn<TranslationProvider["translateBatch"]>()
+            .mockRejectedValue(new Error("fail"));
+        const provider = { translateBatch } satisfies TranslationProvider;
+        const service = new TranslationService(provider);
         const promise = service.translateBatch({
             entries: [{ key: "x", text: "X" }],
             sourceLocale: "en",
@@ -138,6 +141,7 @@ describe("translation service", () => {
         const captured = promise.catch((error) => error);
         await vi.runAllTimersAsync();
         await expect(captured).resolves.toBeInstanceOf(TranslationError);
-        expect(provider.translateBatch).toHaveBeenCalledTimes(3);
+        expect(translateBatch).toHaveBeenCalledTimes(3);
     });
 });
+

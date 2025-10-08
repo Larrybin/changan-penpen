@@ -5,8 +5,12 @@ describe("SummarizerService", () => {
     it("使用默认配置生成摘要", async () => {
         const ai = {
             run: vi.fn().mockResolvedValue({ response: " Summary text " }),
+        } satisfies {
+            run: ConstructorParameters<typeof SummarizerService>[0]["run"];
         };
-        const service = new SummarizerService(ai as any);
+        const service = new SummarizerService(
+            ai as unknown as ConstructorParameters<typeof SummarizerService>[0],
+        );
         const text = "a".repeat(100);
         const result = await service.summarize(text);
         expect(ai.run).toHaveBeenCalledWith("@cf/meta/llama-3.2-1b-instruct", {
@@ -19,14 +23,20 @@ describe("SummarizerService", () => {
         expect(result.originalLength).toBe(text.length);
         expect(result.summaryLength).toBe("Summary text".length);
         expect(result.tokensUsed.input).toBeGreaterThan(0);
-        expect(result.tokensUsed.output).toBe(Math.ceil("Summary text".length / 4));
+        expect(result.tokensUsed.output).toBe(
+            Math.ceil("Summary text".length / 4),
+        );
     });
 
     it("自定义配置会反映在系统提示中", async () => {
         const ai = {
             run: vi.fn().mockResolvedValue({ response: "Bullet list" }),
+        } satisfies {
+            run: ConstructorParameters<typeof SummarizerService>[0]["run"];
         };
-        const service = new SummarizerService(ai as any);
+        const service = new SummarizerService(
+            ai as unknown as ConstructorParameters<typeof SummarizerService>[0],
+        );
         const text = "b".repeat(120);
         await service.summarize(text, {
             maxLength: 150,
@@ -39,3 +49,4 @@ describe("SummarizerService", () => {
         expect(systemMessage).toContain("150");
     });
 });
+
