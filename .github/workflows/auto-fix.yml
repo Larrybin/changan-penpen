@@ -26,7 +26,8 @@ env:
 
 jobs:
   auto-fix:
-    if: ${{ github.event.workflow_run.conclusion != 'success' }}
+    # 仅当来源工作流失败，且来源事件为 push 且 head 为默认分支时触发
+    if: ${{ github.event.workflow_run.conclusion != 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == github.event.repository.default_branch }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -127,14 +128,27 @@ jobs:
           echo "### tsc --noEmit" >> "$SUMMARY_FILE"
           tail -n 60 "$LOG" >> "$SUMMARY_FILE"
 
-      - name: Detect changes
+      - name: Detect relevant changes
         id: changes
         run: |
-          if git diff --quiet; then
+          set -euo pipefail
+          # 将未跟踪文件纳入 diff 视图（不实际暂存）
+          git add -N .
+          # 获取所有变更文件列表
+          CHANGED=$(git diff --name-only --diff-filter=ACMRTUXB || true)
+          # 过滤掉仅用于说明的 summary 文件
+          REL=$(echo "$CHANGED" | grep -v -E '^(auto-fix-summary\.md)$' || true)
+          if [ -z "$REL" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            git status --short
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "paths<<EOF"
+              echo "$REL"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "### Relevant changes (excluding summary)" >> "$SUMMARY_FILE"
+            echo "$REL" >> "$SUMMARY_FILE"
           fi
 
       - name: Create/Update PR (deterministic)
@@ -147,6 +161,8 @@ jobs:
           title: "chore(auto-fix): automated fixes (rolling PR)"
           commit-message: "chore(auto-fix): automated fixes after failed run #${{ env.RUN_ID }}"
           body-path: ${{ env.SUMMARY_FILE }}
+          # 仅提交实际相关文件，避免把 summary 一并提交导致噪音 PR
+          add-paths: ${{ steps.changes.outputs.paths }}
           labels: autofix,ci
           delete-branch: false
 
@@ -207,8 +223,27 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create/Update PR with AI changes (draft)
+      - name: Detect AI changes (excluding summary)
         if: ${{ steps.ai_fix.outputs.changed == 'true' }}
+        id: ai_changes
+        run: |
+          set -euo pipefail
+          git add -N .
+          CHANGED=$(git diff --name-only --diff-filter=ACMRTUXB || true)
+          REL=$(echo "$CHANGED" | grep -v -E '^(auto-fix-summary\.md)$' || true)
+          if [ -z "$REL" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "paths<<EOF"
+              echo "$REL"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create/Update PR with AI changes (draft)
+        if: ${{ steps.ai_fix.outputs.changed == 'true' && steps.ai_changes.outputs.changed == 'true' }}
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
         with:
           base: ${{ env.BASE_BRANCH }}
@@ -216,6 +251,7 @@ jobs:
           title: "fix(ai): auto-generated fixes (rolling PR)"
           commit-message: "fix(ai): auto-generated patch after failed run #${{ env.RUN_ID }}"
           body-path: ${{ steps.ai_fix.outputs.summary_path }}
+          add-paths: ${{ steps.ai_changes.outputs.paths }}
           labels: ai-autofix,ci,ai-generated
           draft: true
           delete-branch: false
