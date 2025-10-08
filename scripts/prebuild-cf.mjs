@@ -57,9 +57,10 @@ if (shouldRunRemoteMigrations(env)) {
         ["d1", "migrations", "apply", "next-cf-app", "--remote"],
         "remote",
     );
-
 } else {
-    console.log("[info] Skipping remote D1 migrations. Set CLOUDFLARE_RUN_REMOTE_MIGRATIONS=true to enable.");
+    console.log(
+        "[info] Skipping remote D1 migrations. Set CLOUDFLARE_RUN_REMOTE_MIGRATIONS=true to enable.",
+    );
 }
 
 if (!isSuccessful) {
