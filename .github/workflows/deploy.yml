@@ -141,7 +141,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: preview
-          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}"
+          command: deploy --env preview --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PREVIEW }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}" --var "TRANSLATION_PROVIDER=${{ vars.TRANSLATION_PROVIDER || 'gpt' }}" --var "OPENAI_BASE_URL=${{ vars.OPENAI_BASE_URL }}"
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -149,6 +149,7 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Preview health check
         if: steps.preview-secrets.outputs.available == 'true'
@@ -316,7 +317,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
           wranglerVersion: '4.42.0'
-          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}"
+          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}" --var "TRANSLATION_PROVIDER=${{ vars.TRANSLATION_PROVIDER || 'gpt' }}" --var "OPENAI_BASE_URL=${{ vars.OPENAI_BASE_URL }}"
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -324,6 +325,7 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Sync Production secrets
         if: vars.SYNC_PRODUCTION_SECRETS == 'true'
@@ -340,6 +342,7 @@ jobs:
           sync_secret CLOUDFLARE_R2_URL "$CLOUDFLARE_R2_URL"
           sync_secret CREEM_API_KEY "$CREEM_API_KEY"
           sync_secret CREEM_WEBHOOK_SECRET "$CREEM_WEBHOOK_SECRET"
+          sync_secret OPENAI_API_KEY "$OPENAI_API_KEY"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -349,6 +352,7 @@ jobs:
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Skip production secret sync (disabled)
         if: vars.SYNC_PRODUCTION_SECRETS != 'true'
