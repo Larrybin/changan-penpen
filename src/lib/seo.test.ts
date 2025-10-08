@@ -99,7 +99,6 @@ describe("seo helpers", () => {
                     super(input, base);
                 }
             }
-            // @ts-expect-error override for testing
             globalThis.URL = FailingURL;
             try {
                 const module = await import("./seo");
