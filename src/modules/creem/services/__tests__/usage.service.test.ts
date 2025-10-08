@@ -114,6 +114,30 @@ describe("creem usage service", () => {
         vi.useRealTimers();
     });
 
+    it("rejects non-positive amounts", async () => {
+        if (skipIfUnavailable()) {
+            return;
+        }
+
+        await expect(
+            recordUsage({
+                userId,
+                feature: "ai.generate",
+                amount: 0,
+                unit: "tokens",
+            }),
+        ).rejects.toThrow("Usage amount must be a positive number");
+
+        await expect(
+            recordUsage({
+                userId,
+                feature: "ai.generate",
+                amount: -5,
+                unit: "tokens",
+            }),
+        ).rejects.toThrow("Usage amount must be a positive number");
+    });
+
     it("decrements credits when requested", async () => {
         if (skipIfUnavailable()) {
             return;

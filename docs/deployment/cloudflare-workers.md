@@ -39,3 +39,9 @@ Run `pnpm cf-typegen` after any change to bindings to refresh `cloudflare-env.d.
 - Large/long‑running tasks should be offloaded; add timeouts for outbound calls
 - Keep `.dev.vars.example` and this doc in sync with deployments
 
+## Edge Rate Limiting
+- Namespace setup: Create a Cloudflare Rate Limiting namespace (e.g. `wrangler ratelimit create creem-checkout --limit 10 --period 60`) and note the generated ID.
+- Binding: Update `wrangler.jsonc` so both the default worker and the `production` environment attach the namespace as `RATE_LIMITER`. Deploying without the binding leaves rate limiting disabled.
+- Verification: After deployment, hit `/api/creem/create-checkout` repeatedly with the same user session until a 429 appears, confirming the edge policy works. Use `wrangler tail` to capture the `[rate-limit]` log line for auditing.
+- Rollback: Removing the binding or setting a larger quota in the Cloudflare Dashboard takes effect immediately. Document any temporary overrides in the release checklist.
+

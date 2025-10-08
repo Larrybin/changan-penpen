@@ -5,10 +5,8 @@ export interface SentryOptions {
   release?: string;
   tracesSampleRate?: number;
   profilesSampleRate?: number;
-  // Sentry Replay sampling rates (client-side)
   replaysSessionSampleRate?: number;
   replaysOnErrorSampleRate?: number;
-  // Proxy tunnel route
   tunnel?: string;
   debug?: boolean;
   sendDefaultPii?: boolean;

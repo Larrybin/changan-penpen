@@ -173,28 +173,80 @@ export async function updateSiteSettings(
 ) {
     const db = await getDb();
     const rows = await db.select().from(siteSettings).limit(1);
+    const basePayload = rows.length
+        ? mapRowToPayload(rows[0])
+        : { ...EMPTY_SETTINGS };
     const now = new Date().toISOString();
+
+    const nextPayload: SiteSettingsPayload = {
+        ...basePayload,
+        ...(input.siteName !== undefined && { siteName: input.siteName }),
+        ...(input.domain !== undefined && { domain: input.domain }),
+        ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl }),
+        ...(input.faviconUrl !== undefined && { faviconUrl: input.faviconUrl }),
+        ...(input.seoTitle !== undefined && { seoTitle: input.seoTitle }),
+        ...(input.seoDescription !== undefined && {
+            seoDescription: input.seoDescription,
+        }),
+        ...(input.seoOgImage !== undefined && { seoOgImage: input.seoOgImage }),
+        sitemapEnabled:
+            input.sitemapEnabled !== undefined
+                ? Boolean(input.sitemapEnabled)
+                : basePayload.sitemapEnabled,
+        ...(input.robotsRules !== undefined && {
+            robotsRules: input.robotsRules,
+        }),
+        ...(input.brandPrimaryColor !== undefined && {
+            brandPrimaryColor: input.brandPrimaryColor,
+        }),
+        ...(input.brandSecondaryColor !== undefined && {
+            brandSecondaryColor: input.brandSecondaryColor,
+        }),
+        ...(input.brandFontFamily !== undefined && {
+            brandFontFamily: input.brandFontFamily,
+        }),
+        ...(input.headHtml !== undefined && { headHtml: input.headHtml }),
+        ...(input.footerHtml !== undefined && { footerHtml: input.footerHtml }),
+        defaultLanguage:
+            input.defaultLanguage ?? basePayload.defaultLanguage ?? "en",
+        enabledLanguages: [...basePayload.enabledLanguages],
+    };
+
+    if (input.enabledLanguages !== undefined) {
+        const fallbackLanguage = nextPayload.defaultLanguage ?? "en";
+        nextPayload.enabledLanguages =
+            input.enabledLanguages.length > 0
+                ? [...input.enabledLanguages]
+                : [fallbackLanguage];
+    }
+
+    if (
+        nextPayload.defaultLanguage &&
+        !nextPayload.enabledLanguages.includes(nextPayload.defaultLanguage)
+    ) {
+        nextPayload.enabledLanguages = [
+            nextPayload.defaultLanguage,
+            ...nextPayload.enabledLanguages,
+        ].filter((language, index, arr) => arr.indexOf(language) === index);
+    }
+
     const payload = {
-        siteName: input.siteName ?? "",
-        domain: input.domain ?? "",
-        logoUrl: input.logoUrl ?? "",
-        faviconUrl: input.faviconUrl ?? "",
-        seoTitle: input.seoTitle ?? "",
-        seoDescription: input.seoDescription ?? "",
-        seoOgImage: input.seoOgImage ?? "",
-        sitemapEnabled: Boolean(input.sitemapEnabled),
-        robotsRules: input.robotsRules ?? "",
-        brandPrimaryColor: input.brandPrimaryColor ?? "#2563eb",
-        brandSecondaryColor: input.brandSecondaryColor ?? "#0f172a",
-        brandFontFamily: input.brandFontFamily ?? "Inter",
-        headHtml: input.headHtml ?? "",
-        footerHtml: input.footerHtml ?? "",
-        defaultLanguage: input.defaultLanguage ?? "en",
-        enabledLanguages: JSON.stringify(
-            input.enabledLanguages?.length
-                ? input.enabledLanguages
-                : [input.defaultLanguage ?? "en"],
-        ),
+        siteName: nextPayload.siteName,
+        domain: nextPayload.domain,
+        logoUrl: nextPayload.logoUrl,
+        faviconUrl: nextPayload.faviconUrl,
+        seoTitle: nextPayload.seoTitle,
+        seoDescription: nextPayload.seoDescription,
+        seoOgImage: nextPayload.seoOgImage,
+        sitemapEnabled: nextPayload.sitemapEnabled,
+        robotsRules: nextPayload.robotsRules,
+        brandPrimaryColor: nextPayload.brandPrimaryColor,
+        brandSecondaryColor: nextPayload.brandSecondaryColor,
+        brandFontFamily: nextPayload.brandFontFamily,
+        headHtml: nextPayload.headHtml,
+        footerHtml: nextPayload.footerHtml,
+        defaultLanguage: nextPayload.defaultLanguage,
+        enabledLanguages: JSON.stringify(nextPayload.enabledLanguages),
         updatedAt: now,
     };
 
