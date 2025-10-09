@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# Block pushes when checks fail
+
+pnpm run check:all || exit 1
+# Optional quick smoke tests for critical routes; do not hard block overall push if they fail
+pnpm exec vitest run -t "health|creem" --reporter=dot || true
+

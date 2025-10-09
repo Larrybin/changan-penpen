@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Format staged files and run typecheck before committing
+
+pnpm exec lint-staged || exit 1
+pnpm exec tsc --noEmit || exit 1
+
