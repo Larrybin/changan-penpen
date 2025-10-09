@@ -1,4 +1,4 @@
-# Contributing Guide
+﻿# Contributing Guide
 
 Thank you for your interest in the project! Please follow these steps to keep collaboration smooth and high-quality.
 
@@ -6,7 +6,7 @@ Thank you for your interest in the project! Please follow these steps to keep co
 1. Create a branch (e.g., `feature/<topic>` or `fix/<issue-id>`). Keep it focused and short-lived.
 2. Sync latest `main` before you branch and before opening a PR.
 3. Develop and validate locally (see `docs/local-dev.md`).
-4. Run quality gates locally: `pnpm lint && pnpm test && pnpm build`.
+4. Run quality gates locally: `pnpm check:all && pnpm test && pnpm build`.
 5. Open a PR with a clear description, screenshots for UI, and links to issues.
 
 ## 2) Coding Standards
@@ -18,6 +18,25 @@ Thank you for your interest in the project! Please follow these steps to keep co
 - Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` ...
 - Keep small, self-contained commits. Reference issues (e.g., `Fixes #123`).
 - PRs must pass CI and include docs updates for user-visible or ops changes.
+### Local Checks & CI Requirements
+
+Consistent local gates reduce CI churn and reviewer effort.
+
+- Pre-commit (Husky)
+  - Biome on staged files via lint-staged (auto-fixable issues are fixed).
+  - TypeScript type check: 	sc --noEmit.
+- Pre-push (Husky)
+  - pnpm check:all (Biome check + typecheck) must pass.
+  - A quick smoke of critical tests (itest -t "health|creem", non-blocking by default; adjust in .husky/pre-push if needed).
+- One‑command auto-fix + push
+  - pnpm push: Biome auto-fix → Cloudflare typegen → TSC → Biome check → auto-commit changes → rebase & push.
+
+Before opening a PR
+
+- Run pnpm check:all and pnpm test (or at least the affected suites).
+- If you changed Cloudflare bindings or env keys, run pnpm cf-typegen or pnpm typecheck (includes typegen) to refresh cloudflare-env.d.ts.
+- Avoid ny. Prefer env narrowing, e.g. const cf = env as unknown as Pick<CloudflareEnv, 'CREEM_API_URL' | 'CREEM_API_KEY'>.
+- Use catch (_error) for intentionally unused catch variables to satisfy lint.
 
 ## 4) Tests
 - Prefer Vitest; colocate tests as `*.test.ts(x)`.
@@ -35,4 +54,5 @@ Thank you for your interest in the project! Please follow these steps to keep co
 ## 7) Reviews
 - Be kind, specific, and actionable. Suggest improvements with examples.
 - Maintainers may request splitting large PRs into smaller ones.
+
 
