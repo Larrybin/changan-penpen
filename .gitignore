@@ -7,7 +7,11 @@
 .yarn/install-state.gz
 
 # testing
-/coverage/
+# Keep generated coverage reports ignored by default, but allow committed
+# baseline summaries used for CI coverage gates.
+/coverage/*
+!/coverage/coverage-summary.json
+!/coverage/coverage-final.json
 /.nyc_output/
 *.lcov
 

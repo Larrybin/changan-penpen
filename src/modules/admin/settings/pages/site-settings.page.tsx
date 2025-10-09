@@ -132,20 +132,17 @@ export function SiteSettingsPage() {
                     const prevLanguages = prevValue as string[];
 
                     if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
-                        return {
-                            ...accumulator,
-                            [key]: [...nextLanguages],
-                        } as Partial<SiteSettingsState>;
+                        accumulator[key] = [
+                            ...nextLanguages,
+                        ] as SiteSettingsState[typeof key];
                     }
 
                     return accumulator;
                 }
 
                 if (nextValue !== prevValue) {
-                    return {
-                        ...accumulator,
-                        [key]: nextValue,
-                    } as Partial<SiteSettingsState>;
+                    accumulator[key] =
+                        nextValue as SiteSettingsState[typeof key];
                 }
 
                 return accumulator;
