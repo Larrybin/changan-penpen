@@ -13,3 +13,5 @@ runs:
         echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"
         pnpm dedupe || true
         pnpm install --no-frozen-lockfile
+        # Prevent lockfile drift from causing unrelated CI diffs
+        git checkout -- pnpm-lock.yaml || true

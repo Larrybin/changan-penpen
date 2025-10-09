@@ -68,7 +68,7 @@ jobs:
 
       - name: Ensure i18n is normalized (no diff)
         run: |
-          git diff --exit-code || (echo "i18n files not normalized. Run 'pnpm run fix:i18n' and commit changes." && exit 1)
+          git diff --exit-code -- src/i18n/messages || (echo "i18n files not normalized. Run 'pnpm run fix:i18n' and commit changes." && exit 1)
 
       - name: Lint (Biome)
         run: pnpm exec biome check .
@@ -170,4 +170,3 @@ jobs:
 
       - name: Build (Next.js)
         run: pnpm build
-

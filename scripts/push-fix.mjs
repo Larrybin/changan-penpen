@@ -80,7 +80,29 @@ if (status) {
 }
 
 // 5) Rebase latest remote then push
-tryRun("git pull --rebase --autostash");
-run("git push");
+{
+    const pulled = tryRun("git pull --rebase --autostash");
+    let conflictList = "";
+    try {
+        // List unmerged files if any
+        conflictList = getOutput("git diff --name-only --diff-filter=U");
+    } catch {}
+    if (!pulled || (conflictList && conflictList.trim().length > 0)) {
+        if (conflictList && conflictList.trim().length > 0) {
+            console.error(
+                `\nMerge conflicts detected in the following files:\n${conflictList.trim()}`,
+            );
+        } else {
+            console.error(
+                "\nPull with rebase failed. Resolve issues and re-run.",
+            );
+        }
+        console.error(
+            "\nResolve the conflicts locally, commit the resolution, then re-run `pnpm push`.",
+        );
+        process.exit(1);
+    }
+    run("git push");
+}
 
 console.log("\n✅ Auto-fix + self-check + push completed.");
