@@ -126,7 +126,6 @@ describe("health route", () => {
         assertHealthResponse(body);
         expect(body.ok).toBe(false);
         expect(body.checks.db.ok).toBe(false);
-        // 关键断言：无 CREEM_API_KEY 时 external 不阻断且不请求
         expect(body.checks.external.ok).toBe(true);
         expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -173,3 +172,4 @@ describe("health route", () => {
         expect(fetchMock.mock.calls[1]?.[0]).toBe("https://creem.example/status");
     });
 });
+
