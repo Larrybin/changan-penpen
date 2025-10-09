@@ -135,7 +135,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: '4.42.0'
+          wranglerVersion: '4.42.1'
           command: d1 export next-cf-app --output ${{ steps.backup.outputs.filename }}
 
       - name: Upload production DB backup
@@ -152,7 +152,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
-          wranglerVersion: '4.42.0'
+          wranglerVersion: '4.42.1'
           command: d1 migrations apply next-cf-app --env production --remote
 
       - name: Verify D1 migrations applied (list)
@@ -161,7 +161,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
-          wranglerVersion: '4.42.0'
+          wranglerVersion: '4.42.1'
           command: d1 migrations list next-cf-app --env production --remote
 
       - name: Verify critical tables exist (site_settings)
@@ -170,7 +170,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
-          wranglerVersion: '4.42.0'
+          wranglerVersion: '4.42.1'
           command: d1 execute next-cf-app --env production --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name='site_settings';"
 
       - name: Deploy to Production (code)
@@ -179,7 +179,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
-          wranglerVersion: '4.42.0'
+          wranglerVersion: '4.42.1'
           command: >-
             deploy --env production
             --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}"
@@ -247,5 +247,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: '4.42.0'
+          wranglerVersion: '4.42.1'
           command: --version
+
