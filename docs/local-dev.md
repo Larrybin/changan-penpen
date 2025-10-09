@@ -78,10 +78,13 @@
 Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` and `docs/troubleshooting.md`.
 
 ## 9. Push Helper
-- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push.
+- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push。
+- Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: …, add CF env fallbacks, …, and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types)。
 - Env toggles:
   - `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks in emergencies (re-run without skip before merging).
   - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.
   - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows.
   - `PUSH_LOG_DIR=/path` `PUSH_LOG_FILE=/path/file.log` — save a full push log to a custom location.
   - `PUSH_COMMIT_MSG="feat: ..." pnpm push` — override the auto-commit message when the script commits auto-fixes.
+  - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).
+  - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).
