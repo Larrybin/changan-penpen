@@ -19,7 +19,11 @@ function isCheckResult(value: unknown): value is CheckResult {
     if (!value || typeof value !== "object") return false;
     const record = value as Record<string, unknown>;
     if (record.ok !== true && record.ok !== false) return false;
-    if (record.ok === false && record.error !== undefined && typeof record.error !== "string")
+    if (
+        record.ok === false &&
+        record.error !== undefined &&
+        typeof record.error !== "string"
+    )
         return false;
     return true;
 }
@@ -29,11 +33,19 @@ function assertHealthResponse(value: unknown): asserts value is HealthResponse {
     const record = value as Record<string, unknown>;
     if (typeof record.ok !== "boolean") throw new Error("响应缺少 ok 字段");
     if (typeof record.time !== "string") throw new Error("响应缺少 time 字段");
-    if (typeof record.durationMs !== "number") throw new Error("响应缺少 durationMs 字段");
+    if (typeof record.durationMs !== "number")
+        throw new Error("响应缺少 durationMs 字段");
     const checks = record.checks as Record<string, unknown> | undefined;
-    if (!checks || typeof checks !== "object") throw new Error("响应缺少 checks 字段");
+    if (!checks || typeof checks !== "object")
+        throw new Error("响应缺少 checks 字段");
     const { db, r2, env, appUrl, external } = checks as Record<string, unknown>;
-    if (!isCheckResult(db) || !isCheckResult(r2) || !isCheckResult(env) || !isCheckResult(appUrl) || !isCheckResult(external))
+    if (
+        !isCheckResult(db) ||
+        !isCheckResult(r2) ||
+        !isCheckResult(env) ||
+        !isCheckResult(appUrl) ||
+        !isCheckResult(external)
+    )
         throw new Error("响应包含无效检查项");
 }
 
@@ -153,8 +165,12 @@ describe("health route", () => {
         getDbMock.mockResolvedValue(dbMock);
         const fetchMock = vi
             .fn()
-            .mockImplementationOnce(() => Promise.resolve({ status: 405, ok: false }))
-            .mockImplementationOnce(() => Promise.resolve({ status: 200, ok: true }));
+            .mockImplementationOnce(() =>
+                Promise.resolve({ status: 405, ok: false }),
+            )
+            .mockImplementationOnce(() =>
+                Promise.resolve({ status: 200, ok: true }),
+            );
         vi.stubGlobal("fetch", fetchMock);
         resolveAppUrlMock.mockReturnValue("https://resolved.example");
         const { GET } = await import("./route");
@@ -168,8 +184,11 @@ describe("health route", () => {
         assertHealthResponse(body);
         expect(body.ok).toBe(true);
         expect(fetchMock).toHaveBeenCalledTimes(2);
-        expect(fetchMock.mock.calls[0]?.[0]).toBe("https://creem.example/status");
-        expect(fetchMock.mock.calls[1]?.[0]).toBe("https://creem.example/status");
+        expect(fetchMock.mock.calls[0]?.[0]).toBe(
+            "https://creem.example/status",
+        );
+        expect(fetchMock.mock.calls[1]?.[0]).toBe(
+            "https://creem.example/status",
+        );
     });
 });
-
