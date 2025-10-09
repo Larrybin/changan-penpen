@@ -1,11 +1,10 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 import { getDb, siteSettings } from "@/db";
 import { resolveAppUrl } from "@/lib/seo";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
-// 统一：在 Cloudflare Workers 上运行，使用 edge 运行时以便独立打包
-export const runtime = "edge";
+// 缁熶竴锛氬湪 Cloudflare Workers 涓婅繍琛岋紝浣跨敤 edge 杩愯鏃朵互渚跨嫭绔嬫墦鍖?export const runtime = "nodejs";
 
 type CheckResult = { ok: true } | { ok: false; error: string };
 
@@ -32,8 +31,7 @@ function extractAccessToken(headers: Headers): string {
 async function checkDb(): Promise<CheckResult> {
     try {
         const db = await getDb();
-        // 执行轻量查询以验证连通性
-        await db.select().from(siteSettings).limit(1);
+        // 鎵ц杞婚噺鏌ヨ浠ラ獙璇佽繛閫氭€?        await db.select().from(siteSettings).limit(1);
         return { ok: true };
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -43,15 +41,14 @@ async function checkDb(): Promise<CheckResult> {
 
 async function checkR2(env: CloudflareBindings): Promise<CheckResult> {
     try {
-        // 确认绑定存在
+        // 纭缁戝畾瀛樺湪
         if (!env || !("next_cf_app_bucket" in env)) {
             return {
                 ok: false,
                 error: "R2 binding next_cf_app_bucket missing",
             };
         }
-        // 列表请求（limit=1）验证可访问性
-        await (env as unknown as CloudflareEnv).next_cf_app_bucket.list({
+        // 鍒楄〃璇锋眰锛坙imit=1锛夐獙璇佸彲璁块棶鎬?        await (env as unknown as CloudflareEnv).next_cf_app_bucket.list({
             limit: 1,
         });
         return { ok: true };
@@ -101,7 +98,7 @@ export async function GET(request: Request) {
             ? Promise.resolve<CheckResult>({ ok: true })
             : checkExternalServices(env),
     ]);
-    // 外部依赖是否为强制项由开关控制（默认不阻断）
+    // 澶栭儴渚濊禆鏄惁涓哄己鍒堕」鐢卞紑鍏虫帶鍒讹紙榛樿涓嶉樆鏂級
     const requireExternal = fast
         ? false
         : String(
@@ -183,17 +180,15 @@ async function checkEnvAndBindings(
                 error: "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET must both be set to enable Google OAuth",
             };
         }
-        // 检查关键绑定是否存在
-        const missingBindings: string[] = [];
+        // 妫€鏌ュ叧閿粦瀹氭槸鍚﹀瓨鍦?        const missingBindings: string[] = [];
         if (!env?.next_cf_app_bucket) {
             missingBindings.push("next_cf_app_bucket");
         }
         if (!env?.AI) {
-            // AI 为可选，仅记录缺失，不作为失败条件
-        }
+            // AI 涓哄彲閫夛紝浠呰褰曠己澶憋紝涓嶄綔涓哄け璐ユ潯浠?        }
         if (!env?.ASSETS) {
-            // ASSETS 为 OpenNext Workers 绑定，缺失可能是构建/配置异常
-            // 仅标记但不阻断（某些配置可能不直接暴露）
+            // ASSETS 涓?OpenNext Workers 缁戝畾锛岀己澶卞彲鑳芥槸鏋勫缓/閰嶇疆寮傚父
+            // 浠呮爣璁颁絾涓嶉樆鏂紙鏌愪簺閰嶇疆鍙兘涓嶇洿鎺ユ毚闇诧級
         }
         if (missing.length || missingBindings.length) {
             if (!options.includeDetails) {
@@ -207,8 +202,7 @@ async function checkEnvAndBindings(
                 error: `Missing env: ${missing.join(",")} | Missing bindings: ${missingBindings.join(",")}`,
             };
         }
-        // 可选项不阻断
-        return { ok: true };
+        // 鍙€夐」涓嶉樆鏂?        return { ok: true };
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return { ok: false, error: msg };
@@ -225,15 +219,14 @@ async function checkAppUrl({
     includeDetails: boolean;
 }): Promise<CheckResult> {
     try {
-        // 优先从环境变量读取基础 URL，避免对 DB 的强依赖
+        // 浼樺厛浠庣幆澧冨彉閲忚鍙栧熀纭€ URL锛岄伩鍏嶅 DB 鐨勫己渚濊禆
         const fromEnv = String(
             (env as unknown as { NEXT_PUBLIC_APP_URL?: string })
                 .NEXT_PUBLIC_APP_URL ?? "",
         ).trim();
         let base = fromEnv || String(runtimeOrigin ?? "");
         if (!base) {
-            // 回退到数据库配置（若存在）
-            const db = await getDb();
+            // 鍥為€€鍒版暟鎹簱閰嶇疆锛堣嫢瀛樺湪锛?            const db = await getDb();
             const rows = await db.select().from(siteSettings).limit(1);
             const domain = rows?.[0]?.domain ?? "";
             const settings = domain
@@ -252,7 +245,7 @@ async function checkAppUrl({
                     : "Application base URL could not be resolved",
             };
         }
-        // 基本格式校验
+        // 鍩烘湰鏍煎紡鏍￠獙
         try {
             const u = new URL(base);
             if (!u.protocol.startsWith("http")) {
@@ -282,21 +275,20 @@ async function checkExternalServices(
             (env as unknown as { CREEM_API_URL?: string })?.CREEM_API_URL ?? "",
         ).trim();
         if (!base) {
-            // 未配置则跳过，不阻断
+            // 鏈厤缃垯璺宠繃锛屼笉闃绘柇
             return { ok: true };
         }
         const bearer = String(
             (env as unknown as { CREEM_API_KEY?: string })?.CREEM_API_KEY ?? "",
         ).trim();
-        // 缺少访问令牌时，不将外部服务作为阻断项（直接视为通过）
-        if (!bearer) {
+        // 缂哄皯璁块棶浠ょ墝鏃讹紝涓嶅皢澶栭儴鏈嶅姟浣滀负闃绘柇椤癸紙鐩存帴瑙嗕负閫氳繃锛?        if (!bearer) {
             return { ok: true };
         }
         const headers: Record<string, string> = {};
         headers.authorization = `Bearer ${bearer}`;
 
         const endpointBase = base.replace(/\/+$/, "");
-        const candidates = ["/status", ""]; // 优先尝试 /status，其次根路径
+        const candidates = ["/status", ""]; // 浼樺厛灏濊瘯 /status锛屽叾娆℃牴璺緞
 
         const timeoutMs = 4000;
         const tryFetch = async (url: string, method: "HEAD" | "GET") => {
@@ -321,13 +313,12 @@ async function checkExternalServices(
                 if (res.status === 405 || res.status === 404) {
                     res = await tryFetch(url, "GET");
                 }
-                // 2xx/3xx/401/403 视为连通；5xx 视为失败
+                // 2xx/3xx/401/403 瑙嗕负杩為€氾紱5xx 瑙嗕负澶辫触
                 if (res.status < 500) {
                     return { ok: true };
                 }
             } catch (_error) {
-                // 继续尝试下一个候选
-            }
+                // 缁х画灏濊瘯涓嬩竴涓€欓€?            }
         }
 
         return { ok: false, error: "External service unreachable or 5xx" };
@@ -336,3 +327,4 @@ async function checkExternalServices(
         return { ok: false, error: msg };
     }
 }
+
