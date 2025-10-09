@@ -199,24 +199,29 @@ jobs:
         if: vars.SYNC_PRODUCTION_SECRETS == 'true'
         run: |
           set -euo pipefail
-          sync_secret () {
+          sync_if_set () {
             local key="$1"
-            local value="$2"
+            # Use parameter expansion to avoid unbound variable under set -u
+            local value="${2-}"
+            if [ -z "${value:-}" ]; then
+              echo "::warning::Skipping secret $key: not provided"
+              return 0
+            fi
             printf '%s' "$value" | pnpm exec wrangler secret put "$key" --env production --name next-cf-app
           }
-          sync_secret BETTER_AUTH_SECRET "$BETTER_AUTH_SECRET"
-          sync_secret GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
-          sync_secret GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
-          sync_secret CLOUDFLARE_R2_URL "$CLOUDFLARE_R2_URL"
-          sync_secret CREEM_API_KEY "$CREEM_API_KEY"
-          sync_secret CREEM_WEBHOOK_SECRET "$CREEM_WEBHOOK_SECRET"
-          sync_secret OPENAI_API_KEY "$OPENAI_API_KEY"
+          sync_if_set BETTER_AUTH_SECRET "${BETTER_AUTH_SECRET-}"
+          sync_if_set GOOGLE_CLIENT_ID "${GOOGLE_CLIENT_ID-}"
+          sync_if_set GOOGLE_CLIENT_SECRET "${GOOGLE_CLIENT_SECRET-}"
+          sync_if_set CLOUDFLARE_R2_URL "${CLOUDFLARE_R2_URL-}"
+          sync_if_set CREEM_API_KEY "${CREEM_API_KEY-}"
+          sync_if_set CREEM_WEBHOOK_SECRET "${CREEM_WEBHOOK_SECRET-}"
+          sync_if_set OPENAI_API_KEY "${OPENAI_API_KEY-}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE CLIENT SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
