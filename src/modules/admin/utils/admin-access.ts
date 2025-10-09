@@ -136,7 +136,7 @@ export async function requireAdminForPage(user: AuthUser) {
         return;
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const entryCookie = cookieStore.get("admin-entry");
 
     if (!entryCookie || !isEntryTokenValid(entryCookie.value, config)) {

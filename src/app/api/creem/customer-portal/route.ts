@@ -1,14 +1,13 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import { getDb } from "@/db";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { customers } from "@/modules/creem/schemas/billing.schema";
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: headers() });
+        const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user) {
             return new Response("Unauthorized", { status: 401 });
         }

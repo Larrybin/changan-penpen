@@ -3,17 +3,17 @@ import { generateDashboardTodosMetadata } from "@/modules/dashboard/metadata";
 import EditTodoPage from "@/modules/todos/edit-todo.page";
 
 interface PageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({
     params,
 }: PageProps): Promise<Metadata> {
-    const { id } = params;
+    const { id } = await params;
     return generateDashboardTodosMetadata(`/dashboard/todos/${id}/edit`);
 }
 
 export default async function Page({ params }: PageProps) {
-    const { id } = params;
+    const { id } = await params;
     return <EditTodoPage id={id} />;
 }

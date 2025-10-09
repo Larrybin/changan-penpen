@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { getUsageDaily } from "@/modules/creem/services/usage.service";
 
@@ -9,7 +8,7 @@ function formatDate(d: Date) {
 export async function GET(request: Request) {
     try {
         const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: headers() });
+        const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user) {
             return new Response(
                 JSON.stringify({ success: false, error: "Unauthorized" }),

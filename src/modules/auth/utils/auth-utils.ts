@@ -69,7 +69,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     try {
         const auth = await getAuth();
         const session = await auth.api.getSession({
-            headers: headers(),
+            headers: new Headers(await headers()),
         });
 
         if (!session?.user) {
@@ -123,7 +123,7 @@ export async function getSession() {
     try {
         const auth = await getAuth();
         return await auth.api.getSession({
-            headers: headers(),
+            headers: new Headers(await headers()),
         });
     } catch (error) {
         console.error("Error getting session:", error);

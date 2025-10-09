@@ -10,9 +10,9 @@ interface Params {
 export async function generateMetadata({
     params,
 }: {
-    params: Params;
+    params: Promise<Params>;
 }): Promise<Metadata> {
-    const { id } = params;
+    const { id } = await params;
     const path = id
         ? `/admin/catalog/coupons/${encodeURIComponent(id)}/edit`
         : "/admin/catalog/coupons";

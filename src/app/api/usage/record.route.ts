@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { recordUsage } from "@/modules/creem/services/usage.service";
 
@@ -13,7 +12,7 @@ type Body = {
 export async function POST(request: Request) {
     try {
         const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: headers() });
+        const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user) {
             return new Response(
                 JSON.stringify({ success: false, error: "Unauthorized" }),

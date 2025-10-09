@@ -7,11 +7,11 @@ interface Params {
 }
 
 type RouteContext = {
-    params: Params;
+    params: Promise<Params>;
 };
 
 export async function GET(request: Request, context: RouteContext) {
-    const { id } = context.params;
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;

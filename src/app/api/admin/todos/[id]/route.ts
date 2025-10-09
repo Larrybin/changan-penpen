@@ -15,11 +15,11 @@ function parseId(param: string | string[] | undefined) {
 }
 
 type RouteContext = {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 };
 
 export async function GET(request: Request, context: RouteContext) {
-    const { id } = context.params;
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
@@ -47,7 +47,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-    const { id } = context.params;
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
@@ -82,7 +82,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-    const { id } = context.params;
+    const { id } = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;

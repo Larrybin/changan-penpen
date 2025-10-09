@@ -1,5 +1,4 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { headers } from "next/headers";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import {
@@ -17,7 +16,7 @@ type Body = {
 export async function POST(request: Request) {
     try {
         const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: headers() });
+        const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user) {
             return new Response(
                 JSON.stringify({
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
         if (!rateLimitResult.ok) {
             return rateLimitResult.response;
         }
-        const origin = headers().get("origin");
+        const origin = request.headers.get("origin");
         const body = (await request.json()) as Body;
 
         // 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）

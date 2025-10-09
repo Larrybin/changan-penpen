@@ -72,7 +72,9 @@ export const signOut = async (): Promise<AuthResponse> => {
     try {
         const auth = await getAuthInstance();
         await auth.api.signOut({
-            headers: await import("next/headers").then((m) => m.headers()),
+            headers: new Headers(
+                await import("next/headers").then((m) => m.headers()),
+            ),
         });
 
         return {

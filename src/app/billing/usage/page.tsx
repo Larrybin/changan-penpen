@@ -25,7 +25,9 @@ function formatDate(d: Date) {
 export default async function UsagePage() {
     const t = await getTranslations("BillingUsage");
     const auth = await getAuthInstance();
-    const session = await auth.api.getSession({ headers: headers() });
+    const session = await auth.api.getSession({
+        headers: new Headers(await headers()),
+    });
     if (!session?.user) {
         return (
             <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">

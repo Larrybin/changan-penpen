@@ -1,5 +1,4 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { headers } from "next/headers";
 import { applyRateLimit } from "@/lib/rate-limit";
 import type {
     CreemCheckout,
@@ -47,7 +46,7 @@ function isCreemCheckoutPayload(value: unknown): value is CreemCheckout {
 export async function POST(request: Request) {
     try {
         const raw = await request.text();
-        const signature = headers().get("creem-signature") || "";
+        const signature = request.headers.get("creem-signature") || "";
         const { env } = await getCloudflareContext({ async: true });
 
         const rateLimitResult = await applyRateLimit({

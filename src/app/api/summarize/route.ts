@@ -1,5 +1,4 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { headers } from "next/headers";
 import handleApiError from "@/lib/api-error";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import {
@@ -12,7 +11,7 @@ export async function POST(request: Request) {
         // Check authentication
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({
-            headers: headers(),
+            headers: request.headers,
         });
 
         if (!session?.user) {
