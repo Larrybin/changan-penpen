@@ -139,7 +139,29 @@ const status = getOutput("git status --porcelain");
 if (status) {
     run("git add -A");
     // allow commit to succeed even if no staged change (no-op commit will fail gracefully)
-    tryRun('git commit -m "chore: auto-fix lint & types" --no-verify');
+    let msg = process.env.PUSH_COMMIT_MSG;
+    try {
+        if (!msg) {
+            const staged = getOutput("git diff --cached --name-only");
+            const files = staged.split(/\r?\n/).filter(Boolean);
+            const allDocs =
+                files.length > 0 &&
+                files.every((f) => f.startsWith("docs/") || f === "README.md");
+            const allCI =
+                files.length > 0 &&
+                files.every((f) => f.startsWith(".github/workflows/"));
+            const hasScripts = files.some(
+                (f) => f.startsWith("scripts/") || f === "package.json",
+            );
+            if (allDocs) msg = "docs: update documentation";
+            else if (allCI) msg = "ci: update workflows";
+            else if (hasScripts) msg = "chore: tooling & scripts";
+            else msg = "chore: auto-fix lint & types";
+        }
+    } catch {
+        msg = msg || "chore: auto-fix lint & types";
+    }
+    tryRun(`git commit -m "${msg}" --no-verify`);
 }
 
 // 6) Rebase latest remote then push

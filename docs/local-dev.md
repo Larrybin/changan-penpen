@@ -84,3 +84,4 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
   - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.
   - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows.
   - `PUSH_LOG_DIR=/path` `PUSH_LOG_FILE=/path/file.log` — save a full push log to a custom location.
+  - `PUSH_COMMIT_MSG="feat: ..." pnpm push` — override the auto-commit message when the script commits auto-fixes.
