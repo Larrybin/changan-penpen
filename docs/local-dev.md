@@ -80,6 +80,8 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 ## 9. Push Helper
 - Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push。
 - Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: …, add CF env fallbacks, …, and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types)。
+- Optional dependency for AST-enhanced messages: `@babel/parser` (dev). If not installed, the script falls back to path/regex rules automatically.
+- Install (optional): `pnpm add -D @babel/parser`
 - Env toggles:
   - `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks in emergencies (re-run without skip before merging).
   - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.

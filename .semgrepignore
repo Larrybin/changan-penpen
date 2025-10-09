@@ -1,0 +1,10 @@
+node_modules/
+.next/
+coverage/
+dist/
+.wrangler/
+stubs/
+logs/
+public/
+**/*.d.ts
+**/*.map

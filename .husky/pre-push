@@ -2,6 +2,10 @@
 # Block pushes when checks fail
 
 pnpm run check:all || exit 1
-# Optional quick smoke tests for critical routes; do not hard block overall push if they fail
-pnpm exec vitest run -t "health|creem" --reporter=dot || true
 
+# Block push when unit tests fail (CI-like reporter)
+pnpm run test:ci || exit 1
+
+# Security scan (Semgrep) — attempt local install first, fallback to dlx
+pnpm exec semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs || \
+  pnpm dlx semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs || exit 1
