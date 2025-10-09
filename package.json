@@ -30,7 +30,7 @@
         "biome:apply": "pnpm exec biome check . --write --unsafe",
         "typecheck": "pnpm run cf-typegen \u0026\u0026 pnpm exec tsc --noEmit",
         "check:all": "pnpm run biome:check \u0026\u0026 pnpm run typecheck \u0026\u0026 pnpm run check:docs \u0026\u0026 pnpm run check:links",
-        "push": "node scripts/push-fix.mjs",
+        "push": "node scripts/push-fix2.mjs",
         "test": "vitest run",
         "translate": "pnpm exec tsc --project tsconfig.translate.json \u0026\u0026 node dist/scripts/scripts/translate-locales.js",
         "translate:de": "pnpm run translate -- --target=de",

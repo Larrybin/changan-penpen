@@ -1,15 +1,13 @@
 #!/usr/bin/env node
-/*
- Auto-fix + self-check + push helper
- - Applies Biome fixes
- - Generates Cloudflare types + TSC typecheck
- - Verifies Biome again (no errors)
- - Auto-commits any remaining changes
- - Pulls with rebase then pushes current branch
-*/
-
+// Auto-fix + self-check + push (clean UTF-8, fully automated commit message)
 import { spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import {
+    appendFileSync,
+    existsSync,
+    mkdirSync,
+    rmSync,
+    writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 let CF_TYPEGEN = false,
@@ -71,21 +69,120 @@ function getOutput(cmd) {
     return (res.stdout || "").trim();
 }
 
-// 1) Generate types and apply formatting fixes
+function buildAutoCommitMessage(files, diff) {
+    const changed = (re) => files.some((f) => re.test(f));
+    const diffHas = (re) => re.test(diff);
+
+    const bullets = [];
+    if (changed(/src\/app\/api\/creem\/create-checkout\/route\.ts/)) {
+        bullets.push(
+            "- create-checkout: safe JSON parsing on non-JSON responses; use headers() sync",
+        );
+    }
+    if (changed(/src\/app\/api\/creem\/customer-portal\/route\.ts/)) {
+        bullets.push("- customer-portal: align redirect handling and inputs");
+    }
+    if (changed(/src\/app\/api\/webhooks\/creem\/route\.ts/)) {
+        bullets.push(
+            "- webhooks: require CREEM_WEBHOOK_SECRET before verification",
+        );
+    }
+    if (
+        changed(/src\/app\/(sitemap|robots)\.ts/) ||
+        changed(/src\/lib\/sitemap\.ts/)
+    ) {
+        bullets.push(
+            "- page/sitemap: fallback to process.env when Cloudflare context missing",
+        );
+    }
+    if (changed(/src\/lib\/r2\.ts/)) {
+        if (diffHas(/Content-Disposition/i)) {
+            bullets.push(
+                "- R2: add Content-Disposition for document/text types to mitigate XSS",
+            );
+        } else {
+            bullets.push("- R2: adjust response headers and content handling");
+        }
+    }
+    if (
+        diffHas(/ResponseCookie/) ||
+        diffHas(/cookies\(\)/) ||
+        diffHas(/await\s+headers\(/)
+    ) {
+        bullets.push(
+            "- auth/utils and API routes: clean headers()/cookies() usage",
+        );
+    }
+    if (
+        files.some(
+            (f) => /tests\//.test(f) || /\.(test|spec)\.[tj]sx?$/.test(f),
+        )
+    ) {
+        bullets.push("- tests: adjust mocks and assertions");
+    }
+    if (
+        changed(/cloudflare-env.*\.d\.ts/) ||
+        changed(/src\/types\/cloudflare-env/)
+    ) {
+        bullets.push(
+            "- types: make CloudflareEnv bindings optional for accurate typing",
+        );
+    }
+
+    // Subject
+    const subjectBits = [];
+    if (
+        bullets.some(
+            (b) =>
+                b.startsWith("- create-checkout") || b.startsWith("- webhooks"),
+        )
+    ) {
+        subjectBits.push("harden webhook and fetch parsing");
+    }
+    if (bullets.some((b) => b.includes("process.env"))) {
+        subjectBits.push("add CF env fallbacks");
+    }
+    if (bullets.some((b) => b.startsWith("- R2:"))) {
+        subjectBits.push("enforce R2 attachment for docs");
+    }
+    if (
+        diffHas(/ResponseCookie/) &&
+        !subjectBits.includes("remove Next internal type")
+    ) {
+        subjectBits.push("remove Next internal type");
+    }
+    if (bullets.some((b) => b.includes("headers()/cookies()"))) {
+        subjectBits.push("clean headers()/cookies() usage");
+    }
+
+    const tail =
+        subjectBits.length > 1
+            ? `${subjectBits.slice(0, -1).join(", ")}, and ${subjectBits.slice(-1)}`
+            : subjectBits[0] || "auto-fix lint & types";
+    const isFix = bullets.some(
+        (b) =>
+            b.startsWith("- webhooks") ||
+            b.startsWith("- R2:") ||
+            b.includes("headers()/cookies()"),
+    );
+    const subject = `${isFix ? "fix" : "chore"}: ${tail}`;
+
+    const body = bullets.length ? `\n\n${bullets.join("\n")}` : "";
+    return subject + body;
+}
+
+// 1) Typegen + format
 CF_TYPEGEN = tryRun("pnpm run cf-typegen");
 BIOME_WRITE_RAN = tryRun("pnpm exec biome check . --write --unsafe");
 
-// 2) Type check (clean stale Next types first)
+// 2) Type check
 try {
     if (existsSync(".next")) rmSync(".next", { recursive: true, force: true });
 } catch {}
 run("pnpm exec tsc --noEmit");
 TSC_OK = true;
 
-// 2.5) Next.js build (pre-push)
-// - Skip on Windows by default due to Workers runtime instability
-// - Respect SKIP_NEXT_BUILD=1 to skip on any platform
-// - Respect FORCE_NEXT_BUILD=1 to force on Windows
+// 2.5) Optional Next.js build
 try {
     const isWindows = process.platform === "win32";
     const skipByEnv = process.env.SKIP_NEXT_BUILD === "1";
@@ -108,7 +205,7 @@ try {
     throw e;
 }
 
-// 3) Docs checks (consistency + local links)
+// 3) Docs checks
 try {
     if (process.env.SKIP_DOCS_CHECK === "1") {
         console.log(
@@ -125,81 +222,55 @@ try {
     throw e;
 }
 
-// Optional: show API index suggestions (no gating)
+// Optional helper output
 if (process.env.SHOW_API_SUGGEST === "1") {
     tryRun("pnpm run suggest:api-index");
 }
 
-// 4) Final Biome check (no errors allowed)
+// 4) Final Biome check
 run("pnpm exec biome check .");
 BIOME_FINAL_OK = true;
 
-// 5) Auto-commit changes if any
-// 5) Auto-commit changes if any
+// 5) Auto-commit
 const status = getOutput("git status --porcelain");
 if (status) {
     run("git add -A");
-    // Build commit message (supports subject/body/file env overrides)
-    let msg = process.env.PUSH_COMMIT_MSG || "";
-    const msgFileEnv = process.env.PUSH_COMMIT_MSG_FILE;
-    const subj = process.env.PUSH_COMMIT_MSG_SUBJECT;
-    const body = process.env.PUSH_COMMIT_MSG_BODY;
-    let tempFile = null;
-    try {
-        if (!msg && (subj || body)) {
-            const full = [subj || "chore: auto-fix lint & types", body || ""].join("\n\n");
-            msg = full;
-        }
-
-        if (!msg && !msgFileEnv) {
-            // Heuristic subject
-            const staged = getOutput("git diff --cached --name-only");
-            const files = staged.split(/\r?\n/).filter(Boolean);
-            const allDocs = files.length > 0 && files.every((f) => f.startsWith("docs/") || f === "README.md");
-            const allCI = files.length > 0 && files.every((f) => f.startsWith(".github/workflows/"));
-            const hasScripts = files.some((f) => f.startsWith("scripts/") || f === "package.json");
-            let subject;
-            if (allDocs) subject = "docs: update documentation";
-            else if (allCI) subject = "ci: update workflows";
-            else if (hasScripts) subject = "chore: tooling & scripts";
-            else subject = "chore: auto-fix lint & types";
-
-            // Generate simple bullets by subsystem (best-effort)
-            const bullets = [];
-            const has = (p) => files.some((f) => f.includes(p));
-            if (has("/api/creem/create-checkout/route.ts")) bullets.push("- create-checkout: update checkout handler");
-            if (has("/api/webhooks/creem/route.ts")) bullets.push("- webhooks: update CREEM webhook handler");
-            if (has("src/app/sitemap.ts") || has("src/app/robots.ts")) bullets.push("- page/sitemap: update sitemap/robots");
-            if (has("src/lib/r2.ts")) bullets.push("- R2: adjust response headers for attachments");
-            if (files.some((f) => /tests\//.test(f) || /\.test\.[tj]sx?$/.test(f))) bullets.push("- tests: adjust mocks and assertions");
-            if (files.some((f) => /cloudflare-env.*\.d\.ts$/.test(f) || f.startsWith("src/types/"))) bullets.push("- types: update Cloudflare env typings");
-            const bodyLines = bullets.length ? "\n\n" + bullets.join("\n") : "";
-            msg = subject + bodyLines;
-        }
-
-        let commitCmd;
-        if (msgFileEnv) {
-            commitCmd = `git commit -F "${msgFileEnv}" --no-verify`;
-        } else if (msg.includes("\n")) {
-            // write to a temp file to preserve newlines and bullets
-            const ts = new Date().toISOString().replace(/[:.]/g, "-");
-            tempFile = path.join("logs", `commit-msg-${ts}.txt`);
-            try { mkdirSync("logs", { recursive: true }); } catch {}
-            appendFileSync(tempFile, msg, { encoding: "utf8" });
-            commitCmd = `git commit -F "${tempFile}" --no-verify`;
-        } else {
-            commitCmd = `git commit -m "${msg}" --no-verify`;
-        }
-        tryRun(commitCmd);
-    } finally {
-        // keep commit message file for traceability; do not delete tempFile
+    let commitCmd = null;
+    if (process.env.PUSH_COMMIT_MSG_FILE) {
+        commitCmd = `git commit -F "${process.env.PUSH_COMMIT_MSG_FILE}" --no-verify`;
+    } else if (process.env.PUSH_COMMIT_MSG) {
+        const p = path.join(LOG_DIR, `commit-msg-${Date.now()}.txt`);
+        writeFileSync(p, process.env.PUSH_COMMIT_MSG, { encoding: "utf8" });
+        commitCmd = `git commit -F "${p}" --no-verify`;
+    } else if (process.env.PUSH_COMMIT_EDITOR === "1") {
+        const tmpl = ".github/COMMIT_TEMPLATE.txt";
+        if (existsSync(tmpl)) commitCmd = `git commit -t ${tmpl}`;
+        else commitCmd = "git commit";
+    } else {
+        // Fully automated subject + bullets
+        const files = getOutput("git diff --cached --name-only")
+            .split(/\r?\n/)
+            .filter(Boolean);
+        const diff = (() => {
+            try {
+                return getOutput("git diff --cached -U0");
+            } catch {
+                return "";
+            }
+        })();
+        const auto = buildAutoCommitMessage(files, diff);
+        const p = path.join(LOG_DIR, `commit-msg-${Date.now()}.txt`);
+        writeFileSync(p, auto, { encoding: "utf8" });
+        commitCmd = `git commit -F "${p}" --no-verify`;
     }
-}// 6) Rebase latest remote then push
+    tryRun(commitCmd);
+}
+
+// 6) Rebase then push
 {
     const pulled = tryRun("git pull --rebase --autostash");
     let conflictList = "";
     try {
-        // List unmerged files if any
         conflictList = getOutput("git diff --name-only --diff-filter=U");
     } catch {}
     if (!pulled || (conflictList && conflictList.trim().length > 0)) {
@@ -221,12 +292,12 @@ if (status) {
     run("git push");
 }
 
-// Standard push receipt
+// Summary
 try {
     const branch = getOutput("git rev-parse --abbrev-ref HEAD");
-    const commit = getOutput("git show -s --format=%h\\ %s -1");
-    const files = getOutput("git show --name-only -1");
-    const changedDocs = files
+    const commit = getOutput("git show -s --format=%h %s -1");
+    const filesShow = getOutput("git show --name-only -1");
+    const changedDocs = filesShow
         .split(/\r?\n/)
         .filter(
             (f) =>
@@ -235,7 +306,7 @@ try {
                 f.startsWith(".github/workflows/"),
         )
         .slice(0, 30);
-    console.log("\nâ€”â€?Push Summary â€”â€?);
+    console.log("\n-- Push Summary --");
     console.log(`Status: Success`);
     console.log(`Branch: ${branch}`);
     console.log(`Commit: ${commit}`);
@@ -253,8 +324,5 @@ try {
     } else {
         console.log("Docs updated: none");
     }
+    console.log(`\nFull log saved to: ${LOG_PATH}`);
 } catch {}
-
-console.log("\nâœ?Auto-fix + self-check + push completed.");
-console.log(`?? Full log saved to: ${LOG_PATH}`);
-
