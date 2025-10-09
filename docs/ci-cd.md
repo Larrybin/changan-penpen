@@ -1,81 +1,50 @@
-# CI/CD Overview
+# CI/CD 流程与策略
 
-> Structure, permissions, quality gates, and dependencies of our pipelines. See `.github/workflows/` for sources.
+本文档描述仓库的持续集成与持续部署策略，包括工作流触发条件、质量门以及依赖升级（Dependabot）分组与自动合并策略。
 
-## 1. Flow
-```
-Push/PR → CI (Biome + tsc + Vitest + build)
-        → Deploy (re‑uses CI as quality gate)
-        → Production Deploy (main)
-          → backup → migrate → deploy → health checks
-```
+## 工作流概览
+- CI（.github/workflows/ci.yml）
+  - 触发：push/pr（忽略 main 分支与纯文档变更），以及 workflow_call（被部署复用）。
+  - 步骤：Biome、TypeScript、Docs/Links 检查、Vitest 覆盖率（生成 lcov）。
+- 部署（.github/workflows/deploy.yml）
+  - 触发：push 到 main、pull_request 到 main、workflow_dispatch（手动）。
+  - 生产部署 Job 条件：
+    - push 到 main 且非文档-only，或者 workflow_dispatch（手动触发）；并且质量门成功。
+    - 仍保留“文档-only 跳过部署”的保护。
+  - 需 Secrets/Vars：CLOUDFLARE_API_TOKEN、CLOUDFLARE_ACCOUNT_ID、BETTER_AUTH_SECRET、GOOGLE_CLIENT_ID/SECRET、CLOUDFLARE_R2_URL、CREEM_API_KEY/WEBHOOK_SECRET、NEXT_PUBLIC_APP_URL 等。
+- Semgrep（.github/workflows/semgrep.yml）
+  - 安全扫描（auto config），上传 SARIF 到 GitHub Code Scanning。
+- SonarCloud（.github/workflows/sonarcloud.yml）
+  - 使用 Vitest 生成的 `coverage/lcov.info` 汇总代码质量与技术债。
 
-## 2. Workflows
-| Workflow | Trigger | Steps | Permissions |
-| --- | --- | --- | --- |
-| `ci.yml` | PR / non‑main push / manual | pnpm install, Biome, tsc, Vitest (coverage), Next build | `contents: read` |
-| `deploy.yml` | Push to `main`, manual | Re‑use CI as quality gate; OpenNext build; Wrangler deploy; D1 migrations; health checks | Inherits secrets; uses `wrangler` in job |
+## 手动部署（workflow_dispatch）
+- 在 Actions 中选择“Deploy Next.js App to Cloudflare”并 Run workflow。
+- 手动触发仍受“非文档-only”与质量门约束（确保不是纯文档改动；或先合入非文档更新）。
+- 生产部署前将检查必要 Secrets/Vars 是否齐全，缺失会直接终止部署。
 
-## 3. CI Quality Gate
-- `concurrency: ci-${ref}` to avoid duplicates
-- Caches: pnpm (setup‑node cache), `.next/cache`
-- Steps:
-  1) `pnpm run fix:i18n` + diff check
-  2) `pnpm exec biome check .`
-  3) `pnpm exec tsc --noEmit`
-  4) `pnpm run check:docs` (docs consistency)
-  5) `pnpm run check:links` (local markdown link check)
-  6) `pnpm exec vitest run --coverage` (outputs json-summary)
-  7) `pnpm build`
-- Print `NEXT_PUBLIC_APP_URL` from GitHub Variables for diagnostics
+## 文档-only 变更策略
+- CI 主流程与生产部署对纯文档改动不执行构建/部署，以节省资源。
+- 仍建议保留文档自检（链接、约定）以保证文档质量。
 
-## 4. Deploy Details
-- Quality gate via `uses: ./.github/workflows/ci.yml`
-- Production:
-  - Backup D1; apply migrations; validate key tables
-  - Inject deployment vars (e.g. `CREEM_API_URL`) as needed
-  - `SYNC_PRODUCTION_SECRETS` toggles secret sync
-  - Health checks: `/api/health?fast=1` must pass; strict must pass before success
-- All Actions pinned to commit SHAs
- 
-Docs-only changes
-- The deploy workflow also triggers on docs/README changes to run the quality gate.
-- The actual deploy job is skipped automatically when the change set contains only `docs/**` and/or `README.md`.
+## 质量门（质量闸）
+- 本地质量闸与说明详见：docs/quality-gates.md（`pnpm push` 会在推送前执行类型检查、单测与覆盖率、Semgrep、文档与链接检查、Biome 最终检查、可选 Next 构建等）。
+- CI 中的部署工作流会复用 CI 质量门作为前置条件（needs: quality-gate-reusable）。
 
-## 5. Required Secrets/Vars
-| Name | Purpose | Scope |
-| --- | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Wrangler deploy, migrations, backups | Production |
-| `CLOUDFLARE_ACCOUNT_ID` | Account | Production |
-| `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Auth | Production |
-| `CLOUDFLARE_R2_URL` | Static asset URL | Production |
-| `CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET` | Billing | Production |
-| `PRODUCTION_HEALTHCHECK_URL` | Custom health endpoint | Optional |
-| Vars: `NEXT_PUBLIC_APP_URL`, `CREEM_API_URL_PRODUCTION` | Build & deploy | Production |
+## Dependabot 分组与自动合并
+- 分组（仅聚合 minor/patch）：
+  - react-ecosystem：react、react-dom、@types/react、@radix-ui/*、react-hook-form、lucide-react、@tanstack/react-query
+  - next-ecosystem：next、next-intl、@sentry/nextjs
+  - cloudflare-workers：wrangler、@opennextjs/cloudflare
+  - database：drizzle-orm、drizzle-zod、drizzle-kit、better-sqlite3
+  - build-and-lint：typescript、@biomejs/biome、lint-staged、husky、tailwindcss、@tailwindcss/postcss、postcss
+  - testing：vitest、@vitest/*、jsdom、@testing-library/*
+  - types：@types/*
+  - frontend-utils：clsx、class-variance-authority、tailwind-merge、dotenv、zod
+  - auth：better-auth
+- 自动合并（.github/workflows/dependabot-automerge.yml）：
+  - 仅对 Dependabot 的 minor/patch PR 且检查通过时启用 auto-merge（squash）。
+  - 需要在仓库设置中开启“Allow auto-merge”。
+  - security 与 major 升级保留人工审查。
 
-Full matrix: see `docs/env-and-secrets.md`.
-
-## 6. Caching
-- pnpm store keyed by `pnpm-lock.yaml`
-- `.next/cache` for build acceleration
-- If corrupted, bump workflow cache keys or clear caches
-
-## 7. Rollback & Notifications
-- On failure: inspect GitHub Checks/Actions logs; rerun if needed
-- Rollback: Cloudflare Dashboard previous version, or `wrangler deploy --env production --rollback`
-- External alerts (email/Slack) are handled by team alerting; repo does not ship auto‑notify workflows
-
-## 8. Local Simulation
-- Use `act` for CI where possible (Cloudflare Actions may not work)
-- Manual deployment: see `docs/deployment/cloudflare-workers.md`
-
-## 9. Maintenance
-- When workflows change, update `docs/ci-cd.md` and `docs/workflows/*.md`
-- Minimize `permissions` and pin Actions to commits
-- Monthly sanity check: ensure dependencies (Docker/Actions) aren’t deprecated
-
----
-
-See also:
-- `docs/workflows/ci.md`
-- `docs/workflows/deploy.md`
+## 提交与文档同步
+- 修改 `.github/workflows/*.yml`、`package.json`、`wrangler.jsonc`、`scripts/`、`src/app/**/route.ts` 等关键文件时，请同步更新对应的 docs（本文件、local-dev、env 与 API 索引等）。

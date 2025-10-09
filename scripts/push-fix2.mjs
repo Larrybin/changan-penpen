@@ -429,7 +429,8 @@ try {
             "--config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs --json --output logs/semgrep.json";
         const tryExec = tryRun(`pnpm exec semgrep ${baseArgs}`);
         if (!tryExec) {
-            run(`pnpm dlx semgrep ${baseArgs}`);
+            // Use official npm package when not installed locally
+            run(`pnpm dlx @semgrep/semgrep ${baseArgs}`);
         }
         SEMGREP_OK = true;
     }

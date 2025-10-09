@@ -8,4 +8,4 @@ pnpm run test:ci || exit 1
 
 # Security scan (Semgrep) — attempt local install first, fallback to dlx
 pnpm exec semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs || \
-  pnpm dlx semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs || exit 1
+  pnpm dlx @semgrep/semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs || exit 1

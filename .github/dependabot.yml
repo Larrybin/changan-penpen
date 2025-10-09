@@ -9,6 +9,115 @@ updates:
       prefix: "chore(deps)"
     labels:
       - "dependencies"
+    groups:
+      react-ecosystem:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "@radix-ui/*"
+          - "react-hook-form"
+          - "lucide-react"
+          - "@tanstack/react-query"
+
+      next-ecosystem:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "next"
+          - "next-intl"
+          - "@sentry/nextjs"
+
+      cloudflare-workers:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "wrangler"
+          - "@opennextjs/cloudflare"
+
+      database:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "drizzle-orm"
+          - "drizzle-zod"
+          - "drizzle-kit"
+          - "better-sqlite3"
+
+      build-and-lint:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "typescript"
+          - "@biomejs/biome"
+          - "lint-staged"
+          - "husky"
+          - "tailwindcss"
+          - "@tailwindcss/postcss"
+          - "postcss"
+
+      testing:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "jsdom"
+          - "@testing-library/*"
+
+      types:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "@types/*"
+
+      frontend-utils:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "clsx"
+          - "class-variance-authority"
+          - "tailwind-merge"
+          - "dotenv"
+          - "zod"
+
+      auth:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "better-auth"
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      major:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -18,3 +127,12 @@ updates:
       prefix: "chore(ci)"
     labels:
       - "ci"
+      - "dependencies"
+    groups:
+      actions-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
