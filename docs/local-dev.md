@@ -76,3 +76,11 @@
 ---
 
 Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` and `docs/troubleshooting.md`.
+
+## 9. Push Helper
+- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push.
+- Env toggles:
+  - `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks in emergencies (re-run without skip before merging).
+  - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.
+  - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows.
+  - `PUSH_LOG_DIR=/path` `PUSH_LOG_FILE=/path/file.log` — save a full push log to a custom location.

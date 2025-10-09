@@ -8,12 +8,50 @@
  - Pulls with rebase then pushes current branch
 */
 
-import { execSync, spawnSync } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { appendFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import path from "node:path";
+
+let CF_TYPEGEN = false,
+    BIOME_WRITE_RAN = false,
+    TSC_OK = false,
+    NEXT_BUILD = "skipped",
+    DOCS_OK = false,
+    LINKS_OK = false,
+    BIOME_FINAL_OK = false;
+
+const LOG_DIR = process.env.PUSH_LOG_DIR || "logs";
+try {
+    mkdirSync(LOG_DIR, { recursive: true });
+} catch {}
+const LOG_PATH =
+    process.env.PUSH_LOG_FILE ||
+    path.join(
+        LOG_DIR,
+        `push-${new Date().toISOString().replace(/[:.]/g, "-").replace("T", "_").replace("Z", "")}.log`,
+    );
+
+function logLine(line = "") {
+    try {
+        appendFileSync(LOG_PATH, `${line}\n`);
+    } catch {}
+}
 
 function run(cmd, opts = {}) {
-    console.log(`\n$ ${cmd}`);
-    execSync(cmd, { stdio: "inherit", ...opts });
+    const header = `\n$ ${cmd}`;
+    console.log(header);
+    logLine(header);
+    const res = spawnSync(cmd, { shell: true, encoding: "utf8", ...opts });
+    if (res.stdout) {
+        process.stdout.write(res.stdout);
+        logLine(res.stdout.trimEnd());
+    }
+    if (res.stderr) {
+        process.stderr.write(res.stderr);
+        logLine(res.stderr.trimEnd());
+    }
+    if (res.status !== 0)
+        throw new Error(res.stderr || `Command failed: ${cmd}`);
 }
 
 function tryRun(cmd, opts = {}) {
@@ -34,14 +72,15 @@ function getOutput(cmd) {
 }
 
 // 1) Generate types and apply formatting fixes
-tryRun("pnpm run cf-typegen");
-tryRun("pnpm exec biome check . --write --unsafe");
+CF_TYPEGEN = tryRun("pnpm run cf-typegen");
+BIOME_WRITE_RAN = tryRun("pnpm exec biome check . --write --unsafe");
 
 // 2) Type check (clean stale Next types first)
 try {
     if (existsSync(".next")) rmSync(".next", { recursive: true, force: true });
 } catch {}
 run("pnpm exec tsc --noEmit");
+TSC_OK = true;
 
 // 2.5) Next.js build (pre-push)
 // - Skip on Windows by default due to Workers runtime instability
@@ -62,6 +101,7 @@ try {
                 rmSync(".next", { recursive: true, force: true });
         } catch {}
         run("pnpm run build");
+        NEXT_BUILD = "built";
     }
 } catch (e) {
     console.error("Next.js build failed. Aborting push.");
@@ -76,7 +116,9 @@ try {
         );
     } else {
         run("pnpm run check:docs");
+        DOCS_OK = true;
         run("pnpm run check:links");
+        LINKS_OK = true;
     }
 } catch (e) {
     console.error("Docs checks failed. Aborting push.");
@@ -90,6 +132,7 @@ if (process.env.SHOW_API_SUGGEST === "1") {
 
 // 4) Final Biome check (no errors allowed)
 run("pnpm exec biome check .");
+BIOME_FINAL_OK = true;
 
 // 5) Auto-commit changes if any
 const status = getOutput("git status --porcelain");
@@ -109,20 +152,56 @@ if (status) {
     } catch {}
     if (!pulled || (conflictList && conflictList.trim().length > 0)) {
         if (conflictList && conflictList.trim().length > 0) {
-            console.error(
-                `\nMerge conflicts detected in the following files:\n${conflictList.trim()}`,
-            );
+            const msg = `\nMerge conflicts detected in the following files:\n${conflictList.trim()}`;
+            console.error(msg);
+            logLine(msg);
         } else {
-            console.error(
-                "\nPull with rebase failed. Resolve issues and re-run.",
-            );
+            const msg = "\nPull with rebase failed. Resolve issues and re-run.";
+            console.error(msg);
+            logLine(msg);
         }
-        console.error(
-            "\nResolve the conflicts locally, commit the resolution, then re-run `pnpm push`.",
-        );
+        const hint =
+            "\nResolve the conflicts locally, commit the resolution, then re-run `pnpm push`.";
+        console.error(hint);
+        logLine(hint);
         process.exit(1);
     }
     run("git push");
 }
 
+// Standard push receipt
+try {
+    const branch = getOutput("git rev-parse --abbrev-ref HEAD");
+    const commit = getOutput("git show -s --format=%h\\ %s -1");
+    const files = getOutput("git show --name-only -1");
+    const changedDocs = files
+        .split(/\r?\n/)
+        .filter(
+            (f) =>
+                f.startsWith("docs/") ||
+                f === "README.md" ||
+                f.startsWith(".github/workflows/"),
+        )
+        .slice(0, 30);
+    console.log("\n—— Push Summary ——");
+    console.log(`Status: Success`);
+    console.log(`Branch: ${branch}`);
+    console.log(`Commit: ${commit}`);
+    console.log("Quality gates:");
+    console.log(`- cf-typegen: ${CF_TYPEGEN ? "OK" : "FAILED/Skipped"}`);
+    console.log(`- Lint (Biome write): ${BIOME_WRITE_RAN ? "Ran" : "Skipped"}`);
+    console.log(`- TypeScript: ${TSC_OK ? "OK" : "FAILED"}`);
+    console.log(`- Docs consistency: ${DOCS_OK ? "OK" : "FAILED/Skipped"}`);
+    console.log(`- Link check: ${LINKS_OK ? "OK" : "FAILED/Skipped"}`);
+    console.log(`- Biome final: ${BIOME_FINAL_OK ? "OK" : "FAILED"}`);
+    console.log(`- Next.js build: ${NEXT_BUILD}`);
+    if (changedDocs.length) {
+        console.log("Docs updated:");
+        for (const f of changedDocs) console.log(`- ${f}`);
+    } else {
+        console.log("Docs updated: none");
+    }
+} catch {}
+
 console.log("\n✅ Auto-fix + self-check + push completed.");
+console.log(`?? Full log saved to: ${LOG_PATH}`);
