@@ -282,8 +282,12 @@ async function checkExternalServices(
             return { ok: true };
         }
         const bearer = String(env?.CREEM_API_KEY ?? "").trim();
+        // 缺少访问令牌时，不将外部服务作为阻断项（直接视为通过）
+        if (!bearer) {
+            return { ok: true };
+        }
         const headers: Record<string, string> = {};
-        if (bearer) headers.authorization = `Bearer ${bearer}`;
+        headers.authorization = `Bearer ${bearer}`;
 
         const endpointBase = base.replace(/\/+$/, "");
         const candidates = ["/status", ""]; // 优先尝试 /status，其次根路径
