@@ -1,6 +1,11 @@
 // Augment Cloudflare env bindings used across the app
 // Keep in sync with wrangler `--var` and deployment vars
 
+// Minimal shared binding types (avoid importing TS from src to keep ambient)
+interface RateLimitBinding {
+    limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 declare namespace Cloudflare {
     interface Env {
         NEXT_PUBLIC_APP_URL: string;
@@ -17,7 +22,7 @@ declare namespace Cloudflare {
         CF_PAGES?: string;
         CF_WORKER?: string;
         // for rate limiter binding used in applyRateLimit
-        RATE_LIMITER?: unknown;
+        RATE_LIMITER?: RateLimitBinding;
     }
 }
 
