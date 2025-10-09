@@ -27,7 +27,7 @@ export async function GET() {
         }
 
         const { env } = await getCloudflareContext({ async: true });
-        if (!env.CREEM_API_URL || !env.CREEM_API_KEY) {
+        if (!(env as any).CREEM_API_URL || !(env as any).CREEM_API_KEY) {
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -42,11 +42,11 @@ export async function GET() {
         }
 
         const { ok, status, text, data } = await fetchWithRetry(
-            `${env.CREEM_API_URL}/customers/billing`,
+            `${(env as any).CREEM_API_URL}/customers/billing`,
             {
                 method: "POST",
                 headers: {
-                    "x-api-key": env.CREEM_API_KEY,
+                    "x-api-key": (env as any).CREEM_API_KEY,
                     "Content-Type": "application/json",
                     Accept: "application/json",
                 },

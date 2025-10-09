@@ -1,1 +1,15 @@
-auto-fix-summary.md merge=ours
+* text=auto eol=lf
+
+# Keep lockfiles and images as-is
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.lock -text
+
+# Do not normalize archives
+*.zip -text
+*.gz -text
+*.tar -text
+*.7z -text

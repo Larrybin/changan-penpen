@@ -38,7 +38,7 @@ export async function POST(request: Request) {
             request,
             identifier: "creem:create-checkout",
             uniqueToken: session.user.id,
-            env: { RATE_LIMITER: env.RATE_LIMITER },
+            env: { RATE_LIMITER: (env as any).RATE_LIMITER },
             message: "Too many checkout attempts",
         });
         if (!rateLimitResult.ok) {
@@ -47,8 +47,8 @@ export async function POST(request: Request) {
         const origin = headers().get("origin");
         const body = (await request.json()) as Body;
 
-        // 必要环境变量校验（缺失则直接失败，避免上游 503）
-        if (!env.CREEM_API_URL || !env.CREEM_API_KEY) {
+        // 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
+        if (!(env as any).CREEM_API_URL || !(env as any).CREEM_API_KEY) {
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -157,10 +157,10 @@ export async function POST(request: Request) {
         };
 
         const successUrl =
-            env.CREEM_SUCCESS_URL ||
+            (env as any).CREEM_SUCCESS_URL ||
             (origin ? `${origin}/billing/success` : undefined);
         const cancelUrl =
-            env.CREEM_CANCEL_URL ||
+            (env as any).CREEM_CANCEL_URL ||
             (origin ? `${origin}/billing/cancel` : undefined);
         if (successUrl) requestBody.success_url = successUrl;
         if (cancelUrl) requestBody.cancel_url = cancelUrl;
@@ -168,10 +168,10 @@ export async function POST(request: Request) {
 
         // 上游请求：增加超时、重试（指数退避 + 抖动）与错误归因
         const { ok, status, data, text, attempts, contentType } =
-            await fetchWithRetry(`${env.CREEM_API_URL}/checkouts`, {
+            await fetchWithRetry(`${(env as any).CREEM_API_URL}/checkouts`, {
                 method: "POST",
                 headers: {
-                    "x-api-key": env.CREEM_API_KEY,
+                    "x-api-key": (env as any).CREEM_API_KEY,
                     "Content-Type": "application/json",
                     Accept: "application/json",
                 },

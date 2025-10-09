@@ -4,9 +4,8 @@ import { getDb, siteSettings } from "@/db";
 import { resolveAppUrl } from "@/lib/seo";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
-// OpenNext Cloudflare 要求 edge 路由独立打包；
-// 健康检查不依赖 edge 语义，使用 Node 运行时以兼容打包。
-export const runtime = "nodejs";
+// 统一：在 Cloudflare Workers 上运行，使用 edge 运行时以便独立打包
+export const runtime = "edge";
 
 type CheckResult = { ok: true } | { ok: false; error: string };
 
@@ -33,7 +32,7 @@ function extractAccessToken(headers: Headers): string {
 async function checkDb(): Promise<CheckResult> {
     try {
         const db = await getDb();
-        // Run a lightweight query to verify connectivity
+        // 执行轻量查询以验证连通性
         await db.select().from(siteSettings).limit(1);
         return { ok: true };
     } catch (err) {
@@ -44,15 +43,15 @@ async function checkDb(): Promise<CheckResult> {
 
 async function checkR2(env: CloudflareBindings): Promise<CheckResult> {
     try {
-        // Ensure binding exists
+        // 确认绑定存在
         if (!env || !("next_cf_app_bucket" in env)) {
             return {
                 ok: false,
                 error: "R2 binding next_cf_app_bucket missing",
             };
         }
-        // List with small limit to validate access
-        await env.next_cf_app_bucket.list({ limit: 1 });
+        // 列表请求（limit=1）验证可访问性
+        await (env as any).next_cf_app_bucket.list({ limit: 1 });
         return { ok: true };
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -182,17 +181,17 @@ async function checkEnvAndBindings(
                 error: "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET must both be set to enable Google OAuth",
             };
         }
-        // Check important bindings presence
+        // 检查关键绑定是否存在
         const missingBindings: string[] = [];
         if (!env?.next_cf_app_bucket) {
             missingBindings.push("next_cf_app_bucket");
         }
         if (!env?.AI) {
-            // AI 可选，仅记录为可选缺失，不导致失败
+            // AI 为可选，仅记录缺失，不作为失败条件
         }
         if (!env?.ASSETS) {
-            // ASSETS 由 OpenNext Workers 绑定，缺失可能是构建/配置异常
-            // 仅在缺失时标记但不阻断（某些配置可能不直接暴露）
+            // ASSETS 为 OpenNext Workers 绑定，缺失可能是构建/配置异常
+            // 仅标记但不阻断（某些配置可能不直接暴露）
         }
         if (missing.length || missingBindings.length) {
             if (!options.includeDetails) {
@@ -206,7 +205,7 @@ async function checkEnvAndBindings(
                 error: `Missing env: ${missing.join(",")} | Missing bindings: ${missingBindings.join(",")}`,
             };
         }
-        // Optional secrets presence is informative but non-blocking
+        // 可选项不阻断
         return { ok: true };
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -239,7 +238,7 @@ async function checkAppUrl({
                 ? ({ domain } as SiteSettingsPayload)
                 : undefined;
             base = resolveAppUrl(settings, {
-                envAppUrl: env.NEXT_PUBLIC_APP_URL,
+                envAppUrl: (env as any).NEXT_PUBLIC_APP_URL,
             });
         }
         if (!base) {
@@ -250,7 +249,7 @@ async function checkAppUrl({
                     : "Application base URL could not be resolved",
             };
         }
-        // Basic shape check
+        // 基本格式校验
         try {
             const u = new URL(base);
             if (!u.protocol.startsWith("http")) {
@@ -276,12 +275,12 @@ async function checkExternalServices(
     env: CloudflareBindings,
 ): Promise<CheckResult> {
     try {
-        const base = String(env?.CREEM_API_URL ?? "").trim();
+        const base = String((env as any)?.CREEM_API_URL ?? "").trim();
         if (!base) {
             // 未配置则跳过，不阻断
             return { ok: true };
         }
-        const bearer = String(env?.CREEM_API_KEY ?? "").trim();
+        const bearer = String((env as any)?.CREEM_API_KEY ?? "").trim();
         // 缺少访问令牌时，不将外部服务作为阻断项（直接视为通过）
         if (!bearer) {
             return { ok: true };
@@ -315,7 +314,7 @@ async function checkExternalServices(
                 if (res.status === 405 || res.status === 404) {
                     res = await tryFetch(url, "GET");
                 }
-                // 将 2xx/3xx/401/403 视为连通；5xx 视为失败
+                // 2xx/3xx/401/403 视为连通；5xx 视为失败
                 if (res.status < 500) {
                     return { ok: true };
                 }

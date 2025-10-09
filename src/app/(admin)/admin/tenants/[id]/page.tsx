@@ -22,11 +22,7 @@ export async function generateMetadata({
     });
 }
 
-export default async function TenantDetail({
-    params,
-}: {
-    params: Params;
-}) {
+export default async function TenantDetail({ params }: { params: Params }) {
     const { id } = params;
     return <TenantDetailPage id={id} />;
 }
