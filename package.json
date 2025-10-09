@@ -87,7 +87,7 @@
         "wrangler": "^4.42.0"
     },
     "lint-staged": {
-        "*.{ts,tsx,js,jsx,json,css,md}": "pnpm exec biome check --apply --unsafe"
+        "*.{ts,tsx,js,jsx,json,css,md}": "pnpm exec biome check --write --unsafe"
     },
     "pnpm": {
         "overrides": {
