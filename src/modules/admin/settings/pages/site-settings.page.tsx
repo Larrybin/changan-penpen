@@ -51,6 +51,14 @@ function arraysShallowEqual<T>(left: T[], right: T[]) {
     return left.every((value, index) => value === right[index]);
 }
 
+function setPartialValue<TKey extends keyof SiteSettingsState>(
+    target: Partial<SiteSettingsState>,
+    key: TKey,
+    value: SiteSettingsState[TKey],
+) {
+    target[key] = value;
+}
+
 export function SiteSettingsPage() {
     const [settings, setSettings] =
         useState<SiteSettingsState>(defaultSettings);
@@ -121,9 +129,10 @@ export function SiteSettingsPage() {
         let payload: Partial<SiteSettingsState>;
 
         if (base) {
-            payload = (
-                Object.keys(settings) as Array<keyof SiteSettingsState>
-            ).reduce<Partial<SiteSettingsState>>((accumulator, key) => {
+            const diff: Partial<SiteSettingsState> = {};
+            for (const key of Object.keys(settings) as Array<
+                keyof SiteSettingsState
+            >) {
                 const nextValue = settings[key];
                 const prevValue = base[key];
 
@@ -132,21 +141,25 @@ export function SiteSettingsPage() {
                     const prevLanguages = prevValue as string[];
 
                     if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
-                        accumulator[key] = [
-                            ...nextLanguages,
-                        ] as SiteSettingsState[typeof key];
+                        setPartialValue(
+                            diff,
+                            key,
+                            [...nextLanguages] as SiteSettingsState[typeof key],
+                        );
                     }
 
-                    return accumulator;
+                    continue;
                 }
 
                 if (nextValue !== prevValue) {
-                    accumulator[key] =
-                        nextValue as SiteSettingsState[typeof key];
+                    setPartialValue(
+                        diff,
+                        key,
+                        nextValue as SiteSettingsState[typeof key],
+                    );
                 }
-
-                return accumulator;
-            }, {});
+            }
+            payload = diff;
         } else {
             payload = {
                 ...settings,
