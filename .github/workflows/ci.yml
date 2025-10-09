@@ -25,7 +25,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  PNPM_VERSION: '9'
+  PNPM_VERSION: '10'
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
   # Minimal starting thresholds; raise over time
   COV_LINES: '3'
@@ -170,5 +170,4 @@ jobs:
 
       - name: Build (Next.js)
         run: pnpm build
-
 
