@@ -10,9 +10,9 @@ interface Params {
 export async function generateMetadata({
     params,
 }: {
-    params: Promise<Params>;
+    params: Params;
 }): Promise<Metadata> {
-    const { id } = await params;
+    const { id } = params;
     const path = id
         ? `/admin/todos/${encodeURIComponent(id)}/edit`
         : "/admin/todos";
@@ -22,7 +22,7 @@ export async function generateMetadata({
     });
 }
 
-export default async function Page({ params }: { params: Promise<Params> }) {
-    const { id } = await params;
+export default async function Page({ params }: { params: Params }) {
+    const { id } = params;
     return <AdminTodoEditPage id={id} />;
 }

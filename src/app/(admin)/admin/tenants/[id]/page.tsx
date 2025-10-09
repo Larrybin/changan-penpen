@@ -10,9 +10,9 @@ interface Params {
 export async function generateMetadata({
     params,
 }: {
-    params: Promise<Params>;
+    params: Params;
 }): Promise<Metadata> {
-    const { id } = await params;
+    const { id } = params;
     const path = id
         ? `/admin/tenants/${encodeURIComponent(id)}`
         : "/admin/tenants";
@@ -25,8 +25,8 @@ export async function generateMetadata({
 export default async function TenantDetail({
     params,
 }: {
-    params: Promise<Params>;
+    params: Params;
 }) {
-    const { id } = await params;
+    const { id } = params;
     return <TenantDetailPage id={id} />;
 }

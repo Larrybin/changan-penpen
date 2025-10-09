@@ -12,11 +12,11 @@ interface Params {
 }
 
 type RouteContext = {
-    params: Promise<Params>;
+    params: Params;
 };
 
 export async function GET(request: Request, context: RouteContext) {
-    const { id } = await context.params;
+    const { id } = context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
@@ -31,7 +31,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-    const { id } = await context.params;
+    const { id } = context.params;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (
@@ -50,7 +50,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-    const { id } = await context.params;
+    const { id } = context.params;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (
