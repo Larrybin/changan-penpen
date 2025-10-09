@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
@@ -10,8 +10,8 @@ export default async function HomePage() {
     try {
         const { env } = await getCloudflareContext({ async: true });
         envAppUrl = env.NEXT_PUBLIC_APP_URL;
-    } catch (error) {
-        // 本地/非 Workers 环境兜底
+    } catch (_error) {
+        // 鏈湴/闈?Workers 鐜鍏滃簳
         envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
     }
     const appUrl = resolveAppUrl(settings, {

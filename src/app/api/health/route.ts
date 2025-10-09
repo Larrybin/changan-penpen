@@ -51,7 +51,9 @@ async function checkR2(env: CloudflareBindings): Promise<CheckResult> {
             };
         }
         // 列表请求（limit=1）验证可访问性
-        await (env as any).next_cf_app_bucket.list({ limit: 1 });
+        await (env as unknown as CloudflareEnv).next_cf_app_bucket.list({
+            limit: 1,
+        });
         return { ok: true };
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -225,8 +227,8 @@ async function checkAppUrl({
     try {
         // 优先从环境变量读取基础 URL，避免对 DB 的强依赖
         const fromEnv = String(
-            (env as unknown as Record<string, unknown>).NEXT_PUBLIC_APP_URL ??
-                "",
+            (env as unknown as { NEXT_PUBLIC_APP_URL?: string })
+                .NEXT_PUBLIC_APP_URL ?? "",
         ).trim();
         let base = fromEnv || String(runtimeOrigin ?? "");
         if (!base) {
@@ -238,7 +240,8 @@ async function checkAppUrl({
                 ? ({ domain } as SiteSettingsPayload)
                 : undefined;
             base = resolveAppUrl(settings, {
-                envAppUrl: (env as any).NEXT_PUBLIC_APP_URL,
+                envAppUrl: (env as unknown as { NEXT_PUBLIC_APP_URL?: string })
+                    .NEXT_PUBLIC_APP_URL,
             });
         }
         if (!base) {
@@ -275,12 +278,16 @@ async function checkExternalServices(
     env: CloudflareBindings,
 ): Promise<CheckResult> {
     try {
-        const base = String((env as any)?.CREEM_API_URL ?? "").trim();
+        const base = String(
+            (env as unknown as { CREEM_API_URL?: string })?.CREEM_API_URL ?? "",
+        ).trim();
         if (!base) {
             // 未配置则跳过，不阻断
             return { ok: true };
         }
-        const bearer = String((env as any)?.CREEM_API_KEY ?? "").trim();
+        const bearer = String(
+            (env as unknown as { CREEM_API_KEY?: string })?.CREEM_API_KEY ?? "",
+        ).trim();
         // 缺少访问令牌时，不将外部服务作为阻断项（直接视为通过）
         if (!bearer) {
             return { ok: true };

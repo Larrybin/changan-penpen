@@ -141,11 +141,9 @@ export function SiteSettingsPage() {
                     const prevLanguages = prevValue as string[];
 
                     if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
-                        setPartialValue(
-                            diff,
-                            key,
-                            [...nextLanguages] as SiteSettingsState[typeof key],
-                        );
+                        setPartialValue(diff, key, [
+                            ...nextLanguages,
+                        ] as SiteSettingsState[typeof key]);
                     }
 
                     continue;

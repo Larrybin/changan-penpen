@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { MetadataRoute } from "next";
 
 import {
@@ -42,8 +42,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     try {
         const { env } = await getCloudflareContext({ async: true });
         envAppUrl = env.NEXT_PUBLIC_APP_URL;
-    } catch (error) {
-        // 本地/非 Workers 环境兜底
+    } catch (_error) {
+        // 鏈湴/闈?Workers 鐜鍏滃簳
         envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
     }
     const baseUrl = resolveAppUrl(settings, {

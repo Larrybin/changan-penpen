@@ -33,12 +33,20 @@ export async function POST(request: Request) {
         }
 
         const { env } = await getCloudflareContext({ async: true });
+        const cf = env as unknown as Pick<
+            CloudflareEnv,
+            | "RATE_LIMITER"
+            | "CREEM_API_URL"
+            | "CREEM_API_KEY"
+            | "CREEM_SUCCESS_URL"
+            | "CREEM_CANCEL_URL"
+        >;
 
         const rateLimitResult = await applyRateLimit({
             request,
             identifier: "creem:create-checkout",
             uniqueToken: session.user.id,
-            env: { RATE_LIMITER: (env as any).RATE_LIMITER },
+            env: { RATE_LIMITER: cf.RATE_LIMITER },
             message: "Too many checkout attempts",
         });
         if (!rateLimitResult.ok) {
@@ -48,7 +56,7 @@ export async function POST(request: Request) {
         const body = (await request.json()) as Body;
 
         // 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
-        if (!(env as any).CREEM_API_URL || !(env as any).CREEM_API_KEY) {
+        if (!cf.CREEM_API_URL || !cf.CREEM_API_KEY) {
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -157,10 +165,10 @@ export async function POST(request: Request) {
         };
 
         const successUrl =
-            (env as any).CREEM_SUCCESS_URL ||
+            cf.CREEM_SUCCESS_URL ||
             (origin ? `${origin}/billing/success` : undefined);
         const cancelUrl =
-            (env as any).CREEM_CANCEL_URL ||
+            cf.CREEM_CANCEL_URL ||
             (origin ? `${origin}/billing/cancel` : undefined);
         if (successUrl) requestBody.success_url = successUrl;
         if (cancelUrl) requestBody.cancel_url = cancelUrl;
@@ -168,10 +176,10 @@ export async function POST(request: Request) {
 
         // 上游请求：增加超时、重试（指数退避 + 抖动）与错误归因
         const { ok, status, data, text, attempts, contentType } =
-            await fetchWithRetry(`${(env as any).CREEM_API_URL}/checkouts`, {
+            await fetchWithRetry(`${cf.CREEM_API_URL}/checkouts`, {
                 method: "POST",
                 headers: {
-                    "x-api-key": (env as any).CREEM_API_KEY,
+                    "x-api-key": cf.CREEM_API_KEY,
                     "Content-Type": "application/json",
                     Accept: "application/json",
                 },
