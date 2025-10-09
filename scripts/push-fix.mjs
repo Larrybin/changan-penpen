@@ -43,6 +43,27 @@ try {
 } catch {}
 run("pnpm exec tsc --noEmit");
 
+// 2.5) Optional Next.js build (pre-push). Skip on Windows (wrangler runtime instability).
+try {
+    const isWindows = process.platform === "win32";
+    const forceBuild = process.env.FORCE_NEXT_BUILD === "1";
+    if (!isWindows || forceBuild) {
+        console.log("\nRunning Next.js build pre-push (may take a bit)...");
+        try {
+            if (existsSync(".next"))
+                rmSync(".next", { recursive: true, force: true });
+        } catch {}
+        run("pnpm run build");
+    } else {
+        console.log(
+            "\nSkipping Next.js build on Windows (set FORCE_NEXT_BUILD=1 to force).",
+        );
+    }
+} catch (e) {
+    console.error("Next.js build failed. Aborting push.");
+    throw e;
+}
+
 // 3) Final Biome check (no errors allowed)
 run("pnpm exec biome check .");
 
