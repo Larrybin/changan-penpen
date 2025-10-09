@@ -1,4 +1,5 @@
-﻿import type { Metadata } from "next";
+﻿
+import type { Metadata } from "next";
 
 import type { AppLocale } from "@/i18n/config";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
@@ -7,7 +8,6 @@ import {
     buildLocalizedPath,
     ensureAbsoluteUrl,
     getActiveAppLocales,
-    resolveAppUrl,
 } from "./seo";
 
 const openGraphLocales: Record<AppLocale, string> = {
@@ -106,15 +106,9 @@ function ensureLeadingSlash(path: string): string {
 export async function getMetadataContext(
     locale: AppLocale,
 ): Promise<MetadataContext> {
-    const [settings, messagesModule] = await Promise.all([
-        getSiteSettingsPayload(),
-        import(`@/i18n/messages/${locale}.json`) as Promise<MetadataBundle>,
-    ]);
-
-    const metadataMessages = messagesModule.Metadata;
-    const envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-    const appUrl = resolveAppUrl(settings, { envAppUrl });
-
+    const [settings, _messagesModule] = await Promise.all([\r\n        getSiteSettingsPayload(),\r\n        import(@/i18n/messages/.json) as Promise<MetadataBundle>,\r\n {4}]);
+    const envAppUrl = process.env.NEXT_PUBLIC_APP_URL;\r\n    const appUrl = resolveAppUrl(settings, {\r\n        envAppUrl,\r\n    });
+    });
     let metadataBase: URL | undefined;
     try {
         metadataBase = new URL(appUrl);
@@ -122,13 +116,11 @@ export async function getMetadataContext(
         console.warn("Failed to construct metadata base", { error });
         metadataBase = undefined;
     }
-
     const shareImageSource = settings.seoOgImage?.trim().length
         ? settings.seoOgImage.trim()
         : "/og-image.svg";
     const shareImage = ensureAbsoluteUrl(shareImageSource, appUrl);
     const activeLocales = getActiveAppLocales(settings);
-
     return {
         locale,
         messages: metadataMessages,
@@ -261,3 +253,5 @@ export function createMetadata(
         icons,
     } satisfies Metadata;
 }
+
+

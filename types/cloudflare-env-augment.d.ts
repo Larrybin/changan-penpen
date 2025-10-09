@@ -17,7 +17,7 @@ declare namespace Cloudflare {
         CF_PAGES?: string;
         CF_WORKER?: string;
         // for rate limiter binding used in applyRateLimit
-        RATE_LIMITER?: any;
+        RATE_LIMITER?: unknown;
     }
 }
 

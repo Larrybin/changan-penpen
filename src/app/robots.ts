@@ -6,13 +6,15 @@ import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.s
 
 export default async function robots(): Promise<MetadataRoute.Robots | string> {
     const settings = await getSiteSettingsPayload();
-    let envAppUrl: string | undefined;
-    try {
-        const { env } = await getCloudflareContext({ async: true });
-        envAppUrl = env.NEXT_PUBLIC_APP_URL;
-    } catch (error) {
-        console.warn("Falling back to process env for robots", { error });
-        envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    let envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
+    if (!envAppUrl) {
+        try {
+            const { env } = await getCloudflareContext({ async: true });
+            envAppUrl = env.NEXT_PUBLIC_APP_URL;
+        } catch (error) {
+            console.warn("Falling back to process env for robots", { error });
+            envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+        }
     }
     const baseUrl = resolveAppUrl(settings, {
         envAppUrl,

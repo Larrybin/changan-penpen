@@ -43,21 +43,25 @@ try {
 } catch {}
 run("pnpm exec tsc --noEmit");
 
-// 2.5) Optional Next.js build (pre-push). Skip on Windows (wrangler runtime instability).
+// 2.5) Next.js build (pre-push)
+// - Skip on Windows by default due to Workers runtime instability
+// - Respect SKIP_NEXT_BUILD=1 to skip on any platform
+// - Respect FORCE_NEXT_BUILD=1 to force on Windows
 try {
     const isWindows = process.platform === "win32";
-    const forceBuild = process.env.FORCE_NEXT_BUILD === "1";
-    if (!isWindows || forceBuild) {
+    const skipByEnv = process.env.SKIP_NEXT_BUILD === "1";
+    const forceOnWin = process.env.FORCE_NEXT_BUILD === "1";
+    if (skipByEnv || (isWindows && !forceOnWin)) {
+        console.log(
+            "\nSkipping Next.js build pre-push (set FORCE_NEXT_BUILD=1 to force on Windows).",
+        );
+    } else {
         console.log("\nRunning Next.js build pre-push (may take a bit)...");
         try {
             if (existsSync(".next"))
                 rmSync(".next", { recursive: true, force: true });
         } catch {}
         run("pnpm run build");
-    } else {
-        console.log(
-            "\nSkipping Next.js build on Windows (set FORCE_NEXT_BUILD=1 to force).",
-        );
     }
 } catch (e) {
     console.error("Next.js build failed. Aborting push.");

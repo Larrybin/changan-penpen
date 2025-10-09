@@ -38,14 +38,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         return [];
     }
     const [dynamicEntries] = await Promise.all([getDynamicSitemapEntries()]);
-    let envAppUrl: string | undefined;
-    try {
-        const { env } = await getCloudflareContext({ async: true });
-        envAppUrl = env.NEXT_PUBLIC_APP_URL;
-    } catch (_error) {
-        // 鏈湴/闈?Workers 鐜鍏滃簳
-        envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+    let envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
+    if (!envAppUrl) {
+        try {
+            const { env } = await getCloudflareContext({ async: true });
+            envAppUrl = env.NEXT_PUBLIC_APP_URL;
+        } catch (_error) {
+            envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+        }
     }
+
     const baseUrl = resolveAppUrl(settings, {
         envAppUrl,
     });

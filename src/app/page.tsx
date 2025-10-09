@@ -6,13 +6,14 @@ import MarketingLandingPage from "@/modules/marketing/landing.page";
 
 export default async function HomePage() {
     const settings = await getSiteSettingsPayload();
-    let envAppUrl: string | undefined;
-    try {
-        const { env } = await getCloudflareContext({ async: true });
-        envAppUrl = env.NEXT_PUBLIC_APP_URL;
-    } catch (_error) {
-        // 鏈湴/闈?Workers 鐜鍏滃簳
-        envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    let envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
+    if (!envAppUrl) {
+        try {
+            const { env } = await getCloudflareContext({ async: true });
+            envAppUrl = env.NEXT_PUBLIC_APP_URL;
+        } catch (_error) {
+            envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+        }
     }
     const appUrl = resolveAppUrl(settings, {
         envAppUrl,
