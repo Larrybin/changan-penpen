@@ -68,10 +68,30 @@ try {
     throw e;
 }
 
-// 3) Final Biome check (no errors allowed)
+// 3) Docs checks (consistency + local links)
+try {
+    if (process.env.SKIP_DOCS_CHECK === "1") {
+        console.log(
+            "\nSkipping docs checks (set SKIP_DOCS_CHECK!=1 to enable).",
+        );
+    } else {
+        run("pnpm run check:docs");
+        run("pnpm run check:links");
+    }
+} catch (e) {
+    console.error("Docs checks failed. Aborting push.");
+    throw e;
+}
+
+// Optional: show API index suggestions (no gating)
+if (process.env.SHOW_API_SUGGEST === "1") {
+    tryRun("pnpm run suggest:api-index");
+}
+
+// 4) Final Biome check (no errors allowed)
 run("pnpm exec biome check .");
 
-// 4) Auto-commit changes if any
+// 5) Auto-commit changes if any
 const status = getOutput("git status --porcelain");
 if (status) {
     run("git add -A");
@@ -79,7 +99,7 @@ if (status) {
     tryRun('git commit -m "chore: auto-fix lint & types" --no-verify');
 }
 
-// 5) Rebase latest remote then push
+// 6) Rebase latest remote then push
 {
     const pulled = tryRun("git pull --rebase --autostash");
     let conflictList = "";
