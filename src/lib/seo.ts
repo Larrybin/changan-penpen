@@ -4,6 +4,30 @@ import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings
 
 const LOCAL_DEV_APP_URL = "http://localhost:3000";
 
+type ResolveAppUrlOptions = {
+    envAppUrl?: string;
+    fallbackLocalUrl?: string;
+};
+
+function getGlobalEnvOverride(key: string): string | undefined {
+    try {
+        const fromGlobal = (
+            globalThis as unknown as {
+                __ENV__?: Record<string, string | undefined>;
+            }
+        )?.__ENV__?.[key];
+        if (typeof fromGlobal === "string" && fromGlobal.trim().length > 0) {
+            return fromGlobal;
+        }
+    } catch (error) {
+        console.warn("Failed to read global environment override", {
+            key,
+            error,
+        });
+    }
+    return undefined;
+}
+
 export class AppUrlResolutionError extends Error {
     constructor(
         message = "Unable to resolve the application URL. Configure the domain in site settings or set NEXT_PUBLIC_APP_URL.",
@@ -88,17 +112,23 @@ function normalizeBaseUrl(candidate: string): string | undefined {
     }
 }
 
-export function resolveAppUrl(settings?: SiteSettingsPayload | null): string {
+export function resolveAppUrl(
+    settings?: SiteSettingsPayload | null,
+    options: ResolveAppUrlOptions = {},
+): string {
     const configured = normalizeBaseUrl(settings?.domain ?? "");
     if (configured) {
         return configured;
     }
-    const envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const envAppUrl =
+        options.envAppUrl ?? getGlobalEnvOverride("NEXT_PUBLIC_APP_URL");
     const fallback = normalizeBaseUrl(envAppUrl ?? "");
     if (fallback) {
         return fallback;
     }
-    const normalizedLocal = normalizeBaseUrl(LOCAL_DEV_APP_URL);
+    const normalizedLocal = normalizeBaseUrl(
+        options.fallbackLocalUrl ?? LOCAL_DEV_APP_URL,
+    );
     if (normalizedLocal) {
         console.warn("Falling back to default development URL", {
             domain: settings?.domain,

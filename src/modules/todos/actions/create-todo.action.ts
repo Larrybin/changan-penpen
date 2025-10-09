@@ -55,9 +55,12 @@ export async function createTodoAction(formData: FormData) {
                 "todo-images",
             );
 
-            if (uploadResult.success && uploadResult.url) {
-                imageUrl = uploadResult.url;
-                imageAlt = validatedData.imageAlt || file.name;
+            if (uploadResult.success) {
+                const object = uploadResult.object;
+                if (object.url) {
+                    imageUrl = object.url;
+                    imageAlt = validatedData.imageAlt || file.name;
+                }
             } else {
                 // Log error but don't fail the todo creation
                 console.error("Image upload failed:", uploadResult.error);

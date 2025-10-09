@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AuthUser } from "@/modules/auth/models/user.model";
@@ -6,6 +7,78 @@ import type { AuthUser } from "@/modules/auth/models/user.model";
 export interface AdminAccessConfig {
     allowedEmails: string[];
     entryToken: string | null;
+}
+
+type CloudflareBindings = Awaited<
+    ReturnType<typeof getCloudflareContext>
+>["env"];
+
+type CookieInit = ResponseCookie;
+
+function parseForwardedProto(headers: Headers): string[] {
+    const forwarded = headers.get("x-forwarded-proto");
+    if (!forwarded) {
+        return [];
+    }
+    return forwarded
+        .split(",")
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+}
+
+function isHttpsFromHeaders(headers: Headers): boolean {
+    const forwardedValues = parseForwardedProto(headers);
+    if (forwardedValues.includes("https")) {
+        return true;
+    }
+    const cfVisitor = headers.get("cf-visitor");
+    if (cfVisitor) {
+        try {
+            const parsed = JSON.parse(cfVisitor) as { scheme?: string };
+            if (parsed.scheme?.toLowerCase() === "https") {
+                return true;
+            }
+        } catch (error) {
+            console.warn("Failed to parse cf-visitor header", { error });
+        }
+    }
+    return false;
+}
+
+function shouldDefaultSecure(env: CloudflareBindings): boolean {
+    const envRecord = env as unknown as Record<string, unknown>;
+    const forced = String(
+        envRecord.ADMIN_FORCE_SECURE_COOKIES ?? "",
+    ).toLowerCase();
+    if (forced === "true") {
+        return true;
+    }
+    if (forced === "false") {
+        return false;
+    }
+    const mode = String(envRecord.NEXTJS_ENV ?? "").toLowerCase();
+    return mode !== "development" && mode !== "test";
+}
+
+export function createAdminEntryCookieInit({
+    token,
+    headers,
+    env,
+}: {
+    token: string;
+    headers: Headers;
+    env: CloudflareBindings;
+}): CookieInit {
+    const secure = isHttpsFromHeaders(headers) || shouldDefaultSecure(env);
+    return {
+        name: "admin-entry",
+        value: token,
+        httpOnly: true,
+        sameSite: "lax",
+        secure,
+        path: "/",
+        maxAge: 60 * 60 * 24,
+    } satisfies CookieInit;
 }
 
 export async function getAdminAccessConfig(): Promise<AdminAccessConfig> {

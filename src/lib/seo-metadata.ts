@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Metadata } from "next";
 
 import type { AppLocale } from "@/i18n/config";
@@ -106,12 +107,16 @@ function ensureLeadingSlash(path: string): string {
 export async function getMetadataContext(
     locale: AppLocale,
 ): Promise<MetadataContext> {
-    const [settings, messagesModule] = await Promise.all([
+    const [cloudflareContext, settings, messagesModule] = await Promise.all([
+        getCloudflareContext({ async: true }),
         getSiteSettingsPayload(),
         import(`@/i18n/messages/${locale}.json`) as Promise<MetadataBundle>,
     ]);
+    const { env } = cloudflareContext;
     const metadataMessages = messagesModule.Metadata;
-    const appUrl = resolveAppUrl(settings);
+    const appUrl = resolveAppUrl(settings, {
+        envAppUrl: env.NEXT_PUBLIC_APP_URL,
+    });
     let metadataBase: URL | undefined;
     try {
         metadataBase = new URL(appUrl);

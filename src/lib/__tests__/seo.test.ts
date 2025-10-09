@@ -4,11 +4,9 @@ import type {
     SanitizedHeadNode,
 } from "../seo";
 
-const originalEnv = process.env.NEXT_PUBLIC_APP_URL;
 const OriginalURL = URL;
 
 afterEach(() => {
-    process.env.NEXT_PUBLIC_APP_URL = originalEnv;
     global.URL = OriginalURL;
     vi.restoreAllMocks();
 });
@@ -26,19 +24,21 @@ describe("resolveAppUrl", () => {
     });
 
     it("falls back to environment variable when settings are empty", async () => {
-        process.env.NEXT_PUBLIC_APP_URL = "https://fallback.example";
         const { resolveAppUrl } = await loadSeoModule();
-        const url = resolveAppUrl(null);
+        const url = resolveAppUrl(null, {
+            envAppUrl: "https://fallback.example",
+        });
         expect(url).toBe("https://fallback.example");
     });
 
     it("falls back to localhost and logs a warning when nothing configured", async () => {
-        process.env.NEXT_PUBLIC_APP_URL = "";
         const warnSpy = vi
             .spyOn(console, "warn")
             .mockImplementation(() => undefined);
         const { resolveAppUrl } = await loadSeoModule();
-        const url = resolveAppUrl({ domain: "" } as never);
+        const url = resolveAppUrl({ domain: "" } as never, {
+            envAppUrl: "",
+        });
         expect(url).toBe("http://localhost:3000");
         expect(warnSpy).toHaveBeenCalledWith(
             "Falling back to default development URL",
@@ -47,7 +47,6 @@ describe("resolveAppUrl", () => {
     });
 
     it("throws an error when no URL can be resolved", async () => {
-        process.env.NEXT_PUBLIC_APP_URL = "";
         const errorSpy = vi
             .spyOn(console, "error")
             .mockImplementation(() => undefined);
@@ -63,13 +62,16 @@ describe("resolveAppUrl", () => {
 
         const { resolveAppUrl, AppUrlResolutionError } =
             (await loadSeoModule()) as {
-                resolveAppUrl: (settings?: unknown) => string;
+                resolveAppUrl: (
+                    settings?: unknown,
+                    options?: { envAppUrl?: string },
+                ) => string;
                 AppUrlResolutionError: typeof AppUrlResolutionErrorType;
             };
 
-        expect(() => resolveAppUrl({ domain: "" } as never)).toThrow(
-            AppUrlResolutionError,
-        );
+        expect(() =>
+            resolveAppUrl({ domain: "" } as never, { envAppUrl: "" }),
+        ).toThrow(AppUrlResolutionError);
         expect(errorSpy).toHaveBeenCalled();
     });
 });

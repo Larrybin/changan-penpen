@@ -1,6 +1,6 @@
-﻿import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type CheckResult = { ok: true } | { ok: false; error: string };
+type CheckResult = { ok: true } | { ok: false; error?: string };
 
 type HealthResponse = {
     ok: boolean;
@@ -16,47 +16,25 @@ type HealthResponse = {
 };
 
 function isCheckResult(value: unknown): value is CheckResult {
-    if (!value || typeof value !== "object") {
-        return false;
-    }
+    if (!value || typeof value !== "object") return false;
     const record = value as Record<string, unknown>;
-    if (record.ok !== true && record.ok !== false) {
+    if (record.ok !== true && record.ok !== false) return false;
+    if (record.ok === false && record.error !== undefined && typeof record.error !== "string")
         return false;
-    }
-    if (record.ok === false && typeof record.error !== "string") {
-        return false;
-    }
     return true;
 }
 
 function assertHealthResponse(value: unknown): asserts value is HealthResponse {
-    if (!value || typeof value !== "object") {
-        throw new Error("健康检查响应必须是对象");
-    }
+    if (!value || typeof value !== "object") throw new Error("响应不是对象");
     const record = value as Record<string, unknown>;
-    if (typeof record.ok !== "boolean") {
-        throw new Error("健康检查响应缺少 ok 字段");
-    }
-    if (typeof record.time !== "string") {
-        throw new Error("健康检查响应缺少 time 字段");
-    }
-    if (typeof record.durationMs !== "number") {
-        throw new Error("健康检查响应缺少 durationMs 字段");
-    }
-    const checks = record.checks;
-    if (!checks || typeof checks !== "object") {
-        throw new Error("健康检查响应缺少 checks 字段");
-    }
+    if (typeof record.ok !== "boolean") throw new Error("响应缺少 ok 字段");
+    if (typeof record.time !== "string") throw new Error("响应缺少 time 字段");
+    if (typeof record.durationMs !== "number") throw new Error("响应缺少 durationMs 字段");
+    const checks = record.checks as Record<string, unknown> | undefined;
+    if (!checks || typeof checks !== "object") throw new Error("响应缺少 checks 字段");
     const { db, r2, env, appUrl, external } = checks as Record<string, unknown>;
-    if (
-        !isCheckResult(db) ||
-        !isCheckResult(r2) ||
-        !isCheckResult(env) ||
-        !isCheckResult(appUrl) ||
-        !isCheckResult(external)
-    ) {
-        throw new Error("健康检查响应包含无效的检查结果");
-    }
+    if (!isCheckResult(db) || !isCheckResult(r2) || !isCheckResult(env) || !isCheckResult(appUrl) || !isCheckResult(external))
+        throw new Error("响应包含无效检查项");
 }
 
 const getCloudflareContextMock = vi.fn();
@@ -85,15 +63,16 @@ describe("health route", () => {
         vi.unstubAllGlobals();
     });
 
-    it("fast 模式跳过耗时检查", async () => {
+    it("fast 模式快速返回且不做外部请求", async () => {
         const env = {
             BETTER_AUTH_SECRET: "1",
             CLOUDFLARE_R2_URL: "2",
             next_cf_app_bucket: { list: vi.fn().mockResolvedValue({}) },
-            HEALTH_REQUIRE_DB: "false",
+            HEALTH_REQUIRE_DB: "true",
             HEALTH_REQUIRE_R2: "false",
             HEALTH_REQUIRE_EXTERNAL: "false",
             NEXT_PUBLIC_APP_URL: "https://app.example",
+            HEALTH_ACCESS_TOKEN: "token",
         };
         getCloudflareContextMock.mockResolvedValue({ env });
         getDbMock.mockResolvedValue({});
@@ -101,7 +80,9 @@ describe("health route", () => {
         vi.stubGlobal("fetch", fetchMock);
         const { GET } = await import("./route");
         const res = await GET(
-            new Request("https://health.test/api/health?fast=1"),
+            new Request("https://health.test/api/health?fast=1", {
+                headers: { "x-health-token": "token" },
+            }),
         );
         expect(fetchMock).not.toHaveBeenCalled();
         expect(res.status).toBe(200);
@@ -112,7 +93,7 @@ describe("health route", () => {
         expect(body.checks.external.ok).toBe(true);
     });
 
-    it("当要求外部依赖失败时返回 503", async () => {
+    it("缺少外部 token 不阻断，DB 失败仍 503，且不发起外部请求", async () => {
         const env = {
             BETTER_AUTH_SECRET: "1",
             CLOUDFLARE_R2_URL: "2",
@@ -121,6 +102,7 @@ describe("health route", () => {
             HEALTH_REQUIRE_R2: "false",
             HEALTH_REQUIRE_EXTERNAL: "true",
             CREEM_API_URL: "https://creem.example",
+            HEALTH_ACCESS_TOKEN: "token",
         };
         getCloudflareContextMock.mockResolvedValue({ env });
         const failingDb = {
@@ -131,37 +113,25 @@ describe("health route", () => {
             }),
         };
         getDbMock.mockResolvedValue(failingDb);
-        const responses = [
-            { status: 405, ok: false },
-            { status: 503, ok: false },
-        ];
-        const fetchMock = vi
-            .fn()
-            .mockImplementation(() =>
-                Promise.resolve(
-                    responses.shift() ?? { status: 503, ok: false },
-                ),
-            );
+        const fetchMock = vi.fn();
         vi.stubGlobal("fetch", fetchMock);
         const { GET } = await import("./route");
-        const res = await GET(new Request("https://health.test/api/health"));
+        const res = await GET(
+            new Request("https://health.test/api/health", {
+                headers: { "x-health-token": "token" },
+            }),
+        );
         expect(res.status).toBe(503);
         const body = await res.json();
         assertHealthResponse(body);
         expect(body.ok).toBe(false);
         expect(body.checks.db.ok).toBe(false);
-        expect(body.checks.external.ok).toBe(false);
-        expect(fetchMock).toHaveBeenCalledTimes(3);
-        expect(fetchMock.mock.calls[0]?.[0]).toBe(
-            "https://creem.example/status",
-        );
-        expect(fetchMock.mock.calls[1]?.[0]).toBe(
-            "https://creem.example/status",
-        );
-        expect(fetchMock.mock.calls[2]?.[0]).toBe("https://creem.example");
+        // 关键断言：无 CREEM_API_KEY 时 external 不阻断且不请求
+        expect(body.checks.external.ok).toBe(true);
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it("HEAD 405 时退回 GET 成功", async () => {
+    it("HEAD 405 时回退 GET 成功", async () => {
         const env = {
             BETTER_AUTH_SECRET: "1",
             CLOUDFLARE_R2_URL: "2",
@@ -171,7 +141,8 @@ describe("health route", () => {
             HEALTH_REQUIRE_EXTERNAL: "true",
             CREEM_API_URL: "https://creem.example/",
             CREEM_API_KEY: "token",
-        };
+            HEALTH_ACCESS_TOKEN: "token",
+        } as Record<string, unknown>;
         getCloudflareContextMock.mockResolvedValue({ env });
         const dbMock = {
             select: () => ({
@@ -183,26 +154,22 @@ describe("health route", () => {
         getDbMock.mockResolvedValue(dbMock);
         const fetchMock = vi
             .fn()
-            .mockImplementationOnce(() =>
-                Promise.resolve({ status: 405, ok: false }),
-            )
-            .mockImplementationOnce(() =>
-                Promise.resolve({ status: 200, ok: true }),
-            );
+            .mockImplementationOnce(() => Promise.resolve({ status: 405, ok: false }))
+            .mockImplementationOnce(() => Promise.resolve({ status: 200, ok: true }));
         vi.stubGlobal("fetch", fetchMock);
         resolveAppUrlMock.mockReturnValue("https://resolved.example");
         const { GET } = await import("./route");
-        const res = await GET(new Request("https://health.test/api/health"));
+        const res = await GET(
+            new Request("https://health.test/api/health", {
+                headers: { "x-health-token": "token" },
+            }),
+        );
         expect(res.status).toBe(200);
         const body = await res.json();
         assertHealthResponse(body);
         expect(body.ok).toBe(true);
         expect(fetchMock).toHaveBeenCalledTimes(2);
-        expect(fetchMock.mock.calls[0]?.[0]).toBe(
-            "https://creem.example/status",
-        );
-        expect(fetchMock.mock.calls[1]?.[0]).toBe(
-            "https://creem.example/status",
-        );
+        expect(fetchMock.mock.calls[0]?.[0]).toBe("https://creem.example/status");
+        expect(fetchMock.mock.calls[1]?.[0]).toBe("https://creem.example/status");
     });
 });

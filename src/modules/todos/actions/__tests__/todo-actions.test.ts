@@ -13,9 +13,16 @@ vi.mock("@/modules/auth/utils/auth-utils", () => ({
 }));
 
 vi.mock("@/lib/r2", () => ({
-    uploadToR2: vi
-        .fn()
-        .mockResolvedValue({ success: true, url: "https://example.com" }),
+    uploadToR2: vi.fn().mockResolvedValue({
+        success: true,
+        object: {
+            key: "todo-images/mock.png",
+            url: "https://example.com",
+            contentType: "image/png",
+            size: 123,
+            scan: { status: "skipped" },
+        },
+    }),
 }));
 
 vi.mock("@/modules/todos/services/todo.service", () => ({
