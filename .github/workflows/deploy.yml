@@ -1,4 +1,4 @@
-name: Deploy Next.js App to Cloudflare
+ï»¿name: Deploy Next.js App to Cloudflare
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  PNPM_VERSION: '9'
+  PNPM_VERSION: '10'
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 concurrency:
@@ -23,11 +23,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Quality gate£¨¸´ÓÃ×Ô CI£©
+  # Quality gate â€” CI
   quality-gate-reusable:
     name: Quality Gate
     uses: ./.github/workflows/ci.yml
     secrets: inherit
+
   deploy-production:
     name: Deploy Production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -82,10 +83,10 @@ jobs:
           set -euo pipefail
           url="${{ vars.NEXT_PUBLIC_APP_URL }}"
           if [ -z "$url" ]; then
-            echo "NEXT_PUBLIC_APP_URL is required for production. Set it in: Settings â†?Secrets and variables â†?Actions â†?Variables."
+            echo "NEXT_PUBLIC_APP_URL is required for production. Set it in: Settings â€º Secrets and variables â€º Actions â€º Variables."
             exit 1
           fi
-          if echo "$url" | grep -Eqi 'localhost|127\.0\.0\.1'; then
+          if echo "$url" | grep -Eqi 'localhost|127\\.0\\.0\\.1'; then
             echo "NEXT_PUBLIC_APP_URL must not point to localhost for production: $url"
             exit 1
           fi
@@ -126,10 +127,10 @@ jobs:
       - name: Generate backup filename
         id: backup
         run: |
-          timestamp=$(date +%Y%m%d_%H%M%S)
-          echo "filename=backup_prod_${timestamp}.sql" >> $GITHUB_OUTPUT
+          ts=$(date -u +%Y%m%d-%H%M%S)
+          echo "filename=db-backup-${ts}.sql" >> "$GITHUB_OUTPUT"
 
-      - name: Backup production database
+      - name: Export production database
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -179,7 +180,12 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           environment: production
           wranglerVersion: '4.42.0'
-          command: deploy --env production --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}" --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}" --var "TRANSLATION_PROVIDER=${{ vars.TRANSLATION_PROVIDER || 'gpt' }}" --var "OPENAI_BASE_URL=${{ vars.OPENAI_BASE_URL }}"
+          command: >-
+            deploy --env production
+            --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}"
+            --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}"
+            --var "TRANSLATION_PROVIDER=${{ vars.TRANSLATION_PROVIDER || 'gpt' }}"
+            --var "OPENAI_BASE_URL=${{ vars.OPENAI_BASE_URL }}"
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -210,7 +216,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE CLIENT SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
