@@ -10,14 +10,32 @@
 | `pnpm dev:remote` | Remote region | Requires `wrangler login` |
 | `pnpm lint` | Biome format + lint | Run before commit |
 | `pnpm test` | Vitest unit tests | Coverage to be expanded |
+| `pnpm build` | Next.js production build | Uses Node runtime |
+| `pnpm deploy:cf` | OpenNext build + `wrangler deploy` | Cloudflare Workers deploy |
+| `pnpm cf-typegen` | Regenerate CF bindings/types | Run after editing `wrangler.jsonc` |
+| `pnpm typecheck` | CF typegen + `tsc --noEmit` | Ensures types are in sync |
+| `pnpm check:all` | Biome check + typecheck (+ docs checks) | Add docs checks below |
 | `pnpm translate` | Batch translate content | Requires AI keys in `.dev.vars` |
+| `pnpm db:generate` | Generate migration | Uses drizzle-kit |
+| `pnpm db:generate:named` | Generate named migration | e.g. `add_users_table` |
+| `pnpm db:migrate:local` | Apply migrations (local) | D1 (SQLite) via Wrangler |
+| `pnpm db:migrate:prod` | Apply migrations (remote) | Requires Wrangler auth |
+| `pnpm db:inspect:local` | Inspect local DB tables | SQL `SELECT name FROM sqlite_master...` |
+| `pnpm db:inspect:prod` | Inspect remote DB tables | Requires Wrangler auth |
+| `pnpm db:studio` | Drizzle Studio (default) | UI explorer |
+| `pnpm db:studio:local` | Drizzle Studio (local config) | `drizzle.local.config.ts` |
+| `pnpm db:reset:local` | Reset local DB | Drops tables then migrates |
 
 ## 2. Debug Tips
 - Server Actions: inspect `server-actions` requests in Network tab; run functions directly in IDE
 - Edge logs: `wrangler dev --inspect` with Chrome DevTools
-- Env vars: `.dev.vars` for local; use `wrangler secret put` for Workers mode if missing
+- Env vars: `.dev.vars` for local; use `wrangler secret put` in Workers mode if missing
 - Request replay: `wrangler dev --persist` to keep D1 state under `.wrangler/state`
 - AI/R2: ensure `CLOUDFLARE_R2_URL`, `GEMINI_API_KEY`, etc., are set or features will degrade
+- Shell encoding: prefer PowerShell 7 and set UTF‑8 in profile to avoid garbled output:
+  - `[Console]::InputEncoding  = [System.Text.Encoding]::UTF8`
+  - `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`
+  - `$OutputEncoding = [System.Text.UTF8Encoding]::new($false)`
 
 ## 3. Database (D1)
 - Generate migration: `pnpm db:generate:named "add_users_table"`
@@ -44,9 +62,9 @@
 - Admin access is controlled by `ADMIN_ALLOWED_EMAILS` and `ADMIN_ENTRY_TOKEN`; configure local accounts in `.dev.vars`
 
 ## 7. Troubleshooting (Quick)
-- `local socket address…` → restart `wrangler dev` or clear `.wrangler/state`
-- `fetch failed: 403` → ensure CF API token covers D1/R2/Workers
-- `EAI_AGAIN` → DNS issue; fall back to `pnpm dev` (Node runtime) temporarily
+- `local socket address…` — restart `wrangler dev` or clear `.wrangler/state`
+- `fetch failed: 403` — ensure CF API token covers D1/R2/Workers
+- `EAI_AGAIN` — DNS issue; fall back to `pnpm dev` (Node runtime) temporarily
 - More in `docs/troubleshooting.md`
 
 ## 8. Daily Quality Gate
@@ -58,4 +76,3 @@
 ---
 
 Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` and `docs/troubleshooting.md`.
-

@@ -4,14 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths-ignore:
-      - README.md
-      - docs/**
   pull_request:
     branches: [main]
-    paths-ignore:
-      - README.md
-      - docs/**
 
 env:
   NODE_VERSION: '20'
@@ -23,6 +17,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Determine changed files
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+        with:
+          fetch-depth: 2
+      - name: Compute docs-only flag
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.before }}"
+          if [ -z "${base}" ]; then
+            base=$(git rev-list HEAD~1 -n 1 || true)
+          fi
+          if [ -z "${base}" ]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "${base}"...HEAD | tr -d '\r' || true)
+          echo "Changed files:"; echo "$files"
+          if [ -z "${files}" ]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Anything outside docs/ or README.md is considered non-docs
+          non_docs=$(echo "$files" | grep -Ev '^(README\.md|docs/)' || true)
+          if [ -z "${non_docs}" ]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
   # Quality gate — CI
   quality-gate-reusable:
     name: Quality Gate
@@ -31,8 +61,8 @@ jobs:
 
   deploy-production:
     name: Deploy Production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [quality-gate-reusable]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.docs_only != 'true'
+    needs: [quality-gate-reusable, changes]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production

@@ -23,8 +23,10 @@ Push/PR → CI (Biome + tsc + Vitest + build)
   1) `pnpm run fix:i18n` + diff check
   2) `pnpm exec biome check .`
   3) `pnpm exec tsc --noEmit`
-  4) `pnpm exec vitest run --coverage` (outputs json-summary)
-  5) `pnpm build`
+  4) `pnpm run check:docs` (docs consistency)
+  5) `pnpm run check:links` (local markdown link check)
+  6) `pnpm exec vitest run --coverage` (outputs json-summary)
+  7) `pnpm build`
 - Print `NEXT_PUBLIC_APP_URL` from GitHub Variables for diagnostics
 
 ## 4. Deploy Details
@@ -35,6 +37,10 @@ Push/PR → CI (Biome + tsc + Vitest + build)
   - `SYNC_PRODUCTION_SECRETS` toggles secret sync
   - Health checks: `/api/health?fast=1` must pass; strict must pass before success
 - All Actions pinned to commit SHAs
+ 
+Docs-only changes
+- The deploy workflow also triggers on docs/README changes to run the quality gate.
+- The actual deploy job is skipped automatically when the change set contains only `docs/**` and/or `README.md`.
 
 ## 5. Required Secrets/Vars
 | Name | Purpose | Scope |
@@ -73,4 +79,3 @@ Full matrix: see `docs/env-and-secrets.md`.
 See also:
 - `docs/workflows/ci.md`
 - `docs/workflows/deploy.md`
-

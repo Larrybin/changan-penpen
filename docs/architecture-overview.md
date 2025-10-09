@@ -31,12 +31,12 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 | `src/lib` | Platform helpers: CF bindings, logging, cache, HTTP, SEO, i18n |
 | `src/db` | Drizzle schema and query helpers, used by services |
 | `src/drizzle` | DB migrations, configured by `drizzle.config.ts` |
-| `src/services` | Cross‑cutting services (`auth.service.ts`, `billing.service.ts`, …) |
-| `scripts/` | Build/i18n/util scripts (e.g. `prebuild-cf.mjs`) |
+| `src/services` | Cross‑cutting services (`auth.service.ts`, `billing.service.ts`, etc.) |
+| `scripts/` | Build/i18n/util scripts (e.g., `prebuild-cf.mjs`) |
 
 ### App Router Layers
 - `layout.tsx` — global providers (i18n/theme/QueryClient) and layout chrome.
-- `(segment)/layout.tsx` — area layouts (e.g. admin `src/modules/admin/admin.layout.tsx`).
+- `(segment)/layout.tsx` — area layouts (e.g., admin layout in `src/modules/admin/admin.layout.tsx`).
 - `page.tsx` — page entry that composes module components.
 - `api/**/route.ts` — REST‑like or action endpoints.
 
@@ -47,7 +47,7 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 - `services/` — orchestrate business logic and talk to `src/db` / external APIs.
 - `utils/` — module helpers.
 
-> Convention: Pages → module components → actions/services → db/lib. Avoid hitting DB from UI directly.
+> Convention: Pages → module components → actions/services → db/lib. Avoid hitting the DB from UI directly.
 
 ## Data Flow & Dependencies
 1. Request enters — Edge runtime matches page/API route.
@@ -58,7 +58,7 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 6. External deps — R2, Creem, Workers AI through typed `CloudflareEnv` bindings and env vars.
 
 ## Cloudflare Bindings & Env
-- Wrangler config — enable `nodejs_compat`, `global_fetch_strictly_public` in `wrangler.jsonc`.
+- Wrangler config — enable `nodejs_compat`, `global_fetch_strictly_public` in `wrangler.jsonc` when needed.
 - Bindings — `next_cf_app` (D1), `next_cf_app_bucket` (R2), `AI`, `ASSETS`.
 - Types — run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.d.ts`.
 - Secrets — manage with `wrangler secret`; keep `.dev.vars.example` up‑to‑date.

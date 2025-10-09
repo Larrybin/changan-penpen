@@ -4,7 +4,7 @@
 
 ## Local
 - Copy `.dev.vars.example` → `.dev.vars` (not committed)
-- `pnpm dev` reads `.env.local` if present, Workers flows use `.dev.vars`
+- `pnpm dev` reads `.env.local` if present; Workers flows use `.dev.vars`
 
 ## Cloudflare Bindings
 - Define bindings in `wrangler.jsonc`

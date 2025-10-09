@@ -1,58 +1,43 @@
-﻿# Contributing Guide
+# Contributing Guide
 
-Thank you for your interest in the project! Please follow these steps to keep collaboration smooth and high-quality.
+Thank you for your interest in the project! Please follow these steps to keep collaboration smooth and high‑quality.
 
 ## 1) Workflow
-1. Create a branch (e.g., `feature/<topic>` or `fix/<issue-id>`). Keep it focused and short-lived.
+1. Create a branch (e.g., `feature/<topic>` or `fix/<issue-id>`). Keep it focused and short‑lived.
 2. Sync latest `main` before you branch and before opening a PR.
 3. Develop and validate locally (see `docs/local-dev.md`).
-4. Run quality gates locally: `pnpm check:all && pnpm test && pnpm build`.
+4. Run local quality gates: `pnpm check:all && pnpm test && pnpm build`.
 5. Open a PR with a clear description, screenshots for UI, and links to issues.
 
 ## 2) Coding Standards
-- TypeScript-first. Components use PascalCase; variables/functions use camelCase.
-- Run `pnpm lint` (Biome) before committing. Use 4-space indent and double quotes.
-- Keep modules domain-driven under `src/modules/<feature>`.
+- TypeScript‑first. Components use PascalCase; variables/functions use camelCase.
+- Run `pnpm lint` (Biome) before committing. Use 4‑space indent and double quotes.
+- Keep modules domain‑driven under `src/modules/<feature>`.
 
 ## 3) Commits & PRs
-- Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` ...
-- Keep small, self-contained commits. Reference issues (e.g., `Fixes #123`).
-- PRs must pass CI and include docs updates for user-visible or ops changes.
-### Local Checks & CI Requirements
+- Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` …
+- Keep small, self‑contained commits. Reference issues (e.g., `Fixes #123`).
+- PRs must pass CI and include docs updates for user‑visible or ops changes.
 
-Consistent local gates reduce CI churn and reviewer effort.
+## 4) Local Checks
+- `pnpm biome:check` and `pnpm typecheck` should pass before pushing.
+- Run `pnpm test` for the affected modules; add tests for critical logic.
+- If you changed Cloudflare bindings or env keys, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts` (or `pnpm typecheck`, which includes it).
 
-- Pre-commit (Husky)
-  - Biome on staged files via lint-staged (auto-fixable issues are fixed).
-  - TypeScript type check: 	sc --noEmit.
-- Pre-push (Husky)
-  - pnpm check:all (Biome check + typecheck) must pass.
-  - A quick smoke of critical tests (itest -t "health|creem", non-blocking by default; adjust in .husky/pre-push if needed).
-- One‑command auto-fix + push
-  - pnpm push: Biome auto-fix → Cloudflare typegen → TSC → Biome check → auto-commit changes → rebase & push.
-
-Before opening a PR
-
-- Run pnpm check:all and pnpm test (or at least the affected suites).
-- If you changed Cloudflare bindings or env keys, run pnpm cf-typegen or pnpm typecheck (includes typegen) to refresh cloudflare-env.d.ts.
-- Avoid ny. Prefer env narrowing, e.g. const cf = env as unknown as Pick<CloudflareEnv, 'CREEM_API_URL' | 'CREEM_API_KEY'>.
-- Use catch (_error) for intentionally unused catch variables to satisfy lint.
-
-## 4) Tests
-- Prefer Vitest; colocate tests as `*.test.ts(x)`.
+## 5) Tests
+- Prefer Vitest; co‑locate tests as `*.test.ts(x)`.
 - Deterministic tests only; mock D1/R2 and network calls.
-- Include `pnpm test` output in the PR description if adding complex logic.
+- Include `pnpm test` output in the PR description for complex changes.
 
-## 5) Docs
+## 6) Docs
 - Update `docs/00-index.md` when adding new docs.
 - Keep deployment/i18n/security docs accurate; they are the runbook.
 
-## 6) Security & Secrets
+## 7) Security & Secrets
 - Never commit secrets. Use Wrangler secrets in production.
 - After adding bindings or secrets, run `pnpm cf-typegen`.
 
-## 7) Reviews
+## 8) Reviews
 - Be kind, specific, and actionable. Suggest improvements with examples.
 - Maintainers may request splitting large PRs into smaller ones.
-
 

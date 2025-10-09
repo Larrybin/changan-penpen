@@ -76,6 +76,12 @@ jobs:
       - name: Type check (tsc)
         run: pnpm exec tsc --noEmit
 
+      - name: Docs consistency
+        run: pnpm run check:docs
+
+      - name: Link check (local markdown)
+        run: pnpm run check:links
+
       - name: List test cases (Vitest)
         run: |
           echo "Vitest version: $(pnpm exec vitest --version || true)"

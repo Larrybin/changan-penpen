@@ -6,7 +6,7 @@
   - `?fast=1` — skip expensive checks (e.g., external services)
   - strict (no `fast`) — check DB, R2, external endpoints; returns 503 on failure
 - Auth:
-  - Set `HEALTH_ACCESS_TOKEN` in Cloudflare/Wrangler and send `X-Health-Token` **or** `Authorization: Bearer <token>` header to receive detailed diagnostics
+  - Set `HEALTH_ACCESS_TOKEN` in Cloudflare/Wrangler and send `X-Health-Token` or `Authorization: Bearer <token>` to receive detailed diagnostics
   - Without the token, the endpoint returns sanitized summaries (boolean only) and withholds secret/binding names; failures respond with guidance to supply the token
 - Use in CI and post‑deploy gates; dashboards can poll it for status
 

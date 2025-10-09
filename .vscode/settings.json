@@ -16,5 +16,6 @@
     "editor.codeActionsOnSave": {
         "source.organizeImports.biome": "explicit"
     },
-    "claudeCodeChat.permissions.yoloMode": true
+    "claudeCodeChat.permissions.yoloMode": true,
+    "chatgpt.openOnStartup": true
 }

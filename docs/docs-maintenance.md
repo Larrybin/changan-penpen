@@ -22,3 +22,9 @@
 - [ ] Verify workflows and env matrices match reality
 - [ ] Review security and incident playbooks
 
+## Useful Search Tips
+- Prefer PowerShell 7 + UTF‑8 in profile to avoid garbled output
+- Grep examples (ripgrep):
+  - `rg -n -F ".github/workflows/" README.md` — list workflow references in README
+  - `rg -n "\\.route\\.ts$|/api/.*/route\\.ts$|/page\\.tsx$" src` — scan routes/pages
+  - `rg -n -F "wrangler.jsonc" docs` — find env docs cross‑references
