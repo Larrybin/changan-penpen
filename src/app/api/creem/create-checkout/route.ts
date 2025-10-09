@@ -17,7 +17,7 @@ type Body = {
 export async function POST(request: Request) {
     try {
         const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: await headers() });
+        const session = await auth.api.getSession({ headers: headers() });
         if (!session?.user) {
             return new Response(
                 JSON.stringify({
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
         if (!rateLimitResult.ok) {
             return rateLimitResult.response;
         }
-        const origin = (await headers()).get("origin");
+        const origin = headers().get("origin");
         const body = (await request.json()) as Body;
 
         // 必要环境变量校验（缺失则直接失败，避免上游 503）
@@ -282,9 +282,18 @@ async function fetchWithRetry(
                 .toLowerCase()
                 .includes("application/json");
             if (resp.ok) {
-                const data = isJson
-                    ? await resp.json()
-                    : JSON.parse(await resp.text()).catch(() => ({}));
+                let data: unknown;
+                if (isJson) {
+                    data = await resp.json();
+                } else {
+                    const txt = await resp.text();
+                    try {
+                        data = JSON.parse(txt);
+                    } catch {
+                        // 返回原始文本，避免 JSON.parse 抛错导致整体失败
+                        data = txt;
+                    }
+                }
                 return {
                     ok: true,
                     status: resp.status,

@@ -47,7 +47,7 @@ function isCreemCheckoutPayload(value: unknown): value is CreemCheckout {
 export async function POST(request: Request) {
     try {
         const raw = await request.text();
-        const signature = (await headers()).get("creem-signature") || "";
+        const signature = headers().get("creem-signature") || "";
         const { env } = await getCloudflareContext({ async: true });
 
         const rateLimitResult = await applyRateLimit({
@@ -69,6 +69,10 @@ export async function POST(request: Request) {
             console.log("[creem webhook] signature:", signature);
         }
 
+        if (!env.CREEM_WEBHOOK_SECRET) {
+            console.error("[creem webhook] missing CREEM_WEBHOOK_SECRET");
+            return new Response("Missing webhook secret", { status: 500 });
+        }
         const valid = await verifyCreemWebhookSignature(
             raw,
             signature,

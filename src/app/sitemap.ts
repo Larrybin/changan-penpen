@@ -38,9 +38,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         return [];
     }
     const [dynamicEntries] = await Promise.all([getDynamicSitemapEntries()]);
-    const { env } = await getCloudflareContext({ async: true });
+    let envAppUrl: string | undefined;
+    try {
+        const { env } = await getCloudflareContext({ async: true });
+        envAppUrl = env.NEXT_PUBLIC_APP_URL;
+    } catch (error) {
+        // 本地/非 Workers 环境兜底
+        envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    }
     const baseUrl = resolveAppUrl(settings, {
-        envAppUrl: env.NEXT_PUBLIC_APP_URL,
+        envAppUrl,
     });
     const locales = getActiveAppLocales(settings);
     const now = new Date();

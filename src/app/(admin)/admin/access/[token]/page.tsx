@@ -16,9 +16,9 @@ interface Params {
 export async function generateMetadata({
     params,
 }: {
-    params: Promise<Params>;
+    params: Params;
 }): Promise<Metadata> {
-    const { token } = await params;
+    const { token } = params;
     const path = token
         ? `/admin/access/${encodeURIComponent(token)}`
         : "/admin/access";
@@ -28,12 +28,8 @@ export async function generateMetadata({
     });
 }
 
-export default async function AdminEntryPage({
-    params,
-}: {
-    params: Promise<Params>;
-}) {
-    const { token } = await params;
+export default async function AdminEntryPage({ params }: { params: Params }) {
+    const { token } = params;
     const config = await getAdminAccessConfig();
 
     if (!config.entryToken) {
@@ -44,8 +40,8 @@ export default async function AdminEntryPage({
         redirect("/login?admin=1&error=invalid-entry");
     }
 
-    const cookieStore = await cookies();
-    const requestHeaders = await headers();
+    const cookieStore = cookies();
+    const requestHeaders = headers();
     const { env } = await getCloudflareContext({ async: true });
     const cookieInit = createAdminEntryCookieInit({
         token: config.entryToken,

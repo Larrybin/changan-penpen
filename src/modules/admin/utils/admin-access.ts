@@ -1,5 +1,4 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AuthUser } from "@/modules/auth/models/user.model";
@@ -13,7 +12,15 @@ type CloudflareBindings = Awaited<
     ReturnType<typeof getCloudflareContext>
 >["env"];
 
-type CookieInit = ResponseCookie;
+type CookieInit = {
+    name: string;
+    value: string;
+    httpOnly?: boolean;
+    sameSite?: "lax" | "strict" | "none";
+    secure?: boolean;
+    path?: string;
+    maxAge?: number;
+};
 
 function parseForwardedProto(headers: Headers): string[] {
     const forwarded = headers.get("x-forwarded-proto");
@@ -129,7 +136,7 @@ export async function requireAdminForPage(user: AuthUser) {
         return;
     }
 
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const entryCookie = cookieStore.get("admin-entry");
 
     if (!entryCookie || !isEntryTokenValid(entryCookie.value, config)) {

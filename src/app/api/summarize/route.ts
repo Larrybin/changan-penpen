@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         // Check authentication
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({
-            headers: await headers(),
+            headers: headers(),
         });
 
         if (!session?.user) {

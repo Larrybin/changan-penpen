@@ -9,7 +9,7 @@ function formatDate(d: Date) {
 export async function GET(request: Request) {
     try {
         const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: await headers() });
+        const session = await auth.api.getSession({ headers: headers() });
         if (!session?.user) {
             return new Response(
                 JSON.stringify({ success: false, error: "Unauthorized" }),

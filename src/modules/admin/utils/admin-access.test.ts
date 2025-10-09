@@ -33,7 +33,7 @@ describe("admin access utils", () => {
                 ADMIN_ENTRY_TOKEN: "secret",
             },
         });
-        cookiesMock.mockImplementation(async () => ({
+        cookiesMock.mockImplementation(() => ({
             get: () => undefined,
         }));
     });
@@ -119,7 +119,7 @@ describe("admin access utils", () => {
             },
         });
         const module = await import("./admin-access");
-        cookiesMock.mockImplementation(async () => ({
+        cookiesMock.mockImplementation(() => ({
             get: () => ({ value: "wrong" }),
         }));
         await module.requireAdminForPage(createUser());
@@ -134,7 +134,7 @@ describe("admin access utils", () => {
             },
         });
         const module = await import("./admin-access");
-        cookiesMock.mockImplementation(async () => ({
+        cookiesMock.mockImplementation(() => ({
             get: () => ({ value: "secret" }),
         }));
         await module.requireAdminForPage(createUser());

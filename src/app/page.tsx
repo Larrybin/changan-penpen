@@ -6,9 +6,16 @@ import MarketingLandingPage from "@/modules/marketing/landing.page";
 
 export default async function HomePage() {
     const settings = await getSiteSettingsPayload();
-    const { env } = await getCloudflareContext({ async: true });
+    let envAppUrl: string | undefined;
+    try {
+        const { env } = await getCloudflareContext({ async: true });
+        envAppUrl = env.NEXT_PUBLIC_APP_URL;
+    } catch (error) {
+        // 本地/非 Workers 环境兜底
+        envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    }
     const appUrl = resolveAppUrl(settings, {
-        envAppUrl: env.NEXT_PUBLIC_APP_URL,
+        envAppUrl,
     });
     const ogImageSource = settings.seoOgImage?.trim().length
         ? settings.seoOgImage.trim()

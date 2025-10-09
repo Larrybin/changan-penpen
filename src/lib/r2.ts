@@ -91,6 +91,13 @@ function formatMaxSize(bytes: number) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function shouldForceAttachment(mime: string) {
+    // 文档类内容：强制下载，避免同域内联带来的潜在 XSS/嗅探风险
+    if (mime === "application/pdf") return true;
+    if (mime.startsWith("text/")) return true;
+    return false;
+}
+
 export async function uploadToR2(
     file: File,
     folder: string = "uploads",
@@ -184,6 +191,13 @@ export async function uploadToR2(
             httpMetadata: {
                 contentType: detectedMime,
                 cacheControl: "public, max-age=31536000", // 1 year
+                ...(shouldForceAttachment(detectedMime)
+                    ? {
+                          contentDisposition: `attachment; filename="${encodeURIComponent(
+                              file.name,
+                          )}"`,
+                      }
+                    : {}),
             },
             customMetadata: {
                 originalName: file.name,
