@@ -4052,8 +4052,8 @@ packages:
     resolution: {integrity: sha512-ZL6DDuAlRlLGghwcfmSn9sK3Hr6ArtyudlSAiCqQ6IfE+b+HHbydbYDIG15IfS5do+7XQQBdBiubF/cV2dnDzg==}
     engines: {node: '>=6'}
 
-  tar-fs@2.1.3:
-    resolution: {integrity: sha512-090nwYJDmlhwFwEW3QQl+vaNnxsO2yVsd45eTKRBzSzu+hlb1w2K9inVq5b0ngXuLVqQ4ApvsUHHnu/zQNkWAg==}
+  tar-fs@2.1.4:
+    resolution: {integrity: sha512-mDAjwmZdh7LTT6pNleZ05Yt65HC3E+NiQzl672vQG38jIrehtJk/J3mNwIg+vShQPcLF/LV7CMnDW6vjj6sfYQ==}
 
   tar-stream@2.2.0:
     resolution: {integrity: sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ==}
@@ -7247,7 +7247,7 @@ snapshots:
 
   '@tailwindcss/oxide@4.1.13':
     dependencies:
-      detect-libc: 2.0.4
+      detect-libc: 2.1.2
       tar: 7.4.3
     optionalDependencies:
       '@tailwindcss/oxide-android-arm64': 4.1.13
@@ -7732,8 +7732,7 @@ snapshots:
 
   detect-libc@2.0.4: {}
 
-  detect-libc@2.1.2:
-    optional: true
+  detect-libc@2.1.2: {}
 
   detect-node-es@1.1.0: {}
 
@@ -8298,7 +8297,7 @@ snapshots:
 
   lightningcss@1.30.1:
     dependencies:
-      detect-libc: 2.0.4
+      detect-libc: 2.1.2
     optionalDependencies:
       lightningcss-darwin-arm64: 1.30.1
       lightningcss-darwin-x64: 1.30.1
@@ -8606,7 +8605,7 @@ snapshots:
       pump: 3.0.3
       rc: 1.2.8
       simple-get: 4.0.1
-      tar-fs: 2.1.3
+      tar-fs: 2.1.4
       tunnel-agent: 0.6.0
 
   pretty-format@27.5.1:
@@ -8820,7 +8819,7 @@ snapshots:
   sharp@0.33.5:
     dependencies:
       color: 4.2.3
-      detect-libc: 2.0.4
+      detect-libc: 2.1.2
       semver: 7.7.2
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.33.5
@@ -9019,7 +9018,7 @@ snapshots:
 
   tapable@2.2.3: {}
 
-  tar-fs@2.1.3:
+  tar-fs@2.1.4:
     dependencies:
       chownr: 1.1.4
       mkdirp-classic: 0.5.3
