@@ -264,11 +264,31 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
         if (match[1]) {
             const tag = match[1].toLowerCase() as AllowedHeadTag;
             const attributes = parseAttributes(match[2] ?? "", tag);
-            nodes.push({
-                tag,
-                attributes,
-                content: match[3] ?? "",
-            });
+            let content = match[3] ?? "";
+            if (tag === "noscript" && content) {
+                // Defensive sanitization for raw noscript HTML content
+                // 1) drop any nested <script>…</script>
+                content = content.replace(
+                    /<script[\s\S]*?>[\s\S]*?<\/script\s*>/gi,
+                    "",
+                );
+                // 2) neutralize javascript: URIs in attributes
+                content = content.replace(
+                    /(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi,
+                    '$1="#"',
+                );
+                // 3) remove inline event handlers like onclick= …
+                content = content.replace(
+                    /\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
+                    "",
+                );
+                // 4) optionally drop risky embedding tags
+                content = content.replace(
+                    /<\/?(iframe|object|embed)[^>]*>/gi,
+                    "",
+                );
+            }
+            nodes.push({ tag, attributes, content });
             continue;
         }
         if (match[4]) {

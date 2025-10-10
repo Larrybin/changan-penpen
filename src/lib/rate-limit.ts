@@ -71,10 +71,10 @@ export async function applyRateLimit(
             return { ok: true, skipped: false };
         }
     } catch (error) {
-        console.warn(
-            `[rate-limit] failed to evaluate for key ${compositeKey}:`,
+        console.warn("[rate-limit] failed to evaluate", {
+            key: compositeKey,
             error,
-        );
+        });
         return { ok: true, skipped: true };
     }
 

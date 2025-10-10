@@ -74,6 +74,13 @@ const parseArgs = (): CliOptions => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null && !Array.isArray(value);
 
+const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+
+function isDangerousKey(key: string): boolean {
+    // __proto__ already filtered by prefix; include other critical prototype keys
+    return DANGEROUS_KEYS.has(key);
+}
+
 const collectEntries = (
     value: unknown,
     pathSegments: PathSegment[] = [],
@@ -96,7 +103,7 @@ const collectEntries = (
 
     if (isRecord(value)) {
         return Object.entries(value)
-            .filter(([key]) => !key.startsWith("__"))
+            .filter(([key]) => !key.startsWith("__") && !isDangerousKey(key))
             .flatMap(([key, nested]) =>
                 collectEntries(nested, [...pathSegments, key]),
             );
@@ -143,6 +150,10 @@ const ensureContainer = (
     key: string,
     next: PathSegment,
 ) => {
+    if (isDangerousKey(key)) {
+        // Skip creating containers for dangerous keys to prevent prototype pollution
+        return;
+    }
     const existing = parent[key];
     if (next === undefined) {
         return;
@@ -152,7 +163,7 @@ const ensureContainer = (
             parent[key] = [];
         }
     } else if (!isRecord(existing)) {
-        parent[key] = {};
+        parent[key] = Object.create(null) as Record<string, unknown>;
     }
 };
 
@@ -192,6 +203,13 @@ const setValueAtPath = (
         }
 
         if (isLast) {
+            if (isDangerousKey(segment)) {
+                console.warn(
+                    "Skipped setting dangerous key in translation output",
+                    { segment },
+                );
+                return;
+            }
             current[segment] = value;
             return;
         }
@@ -200,7 +218,10 @@ const setValueAtPath = (
         ensureContainer(current, segment, nextSegment);
         const nextValue = current[segment];
         current[segment] =
-            nextValue ?? (typeof nextSegment === "number" ? [] : {});
+            nextValue ??
+            (typeof nextSegment === "number"
+                ? []
+                : (Object.create(null) as Record<string, unknown>));
         current = current[segment] as Record<string, unknown> | unknown[];
     }
 };
