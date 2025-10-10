@@ -88,11 +88,12 @@ jobs:
           # Prefer native list command; fallback to dry-run if unavailable
           pnpm exec vitest list --reporter=verbose || pnpm exec vitest run --reporter=verbose --dry-run
 
-      - name: Test (Vitest with coverage)
-        env:
-          # Double‑ensure reporters include json-summary for downstream checks
-          VITEST_COVERAGE_REPORTER: json-summary,html,text
-        run: pnpm exec vitest run --coverage
+      - name: Test (Vitest with coverage — summary only)
+        run: >-
+          pnpm exec vitest run --coverage
+          --coverage.reporter=json-summary
+          --coverage.reporter=html
+          --coverage.reporter=text
 
       - name: Upload coverage artifact (HTML)
         if: always()

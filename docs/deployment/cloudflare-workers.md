@@ -30,7 +30,7 @@ This project targets Cloudflare Workers using OpenNext.
 - R2: `next_cf_app_bucket`
 - Workers AI: `AI`
 - ASSETS bucket for static assets
-- Secrets: `BETTER_AUTH_SECRET`, `CREEM_API_KEY`, `OPENAI_API_KEY`/`GEMINI_API_KEY`, etc.
+- Secrets: `BETTER_AUTH_SECRET`, `CREEM_API_KEY`, `OPENAI_API_KEY`/`GEMINI_API_KEY`（可选，用于 AI 功能）, etc.
 
 Run `pnpm cf-typegen` after any change to bindings to refresh `cloudflare-env.d.ts`.
 
@@ -44,4 +44,3 @@ Run `pnpm cf-typegen` after any change to bindings to refresh `cloudflare-env.d.
 - Binding: Update `wrangler.jsonc` so both the default worker and the `production` environment attach the namespace as `RATE_LIMITER`. Deploying without the binding leaves rate limiting disabled.
 - Verification: After deployment, hit `/api/creem/create-checkout` repeatedly with the same user session until a 429 appears, confirming the edge policy works. Use `wrangler tail` to capture the `[rate-limit]` log line for auditing.
 - Rollback: Removing the binding or setting a larger quota in the Cloudflare Dashboard takes effect immediately. Document any temporary overrides in the release checklist.
-

@@ -16,15 +16,14 @@ jobs:
     steps:
       - name: Fetch Dependabot metadata
         id: meta
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@08eff52bf64351f401fb50d4972fa95b9f2c2d1b
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto‑merge (squash) when safe
         if: contains('version-update:semver-minor,version-update:semver-patch', steps.meta.outputs.update-type)
-        uses: peter-evans/enable-pull-request-automerge@v3
+        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d
         with:
           merge-method: squash
           # Requires repository setting "Allow auto-merge" enabled
           token: ${{ secrets.GITHUB_TOKEN }}
-

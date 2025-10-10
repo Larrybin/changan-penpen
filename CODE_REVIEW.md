@@ -108,7 +108,15 @@
 - 每周查看 `pnpm outdated`；按影响面分级更新；必要时加 Canaries/灰度。
 - 为安全升级配置 Renovate/Dependabot；合并前跑全量 CI。
 
+### Actions 版本固定策略（GitHub Actions）
+- 必须将第三方 Actions 固定到具体 commit SHA（而非 `vX` tag），降低供应链投毒风险。
+- 固定范围：checkout、setup-node、pnpm/action-setup、cache、upload-artifact、Semgrep、SonarCloud、Cloudflare Wrangler、Dependabot 辅助等。
+- 升级流程：
+  - 定期（月度/安全事件后）拉取上游 tag 的最新对应 commit SHA；在分支中更新引用。
+  - 提 PR，跑全量 CI（含 Semgrep 与 SonarCloud），确认无回归再合入。
+  - 在 `docs/ci-cd.md`、`docs/workflows/*` 保持说明同步。
+- 例：`uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955`。
+
 ## 提交信息
 - 使用 Conventional Commits（feat/fix/chore/docs/refactor 等）。
 - 标题简洁，正文列要点（影响区域、行为变化、风险与回滚策略）。
-

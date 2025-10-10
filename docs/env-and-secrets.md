@@ -19,7 +19,7 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 - `NEXT_PUBLIC_APP_URL` — public base URL for links and SEO
 - `BETTER_AUTH_SECRET` — server secret for sessions
 - `CREEM_API_URL` / `CREEM_API_KEY` — external billing service
-- `OPENAI_API_KEY` / `GEMINI_API_KEY` — AI providers
+- `OPENAI_API_KEY` / `GEMINI_API_KEY` — AI providers（可选，用于 AI 功能）
 - Health toggles: `HEALTH_REQUIRE_DB`, `HEALTH_REQUIRE_R2`, `HEALTH_REQUIRE_EXTERNAL` ("true"/"false")
 - Health auth: `HEALTH_ACCESS_TOKEN` — enables detailed health output behind `X-Health-Token` or `Authorization: Bearer`
 - Admin cookies: `ADMIN_FORCE_SECURE_COOKIES` — force secure cookies even when proto headers are missing
@@ -33,4 +33,3 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 - Keep minimal variables in CI; prefer Workers secrets
 - Avoid leaking secrets into logs or client env (`NEXT_PUBLIC_*` is public)
 - Validate configuration via `/api/health` strict mode before rollout
-
