@@ -22,7 +22,6 @@ let CF_TYPEGEN = false,
     NEXT_BUILD = "skipped",
     DOCS_OK = false,
     LINKS_OK = false,
-    SEMGREP_OK = false,
     BIOME_FINAL_OK = false;
 
 const LOG_DIR = process.env.PUSH_LOG_DIR || "logs";
@@ -242,11 +241,7 @@ try {
     throw e;
 }
 
-// --- 3.5) Semgrep (local disabled) -----------------------------------------
-try {
-    process.env.SKIP_SEMGREP = "1";
-    console.log("\nSkipping Semgrep scan locally (handled in CI).\n");
-} catch {}
+// (Semgrep step removed)
 
 // --- 4) Final Biome check ---------------------------------------------------
 timeStart("biome-final");
@@ -317,7 +312,6 @@ try {
     console.log(`- Unit tests: ${TEST_OK ? "OK" : (process.env.SKIP_TESTS === "1" ? "Skipped" : (STEP_TIMES["vitest"] ? "FAILED" : "Skipped"))}` + (STEP_TIMES["vitest"] ? ` (${STEP_TIMES["vitest"].ms}ms)` : ""));
     console.log(`- Docs consistency: ${DOCS_OK ? "OK" : "FAILED/Skipped"}`);
     console.log(`- Link check: ${LINKS_OK ? "OK" : "FAILED/Skipped"}`);
-    console.log(`- Semgrep: ${SEMGREP_OK ? "OK" : process.env.SKIP_SEMGREP === "1" ? "Skipped" : "FAILED"}`);
     console.log(`- Biome final: ${BIOME_FINAL_OK ? "OK" : "FAILED"}` + (STEP_TIMES["biome-final"] ? ` (${STEP_TIMES["biome-final"].ms}ms)` : ""));
     if (STEP_TIMES["docs-checks"]) console.log(`- Docs/links time: ${STEP_TIMES["docs-checks"].ms}ms`);
     if (STEP_TIMES["next-build"]) console.log(`- Next.js build time: ${STEP_TIMES["next-build"].ms}ms`);

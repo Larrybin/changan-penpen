@@ -33,8 +33,6 @@
         "push": "node -e \"const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}\" && node scripts/push-fix2.mjs",
         "test": "vitest run",
         "test:ci": "vitest run --reporter=dot",
-        "scan:semgrep": "@semgrep/semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs",
-        "check:security": "pnpm run scan:semgrep",
         "translate": "pnpm exec tsc --project tsconfig.translate.json && node dist/scripts/scripts/translate-locales.js",
         "translate:de": "pnpm run translate -- --target=de",
         "translate:fr": "pnpm run translate -- --target=fr",

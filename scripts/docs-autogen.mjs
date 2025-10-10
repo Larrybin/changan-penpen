@@ -458,7 +458,7 @@ function renderReadmeQuality() {
         }
     } catch {}
     // Policy notes
-    lines.push("- Semgrep runs in CI (see docs/quality-gates.md).");
+    // Removed Semgrep note; SonarCloud remains the primary CI quality scanner.
     lines.push(
         "- No extra commits: changes are amended into the last commit (ALLOW_FORCE_PUSH=1 for non-fast-forward).",
     );

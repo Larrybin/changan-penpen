@@ -91,7 +91,7 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
   - `PUSH_COMMIT_MSG="feat: ..." pnpm push` — override the auto-commit message when the script commits auto-fixes.
   - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).
   - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).
-- Security scan (Semgrep): local push no longer runs Semgrep; it runs only in GitHub Actions. For an on-demand local scan, run `pnpm dlx semgrep --config p/ci`.
+
 
 <!-- DOCSYNC:SCRIPTS_TABLE_AUTO START -->
 ### Common Scripts (auto)
@@ -106,7 +106,6 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `check:all` | `pnpm run biome:check && pnpm run typecheck && pnpm run check:docs && pnpm run check:links` |
 | `check:docs` | `node scripts/check-docs.mjs` |
 | `check:links` | `node scripts/check-links.mjs` |
-| `check:security` | `pnpm run scan:semgrep` |
 | `db:generate` | `drizzle-kit generate` |
 | `db:generate:named` | `drizzle-kit generate --name` |
 | `db:inspect:local` | `wrangler d1 execute next-cf-app --local --command="SELECT name FROM sqlite_master WHERE type='table';"` |
@@ -127,7 +126,6 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `prebuild:cf` | `node scripts/prebuild-cf.mjs` |
 | `push` | `node -e "const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}" && node scripts/push-fix2.mjs` |
 | `push:rollback` | `node scripts/push-rollback.mjs` |
-| `scan:semgrep` | `@semgrep/semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs` |
 | `start` | `next start` |
 | `suggest:api-index` | `node scripts/suggest-api-index.mjs` |
 | `test` | `vitest run` |
