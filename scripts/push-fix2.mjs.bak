@@ -88,6 +88,43 @@ function checkBom(files) {
         }
     }
 }
+
+// --- Docs ASCII normalization (punctuation + whitespace) ---
+function normalizeDocs(files) {
+    const MAP = new Map([
+        ["，", ","],["。", "."],["！", "!"],["？", "?"],["：", ":"],["；", ";"],
+        ["（", "("],["）", ")"],["【", "["],["】", "]"],["「", '"'],["」", '"'],
+        ["『", '"'],["』", '"'],["“", '"'],["”", '"'],["‘", "'"],["’", "'"],
+        ["、", ","],["《", "<"],["》", ">"],["—", "-"],["——", "--"],["…", "..."],
+    ]);
+    const ZERO_WIDTH_RE = /[\u200B-\u200D\uFEFF]/g;
+    const NBSP_RE = /\u00A0|\u3000/g;
+    function applyAscii(text){
+        const parts = text.split(/```/g);
+        for(let i=0;i<parts.length;i++){
+            if(i % 2 === 1) continue; // skip code fences
+            let seg = parts[i];
+            seg = seg.replace(ZERO_WIDTH_RE, "");
+            seg = seg.replace(NBSP_RE, " ");
+            seg = seg.replace(/[ \t]+$/gm, "");
+            for(const [k,v] of MAP) seg = seg.replace(new RegExp(k,'g'), v);
+            parts[i] = seg;
+        }
+        let out = parts.join("```");
+        out = out.replace(/\r\n?/g, "\n");
+        if(!out.endsWith("\n")) out += "\n";
+        return out;
+    }
+    for(const f of files){
+        try{
+            if(!existsSync(f)) continue;
+            const s = readFileSync(f, 'utf8');
+            let t = s; if(t.charCodeAt(0) === 0xfeff) t = t.slice(1);
+            const n = applyAscii(t);
+            if(n !== s){ writeFileSync(f, n, { encoding: 'utf8' }); console.log(`[docs-normalize] Normalized: ${f}`);}    
+        }catch(e){ console.error(`[docs-normalize] Failed for ${f}:`, e && e.message); throw e; }
+    }
+}
 function getTrackedFiles(globs) {
     try {
         const args = ["ls-files", "-z", "--", ...globs];
@@ -144,6 +181,10 @@ if (process.env.SKIP_BOM_CHECK !== "1") {
     ]);
     const set = new Set([...baseList, ...yamlAndMd]);
     checkBom(Array.from(set));
+    if(process.env.SKIP_DOCS_NORMALIZE !== "1"){
+        const docList = Array.from(new Set(["README.md", ...getTrackedFiles(["docs/**/*.md","**/*.mdx"])]));
+        normalizeDocs(docList);
+    }
 }
 
 // 1.1) Change-aware toggles

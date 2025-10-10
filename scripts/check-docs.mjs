@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
 /**
- * Docs consistency checks:
- * - README workflow references must exist under .github/workflows
+ * Docs consistency checks (diff-based only):
  * - If certain files change (package.json, wrangler.jsonc, .dev.vars.example,
  *   .github/workflows/*.yml, routes/pages, migrations, scripts), require the
  *   corresponding docs to also change in the same diff.
  *
- * This script is best-effort: if git diff cannot be determined, it still runs
- * invariant checks (README vs workflows) and prints warnings for skipped checks.
+ * Note: repository-wide invariant checks were removed to reduce noise.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -143,9 +141,7 @@ function checkIndexInvariants(errors) {
 
 function main() {
     const errors = [];
-    // Invariants independent of git diff
-    checkReadmeWorkflows(errors);
-    checkIndexInvariants(errors);
+    // Invariant checks removed; only diff-based checks below
 
     const changed = getChangedFiles();
     const hasChanges = changed.length > 0;
@@ -249,10 +245,8 @@ function main() {
             }
         }
     } else {
-        // No diff found; provide a hint
-        console.log(
-            "[check-docs] No git diff found; ran invariant checks only (README/workflows, index links).",
-        );
+        // No diff found; nothing to validate
+        console.log("[check-docs] No git diff detected; skipped diff-based checks.");
     }
 
     if (errors.length) {

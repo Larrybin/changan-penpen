@@ -1,4 +1,4 @@
-# Local Development & Debugging
+﻿# Local Development & Debugging
 
 > Daily workflows for development, debugging, database operations, and common pitfalls.
 
@@ -58,13 +58,13 @@
 - Run `pnpm fix:i18n` to fix encodings before `pnpm lint`
 
 ## 6. Auth
-- `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` — session signing and callback URL; set correct domain for external OAuth
+- `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` 鈥?session signing and callback URL; set correct domain for external OAuth
 - Admin access is controlled by `ADMIN_ALLOWED_EMAILS` and `ADMIN_ENTRY_TOKEN`; configure local accounts in `.dev.vars`
 
 ## 7. Troubleshooting (Quick)
-- `local socket address…` — restart `wrangler dev` or clear `.wrangler/state`
-- `fetch failed: 403` — ensure CF API token covers D1/R2/Workers
-- `EAI_AGAIN` — DNS issue; fall back to `pnpm dev` (Node runtime) temporarily
+- `local socket address鈥 鈥?restart `wrangler dev` or clear `.wrangler/state`
+- `fetch failed: 403` 鈥?ensure CF API token covers D1/R2/Workers
+- `EAI_AGAIN` 鈥?DNS issue; fall back to `pnpm dev` (Node runtime) temporarily
 - More in `docs/troubleshooting.md`
 
 ## 8. Daily Quality Gate
@@ -78,21 +78,11 @@
 Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` and `docs/troubleshooting.md`.
 
 ## 9. Push Helper
-- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push.
-- Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: …, add CF env fallbacks, …, and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types).
+- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push.\n- Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: 鈥? add CF env fallbacks, 鈥? and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types).
 - Optional dependency for AST-enhanced messages: `@babel/parser` (dev). If not installed, the script falls back to path/regex rules automatically.
 - Install (optional): `pnpm add -D @babel/parser`
 - Note: `scripts/push-fix2.mjs` is a local helper and is ignored by Git. It is not shipped with the repository, and CI/CD does not depend on it.
-- Env toggles:
-  - `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks in emergencies (re-run without skip before merging).
-  - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.
-  - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows.
-  - `PUSH_LOG_DIR=/path` `PUSH_LOG_FILE=/path/file.log` — save a full push log to a custom location.
-  - `PUSH_COMMIT_MSG="feat: ..." pnpm push` — override the auto-commit message when the script commits auto-fixes.
-  - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).
-  - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).
-
-
+- Env toggles:\n  - `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks in emergencies (re-run without skip before merging).\n  - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.\n  - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows.\n  - `PUSH_LOG_DIR=/path` `PUSH_LOG_FILE=/path/file.log` — save a full push log to a custom location.\n  - `PUSH_COMMIT_MSG=\"feat: ...\" pnpm push` — override the auto-commit message when the script commits auto-fixes.\n  - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).\n  - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).\n  - Encoding/Docs:\n    - 自动执行“文档 ASCII 规范化”（中文全角标点转 ASCII、去零宽字符/不间断空格/全角空白、行尾空白清理、统一换行并确保末尾换行）。\n    - 自动执行“UTF‑8 无 BOM”规范：如发现 BOM 会自动剥离；`STRICT_BOM=1` 时改为失败退出。\n    - 可关闭：`SKIP_DOCS_NORMALIZE=1` 跳过文档规范化；`SKIP_BOM_CHECK=1` 跳过 BOM 检查。\n\n
 <!-- DOCSYNC:SCRIPTS_TABLE_AUTO START -->
 ### Common Scripts (auto)
 | Script | Command |
@@ -137,3 +127,5 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
 | `wrangler:dev` | `npx wrangler dev` |
 <!-- DOCSYNC:SCRIPTS_TABLE_AUTO END -->
+
+
