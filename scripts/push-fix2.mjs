@@ -421,22 +421,12 @@ try {
 
 // 3.5) Security scan (Semgrep)
 try {
-    if (process.env.SKIP_SEMGREP === "1") {
-        console.log("\nSkipping Semgrep scan (SKIP_SEMGREP=1).");
-    } else {
-        console.log("\nRunning Semgrep security scan...");
-        const baseArgs =
-            "--config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs --json --output logs/semgrep.json";
-        const tryExec = tryRun(`pnpm exec semgrep ${baseArgs}`);
-        if (!tryExec) {
-            // Use official npm package when not installed locally
-            run(`pnpm dlx @semgrep/semgrep ${baseArgs}`);
-        }
-        SEMGREP_OK = true;
-    }
-} catch (e) {
-    console.error("Semgrep found issues or failed. Aborting push.");
-    throw e;
+    // Local Semgrep is disabled; scanning is handled in GitHub Actions.
+    process.env.SKIP_SEMGREP = "1";
+    console.log("\nSkipping Semgrep scan locally (handled in CI).\n");
+    // Leave SEMGREP_OK as false so summary prints "Skipped" via SKIP_SEMGREP.
+} catch (_e) {
+    // No local Semgrep execution.
 }
 
 // Optional helper output

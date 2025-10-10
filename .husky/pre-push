@@ -6,6 +6,4 @@ pnpm run check:all || exit 1
 # Block push when unit tests fail (CI-like reporter)
 pnpm run test:ci || exit 1
 
-# Security scan (Semgrep) — attempt local install first, fallback to dlx
-pnpm exec semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs || \
-  pnpm dlx @semgrep/semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs || exit 1
+# Semgrep scanning runs in GitHub Actions; local push no longer runs Semgrep.

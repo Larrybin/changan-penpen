@@ -90,3 +90,4 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
   - `PUSH_COMMIT_MSG="feat: ..." pnpm push` — override the auto-commit message when the script commits auto-fixes.
   - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).
   - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).
+ - Security scan (Semgrep): local push不再执行；仅在 GitHub Actions 中运行。如需本地手动检查，可临时执行：`pnpm dlx semgrep --config p/ci`。
