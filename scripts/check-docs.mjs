@@ -107,7 +107,7 @@ function requireDocChange(changed, docFiles, reason, errors) {
     }
 }
 
-function checkReadmeWorkflows(errors) {
+function _checkReadmeWorkflows(errors) {
     const readmePath = "README.md";
     if (!exists(readmePath)) return;
     const text = readFile(readmePath);
@@ -127,7 +127,7 @@ function checkReadmeWorkflows(errors) {
     }
 }
 
-function checkIndexInvariants(errors) {
+function _checkIndexInvariants(errors) {
     const idx = "docs/00-index.md";
     if (!exists(idx)) return;
     const t = readFile(idx);
@@ -246,7 +246,9 @@ function main() {
         }
     } else {
         // No diff found; nothing to validate
-        console.log("[check-docs] No git diff detected; skipped diff-based checks.");
+        console.log(
+            "[check-docs] No git diff detected; skipped diff-based checks.",
+        );
     }
 
     if (errors.length) {

@@ -195,7 +195,7 @@ function normalizeDocs(files) {
                 console.log(`[docs-normalize] Normalized: ${f}`);
             }
         } catch (e) {
-            console.error(`[docs-normalize] Failed for ${f}:`, e && e.message);
+            console.error(`[docs-normalize] Failed for ${f}:`, e?.message);
             throw e;
         }
     }
