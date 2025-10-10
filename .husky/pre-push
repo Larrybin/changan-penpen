@@ -1,6 +1,12 @@
 #!/usr/bin/env sh
 # Block pushes when checks fail
 
+# When running via `pnpm push`, heavy checks already ran. Skip to avoid duplication.
+if [ "$PNPM_PUSH_RUNNING" = "1" ]; then
+  echo "Skipping pre-push checks (handled by pnpm push)."
+  exit 0
+fi
+
 pnpm run check:all || exit 1
 
 # Block push when unit tests fail (CI-like reporter)
