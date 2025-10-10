@@ -84,7 +84,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 
 - `pnpm push`: auto-fix + typegen + typecheck + docs/link checks + final lint + rebase & push. Generates a fully automated commit message (subject + multi-line bullets) from the staged diff in the style of production commits (e.g., harden webhooks/fetch parsing, add CF env fallbacks, enforce R2 attachment, clean headers()/cookies()).
 
-See `docs/ci-cd.md` and `docs/workflows/*.md` for details.
+See `docs/ci-cd.md` and `docs/workflows/*.md` for details. Semgrep runs only in CI; local pushes skip Semgrep by design.
 
 ---
 

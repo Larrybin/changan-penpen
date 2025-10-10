@@ -32,7 +32,7 @@
 - Env vars: `.dev.vars` for local; use `wrangler secret put` in Workers mode if missing
 - Request replay: `wrangler dev --persist` to keep D1 state under `.wrangler/state`
 - AI/R2: ensure `CLOUDFLARE_R2_URL`, `GEMINI_API_KEY`, etc., are set or features will degrade
-- Shell encoding: prefer PowerShell 7 and set UTF‑8 in profile to avoid garbled output:
+- Shell encoding: prefer PowerShell 7 and set UTF-8 in profile to avoid garbled output:
   - `[Console]::InputEncoding  = [System.Text.Encoding]::UTF8`
   - `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`
   - `$OutputEncoding = [System.Text.UTF8Encoding]::new($false)`
@@ -46,7 +46,7 @@
   ```
 - Inspect: `pnpm db:inspect:local`
 - Reset local: `pnpm db:reset:local`
-- Studio: `pnpm db:studio:local` (drizzle‑kit)
+- Studio: `pnpm db:studio:local` (drizzle-kit)
 
 ## 4. Cloudflare Bindings
 - After editing `wrangler.jsonc`, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts`
@@ -78,8 +78,8 @@
 Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` and `docs/troubleshooting.md`.
 
 ## 9. Push Helper
-- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push。
-- Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: …, add CF env fallbacks, …, and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types)。
+- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push.
+- Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: …, add CF env fallbacks, …, and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types).
 - Optional dependency for AST-enhanced messages: `@babel/parser` (dev). If not installed, the script falls back to path/regex rules automatically.
 - Install (optional): `pnpm add -D @babel/parser`
 - Env toggles:
@@ -90,4 +90,5 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
   - `PUSH_COMMIT_MSG="feat: ..." pnpm push` — override the auto-commit message when the script commits auto-fixes.
   - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).
   - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).
- - Security scan (Semgrep): local push不再执行；仅在 GitHub Actions 中运行。如需本地手动检查，可临时执行：`pnpm dlx semgrep --config p/ci`。
+- Security scan (Semgrep): local push no longer runs Semgrep; it runs only in GitHub Actions. For an on-demand local scan, run `pnpm dlx semgrep --config p/ci`.
+

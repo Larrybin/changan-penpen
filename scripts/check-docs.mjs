@@ -37,6 +37,19 @@ function listWorkflows() {
         .sort();
 }
 
+function containsNonEnglish(text) {
+    // Detect common CJK and full‑width punctuation ranges
+    // CJK Unified Ideographs, Extensions A/B (basic coverage), Compatibility Ideographs
+    // Hiragana/Katakana, Hangul Syllables, Fullwidth forms
+    const re =
+        /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3040-\u30FF\u31F0-\u31FF\uAC00-\uD7AF\uFF00-\uFFEF]/;
+    return re.test(text);
+}
+
+function isDocPath(p) {
+    return /^docs\/.+\.md$/.test(p) || p === "README.md";
+}
+
 function getChangedFiles() {
     // Priority: staged → PR base → last commit
     const results = [];
@@ -207,6 +220,19 @@ function main() {
                 "scripts/ changed",
                 errors,
             );
+        }
+
+        // English‑only docs policy (enforced on changed docs)
+        const changedDocs = changed.filter(isDocPath);
+        for (const p of changedDocs) {
+            try {
+                const t = readFile(p);
+                if (containsNonEnglish(t)) {
+                    errors.push(
+                        `Docs language must be English only: ${p} contains non‑English (CJK) characters`,
+                    );
+                }
+            } catch {}
         }
     } else {
         // No diff found; provide a hint
