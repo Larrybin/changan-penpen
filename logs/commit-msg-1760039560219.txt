@@ -1,3 +1,0 @@
-fix: clean headers()/cookies() usage
-
-- auth/utils and API routes: clean headers()/cookies() usage

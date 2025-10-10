@@ -199,4 +199,35 @@ Server Actions run on Edge by default and update UI via `revalidatePath`.
 
 Please keep this file, `docs/00-index.md`, and any module READMEs in sync when adding or renaming routes.
 
-
+<!-- DOCSYNC:API_INDEX START -->
+### API Index (auto)
+| Path | Methods | File |
+| --- | --- | --- |
+| /admin/access/[token] | GET | src/app/(admin)/admin/access/[token]/route.ts |
+| /api/admin/audit-logs | GET | src/app/api/admin/audit-logs/route.ts |
+| /api/admin/categories | GET | src/app/api/admin/categories/route.ts |
+| /api/admin/content-pages/[id] | DELETE, GET, PATCH | src/app/api/admin/content-pages/[id]/route.ts |
+| /api/admin/content-pages | GET, POST | src/app/api/admin/content-pages/route.ts |
+| /api/admin/coupons/[id] | DELETE, GET, PATCH | src/app/api/admin/coupons/[id]/route.ts |
+| /api/admin/coupons | GET, POST | src/app/api/admin/coupons/route.ts |
+| /api/admin/credits-history | GET | src/app/api/admin/credits-history/route.ts |
+| /api/admin/dashboard | GET | src/app/api/admin/dashboard/route.ts |
+| /api/admin/orders/[id] | GET | src/app/api/admin/orders/[id]/route.ts |
+| /api/admin/orders | GET | src/app/api/admin/orders/route.ts |
+| /api/admin/products/[id] | DELETE, GET, PATCH | src/app/api/admin/products/[id]/route.ts |
+| /api/admin/products | GET, POST | src/app/api/admin/products/route.ts |
+| /api/admin/reports | GET, POST | src/app/api/admin/reports/route.ts |
+| /api/admin/session | GET | src/app/api/admin/session/route.ts |
+| /api/admin/site-settings | GET, PATCH | src/app/api/admin/site-settings/route.ts |
+| /api/admin/tenants/[id] | GET | src/app/api/admin/tenants/[id]/route.ts |
+| /api/admin/tenants | GET | src/app/api/admin/tenants/route.ts |
+| /api/admin/todos/[id] | DELETE, GET, PATCH | src/app/api/admin/todos/[id]/route.ts |
+| /api/admin/todos | GET, POST | src/app/api/admin/todos/route.ts |
+| /api/admin/usage | GET | src/app/api/admin/usage/route.ts |
+| /api/auth/[...all] | GET, POST | src/app/api/auth/[...all]/route.ts |
+| /api/creem/create-checkout | POST | src/app/api/creem/create-checkout/route.ts |
+| /api/creem/customer-portal | GET | src/app/api/creem/customer-portal/route.ts |
+| /api/health | GET | src/app/api/health/route.ts |
+| /api/summarize | POST | src/app/api/summarize/route.ts |
+| /api/webhooks/creem | POST | src/app/api/webhooks/creem/route.ts |
+<!-- DOCSYNC:API_INDEX END -->

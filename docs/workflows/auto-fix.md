@@ -1,4 +1,4 @@
-﻿# Workflow: Auto Fix (Removed)
+# Workflow: Auto Fix (Removed)
 
 This workflow (`.github/workflows/auto-fix.yml`) has been removed.
 

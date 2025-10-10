@@ -1,4 +1,4 @@
-﻿# Workflow: Ops Notify (Removed)
+# Workflow: Ops Notify (Removed)
 
 This workflow (`.github/workflows/ops-notify.yml`) has been removed.
 

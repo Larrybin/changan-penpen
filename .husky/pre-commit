@@ -3,19 +3,33 @@
 
 pnpm exec lint-staged || exit 1
 
-# BOM check for staged JSON/JSONC (local-only guardable via SKIP_BOM_CHECK=1)
+# BOM check for staged text files (JSON/JSONC/YAML/Markdown)
 if [ "$SKIP_BOM_CHECK" = "1" ]; then
   echo "Skipping BOM check (SKIP_BOM_CHECK=1)."
 else
-  STAGED_JSON=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.(json|jsonc)$' || true)
-  if [ -n "$STAGED_JSON" ]; then
-    echo "Running UTF-8 BOM check for staged JSON files..."
+  STAGED_TEXT=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.(json|jsonc|ya?ml|md|mdx)$|^README\\.md$' || true)
+  if [ -n "$STAGED_TEXT" ]; then
+    echo "Running UTF-8 BOM check for staged text files..."
     while IFS= read -r f; do
       [ -z "$f" ] && continue
       node -e 'const fs=require("fs");const p=process.argv[1];try{const b=fs.readFileSync(p);if(b.length>=3&&b[0]===0xEF&&b[1]===0xBB&&b[2]===0xBF){console.error("[check-bom] UTF-8 BOM detected in "+p+". Please save as UTF-8 (no BOM) and re-stage.");process.exit(1);} }catch(e){}' "$f" || exit 1
     done <<EOF
-$STAGED_JSON
+$STAGED_TEXT
 EOF
   fi
 fi
+
+# ASCII normalization for staged docs (safe replacements)
+STAGED_DOCS=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.(ya?ml|md|mdx)$|^README\\.md$' || true)
+if [ -n "$STAGED_DOCS" ]; then
+  echo "Normalizing ASCII punctuation in staged docs..."
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    node -e "const fs=require('fs');const p=process.argv[1];try{let s=fs.readFileSync(p,'utf8');const b=s;s=s.replace(/[“”]/g,'\"').replace(/[‘’]/g,\"'\").replace(/[—–]/g,'-').replace(/…/g,'...').replace(/→/g,'->').replace(/，/g,',').replace(/。/g,'.').replace(/；/g,';').replace(/：/g,':').replace(/！/g,'!').replace(/？/g,'?').replace(/【/g,'[').replace(/】/g,']').replace(/（/g,'(').replace(/）/g,')').replace(/\u00A0/g,' ').replace(/\u200B/g,''); if(s!==b){fs.writeFileSync(p,s,'utf8'); console.log('[doc-sanitize] normalized',p);} }catch(e){}" "$f" || exit 1
+    git add "$f" || exit 1
+  done <<EOF
+$STAGED_DOCS
+EOF
+fi
+
 pnpm exec tsc --noEmit || exit 1

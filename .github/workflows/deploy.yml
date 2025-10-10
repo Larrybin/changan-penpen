@@ -1,4 +1,4 @@
-﻿name: Deploy Next.js App to Cloudflare
+name: Deploy Next.js App to Cloudflare
 
 on:
   workflow_dispatch:

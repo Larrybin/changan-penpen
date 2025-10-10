@@ -48,3 +48,14 @@
 
 ## 提交与文档同步
 - 修改 `.github/workflows/*.yml`、`package.json`、`wrangler.jsonc`、`scripts/`、`src/app/**/route.ts` 等关键文件时，请同步更新对应的 docs（本文件、local-dev、env 与 API 索引等）。
+
+<!-- DOCSYNC:WORKFLOWS_TABLE START -->
+### Workflows Overview (auto)
+| Workflow | Triggers | File |
+| --- | --- | --- |
+| CI |  | .github/workflows/ci.yml |
+| Dependabot Auto‑Merge |  | .github/workflows/dependabot-automerge.yml |
+| Deploy Next.js App to Cloudflare |  | .github/workflows/deploy.yml |
+| Semgrep |  | .github/workflows/semgrep.yml |
+| SonarCloud |  | .github/workflows/sonarcloud.yml |
+<!-- DOCSYNC:WORKFLOWS_TABLE END -->

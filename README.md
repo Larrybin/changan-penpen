@@ -1,4 +1,4 @@
-﻿![Banner](banner.svg)
+![Banner](banner.svg)
 
 # Full-Stack Next.js + Cloudflare Template
 
@@ -106,3 +106,54 @@ See `docs/ci-cd.md` and `docs/workflows/*.md` for details. Semgrep runs only in 
 ## License
 
 MIT © 2025 Muhammad Arifin
+
+<!-- DOCSYNC:README_AUTOMATION START -->
+### Automation & DevOps (auto)
+- Local push integrates docs sync/autogen, lint/typecheck/tests, optional Next build, and rebase & push.
+- No extra commits: changes are amended into the last commit. Set `ALLOW_FORCE_PUSH=1` to handle non-fast-forward push after amend.
+- See more: docs/local-dev.md, docs/ci-cd.md, docs/docs-maintenance.md
+
+#### Common Scripts Snapshot
+| Script | Command |
+| --- | --- |
+| `dev` | `next dev` |
+| `dev:cf` | `npx @opennextjs/cloudflare build && wrangler dev` |
+| `build` | `next build` |
+| `start` | `next start` |
+| `push` | `node -e "const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}" && node scripts/push-fix2.mjs` |
+| `check:all` | `pnpm run biome:check && pnpm run typecheck && pnpm run check:docs && pnpm run check:links` |
+| `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
+| `lint` | `npx biome format --write` |
+| `test` | `vitest run` |
+| `deploy:cf` | `npx @opennextjs/cloudflare deploy` |
+
+#### Workflows (top)
+| Workflow | Triggers | File |
+| --- | --- | --- |
+| CI |  | .github/workflows/ci.yml |
+| Dependabot Auto‑Merge |  | .github/workflows/dependabot-automerge.yml |
+| Deploy Next.js App to Cloudflare |  | .github/workflows/deploy.yml |
+| Semgrep |  | .github/workflows/semgrep.yml |
+| SonarCloud |  | .github/workflows/sonarcloud.yml |
+<!-- DOCSYNC:README_AUTOMATION END -->
+
+<!-- DOCSYNC:README_STRUCTURE START -->
+### Project Structure (auto)
+- `src/app`: Next.js App Router (pages/api routes, layouts)
+- `src/modules`: Domain modules (actions/components/hooks/models/schemas/utils)
+- `src/components`: Reusable UI components
+- `src/components/ui`: Design system primitives
+- `src/db`: Data access
+- `src/drizzle`: D1 migrations
+- `src/lib`: Shared helpers
+- `public`: Static assets
+- `docs`: Project documentation
+- Modules: admin, auth, creem, dashboard, marketing, todos
+<!-- DOCSYNC:README_STRUCTURE END -->
+
+<!-- DOCSYNC:README_QUALITY_GATES START -->
+### Quality Gates (auto)
+- Local push runs: docs sync/autogen, Biome write+final check, TypeScript, docs/links checks, unit tests, optional Next build.
+- Thresholds and policies: see docs/quality-gates.md (coverage, fail-fast, skip toggles).
+- No extra commits: changes are amended into the last commit (ALLOW_FORCE_PUSH=1 for non-fast-forward).
+<!-- DOCSYNC:README_QUALITY_GATES END -->

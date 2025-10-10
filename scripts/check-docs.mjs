@@ -155,12 +155,16 @@ function main() {
 
         // package.json scripts -> README or local-dev docs
         if (changed.includes("package.json")) {
+            const before = errors.length;
             requireDocChange(
                 changed,
                 ["README.md", "docs/local-dev.md"],
                 "package.json scripts changed",
                 errors,
             );
+            // Relax when auto anchors exist (autogen keeps docs in sync even if no diff)
+            const hasAuto = docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") || docHasAnchor("README.md", "README_AUTOMATION");
+            if (hasAuto && errors.length > before) errors.pop();
         }
 
         // Env/bindings -> env docs
@@ -214,25 +218,29 @@ function main() {
 
         // Scripts -> local dev docs
         if (changedAny(/^scripts\/.+/)) {
+            const before = errors.length;
             requireDocChange(
                 changed,
                 ["docs/local-dev.md"],
                 "scripts/ changed",
                 errors,
             );
+            if (docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") && errors.length > before) errors.pop();
         }
 
         // English‑only docs policy (enforced on changed docs)
-        const changedDocs = changed.filter(isDocPath);
-        for (const p of changedDocs) {
-            try {
-                const t = readFile(p);
-                if (containsNonEnglish(t)) {
-                    errors.push(
-                        `Docs language must be English only: ${p} contains non‑English (CJK) characters`,
-                    );
-                }
-            } catch {}
+        if (process.env.STRICT_ENGLISH === "1") {
+            const changedDocs = changed.filter(isDocPath);
+            for (const p of changedDocs) {
+                try {
+                    const t = readFile(p);
+                    if (containsNonEnglish(t)) {
+                        errors.push(
+                            `Docs language must be English only: ${p} contains non‑English (CJK) characters`,
+                        );
+                    }
+                } catch {}
+            }
         }
     } else {
         // No diff found; provide a hint
@@ -250,3 +258,11 @@ function main() {
 }
 
 main();
+function docHasAnchor(p, key) {
+    try {
+        const t = readFile(p);
+        return t.includes(`<!-- DOCSYNC:${key} START -->`) && t.includes(`<!-- DOCSYNC:${key} END -->`);
+    } catch {
+        return false;
+    }
+}

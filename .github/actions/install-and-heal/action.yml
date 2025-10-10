@@ -1,4 +1,4 @@
-﻿name: 'Install and Heal'
+name: 'Install and Heal'
 description: 'Install dependencies with frozen lockfile first, then self-heal with dedupe and reinstall if needed.'
 runs:
   using: 'composite'

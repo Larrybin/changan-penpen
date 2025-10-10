@@ -1,4 +1,4 @@
-﻿# Workflow: Auto Merge Lite (Removed)
+# Workflow: Auto Merge Lite (Removed)
 
 This workflow (`.github/workflows/auto-merge-lite.yml`) has been removed.
 

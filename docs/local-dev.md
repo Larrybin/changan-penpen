@@ -92,3 +92,50 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
   - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).
   - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).
 - Security scan (Semgrep): local push no longer runs Semgrep; it runs only in GitHub Actions. For an on-demand local scan, run `pnpm dlx semgrep --config p/ci`.
+
+<!-- DOCSYNC:SCRIPTS_TABLE_AUTO START -->
+### Common Scripts (auto)
+| Script | Command |
+| --- | --- |
+| `biome:apply` | `pnpm exec biome check . --write --unsafe` |
+| `biome:check` | `pnpm exec biome check .` |
+| `build` | `next build` |
+| `build:cf` | `npx @opennextjs/cloudflare build` |
+| `cf-typegen` | `pnpm exec wrangler types && pnpm exec wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts` |
+| `cf:secret` | `npx wrangler secret put` |
+| `check:all` | `pnpm run biome:check && pnpm run typecheck && pnpm run check:docs && pnpm run check:links` |
+| `check:docs` | `node scripts/check-docs.mjs` |
+| `check:links` | `node scripts/check-links.mjs` |
+| `check:security` | `pnpm run scan:semgrep` |
+| `db:generate` | `drizzle-kit generate` |
+| `db:generate:named` | `drizzle-kit generate --name` |
+| `db:inspect:local` | `wrangler d1 execute next-cf-app --local --command="SELECT name FROM sqlite_master WHERE type='table';"` |
+| `db:inspect:prod` | `wrangler d1 execute next-cf-app --remote --command="SELECT name FROM sqlite_master WHERE type='table';"` |
+| `db:migrate:local` | `wrangler d1 migrations apply next-cf-app --local` |
+| `db:migrate:prod` | `wrangler d1 migrations apply next-cf-app --remote` |
+| `db:reset:local` | `wrangler d1 execute next-cf-app --local --command="DROP TABLE IF EXISTS todos;" && pnpm run db:migrate:local` |
+| `db:studio` | `drizzle-kit studio` |
+| `db:studio:local` | `drizzle-kit studio --config=drizzle.local.config.ts` |
+| `deploy` | `npx @opennextjs/cloudflare deploy` |
+| `deploy:cf` | `npx @opennextjs/cloudflare deploy` |
+| `dev` | `next dev` |
+| `dev:cf` | `npx @opennextjs/cloudflare build && wrangler dev` |
+| `dev:remote` | `npx @opennextjs/cloudflare build && wrangler dev --remote` |
+| `fix:i18n` | `node scripts/fix-i18n-encoding.mjs` |
+| `lint` | `npx biome format --write` |
+| `prebuild` | `pnpm run fix:i18n` |
+| `prebuild:cf` | `node scripts/prebuild-cf.mjs` |
+| `push` | `node -e "const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}" && node scripts/push-fix2.mjs` |
+| `push:rollback` | `node scripts/push-rollback.mjs` |
+| `scan:semgrep` | `@semgrep/semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs` |
+| `start` | `next start` |
+| `suggest:api-index` | `node scripts/suggest-api-index.mjs` |
+| `test` | `vitest run` |
+| `test:ci` | `vitest run --reporter=dot` |
+| `translate` | `pnpm exec tsc --project tsconfig.translate.json && node dist/scripts/scripts/translate-locales.js` |
+| `translate:de` | `pnpm run translate -- --target=de` |
+| `translate:fr` | `pnpm run translate -- --target=fr` |
+| `translate:pt` | `pnpm run translate -- --target=pt` |
+| `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
+| `wrangler:dev` | `npx wrangler dev` |
+<!-- DOCSYNC:SCRIPTS_TABLE_AUTO END -->

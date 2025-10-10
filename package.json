@@ -30,7 +30,7 @@
         "biome:apply": "pnpm exec biome check . --write --unsafe",
         "typecheck": "pnpm run cf-typegen && pnpm exec tsc --noEmit",
         "check:all": "pnpm run biome:check && pnpm run typecheck && pnpm run check:docs && pnpm run check:links",
-        "push": "node scripts/push-fix2.mjs",
+        "push": "node -e \"const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}\" && node scripts/push-fix2.mjs",
         "test": "vitest run",
         "test:ci": "vitest run --reporter=dot",
         "scan:semgrep": "@semgrep/semgrep --config auto --error --timeout 300 --exclude .next --exclude coverage --exclude node_modules --exclude stubs",
@@ -42,7 +42,8 @@
         "fix:i18n": "node scripts/fix-i18n-encoding.mjs",
         "check:docs": "node scripts/check-docs.mjs",
         "check:links": "node scripts/check-links.mjs",
-        "suggest:api-index": "node scripts/suggest-api-index.mjs"
+        "suggest:api-index": "node scripts/suggest-api-index.mjs",
+        "push:rollback": "node scripts/push-rollback.mjs"
     },
     "dependencies": {
         "@hookform/resolvers": "^5.2.1",
@@ -63,7 +64,7 @@
         "dotenv": "^17.2.3",
         "drizzle-orm": "^0.44.5",
         "drizzle-zod": "^0.8.3",
-        "lucide-react": "^0.544.0",
+        "lucide-react": "^0.545.0",
         "next": "15.5.4",
         "next-intl": "^4.3.9",
         "react": "19.1.0",
