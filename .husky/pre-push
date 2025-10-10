@@ -1,15 +1,17 @@
 #!/usr/bin/env sh
-# Block pushes when checks fail
+# Enforce using `pnpm push` for all pushes.
 
-# When running via `pnpm push`, heavy checks already ran. Skip to avoid duplication.
+# If already launched by `pnpm push`, allow the inner push to proceed.
 if [ "$PNPM_PUSH_RUNNING" = "1" ]; then
-  echo "Skipping pre-push checks (handled by pnpm push)."
+  echo "[pre-push] pnpm push context detected; allowing push."
   exit 0
 fi
 
-pnpm run check:all || exit 1
+echo "[pre-push] Detected raw \`git push\`. Running \`pnpm push\` instead to execute local quality gates."
 
-# Block push when unit tests fail (CI-like reporter)
-pnpm run test:ci || exit 1
+# Run push workflow (includes checks, commit, rebase & push). This nested push
+# will re-enter this hook, but PNPM_PUSH_RUNNING=1 is set there to avoid loops.
+pnpm push
 
-# Semgrep scanning runs in GitHub Actions; local push no longer runs Semgrep.
+# Cancel the outer push to avoid double-pushing.
+exit 1
