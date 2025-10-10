@@ -163,7 +163,9 @@ function main() {
                 errors,
             );
             // Relax when auto anchors exist (autogen keeps docs in sync even if no diff)
-            const hasAuto = docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") || docHasAnchor("README.md", "README_AUTOMATION");
+            const hasAuto =
+                docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") ||
+                docHasAnchor("README.md", "README_AUTOMATION");
             if (hasAuto && errors.length > before) errors.pop();
         }
 
@@ -225,7 +227,11 @@ function main() {
                 "scripts/ changed",
                 errors,
             );
-            if (docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") && errors.length > before) errors.pop();
+            if (
+                docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") &&
+                errors.length > before
+            )
+                errors.pop();
         }
 
         // English‑only docs policy (enforced on changed docs)
@@ -261,7 +267,10 @@ main();
 function docHasAnchor(p, key) {
     try {
         const t = readFile(p);
-        return t.includes(`<!-- DOCSYNC:${key} START -->`) && t.includes(`<!-- DOCSYNC:${key} END -->`);
+        return (
+            t.includes(`<!-- DOCSYNC:${key} START -->`) &&
+            t.includes(`<!-- DOCSYNC:${key} END -->`)
+        );
     } catch {
         return false;
     }

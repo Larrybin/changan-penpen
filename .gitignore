@@ -63,3 +63,7 @@ creem_payment_example/
 
 # Do not track local push helper script changes
 scripts/push-fix2.mjs
+
+# Local logs and temp artifacts
+logs/
+TEMP_*
