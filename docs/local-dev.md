@@ -82,6 +82,7 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 - Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: …, add CF env fallbacks, …, and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types).
 - Optional dependency for AST-enhanced messages: `@babel/parser` (dev). If not installed, the script falls back to path/regex rules automatically.
 - Install (optional): `pnpm add -D @babel/parser`
+- Note: `scripts/push-fix2.mjs` is a local helper and is ignored by Git. It is not shipped with the repository, and CI/CD does not depend on it.
 - Env toggles:
   - `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks in emergencies (re-run without skip before merging).
   - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.
@@ -91,4 +92,3 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
   - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).
   - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).
 - Security scan (Semgrep): local push no longer runs Semgrep; it runs only in GitHub Actions. For an on-demand local scan, run `pnpm dlx semgrep --config p/ci`.
-

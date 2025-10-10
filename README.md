@@ -83,8 +83,16 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - `.github/workflows/deploy.yml`: production deploy incl. D1 migrations and health checks
 
 - `pnpm push`: auto-fix + typegen + typecheck + docs/link checks + final lint + rebase & push. Generates a fully automated commit message (subject + multi-line bullets) from the staged diff in the style of production commits (e.g., harden webhooks/fetch parsing, add CF env fallbacks, enforce R2 attachment, clean headers()/cookies()).
+- Note: `scripts/push-fix2.mjs` is a local helper and is ignored by Git; it is not distributed with the repository and CI/CD does not depend on it.
 
 See `docs/ci-cd.md` and `docs/workflows/*.md` for details. Semgrep runs only in CI; local pushes skip Semgrep by design.
+
+### Supply Chain Notes
+- Dependencies bumped to address Semgrep supply-chain findings:
+  - `next` → 15.5.4 (fixes reported SSRF issue in older 15.4.x)
+  - `better-auth` → ^1.3.27 (addresses authorization advisory)
+  - `pnpm.overrides.esbuild` → ^0.25.10 (patches origin validation advisory in older 0.18.x transitives)
+  - Re-run `pnpm install` locally if needed; CI will pick up changes automatically.
 
 ---
 
