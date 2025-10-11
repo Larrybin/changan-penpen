@@ -163,6 +163,8 @@ function isAllowedUriScheme(url: string): boolean {
     } catch {}
     // data URL (only images)
     if (_isDataImageBase64(url)) return true;
+    // allow mailto links
+    if (url.trim().toLowerCase().startsWith("mailto:")) return true;
     return false;
 }
 
@@ -284,10 +286,7 @@ function sanitizeNoscriptContent(input: string): string {
     return result;
 }
 
-// Kept for possible future use; current code prefers String APIs over regex
-const _PROTOCOL_RELATIVE_REGEX = /^\/\//;
-const _ABSOLUTE_URL_REGEX = /^(https?:)/i;
-const _ROOT_RELATIVE_REGEX = /^\//;
+// Removed unused regex constants in favor of String APIs
 
 export const localeCurrencyMap: Record<AppLocale, string> = {
     en: "USD",
