@@ -284,6 +284,7 @@ function sanitizeNoscriptContent(input: string): string {
     return result;
 }
 
+// Kept for possible future use; current code prefers String APIs over regex
 const _PROTOCOL_RELATIVE_REGEX = /^\/\//;
 const _ABSOLUTE_URL_REGEX = /^(https?:)/i;
 const _ROOT_RELATIVE_REGEX = /^\//;
@@ -295,6 +296,13 @@ export const localeCurrencyMap: Record<AppLocale, string> = {
     pt: "BRL",
 };
 
+function dropHttpPrefix(value: string): string {
+    const lower = value.toLowerCase();
+    if (lower.startsWith("http://")) return value.slice(7);
+    if (lower.startsWith("https://")) return value.slice(8);
+    return value;
+}
+
 function normalizeBaseUrl(candidate: string): string | undefined {
     if (!candidate) {
         return undefined;
@@ -305,7 +313,7 @@ function normalizeBaseUrl(candidate: string): string | undefined {
     }
     const prefixed = hasHttpScheme(trimmed)
         ? trimmed
-        : `https://${trimmed.replace(/^https?:\/\//i, "")}`;
+        : `https://${dropHttpPrefix(trimmed)}`;
     try {
         const parsed = new URL(prefixed);
         return parsed.origin;
