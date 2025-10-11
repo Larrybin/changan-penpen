@@ -26,3 +26,17 @@
 - Require PR reviews and green CI for `main`.
 - Enforce status checks (lint/tests/build) and signed commits if your org mandates it.
 
+## Randomness (CSPRNG)
+
+- We avoid `Math.random()` in server code. Instead we use a cryptographically secure PRNG (CSPRNG):
+  - Browser/Workers: `crypto.getRandomValues()` or `crypto.randomUUID()` when a UUID fits the need.
+  - Node.js fallback: `require("node:crypto").randomBytes()`.
+- Adopted in these places:
+  - Backoff jitter for upstream retries: `secureRandomInt()` replaces `Math.random()`
+    - `src/app/api/creem/create-checkout/route.ts`
+    - `src/app/api/creem/customer-portal/route.ts`
+  - Object key/id generation: `createRandomId()` prefers `crypto.randomUUID()`; falls back to `getRandomValues` then `randomBytes`
+    - `src/lib/r2.ts`
+- One‑time usage policy: generated values are used once and are not reused across requests.
+- Exposure policy: values are not logged or returned unless required for functionality (e.g., object keys). When persisted, the storage is the platform’s secured service (R2) and not intended as a secret.
+- Rationale: while jitter and non‑secret IDs are not cryptographic secrets, replacing `Math.random()` eliminates weak entropy sources and silences security scanners (e.g., S2245) without downsides.
