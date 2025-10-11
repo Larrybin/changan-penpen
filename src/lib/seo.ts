@@ -218,20 +218,20 @@ function parseAttributesLoose(
 ): Array<{ name: string; value?: string }> {
     const out: Array<{ name: string; value?: string }> = [];
     const re =
-        /([a-zA-Z0-9:-]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>`]+)))?/g;
+        /([a-zA-Z0-9:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>`]+)))?/g;
     let m: RegExpExecArray | null;
     // 避免在表达式中进行赋值（Biome: noAssignInExpressions�?    // eslint-disable-next-line no-constant-condition
     while (true) {
         m = re.exec(raw);
         if (!m) break;
         const name = m[1];
-        const value = m[3] ?? m[4] ?? m[5];
+        const value = m[2] ?? m[3] ?? m[4];
         out.push({ name, value });
     }
     return out;
 }
 
-function sanitizeNoscriptContent(input: string): string {
+function _sanitizeNoscriptContentLegacy(input: string): string {
     if (!input) return "";
     let result = "";
     let lastIndex = 0;
@@ -284,6 +284,93 @@ function sanitizeNoscriptContent(input: string): string {
         result += escapeHtmlText(input.slice(lastIndex));
     }
     return result;
+}
+
+// 新的、基于线性扫描的实现，降低正则与认知复杂度
+function sanitizeNoscriptContent(input: string): string {
+    if (!input) return "";
+    let i = 0;
+    let out = "";
+    const len = input.length;
+
+    while (i < len) {
+        const lt = input.indexOf("<", i);
+        if (lt === -1) {
+            out += escapeHtmlText(input.slice(i));
+            break;
+        }
+
+        if (lt > i) out += escapeHtmlText(input.slice(i, lt));
+
+        // 注释 <!-- ... -->
+        if (input.startsWith("<!--", lt)) {
+            const end = input.indexOf("-->", lt + 4);
+            i = end === -1 ? len : end + 3;
+            continue;
+        }
+
+        const isEnd = input.charCodeAt(lt + 1) === 47; // '/'
+        let j = isEnd ? lt + 2 : lt + 1;
+
+        // 解析标签名（ASCII 字母 + 数字）
+        const nameStart = j;
+        if (j >= len) break;
+        const first = input.charCodeAt(j);
+        const isLetter =
+            (first >= 65 && first <= 90) || (first >= 97 && first <= 122);
+        if (!isLetter) {
+            // 非标签起始，按文本处理
+            out += "&lt;";
+            i = lt + 1;
+            continue;
+        }
+        j++;
+        while (j < len) {
+            const c = input.charCodeAt(j);
+            const isAlphaNum =
+                (c >= 97 && c <= 122) ||
+                (c >= 65 && c <= 90) ||
+                (c >= 48 && c <= 57);
+            if (!isAlphaNum) break;
+            j++;
+        }
+        const name = input.slice(nameStart, j).toLowerCase();
+        const gt = input.indexOf(">", j);
+        if (gt === -1) {
+            out += escapeHtmlText(input.slice(lt));
+            break;
+        }
+
+        if (!ALLOWED_NOSCRIPT_TAGS.has(name)) {
+            i = gt + 1;
+            continue;
+        }
+
+        const rawInside = input.slice(j, gt);
+        const isSelfClosing =
+            rawInside.trimEnd().endsWith("/") ||
+            name === "br" ||
+            name === "img";
+
+        if (isEnd) {
+            out += `</${name}>`;
+            i = gt + 1;
+            continue;
+        }
+
+        const safeAttrs: Record<string, string> = {};
+        const parsed = parseAttributesLoose(rawInside);
+        for (const { name: attrNameRaw, value } of parsed) {
+            const attr = attrNameRaw.toLowerCase();
+            if (!isAllowedNoscriptAttribute(name, attr)) continue;
+            const safeVal = sanitizeNoscriptAttrValue(attr, value, name);
+            if (safeVal === undefined) continue;
+            safeAttrs[attr] = safeVal;
+        }
+        out += serializeStartTag(name, safeAttrs, isSelfClosing);
+        i = gt + 1;
+    }
+    return out;
 }
 
 // Removed unused regex constants in favor of String APIs
