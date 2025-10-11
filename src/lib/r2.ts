@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 const DEFAULT_ALLOWED_MIME_TYPES = [
@@ -52,15 +52,14 @@ export interface UploadConstraints {
 }
 
 function normalizeFolder(folder: string | undefined) {
-    // 线性时间去除首尾斜杠，避免正则与回溯
-    const raw = (folder ?? "uploads").trim();
+    const val = (folder ?? "uploads").trim();
     let start = 0;
-    let end = raw.length - 1;
+    let end = val.length - 1;
     // 去掉前导 '/'
-    while (start <= end && raw.charCodeAt(start) === 47 /* '/' */) start++;
+    while (start <= end && val.charCodeAt(start) === 47 /* '/' */) start++;
     // 去掉尾随 '/'
-    while (end >= start && raw.charCodeAt(end) === 47 /* '/' */) end--;
-    const normalized = raw.slice(start, end + 1);
+    while (end >= start && val.charCodeAt(end) === 47 /* '/' */) end--;
+    const normalized = val.slice(start, end + 1);
     return normalized || "uploads";
 }
 
@@ -89,8 +88,7 @@ function createRandomId() {
             require("node:crypto") as typeof import("node:crypto");
         return nodeCrypto.randomBytes(16).toString("hex");
     } catch {}
-    // 最后兜底：使用时间戳，避免依赖非安全随机
-    return `${Date.now()}-${performance?.now?.() ?? 0}`;
+    // 鏈€鍚庡厹搴曪細浣跨敤鏃堕棿鎴筹紝閬垮厤渚濊禆闈炲畨鍏ㄩ殢鏈?    return `${Date.now()}-${performance?.now?.() ?? 0}`;
 }
 
 function sanitizeExtension(filename: string) {
@@ -119,13 +117,13 @@ function formatMaxSize(bytes: number) {
 }
 
 function shouldForceAttachment(mime: string) {
-    // 文档类内容：强制下载，避免同域内联带来的潜在 XSS/嗅探风险
+    // 鏂囨。绫诲唴瀹癸細寮哄埗涓嬭浇锛岄伩鍏嶅悓鍩熷唴鑱斿甫鏉ョ殑娼滃湪 XSS/鍡呮帰椋庨櫓
     if (mime === "application/pdf") return true;
     if (mime.startsWith("text/")) return true;
     return false;
 }
 
-// -------------------- 小型内聚帮助函数，降低 uploadToR2 复杂度 --------------------
+// -------------------- 灏忓瀷鍐呰仛甯姪鍑芥暟锛岄檷浣?uploadToR2 澶嶆潅搴?--------------------
 function validateFileForUpload(
     file: File,
     allowedMimeTypes: string[],
@@ -163,7 +161,7 @@ async function enforceUploadRateLimit(
     return { ok: true };
 }
 
-async function maybeScanFile(
+async function __maybeScanFile(
     file: File,
     requireContentScan: boolean,
     scanFile?: (options: {
@@ -247,11 +245,11 @@ export async function uploadToR2(
             constraints.allowedMimeTypes ?? DEFAULT_ALLOWED_MIME_TYPES;
         const maxSizeBytes =
             constraints.maxSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
-        const requireContentScan = constraints.requireContentScan ?? false;
-        const scanFile = constraints.scanFile;
+        const _requireContentScan = constraints.requireContentScan ?? false;
+        const _scanFile = constraints.scanFile;
         const rateLimit = constraints.rateLimit;
 
-        // 1) 基础校验：大小与类型
+        // 1) 鍩虹鏍￠獙锛氬ぇ灏忎笌绫诲瀷
         const validate = validateFileForUpload(
             file,
             allowedMimeTypes,
@@ -260,15 +258,15 @@ export async function uploadToR2(
         if (!validate.ok) return { success: false, error: validate.error };
         const detectedMime = validate.detectedMime;
 
-        // 2) 频率限制（可选）
+        // 2) 棰戠巼闄愬埗锛堝彲閫夛級
         const rate = await enforceUploadRateLimit(rateLimit);
         if (!rate.ok) return { success: false, error: rate.error };
 
         // 3) 内容扫描（可选/必需）
-        const scanOutcome = await maybeScanFile(
+        const scanOutcome = await __maybeScanFile(
             file,
-            requireContentScan,
-            scanFile,
+            _requireContentScan,
+            _scanFile,
         );
         if (!scanOutcome.ok)
             return { success: false, error: scanOutcome.error };
@@ -333,4 +331,28 @@ export async function getFromR2(key: string): Promise<R2Object | null> {
     }
 }
 
-export async function listR2Files() {}
+export async function listR2Files(options?: {
+    prefix?: string;
+    limit?: number;
+    cursor?: string;
+}): Promise<{ objects: R2Object[]; cursor?: string }> {
+    const { env } = await getCloudflareContext({ async: true });
+    const prefix = options?.prefix;
+    const limit = options?.limit ?? 100;
+    const cursor = options?.cursor;
+    try {
+        const res = await env.next_cf_app_bucket.list({
+            prefix,
+            limit,
+            cursor,
+        });
+        const nextCursor = (res as any)?.truncated
+            ? (res as any)?.cursor
+            : undefined;
+        const objects = ((res as any)?.objects ?? []) as R2Object[];
+        return { objects, cursor: nextCursor };
+    } catch (error) {
+        console.error("Error listing R2 files", error);
+        return { objects: [], cursor: undefined };
+    }
+}
