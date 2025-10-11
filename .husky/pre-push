@@ -1,17 +1,29 @@
 #!/usr/bin/env sh
 # Enforce using `pnpm push` for all pushes.
+set -eu
 
 # If already launched by `pnpm push`, allow the inner push to proceed.
-if [ "$PNPM_PUSH_RUNNING" = "1" ]; then
+if [ "${PNPM_PUSH_RUNNING:-}" = "1" ]; then
   echo "[pre-push] pnpm push context detected; allowing push."
   exit 0
 fi
 
-echo "[pre-push] Detected raw \`git push\`. Running \`pnpm push\` instead to execute local quality gates."
+# Emergency bypass knobs (use sparingly)
+if [ "${ALLOW_DIRECT_PUSH:-}" = "1" ] || [ "${HUSKY_BYPASS:-}" = "1" ]; then
+  echo "[pre-push] Bypass enabled (ALLOW_DIRECT_PUSH/HUSKY_BYPASS). Proceeding with raw push."
+  exit 0
+fi
 
-# Run push workflow (includes checks, commit, rebase & push). This nested push
-# will re-enter this hook, but PNPM_PUSH_RUNNING=1 is set there to avoid loops.
-pnpm push
+cat <<'EOS'
+[pre-push] Direct `git push` is blocked.
 
-# Cancel the outer push to avoid double-pushing.
+Please use:   pnpm push
+
+Why: `pnpm push` runs local quality gates (typecheck, tests+coverage, docs/links, Biome),
+and prepares commits before pushing. This keeps CI green and history clean.
+
+Emergency (not recommended): set ALLOW_DIRECT_PUSH=1 to bypass once, e.g.
+  ALLOW_DIRECT_PUSH=1 git push
+EOS
+
 exit 1
