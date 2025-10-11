@@ -22,11 +22,13 @@ function extractAccessToken(headers: Headers): string {
     if (!authorization) {
         return "";
     }
-    const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
-    if (bearerMatch?.[1]) {
-        return bearerMatch[1]?.trim() ?? "";
+    // 避免使用潜在超线性复杂度的正则，改为安全的字符串解析
+    const auth = authorization.trim();
+    if (auth.length >= 6 && auth.slice(0, 6).toLowerCase() === "bearer") {
+        const token = auth.slice(6).trim();
+        if (token) return token;
     }
-    return authorization.trim();
+    return auth;
 }
 
 async function checkDb(): Promise<CheckResult> {
