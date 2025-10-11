@@ -1,8 +1,10 @@
 #!/usr/bin/env sh
-# Enforce using `pnpm push` for all pushes.
+# Enforce using `pnpm push` for all pushes. If user runs a raw `git push`,
+# automatically execute `pnpm push` (with a loop guard) and cancel the outer push
+# to avoid double pushing.
 set -eu
 
-# If already launched by `pnpm push`, allow the inner push to proceed.
+# Already inside pnpm push -> allow.
 if [ "${PNPM_PUSH_RUNNING:-}" = "1" ]; then
   echo "[pre-push] pnpm push context detected; allowing push."
   exit 0
@@ -14,16 +16,23 @@ if [ "${ALLOW_DIRECT_PUSH:-}" = "1" ] || [ "${HUSKY_BYPASS:-}" = "1" ]; then
   exit 0
 fi
 
-cat <<'EOS'
-[pre-push] Direct `git push` is blocked.
+echo "[pre-push] Detected raw git push. Running 'pnpm push' (quality gate) ..."
 
-Please use:   pnpm push
+# Ensure pnpm exists
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "[pre-push] pnpm is not installed or not in PATH." >&2
+  echo "           Install pnpm: https://pnpm.io/installation" >&2
+  echo "           Or bypass once: ALLOW_DIRECT_PUSH=1 git push" >&2
+  exit 1
+fi
 
-Why: `pnpm push` runs local quality gates (typecheck, tests+coverage, docs/links, Biome),
-and prepares commits before pushing. This keeps CI green and history clean.
+# Run the quality gate. This inner push will re-enter this hook with
+# PNPM_PUSH_RUNNING=1 (set by the push helper) to prevent recursion.
+if ! PNPM_PUSH_RUNNING=1 pnpm push; then
+  code=$?
+  echo "[pre-push] 'pnpm push' failed (exit $code). Aborting outer push." >&2
+  exit "$code"
+fi
 
-Emergency (not recommended): set ALLOW_DIRECT_PUSH=1 to bypass once, e.g.
-  ALLOW_DIRECT_PUSH=1 git push
-EOS
-
+echo "[pre-push] 'pnpm push' completed. Cancelling outer push to avoid double-pushing."
 exit 1
