@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
@@ -58,10 +58,7 @@ export async function GET(request: Request) {
         );
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
-            const isAuthErr = status === 401 || status === 403;
-            const isClientErr =
-                status === 400 || status === 404 || status === 422;
-            const mapped = isAuthErr ? 401 : isClientErr ? 400 : 502;
+            const mapped = _mapUpstreamToHttp(status);
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -76,14 +73,8 @@ export async function GET(request: Request) {
             );
         }
 
-        type BillingPortalResponse = {
-            url?: string;
-            portal_url?: string;
-            billing_url?: string;
-        };
-        const json = data as BillingPortalResponse;
-        const url = json?.url || json?.portal_url || json?.billing_url;
-        if (!url || typeof url !== "string") {
+        const url = _ensurePortalUrl(data);
+        if (!url) {
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -96,7 +87,9 @@ export async function GET(request: Request) {
                 },
             );
         }
-        // 标准化字段：data.portalUrl；附带 meta.raw 便于调试（已移除 legacy 字段）
+        // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
+        // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
+        const json = data as { url?: string; portal_url?: string; billing_url?: string };
         const payload = {
             success: true,
             data: { portalUrl: url },
@@ -104,8 +97,8 @@ export async function GET(request: Request) {
             meta: { raw: json },
         };
         return new Response(JSON.stringify(payload), {
-            status: 200,
             headers: { "Content-Type": "application/json" },
+            status: 200,
         });
     } catch (_error) {
         return new Response("Internal Server Error", { status: 500 });
@@ -134,34 +127,21 @@ async function fetchWithRetry(
             const ct = resp.headers.get("content-type") || "";
             const isJson = ct.toLowerCase().includes("application/json");
             if (resp.ok) {
-                const data = isJson ? await resp.json() : await resp.text();
+                const data = await readResponseBody(resp, isJson);
                 return { ok: true, status: resp.status, data };
             }
-            const txt = await resp.text();
-            lastText = txt;
+            lastText = await resp.text();
             if (resp.status === 429 || resp.status >= 500) {
                 if (attempt < maxAttempts) {
-                    await new Promise((r) =>
-                        setTimeout(
-                            r,
-                            Math.min(5000, 1000 * 2 ** (attempt - 1)) +
-                                secureRandomInt(300),
-                        ),
-                    );
+                    await sleep(backoffWithJitter(attempt));
                     continue;
                 }
             }
-            return { ok: false, status: resp.status, text: txt };
+            return { ok: false, status: resp.status, text: lastText };
         } catch (err) {
             clearTimeout(timer);
             if (attempt < maxAttempts) {
-                await new Promise((r) =>
-                    setTimeout(
-                        r,
-                        Math.min(5000, 1000 * 2 ** (attempt - 1)) +
-                            secureRandomInt(300),
-                    ),
-                );
+                await sleep(backoffWithJitter(attempt));
                 continue;
             }
             const msg = err instanceof Error ? err.message : String(err);
@@ -194,4 +174,41 @@ function secureRandomInt(maxExclusive: number): number {
         return rand % maxExclusive;
     } catch {}
     return 0;
+}
+
+
+
+
+function _mapUpstreamToHttp(status: number): number {
+    if (status === 401 || status === 403) return 401;
+    if (status === 400 || status === 404 || status === 422) return 400;
+    return 502;
+}
+
+function _ensurePortalUrl(data: unknown): string | undefined {
+    const json = data as { url?: string; portal_url?: string; billing_url?: string };
+    const url = json?.url || json?.portal_url || json?.billing_url;
+    return typeof url === "string" && url ? url : undefined;
+}
+
+function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+function backoffWithJitter(attempt: number): number {
+    return Math.min(5000, 1000 * 2 ** (attempt - 1)) + secureRandomInt(300);
+}
+
+function isRetryableStatus(status: number): boolean {
+    return status === 429 || status >= 500;
+}
+
+async function readResponseBody(resp: Response, isJson: boolean): Promise<unknown> {
+    if (isJson) return resp.json();
+    const txt = await resp.text();
+    try {
+        return JSON.parse(txt);
+    } catch {
+        return txt;
+    }
 }
