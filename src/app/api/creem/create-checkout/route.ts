@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import {
@@ -12,6 +12,76 @@ type Body = {
     tierId?: string;
     discountCode?: string;
 };
+
+// -------------------- helpers to reduce POST complexity --------------------
+function isEnvMissing(cf: Pick<
+    CloudflareEnv,
+    | "RATE_LIMITER"
+    | "CREEM_API_URL"
+    | "CREEM_API_KEY"
+    | "CREEM_SUCCESS_URL"
+    | "CREEM_CANCEL_URL"
+>): boolean {
+    return !cf.CREEM_API_URL || !cf.CREEM_API_KEY;
+}
+
+function selectProduct(
+    input: { productId?: string | null; tierId?: string | null },
+    isSubscription: boolean,
+): { productId?: string; creditsAmount?: number } {
+    let productId = input.productId?.trim();
+    let creditsAmount: number | undefined;
+
+    const allCreditTiers = CREDITS_TIERS;
+    const allSubTiers = SUBSCRIPTION_TIERS;
+
+    if (!productId && input.tierId) {
+        const c = allCreditTiers.find((t) => t.id === input.tierId);
+        if (c) return { productId: c.productId, creditsAmount: c.creditAmount };
+        const s = allSubTiers.find((t) => t.id === input.tierId);
+        if (s) return { productId: s.productId };
+    }
+
+    if (!productId) {
+        if (isSubscription) {
+            const tier = allSubTiers.find((t) => t.featured) || allSubTiers[0];
+            productId = tier?.productId;
+        } else {
+            const tier = allCreditTiers.find((t) => t.featured) || allCreditTiers[0];
+            productId = tier?.productId;
+            creditsAmount = tier?.creditAmount;
+        }
+    }
+
+    return { productId, creditsAmount };
+}
+
+function allowedProductIds(): Set<string> {
+    return new Set([
+        ...CREDITS_TIERS.map((t) => t.productId),
+        ...SUBSCRIPTION_TIERS.map((t) => t.productId),
+    ]);
+}
+
+function buildRedirectUrls(
+    cf: Pick<CloudflareEnv, "CREEM_SUCCESS_URL" | "CREEM_CANCEL_URL">,
+    origin: string | null,
+): { successUrl?: string; cancelUrl?: string } {
+    const successUrl = cf.CREEM_SUCCESS_URL || (origin ? `${origin}/billing/success` : undefined);
+    const cancelUrl = cf.CREEM_CANCEL_URL || (origin ? `${origin}/billing/cancel` : undefined);
+    return { successUrl, cancelUrl };
+}
+
+function _mapUpstreamToHttp(status: number): number {
+    if (status === 401 || status === 403) return 401;
+    if (status === 400 || status === 404 || status === 422) return 400;
+    return 502;
+}
+
+function _ensureCheckoutUrl(data: unknown): string | undefined {
+    const url = (data as { checkout_url?: string })?.checkout_url;
+    return typeof url === "string" && url ? url : undefined;
+}
 
 export async function POST(request: Request) {
     try {
@@ -54,8 +124,8 @@ export async function POST(request: Request) {
         const origin = request.headers.get("origin");
         const body = (await request.json()) as Body;
 
-        // 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
-        if (!cf.CREEM_API_URL || !cf.CREEM_API_KEY) {
+// 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
+        if (isEnvMissing(cf)) {
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -70,45 +140,12 @@ export async function POST(request: Request) {
         }
 
         const normalizedType = (body.productType || "").toLowerCase();
-        const _isCredits =
-            normalizedType === "credits" || normalizedType.includes("credits");
         const isSubscription = normalizedType === "subscription";
-
-        const allCreditTiers = CREDITS_TIERS;
-        const allSubTiers = SUBSCRIPTION_TIERS;
-        const allowed = new Set([
-            ...allCreditTiers.map((t) => t.productId),
-            ...allSubTiers.map((t) => t.productId),
-        ]);
-
-        let productId = body.productId?.trim();
-        let creditsAmount: number | undefined;
-
-        if (!productId) {
-            if (body.tierId) {
-                const c = allCreditTiers.find((t) => t.id === body.tierId);
-                const s = allSubTiers.find((t) => t.id === body.tierId);
-                if (c) {
-                    productId = c.productId;
-                    creditsAmount = c.creditAmount;
-                } else if (s) {
-                    productId = s.productId;
-                }
-            }
-            if (!productId) {
-                if (isSubscription) {
-                    const tier =
-                        allSubTiers.find((t) => t.featured) || allSubTiers[0];
-                    productId = tier?.productId;
-                } else {
-                    const tier =
-                        allCreditTiers.find((t) => t.featured) ||
-                        allCreditTiers[0];
-                    productId = tier?.productId;
-                    creditsAmount = tier?.creditAmount;
-                }
-            }
-        }
+        const { productId, creditsAmount } = selectProduct(
+            { productId: body.productId, tierId: body.tierId },
+            isSubscription,
+        );
+        const allowed = allowedProductIds();
 
         if (!productId || !allowed.has(productId)) {
             return new Response(
@@ -159,21 +196,15 @@ export async function POST(request: Request) {
             metadata: {
                 user_id: session.user.id,
                 product_type: productType,
-                credits: productType === "credits" ? creditsAmount || 0 : 0,
+                credits: productType === "credits" ? creditsAmount ?? 0 : 0,
             },
         };
-
-        const successUrl =
-            cf.CREEM_SUCCESS_URL ||
-            (origin ? `${origin}/billing/success` : undefined);
-        const cancelUrl =
-            cf.CREEM_CANCEL_URL ||
-            (origin ? `${origin}/billing/cancel` : undefined);
+        const { successUrl, cancelUrl } = buildRedirectUrls(cf, origin);
         if (successUrl) requestBody.success_url = successUrl;
         if (cancelUrl) requestBody.cancel_url = cancelUrl;
         if (body.discountCode) requestBody.discount_code = body.discountCode;
 
-        // 上游请求：增加超时、重试（指数退避 + 抖动）与错误归因
+        // 涓婃父璇锋眰锛氬鍔犺秴鏃躲€侀噸璇曪紙鎸囨暟閫€閬?+ 鎶栧姩锛変笌閿欒褰掑洜
         const { ok, status, data, text, attempts, contentType } =
             await fetchWithRetry(`${cf.CREEM_API_URL}/checkouts`, {
                 method: "POST",
@@ -226,7 +257,7 @@ export async function POST(request: Request) {
                 },
             );
         }
-        // 标准化字段：data.checkoutUrl；附带 meta.raw 便于调试（已移除 legacy 字段）
+// 标准化字段：data.checkoutUrl；附带 meta.raw 便于调试
         return new Response(
             JSON.stringify({
                 success: true,
@@ -297,7 +328,7 @@ async function fetchWithRetry(
                     try {
                         data = JSON.parse(txt);
                     } catch {
-                        // 返回原始文本，避免 JSON.parse 抛错导致整体失败
+                        // 杩斿洖鍘熷鏂囨湰锛岄伩鍏?JSON.parse 鎶涢敊瀵艰嚧鏁翠綋澶辫触
                         data = txt;
                     }
                 }
@@ -310,7 +341,7 @@ async function fetchWithRetry(
                 };
             }
 
-            // 读取文本用于诊断；对 5xx/429 进行重试
+            // 璇诲彇鏂囨湰鐢ㄤ簬璇婃柇锛涘 5xx/429 杩涜閲嶈瘯
             const txt = await resp.text();
             lastText = txt;
 
@@ -331,7 +362,7 @@ async function fetchWithRetry(
             };
         } catch (err) {
             clearTimeout(timer);
-            // 网络/超时错误：重试
+            // 缃戠粶/瓒呮椂閿欒锛氶噸璇?
             if (attempt < maxAttempts) {
                 const backoff = backoffWithJitter(attempt);
                 await sleep(backoff);
