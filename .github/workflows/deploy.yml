@@ -1,5 +1,8 @@
 name: Deploy Next.js App to Cloudflare
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
@@ -284,4 +287,3 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: '4.42.1'
           command: --version
-
