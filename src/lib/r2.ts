@@ -52,7 +52,15 @@ export interface UploadConstraints {
 }
 
 function normalizeFolder(folder: string | undefined) {
-    const normalized = (folder ?? "uploads").trim().replace(/^\/+|\/+$/g, "");
+    // 线性时间去除首尾斜杠，避免正则与回溯
+    const raw = (folder ?? "uploads").trim();
+    let start = 0;
+    let end = raw.length - 1;
+    // 去掉前导 '/'
+    while (start <= end && raw.charCodeAt(start) === 47 /* '/' */) start++;
+    // 去掉尾随 '/'
+    while (end >= start && raw.charCodeAt(end) === 47 /* '/' */) end--;
+    const normalized = raw.slice(start, end + 1);
     return normalized || "uploads";
 }
 
