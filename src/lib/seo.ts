@@ -530,7 +530,7 @@ function sanitizeAttributeValue(
     return trimmed;
 }
 
-function parseAttributes(
+function _parseAttributesRegex(
     rawAttributes: string,
     tag: AllowedHeadTag,
 ): Record<string, string> {
@@ -559,6 +559,81 @@ function parseAttributes(
     return attributes;
 }
 
+// Linear-scan strict attribute parser (no regex), preferred by sanitizeCustomHtml.
+function parseAttributes(
+    rawAttributes: string,
+    tag: AllowedHeadTag,
+): Record<string, string> {
+    const attributes: Record<string, string> = {};
+    const len = rawAttributes.length;
+    let i = 0;
+
+    const isWs = (c: number) => c === 32 || c === 10 || c === 13 || c === 9;
+    const skipWs = () => {
+        while (i < len && isWs(rawAttributes.charCodeAt(i))) i++;
+    };
+
+    const readName = (): string | null => {
+        const start = i;
+        while (i < len) {
+            const ch = rawAttributes.charCodeAt(i);
+            const isAlpha = (ch >= 97 && ch <= 122) || (ch >= 65 && ch <= 90);
+            const isDigit = ch >= 48 && ch <= 57;
+            const isOther = ch === 45 /*-*/ || ch === 58 /*:*/;
+            if (!(isAlpha || isDigit || isOther)) break;
+            i++;
+        }
+        if (i === start) return null;
+        return rawAttributes.slice(start, i).toLowerCase();
+    };
+
+    const readValue = (): string | undefined => {
+        if (i >= len) return undefined;
+        const ch = rawAttributes.charAt(i);
+        if (ch === '"' || ch === "'") {
+            const quote = ch;
+            const start = i;
+            i++; // skip opening
+            while (i < len && rawAttributes.charAt(i) !== quote) i++;
+            if (i < len) i++; // include closing
+            return rawAttributes.slice(start, i);
+        }
+        const start = i;
+        while (i < len && !isWs(rawAttributes.charCodeAt(i))) i++;
+        return rawAttributes.slice(start, i);
+    };
+
+    while (i < len) {
+        skipWs();
+        const name = readName();
+        if (!name) break;
+        skipWs();
+
+        let rawValue: string | undefined;
+        if (rawAttributes.charAt(i) === "=") {
+            i++;
+            skipWs();
+            rawValue = readValue();
+        }
+
+        if (!isAllowedAttribute(tag, name)) {
+            // skip silently for disallowed attributes
+            continue;
+        }
+
+        if (!rawValue && ALLOWED_BOOLEAN_ATTRIBUTES.has(name)) {
+            attributes[name] = "";
+            continue;
+        }
+
+        const sanitized = sanitizeAttributeValue(name, rawValue, tag);
+        if (sanitized !== undefined) {
+            attributes[name] = sanitized;
+        }
+    }
+    return attributes;
+}
+
 export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
     if (!html) return [];
     const nodes: SanitizedHeadNode[] = [];
@@ -570,6 +645,48 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
         "noscript",
     ];
     const allowedSelfClosing: AllowedHeadTag[] = ["meta", "link"];
+
+    function tryProcessWithContent(
+        lt: number,
+        tag: AllowedHeadTag,
+    ): { node: SanitizedHeadNode; next: number } | null {
+        const open = `<${tag}`;
+        if (!lower.startsWith(open, lt)) return null;
+        const gt = html.indexOf(">", lt + open.length);
+        if (gt === -1)
+            return { node: { tag, attributes: {} }, next: html.length };
+        const rawAttrs = html.slice(lt + open.length, gt);
+        const close = `</${tag}>`;
+        const closeIdx = lower.indexOf(close, gt + 1);
+        const content = closeIdx === -1 ? "" : html.slice(gt + 1, closeIdx);
+        const attributes = parseAttributes(rawAttrs, tag);
+        const safeContent =
+            tag === "noscript" && content
+                ? sanitizeNoscriptContent(content)
+                : content;
+        const node: SanitizedHeadNode = {
+            tag,
+            attributes,
+            content: safeContent,
+        };
+        const next = closeIdx === -1 ? gt + 1 : closeIdx + close.length;
+        return { node, next };
+    }
+
+    function tryProcessSelfClosing(
+        lt: number,
+        tag: AllowedHeadTag,
+    ): { node: SanitizedHeadNode; next: number } | null {
+        const open = `<${tag}`;
+        if (!lower.startsWith(open, lt)) return null;
+        const gt = html.indexOf(">", lt + open.length);
+        if (gt === -1)
+            return { node: { tag, attributes: {} }, next: html.length };
+        const rawAttrs = html.slice(lt + open.length, gt);
+        const attributes = parseAttributes(rawAttrs, tag);
+        const node: SanitizedHeadNode = { tag, attributes };
+        return { node, next: gt + 1 };
+    }
 
     let i = 0;
     while (i < html.length) {
@@ -583,49 +700,28 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
             continue;
         }
 
-        // Try content tags first
-        let matched = false;
+        let handled = false;
         for (const tag of allowedWithContent) {
-            const open = `<${tag}`;
-            if (!lower.startsWith(open, lt)) continue;
-            matched = true;
-            const gt = html.indexOf(">", lt + open.length);
-            if (gt === -1) {
-                i = html.length;
+            const res = tryProcessWithContent(lt, tag);
+            if (res) {
+                nodes.push(res.node);
+                i = res.next;
+                handled = true;
                 break;
             }
-            const rawAttrs = html.slice(lt + open.length, gt);
-            const close = `</${tag}>`;
-            const closeIdx = lower.indexOf(close, gt + 1);
-            const content = closeIdx === -1 ? "" : html.slice(gt + 1, closeIdx);
-            const attributes = parseAttributes(rawAttrs, tag);
-            let safeContent = content;
-            if (tag === "noscript" && content) {
-                safeContent = sanitizeNoscriptContent(content);
-            }
-            nodes.push({ tag, attributes, content: safeContent });
-            i = closeIdx === -1 ? gt + 1 : closeIdx + close.length;
-            break;
         }
-        if (matched) continue;
+        if (handled) continue;
 
-        // Try self-closing tags
         for (const tag of allowedSelfClosing) {
-            const open = `<${tag}`;
-            if (!lower.startsWith(open, lt)) continue;
-            matched = true;
-            const gt = html.indexOf(">", lt + open.length);
-            if (gt === -1) {
-                i = html.length;
+            const res = tryProcessSelfClosing(lt, tag);
+            if (res) {
+                nodes.push(res.node);
+                i = res.next;
+                handled = true;
                 break;
             }
-            const rawAttrs = html.slice(lt + open.length, gt);
-            const attributes = parseAttributes(rawAttrs, tag);
-            nodes.push({ tag, attributes });
-            i = gt + 1;
-            break;
         }
-        if (matched) continue;
+        if (handled) continue;
 
         // Not an allowed tag; skip this '<'
         i = lt + 1;
