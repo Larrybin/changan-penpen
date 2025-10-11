@@ -114,9 +114,35 @@ const parseJsonResponse = (raw: string): Record<string, string> => {
     const candidates = [trimmed];
 
     if (!trimmed.startsWith("{")) {
-        const match = trimmed.match(/\{[\s\S]*\}/);
-        if (match) {
-            candidates.push(match[0]);
+        // 线性扫描提取第一个平衡的大括号 JSON 片段，避免使用回溯型正则
+        const start = trimmed.indexOf("{");
+        if (start !== -1) {
+            let depth = 0;
+            let inString = false;
+            let escaping = false;
+            for (let i = start; i < trimmed.length; i++) {
+                const ch = trimmed.charCodeAt(i);
+                if (inString) {
+                    if (escaping) {
+                        escaping = false;
+                    } else if (ch === 92 /* \\ */) {
+                        escaping = true;
+                    } else if (ch === 34 /* " */) {
+                        inString = false;
+                    }
+                    continue;
+                }
+                if (ch === 34 /* " */) {
+                    inString = true;
+                    continue;
+                }
+                if (ch === 123 /* { */) depth++;
+                if (ch === 125 /* } */) depth--;
+                if (depth === 0) {
+                    candidates.push(trimmed.slice(start, i + 1));
+                    break;
+                }
+            }
         }
     }
 
