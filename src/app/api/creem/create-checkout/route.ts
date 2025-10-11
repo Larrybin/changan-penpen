@@ -14,14 +14,16 @@ type Body = {
 };
 
 // -------------------- helpers to reduce POST complexity --------------------
-function isEnvMissing(cf: Pick<
-    CloudflareEnv,
-    | "RATE_LIMITER"
-    | "CREEM_API_URL"
-    | "CREEM_API_KEY"
-    | "CREEM_SUCCESS_URL"
-    | "CREEM_CANCEL_URL"
->): boolean {
+function isEnvMissing(
+    cf: Pick<
+        CloudflareEnv,
+        | "RATE_LIMITER"
+        | "CREEM_API_URL"
+        | "CREEM_API_KEY"
+        | "CREEM_SUCCESS_URL"
+        | "CREEM_CANCEL_URL"
+    >,
+): boolean {
     return !cf.CREEM_API_URL || !cf.CREEM_API_KEY;
 }
 
@@ -47,7 +49,8 @@ function selectProduct(
             const tier = allSubTiers.find((t) => t.featured) || allSubTiers[0];
             productId = tier?.productId;
         } else {
-            const tier = allCreditTiers.find((t) => t.featured) || allCreditTiers[0];
+            const tier =
+                allCreditTiers.find((t) => t.featured) || allCreditTiers[0];
             productId = tier?.productId;
             creditsAmount = tier?.creditAmount;
         }
@@ -67,9 +70,30 @@ function buildRedirectUrls(
     cf: Pick<CloudflareEnv, "CREEM_SUCCESS_URL" | "CREEM_CANCEL_URL">,
     origin: string | null,
 ): { successUrl?: string; cancelUrl?: string } {
-    const successUrl = cf.CREEM_SUCCESS_URL || (origin ? `${origin}/billing/success` : undefined);
-    const cancelUrl = cf.CREEM_CANCEL_URL || (origin ? `${origin}/billing/cancel` : undefined);
+    const successUrl =
+        cf.CREEM_SUCCESS_URL ||
+        (origin ? `${origin}/billing/success` : undefined);
+    const cancelUrl =
+        cf.CREEM_CANCEL_URL ||
+        (origin ? `${origin}/billing/cancel` : undefined);
     return { successUrl, cancelUrl };
+}
+
+function isRetryableStatus(status: number): boolean {
+    return status === 429 || status >= 500;
+}
+
+async function readResponseBody(
+    resp: Response,
+    isJson: boolean,
+): Promise<unknown> {
+    if (isJson) return resp.json();
+    const txt = await resp.text();
+    try {
+        return JSON.parse(txt);
+    } catch {
+        return txt;
+    }
 }
 
 function _mapUpstreamToHttp(status: number): number {
@@ -124,7 +148,7 @@ export async function POST(request: Request) {
         const origin = request.headers.get("origin");
         const body = (await request.json()) as Body;
 
-// 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
+        // 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
         if (isEnvMissing(cf)) {
             return new Response(
                 JSON.stringify({
@@ -196,7 +220,7 @@ export async function POST(request: Request) {
             metadata: {
                 user_id: session.user.id,
                 product_type: productType,
-                credits: productType === "credits" ? creditsAmount ?? 0 : 0,
+                credits: productType === "credits" ? (creditsAmount ?? 0) : 0,
             },
         };
         const { successUrl, cancelUrl } = buildRedirectUrls(cf, origin);
@@ -218,7 +242,7 @@ export async function POST(request: Request) {
 
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
-                status === 400 || status === 404 || status === 422;
+            status === 400 || status === 404 || status === 422;
             const mapped = _mapUpstreamToHttp(status);
             return new Response(
                 JSON.stringify({
@@ -317,18 +341,7 @@ async function fetchWithRetry(
                 .toLowerCase()
                 .includes("application/json");
             if (resp.ok) {
-                let data: unknown;
-                if (isJson) {
-                    data = await resp.json();
-                } else {
-                    const txt = await resp.text();
-                    try {
-                        data = JSON.parse(txt);
-                    } catch {
-                        // 杩斿洖鍘熷鏂囨湰锛岄伩鍏?JSON.parse 鎶涢敊瀵艰嚧鏁翠綋澶辫触
-                        data = txt;
-                    }
-                }
+                const data = await readResponseBody(resp, isJson);
                 return {
                     ok: true,
                     status: resp.status,
@@ -338,22 +351,17 @@ async function fetchWithRetry(
                 };
             }
 
-            // 璇诲彇鏂囨湰鐢ㄤ簬璇婃柇锛涘 5xx/429 杩涜閲嶈瘯
-            const txt = await resp.text();
-            lastText = txt;
-
-            if (resp.status === 429 || resp.status >= 500) {
-                if (attempt < maxAttempts) {
-                    const backoff = backoffWithJitter(attempt);
-                    await sleep(backoff);
-                    continue;
-                }
+            // 读取文本用于诊断；对 5xx/429 进行重试
+            lastText = await resp.text();
+            if (isRetryableStatus(resp.status) && attempt < maxAttempts) {
+                await sleep(backoffWithJitter(attempt));
+                continue;
             }
 
             return {
                 ok: false,
                 status: resp.status,
-                text: txt,
+                text: lastText,
                 attempts: attempt,
                 contentType: lastContentType || null,
             };
@@ -361,8 +369,7 @@ async function fetchWithRetry(
             clearTimeout(timer);
             // 缃戠粶/瓒呮椂閿欒锛氶噸璇?
             if (attempt < maxAttempts) {
-                const backoff = backoffWithJitter(attempt);
-                await sleep(backoff);
+                await sleep(backoffWithJitter(attempt));
                 continue;
             }
             const msg = err instanceof Error ? err.message : String(err);
