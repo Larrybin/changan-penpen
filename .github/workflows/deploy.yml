@@ -59,6 +59,8 @@ jobs:
   # Quality gate — CI
   quality-gate-reusable:
     name: Quality Gate
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     uses: ./.github/workflows/ci.yml
     secrets: inherit
 
