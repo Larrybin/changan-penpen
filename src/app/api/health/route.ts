@@ -63,33 +63,127 @@ async function checkR2(env: CloudflareBindings): Promise<CheckResult> {
     }
 }
 
+// 辅助：解析 fast 标记
+function computeFast(url: URL): boolean {
+    const v = (
+        url.searchParams.get("fast") ||
+        url.searchParams.get("mode") ||
+        ""
+    ).toLowerCase();
+    return v === "1" || v === "true" || v === "fast";
+}
+
+// 辅助：安全获取请求来源
+function getRequestOriginSafe(request: Request): string {
+    try {
+        return new URL(request.url).origin;
+    } catch {
+        return "";
+    }
+}
+
+// 辅助：是否允许输出详细检查结果
+function resolveAllowDetails(
+    envRecord: Record<string, unknown>,
+    providedToken: string,
+): boolean {
+    const configuredToken = String(envRecord.HEALTH_ACCESS_TOKEN ?? "").trim();
+    const envMode = String(envRecord.NEXTJS_ENV ?? "").toLowerCase();
+    return configuredToken
+        ? providedToken === configuredToken
+        : envMode !== "production";
+}
+
+// 辅助：从环境得出强制开关
+function getRequireFlags(
+    envRecord: Record<string, unknown>,
+    fast: boolean,
+): { requireExternal: boolean; requireDb: boolean; requireR2: boolean } {
+    if (fast)
+        return { requireExternal: false, requireDb: false, requireR2: false };
+    const asBool = (v: unknown) => String(v ?? "false") === "true";
+    return {
+        requireExternal: asBool(
+            (envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ??
+                "false",
+        ),
+        requireDb: asBool(
+            (envRecord.HEALTH_REQUIRE_DB as string | undefined) ?? "false",
+        ),
+        requireR2: asBool(
+            (envRecord.HEALTH_REQUIRE_R2 as string | undefined) ?? "false",
+        ),
+    };
+}
+
+// 辅助：根据 flags 与 allowDetails 计算总健康态
+function computeOverallOk(
+    allowDetails: boolean,
+    flags: { requireExternal: boolean; requireDb: boolean; requireR2: boolean },
+    results: {
+        db: CheckResult;
+        r2: CheckResult;
+        envs: CheckResult;
+        appUrl: CheckResult;
+        external: CheckResult;
+    },
+): boolean {
+    const dbHealthy = allowDetails
+        ? !flags.requireDb || results.db.ok
+        : results.db.ok;
+    const r2Healthy = allowDetails
+        ? !flags.requireR2 || results.r2.ok
+        : results.r2.ok;
+    const externalHealthy = allowDetails
+        ? !flags.requireExternal || results.external.ok
+        : results.external.ok;
+    return (
+        dbHealthy &&
+        r2Healthy &&
+        results.envs.ok &&
+        results.appUrl.ok &&
+        externalHealthy
+    );
+}
+
+// 辅助：生成检查对象（详细或摘要）
+function buildChecksPayload(
+    allowDetails: boolean,
+    results: {
+        db: CheckResult;
+        r2: CheckResult;
+        envs: CheckResult;
+        appUrl: CheckResult;
+        external: CheckResult;
+    },
+) {
+    if (allowDetails)
+        return {
+            db: results.db,
+            r2: results.r2,
+            env: results.envs,
+            appUrl: results.appUrl,
+            external: results.external,
+        } as const;
+    return {
+        db: { ok: results.db.ok },
+        r2: { ok: results.r2.ok },
+        env: { ok: results.envs.ok },
+        appUrl: { ok: results.appUrl.ok },
+        external: { ok: results.external.ok },
+    } as const;
+}
+
 export async function GET(request: Request) {
     const startedAt = Date.now();
     const urlObj = new URL(request.url);
-    const fast = (() => {
-        const v = (
-            urlObj.searchParams.get("fast") ||
-            urlObj.searchParams.get("mode") ||
-            ""
-        ).toLowerCase();
-        return v === "1" || v === "true" || v === "fast";
-    })();
-    const reqOrigin = (() => {
-        try {
-            return new URL(request.url).origin;
-        } catch {
-            return "";
-        }
-    })();
+    const fast = computeFast(urlObj);
+    const reqOrigin = getRequestOriginSafe(request);
 
     const { env } = await getCloudflareContext({ async: true });
     const envRecord = env as unknown as Record<string, unknown>;
-    const configuredToken = String(envRecord.HEALTH_ACCESS_TOKEN ?? "").trim();
     const providedToken = extractAccessToken(request.headers);
-    const envMode = String(envRecord.NEXTJS_ENV ?? "").toLowerCase();
-    const allowDetails = configuredToken
-        ? providedToken === configuredToken
-        : envMode !== "production";
+    const allowDetails = resolveAllowDetails(envRecord, providedToken);
 
     const [db, r2, envs, appUrl, external] = await Promise.all([
         fast ? Promise.resolve<CheckResult>({ ok: true }) : checkDb(),
@@ -106,40 +200,11 @@ export async function GET(request: Request) {
     ]);
 
     // 外部依赖是否为强制项由开关控制（默认不阻断）
-    const requireExternal = fast
-        ? false
-        : String(
-              (envRecord.HEALTH_REQUIRE_EXTERNAL as string | undefined) ??
-                  "false",
-          ) === "true";
-    const requireDb = fast
-        ? false
-        : String(
-              (envRecord.HEALTH_REQUIRE_DB as string | undefined) ?? "false",
-          ) === "true";
-    const requireR2 = fast
-        ? false
-        : String(
-              (envRecord.HEALTH_REQUIRE_R2 as string | undefined) ?? "false",
-          ) === "true";
+    const requireFlags = getRequireFlags(envRecord, fast);
+    const results = { db, r2, envs, appUrl, external } as const;
+    const ok = computeOverallOk(allowDetails, requireFlags, results);
 
-    const dbHealthy = allowDetails ? !requireDb || db.ok : db.ok;
-    const r2Healthy = allowDetails ? !requireR2 || r2.ok : r2.ok;
-    const externalHealthy = allowDetails
-        ? !requireExternal || external.ok
-        : external.ok;
-    const ok =
-        dbHealthy && r2Healthy && envs.ok && appUrl.ok && externalHealthy;
-
-    const checks = allowDetails
-        ? { db, r2, env: envs, appUrl, external }
-        : {
-              db: { ok: db.ok },
-              r2: { ok: r2.ok },
-              env: { ok: envs.ok },
-              appUrl: { ok: appUrl.ok },
-              external: { ok: external.ok },
-          };
+    const checks = buildChecksPayload(allowDetails, results);
 
     const body = {
         ok,
