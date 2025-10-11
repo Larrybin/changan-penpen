@@ -181,7 +181,11 @@ function sanitizeNoscriptAttrValue(
     if (attribute === "href" || attribute === "src") {
         // sanitize script-like schemes in URLs
         const norm = val.replace(/\s+/g, "").toLowerCase();
-        if (norm.startsWith("javascript:") || norm.startsWith("vbscript:"))
+        if (
+            norm.startsWith("javascript:") ||
+            norm.startsWith("vbscript:") ||
+            norm.startsWith("data:")
+        )
             return undefined;
         if (!isAllowedUriScheme(val)) return undefined;
     }
