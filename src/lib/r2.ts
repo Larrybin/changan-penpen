@@ -67,11 +67,30 @@ function normalizeFolder(folder: string | undefined) {
 function createRandomId() {
     if (
         typeof globalThis.crypto !== "undefined" &&
-        typeof globalThis.crypto.randomUUID === "function"
+        typeof (globalThis.crypto as Crypto).randomUUID === "function"
     ) {
-        return globalThis.crypto.randomUUID();
+        return (globalThis.crypto as Crypto).randomUUID();
     }
-    return Math.random().toString(36).slice(2, 15);
+    if (
+        typeof globalThis.crypto !== "undefined" &&
+        typeof (globalThis.crypto as Crypto).getRandomValues === "function"
+    ) {
+        const bytes = new Uint8Array(16);
+        (globalThis.crypto as Crypto).getRandomValues(bytes);
+        let out = "";
+        for (let i = 0; i < bytes.length; i++) {
+            out += bytes[i].toString(16).padStart(2, "0");
+        }
+        return out;
+    }
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const nodeCrypto =
+            require("node:crypto") as typeof import("node:crypto");
+        return nodeCrypto.randomBytes(16).toString("hex");
+    } catch {}
+    // 最后兜底：使用时间戳，避免依赖非安全随机
+    return `${Date.now()}-${performance?.now?.() ?? 0}`;
 }
 
 function sanitizeExtension(filename: string) {

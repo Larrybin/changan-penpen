@@ -145,7 +145,7 @@ async function fetchWithRetry(
                         setTimeout(
                             r,
                             Math.min(5000, 1000 * 2 ** (attempt - 1)) +
-                                Math.floor(Math.random() * 300),
+                                secureRandomInt(300),
                         ),
                     );
                     continue;
@@ -159,7 +159,7 @@ async function fetchWithRetry(
                     setTimeout(
                         r,
                         Math.min(5000, 1000 * 2 ** (attempt - 1)) +
-                            Math.floor(Math.random() * 300),
+                            secureRandomInt(300),
                     ),
                 );
                 continue;
@@ -169,4 +169,22 @@ async function fetchWithRetry(
         }
     }
     return { ok: false, status: lastStatus || 0, text: lastText };
+}
+
+function secureRandomInt(maxExclusive: number): number {
+    if (maxExclusive <= 0) return 0;
+    const g: Crypto | undefined = (globalThis as unknown as { crypto?: Crypto })
+        .crypto;
+    if (g && typeof g.getRandomValues === "function") {
+        const arr = new Uint32Array(1);
+        g.getRandomValues(arr);
+        return arr[0] % maxExclusive;
+    }
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const nodeCrypto =
+            require("node:crypto") as typeof import("node:crypto");
+        return nodeCrypto.randomBytes(4).readUInt32BE(0) % maxExclusive;
+    } catch {}
+    return 0;
 }
