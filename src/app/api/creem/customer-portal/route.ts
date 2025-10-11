@@ -1,48 +1,86 @@
-﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { eq } from "drizzle-orm";
-import { getDb } from "@/db";
-import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
-import { customers } from "@/modules/creem/schemas/billing.schema";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { json } from "@/lib/http";
+import { requireSessionUser } from "@/modules/auth/utils/guards";
+import { requireCreemCustomerId } from "@/modules/creem/utils/guards";
+
+function requireCreemEnv(
+    cf: Pick<CloudflareEnv, "CREEM_API_URL" | "CREEM_API_KEY">,
+):
+    | { ok: true; cf: Pick<CloudflareEnv, "CREEM_API_URL" | "CREEM_API_KEY"> }
+    | { ok: false; response: Response } {
+    if (!cf.CREEM_API_URL || !cf.CREEM_API_KEY) {
+        return {
+            ok: false,
+            response: json(500, {
+                success: false,
+                error: "Missing CREEM_API_URL or CREEM_API_KEY",
+                data: null,
+            }),
+        };
+    }
+    return { ok: true, cf };
+}
+
+function _mapUpstreamToHttp(status: number): number {
+    if (status === 401 || status === 403) return 401;
+    if (status === 400 || status === 404 || status === 422) return 400;
+    return 502;
+}
+
+function _ensurePortalUrl(data: unknown): string | undefined {
+    const jsonObj = data as {
+        url?: string;
+        portal_url?: string;
+        billing_url?: string;
+    };
+    const url = jsonObj?.url || jsonObj?.portal_url || jsonObj?.billing_url;
+    return typeof url === "string" && url ? url : undefined;
+}
+
+function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+function backoffWithJitter(attempt: number): number {
+    return Math.min(5000, 1000 * 2 ** (attempt - 1)) + secureRandomInt(300);
+}
+
+function isRetryableStatus(status: number): boolean {
+    return status === 429 || status >= 500;
+}
+
+async function readResponseBody(
+    resp: Response,
+    isJson: boolean,
+): Promise<unknown> {
+    if (isJson) return resp.json();
+    const txt = await resp.text();
+    try {
+        return JSON.parse(txt);
+    } catch {
+        return txt;
+    }
+}
 
 export async function GET(request: Request) {
     try {
-        const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-            return new Response("Unauthorized", { status: 401 });
-        }
+        // 直线式 Guard：失败立即返回 Response
+        const userIdOrResp = await requireSessionUser(request);
+        if (userIdOrResp instanceof Response) return userIdOrResp;
+        const userId = userIdOrResp;
 
-        const db = await getDb();
-        const row = await db
-            .select({ creemCustomerId: customers.creemCustomerId })
-            .from(customers)
-            .where(eq(customers.userId, session.user.id))
-            .limit(1);
-        const creemCustomerId = row[0]?.creemCustomerId;
-        if (!creemCustomerId) {
-            return new Response("No subscription/customer found", {
-                status: 404,
-            });
-        }
+        const customerIdOrResp = await requireCreemCustomerId(userId);
+        if (customerIdOrResp instanceof Response) return customerIdOrResp;
+        const creemCustomerId = customerIdOrResp;
 
         const { env } = await getCloudflareContext({ async: true });
-        const cf = env as unknown as Pick<
+        const envPick = env as unknown as Pick<
             CloudflareEnv,
             "CREEM_API_URL" | "CREEM_API_KEY"
         >;
-        if (!cf.CREEM_API_URL || !cf.CREEM_API_KEY) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Missing CREEM_API_URL or CREEM_API_KEY",
-                    data: null,
-                }),
-                {
-                    status: 500,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
-        }
+        const envRes = requireCreemEnv(envPick);
+        if (!("ok" in envRes) || envRes.ok === false) return envRes.response;
+        const cf = envRes.cf;
 
         const { ok, status, text, data } = await fetchWithRetry(
             `${cf.CREEM_API_URL}/customers/billing`,
@@ -59,47 +97,35 @@ export async function GET(request: Request) {
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
             const mapped = _mapUpstreamToHttp(status);
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Failed to get portal link",
-                    meta: { status, upstreamBodySnippet: snippet },
-                    data: null,
-                }),
-                {
-                    status: mapped,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            return json(mapped, {
+                success: false,
+                error: "Failed to get portal link",
+                meta: { status, upstreamBodySnippet: snippet },
+                data: null,
+            });
         }
 
         const url = _ensurePortalUrl(data);
         if (!url) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Invalid response from Creem: missing portal url",
-                    data: null,
-                }),
-                {
-                    status: 502,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            return json(502, {
+                success: false,
+                error: "Invalid response from Creem: missing portal url",
+                data: null,
+            });
         }
         // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
-        // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
-        const json = data as { url?: string; portal_url?: string; billing_url?: string };
+        const jsonBody = data as {
+            url?: string;
+            portal_url?: string;
+            billing_url?: string;
+        };
         const payload = {
             success: true,
             data: { portalUrl: url },
             error: null as string | null,
-            meta: { raw: json },
+            meta: { raw: jsonBody },
         };
-        return new Response(JSON.stringify(payload), {
-            headers: { "Content-Type": "application/json" },
-            status: 200,
-        });
+        return json(200, payload);
     } catch (_error) {
         return new Response("Internal Server Error", { status: 500 });
     }
@@ -131,11 +157,9 @@ async function fetchWithRetry(
                 return { ok: true, status: resp.status, data };
             }
             lastText = await resp.text();
-            if (resp.status === 429 || resp.status >= 500) {
-                if (attempt < maxAttempts) {
-                    await sleep(backoffWithJitter(attempt));
-                    continue;
-                }
+            if (isRetryableStatus(resp.status) && attempt < maxAttempts) {
+                await sleep(backoffWithJitter(attempt));
+                continue;
             }
             return { ok: false, status: resp.status, text: lastText };
         } catch (err) {
@@ -174,41 +198,4 @@ function secureRandomInt(maxExclusive: number): number {
         return rand % maxExclusive;
     } catch {}
     return 0;
-}
-
-
-
-
-function _mapUpstreamToHttp(status: number): number {
-    if (status === 401 || status === 403) return 401;
-    if (status === 400 || status === 404 || status === 422) return 400;
-    return 502;
-}
-
-function _ensurePortalUrl(data: unknown): string | undefined {
-    const json = data as { url?: string; portal_url?: string; billing_url?: string };
-    const url = json?.url || json?.portal_url || json?.billing_url;
-    return typeof url === "string" && url ? url : undefined;
-}
-
-function sleep(ms: number) {
-    return new Promise((r) => setTimeout(r, ms));
-}
-
-function backoffWithJitter(attempt: number): number {
-    return Math.min(5000, 1000 * 2 ** (attempt - 1)) + secureRandomInt(300);
-}
-
-function isRetryableStatus(status: number): boolean {
-    return status === 429 || status >= 500;
-}
-
-async function readResponseBody(resp: Response, isJson: boolean): Promise<unknown> {
-    if (isJson) return resp.json();
-    const txt = await resp.text();
-    try {
-        return JSON.parse(txt);
-    } catch {
-        return txt;
-    }
 }

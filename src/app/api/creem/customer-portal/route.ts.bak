@@ -1,0 +1,141 @@
+﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
+import { customers } from "@/modules/creem/schemas/billing.schema";
+
+// -------- small helpers to reduce complexity --------
+function json(status: number, body: unknown) {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+    });
+}
+
+async function requireSessionUser(request: Request): Promise<
+    | { ok: true; user: { id: string; email?: string | null } }
+    | { ok: false; response: Response }
+> {
+    const auth = await getAuthInstance();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
+        return { ok: false, response: new Response("Unauthorized", { status: 401 }) };
+    }
+    return { ok: true, user: { id: session.user.id, email: session.user.email } };
+}
+
+async function requireCreemCustomerId(userId: string): Promise<
+    | { ok: true; customerId: string }
+    | { ok: false; response: Response }
+> {
+    const db = await getDb();
+    const row = await db
+        .select({ creemCustomerId: customers.creemCustomerId })
+        .from(customers)
+        .where(eq(customers.userId, userId))
+        .limit(1);
+    const creemCustomerId = row[0]?.creemCustomerId;
+    if (!creemCustomerId) {
+        return {
+            ok: false,
+            response: new Response("No subscription/customer found", { status: 404 }),
+        };
+    }
+    return { ok: true, customerId: creemCustomerId };
+}
+
+function requireCreemEnv(
+    cf: Pick<CloudflareEnv, "CREEM_API_URL" | "CREEM_API_KEY">,
+): { ok: true; cf: Pick<CloudflareEnv, "CREEM_API_URL" | "CREEM_API_KEY"> } | { ok: false; response: Response } {
+    if (!cf.CREEM_API_URL || !cf.CREEM_API_KEY) {
+        return {
+            ok: false,
+            response: json(500, {
+                success: false,
+                error: "Missing CREEM_API_URL or CREEM_API_KEY",
+                data: null,
+            }),
+        };
+    }
+    return { ok: true, cf };
+}
+
+export async function GET(request: Request) {
+    try {
+        const sessionRes = await requireSessionUser(request);
+        if (!sessionRes.ok) return sessionRes.response;
+        const userId = sessionRes.user.id;
+
+        const customerRes = await requireCreemCustomerId(userId);
+        if (!customerRes.ok) return customerRes.response;
+        const creemCustomerId = customerRes.customerId;
+
+        const { env } = await getCloudflareContext({ async: true });
+        const envPick = env as unknown as Pick<
+            CloudflareEnv,
+            "CREEM_API_URL" | "CREEM_API_KEY"
+        >;
+        const envRes = requireCreemEnv(envPick);
+        if (!('ok' in envRes) || envRes.ok === false) return envRes.response;
+        const cf = envRes.cf;
+
+        const { ok, status, text, data } = await fetchWithRetry(
+            `${cf.CREEM_API_URL}/customers/billing`,
+            {
+                method: "POST",
+                headers: {
+                    "x-api-key": cf.CREEM_API_KEY,
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({ customer_id: creemCustomerId }),
+            },
+        );
+        if (!ok) {
+            const snippet = (text || "").slice(0, 300);
+            const mapped = _mapUpstreamToHttp(status);
+            return json(mapped, {
+                success: false,
+                error: "Failed to get portal link",
+                meta: { status, upstreamBodySnippet: snippet },
+                data: null,
+            });
+        }
+
+        const url = _ensurePortalUrl(data);
+        if (!url) {
+            return json(502, {
+                success: false,
+                error: "Invalid response from Creem: missing portal url",
+                data: null,
+            });
+        }
+        // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
+    const jsonBody = data as { url?: string; portal_url?: string; billing_url?: string };
+    const url = json?.url || json?.portal_url || json?.billing_url;
+    return typeof url === "string" && url ? url : undefined;
+}
+
+function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+function backoffWithJitter(attempt: number): number {
+    return Math.min(5000, 1000 * 2 ** (attempt - 1)) + secureRandomInt(300);
+}
+
+function isRetryableStatus(status: number): boolean {
+    return status === 429 || status >= 500;
+}
+
+async function readResponseBody(resp: Response, isJson: boolean): Promise<unknown> {
+    if (isJson) return resp.json();
+    const txt = await resp.text();
+    try {
+        return JSON.parse(txt);
+    } catch {
+        return txt;
+    }
+}
+
+
