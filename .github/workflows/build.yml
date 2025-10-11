@@ -15,8 +15,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Determine changed files
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+        with:
+          fetch-depth: 2
+      - name: Compute docs-only flag
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.before }}"
+          if [ -z "${base}" ]; then
+            base=$(git rev-list HEAD~1 -n 1 || true)
+          fi
+          if [ -z "${base}" ]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "${base}"...HEAD | tr -d '\r' || true)
+          echo "Changed files:"; echo "$files"
+          if [ -z "${files}" ]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Anything outside docs/ or README.md is considered non-docs
+          non_docs=$(echo "$files" | grep -Ev '^(README\.md|docs/)' || true)
+          if [ -z "${non_docs}" ]; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
   sonarcloud:
     name: SonarCloud
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -64,3 +103,11 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@ffc3010689be73b8e5ae0c57ce35968afd7909e8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docs-only:
+    name: Docs-only fast path
+    needs: changes
+    if: needs.changes.outputs.docs_only == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Docs-only change detected. Skipping tests and SonarCloud scan."
