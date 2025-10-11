@@ -125,6 +125,118 @@ function shouldForceAttachment(mime: string) {
     return false;
 }
 
+// -------------------- 小型内聚帮助函数，降低 uploadToR2 复杂度 --------------------
+function validateFileForUpload(
+    file: File,
+    allowedMimeTypes: string[],
+    maxSizeBytes: number,
+): { ok: true; detectedMime: string } | { ok: false; error: string } {
+    if (file.size > maxSizeBytes) {
+        return {
+            ok: false,
+            error: `File size exceeds limit (${formatMaxSize(maxSizeBytes)})`,
+        };
+    }
+    const detectedMime = file.type || "application/octet-stream";
+    if (!isMimeAllowed(detectedMime, allowedMimeTypes)) {
+        return { ok: false, error: "File type is not permitted" };
+    }
+    return { ok: true, detectedMime };
+}
+
+async function enforceUploadRateLimit(
+    rateLimit?: UploadRateLimitOptions,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!rateLimit) return { ok: true };
+    const outcome = await applyRateLimit({
+        request: rateLimit.request,
+        identifier: rateLimit.identifier,
+        uniqueToken: rateLimit.uniqueToken ?? null,
+        message: rateLimit.message ?? "Upload rate limit exceeded",
+    });
+    if (!outcome.ok) {
+        return {
+            ok: false,
+            error: rateLimit.message ?? "Upload rate limit exceeded",
+        };
+    }
+    return { ok: true };
+}
+
+async function maybeScanFile(
+    file: File,
+    requireContentScan: boolean,
+    scanFile?: (options: {
+        file: File;
+    }) => Promise<{ ok: boolean; error?: string; auditId?: string }>,
+): Promise<
+    | { ok: true; scanStatus: "skipped" | "passed"; auditId?: string }
+    | { ok: false; error: string }
+> {
+    if (!requireContentScan && typeof scanFile !== "function") {
+        return { ok: true, scanStatus: "skipped" };
+    }
+    if (typeof scanFile !== "function") {
+        return {
+            ok: false,
+            error: "Content scanning is required but no scanner was provided",
+        };
+    }
+    try {
+        const res = await scanFile({ file });
+        if (!res?.ok) {
+            return {
+                ok: false,
+                error: res?.error ?? "File content failed security scan",
+            };
+        }
+        return { ok: true, scanStatus: "passed", auditId: res.auditId };
+    } catch (error) {
+        console.error("R2 upload content scan error:", error);
+        const message =
+            error instanceof Error
+                ? error.message
+                : "File content failed security scan";
+        return { ok: false, error: message };
+    }
+}
+
+function buildR2ObjectKey(filename: string, folder: string): string {
+    const timestamp = Date.now();
+    const randomId = createRandomId();
+    const extension = sanitizeExtension(filename) || ".bin";
+    const normalizedFolder = normalizeFolder(folder);
+    return `${normalizedFolder}/${timestamp}_${randomId}${extension}`;
+}
+
+function buildHttpMetadataForUpload(mime: string, filename: string) {
+    return {
+        contentType: mime,
+        cacheControl: "public, max-age=31536000", // 1 year
+        ...(shouldForceAttachment(mime)
+            ? {
+                  contentDisposition: `attachment; filename="${encodeURIComponent(
+                      filename,
+                  )}"`,
+              }
+            : {}),
+    } as const;
+}
+
+function buildCustomMetadataForUpload(
+    file: File,
+    scanStatus: "skipped" | "passed",
+    auditId?: string,
+) {
+    return {
+        originalName: file.name,
+        uploadedAt: new Date().toISOString(),
+        size: file.size.toString(),
+        scanStatus,
+        ...(auditId ? { scanAuditId: auditId } : {}),
+    } as const;
+}
+
 export async function uploadToR2(
     file: File,
     folder: string = "uploads",
@@ -139,100 +251,42 @@ export async function uploadToR2(
         const scanFile = constraints.scanFile;
         const rateLimit = constraints.rateLimit;
 
-        if (file.size > maxSizeBytes) {
-            return {
-                success: false,
-                error: `File size exceeds limit (${formatMaxSize(maxSizeBytes)})`,
-            };
-        }
+        // 1) 基础校验：大小与类型
+        const validate = validateFileForUpload(
+            file,
+            allowedMimeTypes,
+            maxSizeBytes,
+        );
+        if (!validate.ok) return { success: false, error: validate.error };
+        const detectedMime = validate.detectedMime;
 
-        const detectedMime = file.type || "application/octet-stream";
-        if (!isMimeAllowed(detectedMime, allowedMimeTypes)) {
-            return {
-                success: false,
-                error: "File type is not permitted",
-            };
-        }
+        // 2) 频率限制（可选）
+        const rate = await enforceUploadRateLimit(rateLimit);
+        if (!rate.ok) return { success: false, error: rate.error };
 
-        if (rateLimit) {
-            const rateLimitOutcome = await applyRateLimit({
-                request: rateLimit.request,
-                identifier: rateLimit.identifier,
-                uniqueToken: rateLimit.uniqueToken ?? null,
-                message: rateLimit.message ?? "Upload rate limit exceeded",
-            });
-
-            if (!rateLimitOutcome.ok) {
-                return {
-                    success: false,
-                    error: rateLimit.message ?? "Upload rate limit exceeded",
-                };
-            }
-        }
-
-        let scanStatus: "skipped" | "passed" = "skipped";
-        let auditId: string | undefined;
-
-        if (requireContentScan || typeof scanFile === "function") {
-            if (typeof scanFile !== "function") {
-                return {
-                    success: false,
-                    error: "Content scanning is required but no scanner was provided",
-                };
-            }
-            try {
-                const scanResult = await scanFile({ file });
-                if (!scanResult?.ok) {
-                    return {
-                        success: false,
-                        error:
-                            scanResult?.error ??
-                            "File content failed security scan",
-                    };
-                }
-                scanStatus = "passed";
-                auditId = scanResult.auditId;
-            } catch (error) {
-                console.error("R2 upload content scan error:", error);
-                return {
-                    success: false,
-                    error:
-                        error instanceof Error
-                            ? error.message
-                            : "File content failed security scan",
-                };
-            }
-        }
+        // 3) 内容扫描（可选/必需）
+        const scanOutcome = await maybeScanFile(
+            file,
+            requireContentScan,
+            scanFile,
+        );
+        if (!scanOutcome.ok)
+            return { success: false, error: scanOutcome.error };
+        const { scanStatus, auditId } = scanOutcome;
 
         const { env } = await getCloudflareContext({ async: true });
 
-        const timestamp = Date.now();
-        const randomId = createRandomId();
-        const extension = sanitizeExtension(file.name) || ".bin";
-        const normalizedFolder = normalizeFolder(folder);
-        const key = `${normalizedFolder}/${timestamp}_${randomId}${extension}`;
+        const key = buildR2ObjectKey(file.name, folder);
 
         const arrayBuffer = await file.arrayBuffer();
 
         const result = await env.next_cf_app_bucket.put(key, arrayBuffer, {
-            httpMetadata: {
-                contentType: detectedMime,
-                cacheControl: "public, max-age=31536000", // 1 year
-                ...(shouldForceAttachment(detectedMime)
-                    ? {
-                          contentDisposition: `attachment; filename="${encodeURIComponent(
-                              file.name,
-                          )}"`,
-                      }
-                    : {}),
-            },
-            customMetadata: {
-                originalName: file.name,
-                uploadedAt: new Date().toISOString(),
-                size: file.size.toString(),
+            httpMetadata: buildHttpMetadataForUpload(detectedMime, file.name),
+            customMetadata: buildCustomMetadataForUpload(
+                file,
                 scanStatus,
-                ...(auditId ? { scanAuditId: auditId } : {}),
-            },
+                auditId,
+            ),
         });
 
         if (!result) {
