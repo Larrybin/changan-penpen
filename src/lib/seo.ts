@@ -517,34 +517,7 @@ function sanitizeAttributeValue(
     return trimmed;
 }
 
-function _parseAttributesRegex(
-    rawAttributes: string,
-    tag: AllowedHeadTag,
-): Record<string, string> {
-    const attributes: Record<string, string> = {};
-    const attributeRegex =
-        /([a-z0-9:-]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'>]+))?/gi;
-    for (const match of rawAttributes.matchAll(attributeRegex)) {
-        const attributeName = match[1].toLowerCase();
-        if (!isAllowedAttribute(tag, attributeName)) {
-            continue;
-        }
-        const rawValue = match[2];
-        if (!rawValue && ALLOWED_BOOLEAN_ATTRIBUTES.has(attributeName)) {
-            attributes[attributeName] = "";
-            continue;
-        }
-        const sanitizedValue = sanitizeAttributeValue(
-            attributeName,
-            rawValue,
-            tag,
-        );
-        if (sanitizedValue !== undefined) {
-            attributes[attributeName] = sanitizedValue;
-        }
-    }
-    return attributes;
-}
+// note: removed legacy regex-based attribute parser to favor linear scan version
 
 // Linear-scan strict attribute parser (no regex), preferred by sanitizeCustomHtml.
 function parseAttributes(
