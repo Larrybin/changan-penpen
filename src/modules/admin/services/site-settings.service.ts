@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+﻿import { eq } from "drizzle-orm";
 import { getDb, siteSettings } from "@/db";
 import {
     clearSiteSettingsCache,
@@ -167,6 +167,35 @@ export interface UpdateSiteSettingsInput {
     enabledLanguages?: string[];
 }
 
+function buildNextPayload(
+    basePayload: SiteSettingsPayload,
+    input: UpdateSiteSettingsInput,
+): SiteSettingsPayload {
+    const nextPayload: SiteSettingsPayload = buildNextPayload(
+        basePayload,
+        input,
+    );
+
+    if (input.enabledLanguages !== undefined) {
+        const fallbackLanguage = nextPayload.defaultLanguage ?? "en";
+        nextPayload.enabledLanguages =
+            input.enabledLanguages.length > 0
+                ? [...input.enabledLanguages]
+                : [fallbackLanguage];
+    }
+
+    if (
+        nextPayload.defaultLanguage &&
+        !nextPayload.enabledLanguages.includes(nextPayload.defaultLanguage)
+    ) {
+        nextPayload.enabledLanguages = [
+            nextPayload.defaultLanguage,
+            ...nextPayload.enabledLanguages,
+        ].filter((language, index, arr) => arr.indexOf(language) === index);
+    }
+
+    return nextPayload;
+}
 export async function updateSiteSettings(
     input: UpdateSiteSettingsInput,
     adminEmail: string,
@@ -178,39 +207,10 @@ export async function updateSiteSettings(
         : { ...EMPTY_SETTINGS };
     const now = new Date().toISOString();
 
-    const nextPayload: SiteSettingsPayload = {
-        ...basePayload,
-        ...(input.siteName !== undefined && { siteName: input.siteName }),
-        ...(input.domain !== undefined && { domain: input.domain }),
-        ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl }),
-        ...(input.faviconUrl !== undefined && { faviconUrl: input.faviconUrl }),
-        ...(input.seoTitle !== undefined && { seoTitle: input.seoTitle }),
-        ...(input.seoDescription !== undefined && {
-            seoDescription: input.seoDescription,
-        }),
-        ...(input.seoOgImage !== undefined && { seoOgImage: input.seoOgImage }),
-        sitemapEnabled:
-            input.sitemapEnabled !== undefined
-                ? Boolean(input.sitemapEnabled)
-                : basePayload.sitemapEnabled,
-        ...(input.robotsRules !== undefined && {
-            robotsRules: input.robotsRules,
-        }),
-        ...(input.brandPrimaryColor !== undefined && {
-            brandPrimaryColor: input.brandPrimaryColor,
-        }),
-        ...(input.brandSecondaryColor !== undefined && {
-            brandSecondaryColor: input.brandSecondaryColor,
-        }),
-        ...(input.brandFontFamily !== undefined && {
-            brandFontFamily: input.brandFontFamily,
-        }),
-        ...(input.headHtml !== undefined && { headHtml: input.headHtml }),
-        ...(input.footerHtml !== undefined && { footerHtml: input.footerHtml }),
-        defaultLanguage:
-            input.defaultLanguage ?? basePayload.defaultLanguage ?? "en",
-        enabledLanguages: [...basePayload.enabledLanguages],
-    };
+    const nextPayload: SiteSettingsPayload = buildNextPayload(
+        basePayload,
+        input,
+    );
 
     if (input.enabledLanguages !== undefined) {
         const fallbackLanguage = nextPayload.defaultLanguage ?? "en";
