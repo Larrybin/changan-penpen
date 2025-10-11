@@ -245,8 +245,12 @@ function renderScriptsTable() {
         "| Script | Command |",
         "| --- | --- |",
     ];
+    const escapeMdInline = (s) =>
+        String(s)
+            .replace(/([`\\|*_{}\[\]()#+\-.!])/g, "\\$1")
+            .replace(/[\r\n]+/g, " ");
     for (const n of names) {
-        const cmd = String(scripts[n] || "").replace(/\|/g, "\\|");
+        const cmd = escapeMdInline(scripts[n] || "");
         lines.push(`| \`${n}\` | \`${cmd}\` |`);
     }
     if (names.length === 0) lines.push("_No scripts_.");
@@ -284,7 +288,11 @@ function renderReadmeAutomation() {
     lines.push("| Script | Command |");
     lines.push("| --- | --- |");
     for (const n of picked) {
-        const cmd = String(scripts[n] || "").replace(/\|/g, "\\|");
+        const escapeMdInline = (s) =>
+            String(s)
+                .replace(/([`\\|*_{}\[\]()#+\-.!])/g, "\\$1")
+                .replace(/[\r\n]+/g, " ");
+        const cmd = escapeMdInline(scripts[n] || "");
         lines.push(`| \`${n}\` | \`${cmd}\` |`);
     }
     if (picked.length === 0) lines.push("_No scripts_.");
