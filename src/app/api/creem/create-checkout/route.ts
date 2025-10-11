@@ -370,7 +370,7 @@ function secureRandomInt(maxExclusive: number): number {
     const limit = Math.floor(maxUint32 / maxExclusive) * maxExclusive;
     if (g && typeof g.getRandomValues === "function") {
         // browser/recent runtime: use getRandomValues, rejection sampling
-        let rand;
+        let rand: number;
         do {
             const arr = new Uint32Array(1);
             g.getRandomValues(arr);
@@ -382,7 +382,7 @@ function secureRandomInt(maxExclusive: number): number {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const nodeCrypto =
             require("node:crypto") as typeof import("node:crypto");
-        let rand;
+        let rand: number;
         do {
             rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
         } while (rand >= limit);
