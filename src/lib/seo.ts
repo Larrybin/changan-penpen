@@ -1,4 +1,4 @@
-import type { AppLocale } from "@/i18n/config";
+﻿import type { AppLocale } from "@/i18n/config";
 import { defaultLocale, locales } from "@/i18n/config";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
@@ -81,6 +81,28 @@ const ALLOWED_ATTRIBUTES: Record<AllowedHeadTag, Set<string>> = {
 
 const ALLOWED_BOOLEAN_ATTRIBUTES = new Set(["async", "defer"]);
 
+function hasHttpScheme(input: string): boolean {
+    const lower = input.toLowerCase();
+    return lower.startsWith("http:") || lower.startsWith("https:");
+}
+
+function _isDataImageBase64(s: string): boolean {
+    const lower = s.toLowerCase();
+    if (!lower.startsWith("data:image/")) return false;
+    const comma = lower.indexOf(",");
+    if (comma === -1) return false;
+    const prefix = lower.slice(0, comma); // e.g., data:image/png;base64
+    if (!prefix.endsWith(";base64")) return false;
+    const subtype = prefix.slice(
+        "data:image/".length,
+        prefix.length - ";base64".length,
+    );
+    const allowed = new Set(["png", "jpeg", "jpg", "gif", "webp", "svg+xml"]);
+    if (!allowed.has(subtype)) return false;
+    const data = s.slice(comma + 1);
+    return /^[a-z0-9+/=]+$/i.test(data);
+}
+
 // noscript 内容允许的标签与属性（白名单）
 const ALLOWED_NOSCRIPT_TAGS = new Set([
     "a",
@@ -125,31 +147,22 @@ const NOSCRIPT_ALLOWED_ATTRS: Record<string, Set<string>> = {
 function isAllowedNoscriptAttribute(tag: string, attr: string): boolean {
     if (attr.startsWith("data-")) return true;
     if (attr.startsWith("aria-")) return true;
-    if (attr.toLowerCase().startsWith("on")) return false; // 阻断事件属性
-    if (attr.toLowerCase() === "style") return false; // 阻断内联样式
+    if (attr.toLowerCase().startsWith("on")) return false; // 阻断事件属�?    if (attr.toLowerCase() === "style") return false; // 阻断内联样式
     const set =
         NOSCRIPT_ALLOWED_ATTRS[tag as keyof typeof NOSCRIPT_ALLOWED_ATTRS];
     return Boolean(set?.has(attr));
 }
-
 function isAllowedUriScheme(url: string): boolean {
-    // 允许 https、mailto、相对路径，以及 data: 仅图片
-    if (ROOT_RELATIVE_REGEX.test(url)) return true;
-    if (PROTOCOL_RELATIVE_REGEX.test(url)) return true; // //example.com 视作 https
-    if (!ABSOLUTE_URL_REGEX.test(url)) return true; // 其他相对路径
+    if (url.startsWith("/")) return true;
+    if (url.startsWith("//")) return true; // protocol-relative
+    if (!hasHttpScheme(url)) return true; // relative paths
     try {
         const u = new URL(url, "https://example.com");
         const scheme = (u.protocol || "").toLowerCase();
         if (scheme === "http:" || scheme === "https:") return true;
     } catch {}
-    // data URL 单独判定（仅图片 MIME）
-    if (
-        /^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(
-            url,
-        )
-    )
-        return true;
-    if (/^mailto:/i.test(url)) return true;
+    // data URL (only images)
+    if (_isDataImageBase64(url)) return true;
     return false;
 }
 
@@ -161,19 +174,23 @@ function sanitizeNoscriptAttrValue(
     if (!raw) return "";
     const val = String(raw)
         .trim()
-        .replace(/^['"]|['"]$/g, "");
+        .replace(/(^['"])|(['"]$)/g, "");
     if (!val) return "";
     if (attribute === "href" || attribute === "src") {
-        // 拦截 javascript:/vbscript:/data: 非图片
-        const norm = val.replace(/\s+/g, "");
-        if (/^(?:javascript|vbscript):/i.test(norm)) return undefined;
+        // sanitize script-like schemes in URLs
+        const norm = val.replace(/\s+/g, "").toLowerCase();
+        if (norm.startsWith("javascript:") || norm.startsWith("vbscript:"))
+            return undefined;
         if (!isAllowedUriScheme(val)) return undefined;
     }
     return val;
 }
 
 function escapeHtmlText(s: string): string {
-    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return s
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
 }
 
 function serializeStartTag(
@@ -186,7 +203,7 @@ function serializeStartTag(
         if (v === "") {
             parts.push(" ", k);
         } else {
-            const safe = v.replace(/"/g, "&quot;");
+            const safe = v.replaceAll('"', "&quot;");
             parts.push(" ", k, '="', safe, '"');
         }
     }
@@ -201,8 +218,7 @@ function parseAttributesLoose(
     const re =
         /([a-zA-Z0-9:-]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>`]+)))?/g;
     let m: RegExpExecArray | null;
-    // 避免在表达式中进行赋值（Biome: noAssignInExpressions）
-    // eslint-disable-next-line no-constant-condition
+    // 避免在表达式中进行赋值（Biome: noAssignInExpressions�?    // eslint-disable-next-line no-constant-condition
     while (true) {
         m = re.exec(raw);
         if (!m) break;
@@ -219,8 +235,7 @@ function sanitizeNoscriptContent(input: string): string {
     let lastIndex = 0;
     const tagRe = /<!--[\s\S]*?-->|<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g;
     let m: RegExpExecArray | null;
-    // 避免在表达式中进行赋值（Biome: noAssignInExpressions）
-    // eslint-disable-next-line no-constant-condition
+    // 避免在表达式中进行赋值（Biome: noAssignInExpressions�?    // eslint-disable-next-line no-constant-condition
     while (true) {
         m = tagRe.exec(input);
         if (!m) break;
@@ -237,13 +252,12 @@ function sanitizeNoscriptContent(input: string): string {
 
         const rawTag = m[0];
         const name = m[1].toLowerCase();
-        const isEnd = /^<\//.test(rawTag);
+        const isEnd = rawTag.startsWith("</");
         const isSelfClosing =
-            /\/>\s*$/.test(rawTag) || name === "br" || name === "img";
+            rawTag.trimEnd().endsWith("/>") || name === "br" || name === "img";
 
         if (!ALLOWED_NOSCRIPT_TAGS.has(name)) {
-            // 非白名单标签全部丢弃（包含其起止标记）
-            continue;
+            // 非白名单标签全部丢弃（包含其起止标记�?            continue;
         }
 
         if (isEnd) {
@@ -270,9 +284,9 @@ function sanitizeNoscriptContent(input: string): string {
     return result;
 }
 
-const PROTOCOL_RELATIVE_REGEX = /^\/\//;
-const ABSOLUTE_URL_REGEX = /^(https?:)/i;
-const ROOT_RELATIVE_REGEX = /^\//;
+const _PROTOCOL_RELATIVE_REGEX = /^\/\//;
+const _ABSOLUTE_URL_REGEX = /^(https?:)/i;
+const _ROOT_RELATIVE_REGEX = /^\//;
 
 export const localeCurrencyMap: Record<AppLocale, string> = {
     en: "USD",
@@ -289,7 +303,7 @@ function normalizeBaseUrl(candidate: string): string | undefined {
     if (!trimmed) {
         return undefined;
     }
-    const prefixed = ABSOLUTE_URL_REGEX.test(trimmed)
+    const prefixed = hasHttpScheme(trimmed)
         ? trimmed
         : `https://${trimmed.replace(/^https?:\/\//i, "")}`;
     try {
@@ -339,15 +353,15 @@ export function ensureAbsoluteUrl(value: string, baseUrl: string): string {
     if (!trimmed) {
         return baseUrl;
     }
-    if (ABSOLUTE_URL_REGEX.test(trimmed)) {
+    if (hasHttpScheme(trimmed)) {
         return trimmed;
     }
-    if (PROTOCOL_RELATIVE_REGEX.test(trimmed)) {
+    if (trimmed.startsWith("//")) {
         return `https:${trimmed}`;
     }
     const normalizedBase = normalizeBaseUrl(baseUrl) ?? baseUrl;
     try {
-        if (ROOT_RELATIVE_REGEX.test(trimmed)) {
+        if (trimmed.startsWith("/")) {
             return new URL(trimmed, normalizedBase).toString();
         }
         return new URL(`/${trimmed}`, normalizedBase).toString();
@@ -360,11 +374,11 @@ export function ensureAbsoluteUrl(value: string, baseUrl: string): string {
 export function getActiveAppLocales(
     settings?: SiteSettingsPayload | null,
 ): AppLocale[] {
-    const configuredLocales = new Set<AppLocale>(locales);
+    const configuredLocales = new Set<string>(locales as readonly string[]);
     const enabled = settings?.enabledLanguages ?? [];
-    const filtered = enabled
-        .map((locale) => locale as AppLocale)
-        .filter((locale) => configuredLocales.has(locale));
+    const filtered = enabled.filter((locale): locale is AppLocale =>
+        configuredLocales.has(locale),
+    );
     if (filtered.length) {
         return Array.from(new Set(filtered));
     }
@@ -392,19 +406,19 @@ function sanitizeAttributeValue(
     if (!value) {
         return "";
     }
-    const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
+    const trimmed = value.trim().replace(/(^['"])|(['"]$)/g, "");
     if (!trimmed) {
         return "";
     }
-    if (/javascript:/i.test(trimmed)) {
+    if (trimmed.toLowerCase().startsWith("javascript:")) {
         return undefined;
     }
     if ((attribute === "src" || attribute === "href") && tag !== "meta") {
         if (
             !(
-                ABSOLUTE_URL_REGEX.test(trimmed) ||
-                PROTOCOL_RELATIVE_REGEX.test(trimmed) ||
-                ROOT_RELATIVE_REGEX.test(trimmed)
+                hasHttpScheme(trimmed) ||
+                trimmed.startsWith("//") ||
+                trimmed.startsWith("/")
             )
         ) {
             return undefined;
@@ -447,8 +461,12 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
     const nodes: SanitizedHeadNode[] = [];
 
     const lower = html.toLowerCase();
-    const allowedWithContent = ["script", "style", "noscript"] as const;
-    const allowedSelfClosing = ["meta", "link"] as const;
+    const allowedWithContent: AllowedHeadTag[] = [
+        "script",
+        "style",
+        "noscript",
+    ];
+    const allowedSelfClosing: AllowedHeadTag[] = ["meta", "link"];
 
     let i = 0;
     while (i < html.length) {
