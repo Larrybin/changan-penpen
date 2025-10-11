@@ -81,6 +81,179 @@ const ALLOWED_ATTRIBUTES: Record<AllowedHeadTag, Set<string>> = {
 
 const ALLOWED_BOOLEAN_ATTRIBUTES = new Set(["async", "defer"]);
 
+// noscript 内容允许的标签与属性（白名单）
+const ALLOWED_NOSCRIPT_TAGS = new Set([
+    "a",
+    "p",
+    "span",
+    "strong",
+    "em",
+    "b",
+    "i",
+    "u",
+    "s",
+    "small",
+    "code",
+    "pre",
+    "ul",
+    "ol",
+    "li",
+    "br",
+    "img",
+]);
+
+const NOSCRIPT_ALLOWED_ATTRS: Record<string, Set<string>> = {
+    a: new Set(["href", "title", "rel", "target"]),
+    img: new Set(["src", "alt", "width", "height", "loading"]),
+    code: new Set(["class"]),
+    pre: new Set(["class"]),
+    p: new Set(["class"]),
+    span: new Set(["class"]),
+    strong: new Set(["class"]),
+    em: new Set(["class"]),
+    b: new Set(["class"]),
+    i: new Set(["class"]),
+    u: new Set(["class"]),
+    s: new Set(["class"]),
+    small: new Set(["class"]),
+    ul: new Set(["class"]),
+    ol: new Set(["class"]),
+    li: new Set(["class"]),
+    br: new Set([]),
+};
+
+function isAllowedNoscriptAttribute(tag: string, attr: string): boolean {
+    if (attr.startsWith("data-")) return true;
+    if (attr.startsWith("aria-")) return true;
+    if (attr.toLowerCase().startsWith("on")) return false; // 阻断事件属性
+    if (attr.toLowerCase() === "style") return false; // 阻断内联样式
+    const set = NOSCRIPT_ALLOWED_ATTRS[tag as keyof typeof NOSCRIPT_ALLOWED_ATTRS];
+    return Boolean(set?.has(attr));
+}
+
+function isAllowedUriScheme(url: string): boolean {
+    // 允许 https、mailto、相对路径，以及 data: 仅图片
+    if (ROOT_RELATIVE_REGEX.test(url)) return true;
+    if (PROTOCOL_RELATIVE_REGEX.test(url)) return true; // //example.com 视作 https
+    if (!ABSOLUTE_URL_REGEX.test(url)) return true; // 其他相对路径
+    try {
+        const u = new URL(url, "https://example.com");
+        const scheme = (u.protocol || "").toLowerCase();
+        if (scheme === "http:" || scheme === "https:") return true;
+    } catch {}
+    // data URL 单独判定（仅图片 MIME）
+    if (/^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(url))
+        return true;
+    if (/^mailto:/i.test(url)) return true;
+    return false;
+}
+
+function sanitizeNoscriptAttrValue(
+    attribute: string,
+    raw: string | undefined,
+    tag: string,
+): string | undefined {
+    if (!raw) return "";
+    const val = String(raw).trim().replace(/^['"]|['"]$/g, "");
+    if (!val) return "";
+    if (attribute === "href" || attribute === "src") {
+        // 拦截 javascript:/vbscript:/data: 非图片
+        const norm = val.replace(/\s+/g, "");
+        if (/^(?:javascript|vbscript):/i.test(norm)) return undefined;
+        if (!isAllowedUriScheme(val)) return undefined;
+    }
+    return val;
+}
+
+function escapeHtmlText(s: string): string {
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function serializeStartTag(
+    tag: string,
+    attrs: Record<string, string>,
+    selfClosing: boolean,
+): string {
+    const parts: string[] = ["<", tag];
+    for (const [k, v] of Object.entries(attrs)) {
+        if (v === "") {
+            parts.push(" ", k);
+        } else {
+            const safe = v.replace(/"/g, "&quot;");
+            parts.push(" ", k, "=\"", safe, "\"");
+        }
+    }
+    parts.push(selfClosing ? "/>" : ">");
+    return parts.join("");
+}
+
+function parseAttributesLoose(raw: string): Array<{ name: string; value?: string }> {
+    const out: Array<{ name: string; value?: string }> = [];
+    const re = /([a-zA-Z0-9:-]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>`]+)))?/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(raw))) {
+        const name = m[1];
+        const value = m[3] ?? m[4] ?? m[5];
+        out.push({ name, value });
+    }
+    return out;
+}
+
+function sanitizeNoscriptContent(input: string): string {
+    if (!input) return "";
+    let result = "";
+    let lastIndex = 0;
+    const tagRe = /<!--[\s\S]*?-->|<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g;
+    let m: RegExpExecArray | null;
+    while ((m = tagRe.exec(input))) {
+        // 文本片段
+        if (m.index > lastIndex) {
+            result += escapeHtmlText(input.slice(lastIndex, m.index));
+        }
+        lastIndex = tagRe.lastIndex;
+
+        // 注释直接丢弃
+        if (!m[1]) {
+            continue;
+        }
+
+        const rawTag = m[0];
+        const name = m[1].toLowerCase();
+        const isEnd = /^<\//.test(rawTag);
+        const isSelfClosing = /\/>\s*$/.test(rawTag) || name === "br" || name === "img";
+
+        if (!ALLOWED_NOSCRIPT_TAGS.has(name)) {
+            // 非白名单标签全部丢弃（包含其起止标记）
+            continue;
+        }
+
+        if (isEnd) {
+            result += `</${name}>`;
+            continue;
+        }
+
+        const rawAttrs = m[2] || "";
+        const parsed = parseAttributesLoose(rawAttrs);
+        const safeAttrs: Record<string, string> = {};
+        for (const { name: attrNameRaw, value } of parsed) {
+            const attr = attrNameRaw.toLowerCase();
+            if (!isAllowedNoscriptAttribute(name, attr)) continue;
+            const safeVal = sanitizeNoscriptAttrValue(attr, value, name);
+            if (safeVal === undefined) continue;
+            safeAttrs[attr] = safeVal;
+        }
+        result += serializeStartTag(name, safeAttrs, isSelfClosing);
+    }
+    // 剩余文本
+    if (lastIndex < input.length) {
+        result += escapeHtmlText(input.slice(lastIndex));
+    }
+    return result;
+}
+
 const PROTOCOL_RELATIVE_REGEX = /^\/\//;
 const ABSOLUTE_URL_REGEX = /^(https?:)/i;
 const ROOT_RELATIVE_REGEX = /^\//;
@@ -266,27 +439,7 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
             const attributes = parseAttributes(match[2] ?? "", tag);
             let content = match[3] ?? "";
             if (tag === "noscript" && content) {
-                // Defensive sanitization for raw noscript HTML content
-                // 1) drop any nested <script>…</script>
-                content = content.replace(
-                    /<script[\s\S]*?>[\s\S]*?<\/script\s*>/gi,
-                    "",
-                );
-                // 2) neutralize javascript: URIs in attributes
-                content = content.replace(
-                    /(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi,
-                    '$1="#"',
-                );
-                // 3) remove inline event handlers like onclick= …
-                content = content.replace(
-                    /\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
-                    "",
-                );
-                // 4) optionally drop risky embedding tags
-                content = content.replace(
-                    /<\/?(iframe|object|embed)[^>]*>/gi,
-                    "",
-                );
+                content = sanitizeNoscriptContent(content);
             }
             nodes.push({ tag, attributes, content });
             continue;
