@@ -220,6 +220,14 @@ function serializeStartTag(
 // removed parseAttributesLoose\n
 
 // 新的、基于线性扫描的实现，降低正则与认知复杂度
+function isAsciiLetterCode(c: number): boolean {
+    return (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+}
+function isAlphaNumCode(c: number): boolean {
+    return (
+        (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57)
+    );
+}
 function sanitizeNoscriptContent(input: string): string {
     if (!input) return "";
     let i = 0;
@@ -249,8 +257,7 @@ function sanitizeNoscriptContent(input: string): string {
         const nameStart = j;
         if (j >= len) break;
         const first = input.charCodeAt(j);
-        const isLetter =
-            (first >= 65 && first <= 90) || (first >= 97 && first <= 122);
+        const isLetter = isAsciiLetterCode(first);
         if (!isLetter) {
             // 非标签起始，按文本处理
             out += "&lt;";
@@ -259,11 +266,8 @@ function sanitizeNoscriptContent(input: string): string {
         }
         j++;
         while (j < len) {
-            const c = input.charCodeAt(j);
-            const isAlphaNum =
-                (c >= 97 && c <= 122) ||
-                (c >= 65 && c <= 90) ||
-                (c >= 48 && c <= 57);
+            const _c = input.charCodeAt(j);
+            const isAlphaNum = (c: number) => isAlphaNumCode(c);
             if (!isAlphaNum) break;
             j++;
         }
