@@ -365,16 +365,28 @@ function secureRandomInt(maxExclusive: number): number {
     if (maxExclusive <= 0) return 0;
     const g: Crypto | undefined = (globalThis as unknown as { crypto?: Crypto })
         .crypto;
+    // 2^32
+    const maxUint32 = 0x100000000;
+    const limit = Math.floor(maxUint32 / maxExclusive) * maxExclusive;
     if (g && typeof g.getRandomValues === "function") {
-        const arr = new Uint32Array(1);
-        g.getRandomValues(arr);
-        return arr[0] % maxExclusive;
+        // browser/recent runtime: use getRandomValues, rejection sampling
+        let rand;
+        do {
+            const arr = new Uint32Array(1);
+            g.getRandomValues(arr);
+            rand = arr[0];
+        } while (rand >= limit);
+        return rand % maxExclusive;
     }
     try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const nodeCrypto =
             require("node:crypto") as typeof import("node:crypto");
-        return nodeCrypto.randomBytes(4).readUInt32BE(0) % maxExclusive;
+        let rand;
+        do {
+            rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
+        } while (rand >= limit);
+        return rand % maxExclusive;
     } catch {}
     return 0;
 }
