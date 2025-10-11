@@ -418,7 +418,12 @@ function sanitizeAttributeValue(
     if (!trimmed) {
         return "";
     }
-    if (trimmed.toLowerCase().startsWith("javascript:")) {
+    const lowered = trimmed.toLowerCase();
+    if (
+        lowered.startsWith("javascript:") ||
+        lowered.startsWith("data:") ||
+        lowered.startsWith("vbscript:")
+    ) {
         return undefined;
     }
     if ((attribute === "src" || attribute === "href") && tag !== "meta") {
