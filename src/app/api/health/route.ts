@@ -291,7 +291,12 @@ async function checkExternalServices(
         const headers: Record<string, string> = {};
         headers.authorization = `Bearer ${bearer}`;
 
-        const endpointBase = base.replace(/\/+$/, "");
+        // 避免使用正则修剪结尾斜杠，消除潜在回溯告警
+        let end = base.length - 1;
+        while (end >= 0 && base.charCodeAt(end) === 47 /* '/' */) {
+            end--;
+        }
+        const endpointBase = base.slice(0, end + 1);
         const candidates = ["/status", ""]; // 优先尝试 /status，其次根路径
 
         const timeoutMs = 4000;
