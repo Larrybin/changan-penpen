@@ -176,7 +176,7 @@ function sanitizeNoscriptAttrValue(
     if (!raw) return "";
     const val = String(raw)
         .trim()
-        .replace(/(^['"])|(['"]$)/g, "");
+        .replace(/(?:^['"]|['"]$)/g, "");
     if (!val) return "";
     if (attribute === "href" || attribute === "src") {
         // sanitize script-like schemes in URLs
@@ -364,8 +364,6 @@ function parseNoscriptAttributesLinear(
     return attrs;
 }
 
-// Removed unused regex constants in favor of String APIs
-
 export const localeCurrencyMap: Record<AppLocale, string> = {
     en: "USD",
     de: "EUR",
@@ -491,7 +489,7 @@ function sanitizeAttributeValue(
     if (!value) {
         return "";
     }
-    const trimmed = value.trim().replace(/(^['"])|(['"]$)/g, "");
+    const trimmed = value.trim().replace(/(?:^['"]|['"]$)/g, "");
     if (!trimmed) {
         return "";
     }
@@ -517,9 +515,6 @@ function sanitizeAttributeValue(
     return trimmed;
 }
 
-// note: removed legacy regex-based attribute parser to favor linear scan version
-
-// Linear-scan strict attribute parser (no regex), preferred by sanitizeCustomHtml.
 function parseAttributes(
     rawAttributes: string,
     tag: AllowedHeadTag,
