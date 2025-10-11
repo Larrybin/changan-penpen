@@ -218,10 +218,8 @@ export async function POST(request: Request) {
 
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
-            const isAuthErr = status === 401 || status === 403;
-            const isClientErr =
                 status === 400 || status === 404 || status === 422;
-            const mapped = isAuthErr ? 401 : isClientErr ? 400 : 502;
+            const mapped = _mapUpstreamToHttp(status);
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -241,10 +239,8 @@ export async function POST(request: Request) {
             );
         }
 
-        type CreateCheckoutResponse = { checkout_url?: string };
-        const json = data as CreateCheckoutResponse;
-        const checkoutUrl = json?.checkout_url;
-        if (!checkoutUrl || typeof checkoutUrl !== "string") {
+        const checkoutUrl = _ensureCheckoutUrl(data);
+        if (!checkoutUrl) {
             return new Response(
                 JSON.stringify({
                     success: false,
@@ -257,7 +253,8 @@ export async function POST(request: Request) {
                 },
             );
         }
-// 标准化字段：data.checkoutUrl；附带 meta.raw 便于调试
+        // 标准化字段：data.checkoutUrl；附带 meta.raw 便于调试
+        const json = data as { checkout_url?: string };
         return new Response(
             JSON.stringify({
                 success: true,
