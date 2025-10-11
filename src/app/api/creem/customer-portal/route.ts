@@ -185,9 +185,9 @@ function secureRandomInt(maxExclusive: number): number {
         const nodeCrypto =
             require("node:crypto") as typeof import("node:crypto");
         // Remove modulo bias: use rejection sampling
-        const range = 0xFFFFFFFF + 1;
+        const range = 0xffffffff + 1;
         const limit = Math.floor(range / maxExclusive) * maxExclusive;
-        let rand;
+        let rand: number;
         do {
             rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
         } while (rand >= limit);
