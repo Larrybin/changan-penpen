@@ -322,6 +322,10 @@ timeStart("biome-write");
 BIOME_WRITE_RAN = tryRun("pnpm exec biome check . --write --unsafe");
 timeEnd("biome-write");
 
+// After applying Biome fixes, stage all changes so later commit picks them up.
+// This ensures files auto-formatted by Biome are included even if not previously staged.
+tryRun("git add -A");
+
 if (DO_CF_TYPEGEN) {
     timeStart("cf-typegen");
     CF_TYPEGEN = tryRun("pnpm run cf-typegen");
