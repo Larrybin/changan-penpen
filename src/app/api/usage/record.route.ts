@@ -60,10 +60,17 @@ export async function POST(request: Request) {
             { status: 200, headers: { "Content-Type": "application/json" } },
         );
     } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        return new Response(JSON.stringify({ success: false, error: msg }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        });
+        console.error("[api/usage/record] error:", error);
+        return new Response(
+            JSON.stringify({
+                success: false,
+                error: "Internal server error",
+                code: "ERR_UNEXPECTED",
+            }),
+            {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+            },
+        );
     }
 }

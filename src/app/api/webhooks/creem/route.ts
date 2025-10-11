@@ -115,12 +115,14 @@ export async function POST(request: Request) {
             headers: { "Content-Type": "application/json" },
         });
     } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        console.error("[creem webhook] error:", msg);
-        return new Response(JSON.stringify({ error: msg }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        });
+        console.error("[creem webhook] error:", error);
+        return new Response(
+            JSON.stringify({ error: "Internal server error", code: "ERR_UNEXPECTED" }),
+            {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+            },
+        );
     }
 }
 
