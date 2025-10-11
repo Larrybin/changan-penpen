@@ -443,31 +443,71 @@ function parseAttributes(
 }
 
 export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
-    if (!html) {
-        return [];
-    }
+    if (!html) return [];
     const nodes: SanitizedHeadNode[] = [];
-    const nodeRegex =
-        /<(script|style|noscript)([^>]*)>([\s\S]*?)<\/\1\s*>|<(meta|link)([^>]*)\/?\s*>/gi;
-    for (const match of html.matchAll(nodeRegex)) {
-        if (match[1]) {
-            const tag = match[1].toLowerCase() as AllowedHeadTag;
-            const attributes = parseAttributes(match[2] ?? "", tag);
-            let content = match[3] ?? "";
-            if (tag === "noscript" && content) {
-                content = sanitizeNoscriptContent(content);
-            }
-            nodes.push({ tag, attributes, content });
+
+    const lower = html.toLowerCase();
+    const allowedWithContent = ["script", "style", "noscript"] as const;
+    const allowedSelfClosing = ["meta", "link"] as const;
+
+    let i = 0;
+    while (i < html.length) {
+        const lt = lower.indexOf("<", i);
+        if (lt === -1) break;
+
+        // Skip comments quickly
+        if (lower.startsWith("<!--", lt)) {
+            const endComment = lower.indexOf("-->", lt + 4);
+            i = endComment === -1 ? html.length : endComment + 3;
             continue;
         }
-        if (match[4]) {
-            const tag = match[4].toLowerCase() as AllowedHeadTag;
-            const attributes = parseAttributes(match[5] ?? "", tag);
-            nodes.push({
-                tag,
-                attributes,
-            });
+
+        // Try content tags first
+        let matched = false;
+        for (const tag of allowedWithContent) {
+            const open = `<${tag}`;
+            if (!lower.startsWith(open, lt)) continue;
+            matched = true;
+            const gt = html.indexOf(">", lt + open.length);
+            if (gt === -1) {
+                i = html.length;
+                break;
+            }
+            const rawAttrs = html.slice(lt + open.length, gt);
+            const close = `</${tag}>`;
+            const closeIdx = lower.indexOf(close, gt + 1);
+            const content = closeIdx === -1 ? "" : html.slice(gt + 1, closeIdx);
+            const attributes = parseAttributes(rawAttrs, tag);
+            let safeContent = content;
+            if (tag === "noscript" && content) {
+                safeContent = sanitizeNoscriptContent(content);
+            }
+            nodes.push({ tag, attributes, content: safeContent });
+            i = closeIdx === -1 ? gt + 1 : closeIdx + close.length;
+            break;
         }
+        if (matched) continue;
+
+        // Try self-closing tags
+        for (const tag of allowedSelfClosing) {
+            const open = `<${tag}`;
+            if (!lower.startsWith(open, lt)) continue;
+            matched = true;
+            const gt = html.indexOf(">", lt + open.length);
+            if (gt === -1) {
+                i = html.length;
+                break;
+            }
+            const rawAttrs = html.slice(lt + open.length, gt);
+            const attributes = parseAttributes(rawAttrs, tag);
+            nodes.push({ tag, attributes });
+            i = gt + 1;
+            break;
+        }
+        if (matched) continue;
+
+        // Not an allowed tag; skip this '<'
+        i = lt + 1;
     }
     return nodes;
 }
