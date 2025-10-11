@@ -247,7 +247,8 @@ function renderScriptsTable() {
     ];
     const escapeMdInline = (s) =>
         String(s)
-            .replace(/([`\\|*_{}\[\]()#+\-.!])/g, "\\$1")
+            // 在字符类中无需转义 '['，但需要保留对 ']' 与 '-' 的转义
+            .replace(/([`\\|*_{}[\]()#+\-.!])/g, "\\$1")
             .replace(/[\r\n]+/g, " ");
     for (const n of names) {
         const cmd = escapeMdInline(scripts[n] || "");
@@ -290,7 +291,7 @@ function renderReadmeAutomation() {
     for (const n of picked) {
         const escapeMdInline = (s) =>
             String(s)
-                .replace(/([`\\|*_{}\[\]()#+\-.!])/g, "\\$1")
+                .replace(/([`\\|*_{}[\]()#+\-.!])/g, "\\$1")
                 .replace(/[\r\n]+/g, " ");
         const cmd = escapeMdInline(scripts[n] || "");
         lines.push(`| \`${n}\` | \`${cmd}\` |`);

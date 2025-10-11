@@ -117,7 +117,10 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error("[creem webhook] error:", error);
         return new Response(
-            JSON.stringify({ error: "Internal server error", code: "ERR_UNEXPECTED" }),
+            JSON.stringify({
+                error: "Internal server error",
+                code: "ERR_UNEXPECTED",
+            }),
             {
                 status: 500,
                 headers: { "Content-Type": "application/json" },

@@ -127,7 +127,8 @@ function isAllowedNoscriptAttribute(tag: string, attr: string): boolean {
     if (attr.startsWith("aria-")) return true;
     if (attr.toLowerCase().startsWith("on")) return false; // 阻断事件属性
     if (attr.toLowerCase() === "style") return false; // 阻断内联样式
-    const set = NOSCRIPT_ALLOWED_ATTRS[tag as keyof typeof NOSCRIPT_ALLOWED_ATTRS];
+    const set =
+        NOSCRIPT_ALLOWED_ATTRS[tag as keyof typeof NOSCRIPT_ALLOWED_ATTRS];
     return Boolean(set?.has(attr));
 }
 
@@ -142,7 +143,11 @@ function isAllowedUriScheme(url: string): boolean {
         if (scheme === "http:" || scheme === "https:") return true;
     } catch {}
     // data URL 单独判定（仅图片 MIME）
-    if (/^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(url))
+    if (
+        /^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(
+            url,
+        )
+    )
         return true;
     if (/^mailto:/i.test(url)) return true;
     return false;
@@ -151,10 +156,12 @@ function isAllowedUriScheme(url: string): boolean {
 function sanitizeNoscriptAttrValue(
     attribute: string,
     raw: string | undefined,
-    tag: string,
+    _tag: string,
 ): string | undefined {
     if (!raw) return "";
-    const val = String(raw).trim().replace(/^['"]|['"]$/g, "");
+    const val = String(raw)
+        .trim()
+        .replace(/^['"]|['"]$/g, "");
     if (!val) return "";
     if (attribute === "href" || attribute === "src") {
         // 拦截 javascript:/vbscript:/data: 非图片
@@ -166,10 +173,7 @@ function sanitizeNoscriptAttrValue(
 }
 
 function escapeHtmlText(s: string): string {
-    return s
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function serializeStartTag(
@@ -183,18 +187,25 @@ function serializeStartTag(
             parts.push(" ", k);
         } else {
             const safe = v.replace(/"/g, "&quot;");
-            parts.push(" ", k, "=\"", safe, "\"");
+            parts.push(" ", k, '="', safe, '"');
         }
     }
     parts.push(selfClosing ? "/>" : ">");
     return parts.join("");
 }
 
-function parseAttributesLoose(raw: string): Array<{ name: string; value?: string }> {
+function parseAttributesLoose(
+    raw: string,
+): Array<{ name: string; value?: string }> {
     const out: Array<{ name: string; value?: string }> = [];
-    const re = /([a-zA-Z0-9:-]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>`]+)))?/g;
+    const re =
+        /([a-zA-Z0-9:-]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>`]+)))?/g;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(raw))) {
+    // 避免在表达式中进行赋值（Biome: noAssignInExpressions）
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        m = re.exec(raw);
+        if (!m) break;
         const name = m[1];
         const value = m[3] ?? m[4] ?? m[5];
         out.push({ name, value });
@@ -208,7 +219,11 @@ function sanitizeNoscriptContent(input: string): string {
     let lastIndex = 0;
     const tagRe = /<!--[\s\S]*?-->|<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g;
     let m: RegExpExecArray | null;
-    while ((m = tagRe.exec(input))) {
+    // 避免在表达式中进行赋值（Biome: noAssignInExpressions）
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        m = tagRe.exec(input);
+        if (!m) break;
         // 文本片段
         if (m.index > lastIndex) {
             result += escapeHtmlText(input.slice(lastIndex, m.index));
@@ -223,7 +238,8 @@ function sanitizeNoscriptContent(input: string): string {
         const rawTag = m[0];
         const name = m[1].toLowerCase();
         const isEnd = /^<\//.test(rawTag);
-        const isSelfClosing = /\/>\s*$/.test(rawTag) || name === "br" || name === "img";
+        const isSelfClosing =
+            /\/>\s*$/.test(rawTag) || name === "br" || name === "img";
 
         if (!ALLOWED_NOSCRIPT_TAGS.has(name)) {
             // 非白名单标签全部丢弃（包含其起止标记）
