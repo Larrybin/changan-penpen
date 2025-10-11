@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { AppLocale } from "@/i18n/config";
@@ -47,7 +47,7 @@ export default async function UsagePage() {
     const toDate = formatDate(end);
     const rows = await getUsageDaily(session.user.id, fromDate, toDate);
 
-    // 按日期→feature 分组
+    // 鎸夋棩鏈熲啋feature 鍒嗙粍
     const byDate: Record<
         string,
         { feature: string; total: number; unit: string }[]
