@@ -86,7 +86,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test (Vitest with coverage lcov)
-        run: >-
+        run: >
           pnpm exec vitest run --coverage
           --coverage.reporter=lcov
           --coverage.reporter=json-summary
@@ -95,19 +95,12 @@ jobs:
       - name: Ensure coverage exists
         run: |
           if [ ! -f coverage/lcov.info ]; then
-            echo "coverage/lcov.info not found. Ensure tests generated coverage.";
-            exit 1;
-          fi
+            echo "coverage/lcov.info not found"; exit 1; fi
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@ffc3010689be73b8e5ae0c57ce35968afd7909e8
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-  docs-only:
-    name: Docs-only fast path
-    needs: changes
-    if: needs.changes.outputs.docs_only == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Docs-only change detected. Skipping tests and SonarCloud scan."
+        docs-only:
+          name: Docs-only fast path
+          needs: changes
+          if: needs.changes.outputs.docs_only == 'true'
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo "Docs-only change detected. Skipping tests and SonarCloud scan."

@@ -47,9 +47,8 @@
 ### Workflows Overview (auto)
 | Workflow | Triggers | File |
 | --- | --- | --- |
-| CI |  | .github/workflows/ci.yml |
-| Dependabot Auto‑Merge |  | .github/workflows/dependabot-automerge.yml |
-| Deploy Next.js App to Cloudflare |  | .github/workflows/deploy.yml |
-| SonarCloud |  | .github/workflows/sonarcloud.yml |
+| Build | push, pull_request | .github/workflows/build.yml |
+| CI | workflow_dispatch, push, pull_request, workflow_call | .github/workflows/ci.yml |
+| Dependabot Auto‑Merge | pull_request_target | .github/workflows/dependabot-automerge.yml |
+| Deploy Next.js App to Cloudflare | workflow_dispatch, push, pull_request | .github/workflows/deploy.yml |
 <!-- DOCSYNC:WORKFLOWS_TABLE END -->
-
