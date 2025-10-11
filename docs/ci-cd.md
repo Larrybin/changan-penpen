@@ -52,3 +52,5 @@
 | Dependabot Auto‑Merge | pull_request_target | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare | workflow_dispatch, push, pull_request | .github/workflows/deploy.yml |
 <!-- DOCSYNC:WORKFLOWS_TABLE END -->
+
+<!-- sync: workflows updated in build.yml; table kept in sync by autogen -->

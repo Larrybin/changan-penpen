@@ -97,10 +97,10 @@ jobs:
           if [ ! -f coverage/lcov.info ]; then
             echo "coverage/lcov.info not found"; exit 1; fi
 
-        docs-only:
-          name: Docs-only fast path
-          needs: changes
-          if: needs.changes.outputs.docs_only == 'true'
-          runs-on: ubuntu-latest
-          steps:
-            - run: echo "Docs-only change detected. Skipping tests and SonarCloud scan."
+  docs-only:
+    name: Docs-only fast path
+    needs: changes
+    if: needs.changes.outputs.docs_only == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Docs-only change detected. Skipping tests and SonarCloud scan."
