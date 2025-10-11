@@ -217,78 +217,7 @@ function serializeStartTag(
     return parts.join("");
 }
 
-function parseAttributesLoose(
-    raw: string,
-): Array<{ name: string; value?: string }> {
-    const out: Array<{ name: string; value?: string }> = [];
-    const re =
-        /([a-zA-Z0-9:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>`]+)))?/g;
-    let m: RegExpExecArray | null;
-    // 避免在表达式中进行赋值（Biome: noAssignInExpressions�?    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        m = re.exec(raw);
-        if (!m) break;
-        const name = m[1];
-        const value = m[2] ?? m[3] ?? m[4];
-        out.push({ name, value });
-    }
-    return out;
-}
-
-function _sanitizeNoscriptContentLegacy(input: string): string {
-    if (!input) return "";
-    let result = "";
-    let lastIndex = 0;
-    const tagRe = /<!--[\s\S]*?-->|<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g;
-    let m: RegExpExecArray | null;
-    // 避免在表达式中进行赋值（Biome: noAssignInExpressions�?    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        m = tagRe.exec(input);
-        if (!m) break;
-        // 文本片段
-        if (m.index > lastIndex) {
-            result += escapeHtmlText(input.slice(lastIndex, m.index));
-        }
-        lastIndex = tagRe.lastIndex;
-
-        // 注释直接丢弃
-        if (!m[1]) {
-            continue;
-        }
-
-        const rawTag = m[0];
-        const name = m[1].toLowerCase();
-        const isEnd = rawTag.startsWith("</");
-        const isSelfClosing =
-            rawTag.trimEnd().endsWith("/>") || name === "br" || name === "img";
-
-        if (!ALLOWED_NOSCRIPT_TAGS.has(name)) {
-            // 非白名单标签全部丢弃（包含其起止标记�?            continue;
-        }
-
-        if (isEnd) {
-            result += `</${name}>`;
-            continue;
-        }
-
-        const rawAttrs = m[2] || "";
-        const parsed = parseAttributesLoose(rawAttrs);
-        const safeAttrs: Record<string, string> = {};
-        for (const { name: attrNameRaw, value } of parsed) {
-            const attr = attrNameRaw.toLowerCase();
-            if (!isAllowedNoscriptAttribute(name, attr)) continue;
-            const safeVal = sanitizeNoscriptAttrValue(attr, value, name);
-            if (safeVal === undefined) continue;
-            safeAttrs[attr] = safeVal;
-        }
-        result += serializeStartTag(name, safeAttrs, isSelfClosing);
-    }
-    // 剩余文本
-    if (lastIndex < input.length) {
-        result += escapeHtmlText(input.slice(lastIndex));
-    }
-    return result;
-}
+// removed parseAttributesLoose\n
 
 // 新的、基于线性扫描的实现，降低正则与认知复杂度
 function sanitizeNoscriptContent(input: string): string {
@@ -362,19 +291,77 @@ function sanitizeNoscriptContent(input: string): string {
             continue;
         }
 
-        const safeAttrs: Record<string, string> = {};
-        const parsed = parseAttributesLoose(rawInside);
-        for (const { name: attrNameRaw, value } of parsed) {
-            const attr = attrNameRaw.toLowerCase();
-            if (!isAllowedNoscriptAttribute(name, attr)) continue;
-            const safeVal = sanitizeNoscriptAttrValue(attr, value, name);
-            if (safeVal === undefined) continue;
-            safeAttrs[attr] = safeVal;
-        }
+        const safeAttrs = parseNoscriptAttributesLinear(rawInside, name);
         out += serializeStartTag(name, safeAttrs, isSelfClosing);
         i = gt + 1;
     }
     return out;
+}
+
+// 线性扫描解析 noscript 内部标签属性，使用 noscript 白名单与专用净化
+function parseNoscriptAttributesLinear(
+    raw: string,
+    tag: string,
+): Record<string, string> {
+    const attrs: Record<string, string> = {};
+    const len = raw.length;
+    let i = 0;
+    const isWs = (c: number) => c === 32 || c === 10 || c === 13 || c === 9;
+    const skipWs = () => {
+        while (i < len && isWs(raw.charCodeAt(i))) i++;
+    };
+    const readName = (): string | null => {
+        const start = i;
+        while (i < len) {
+            const ch = raw.charCodeAt(i);
+            const isAlpha = (ch >= 97 && ch <= 122) || (ch >= 65 && ch <= 90);
+            const isDigit = ch >= 48 && ch <= 57;
+            const isOther = ch === 45 /*-*/ || ch === 58 /*:*/;
+            if (!(isAlpha || isDigit || isOther)) break;
+            i++;
+        }
+        if (i === start) return null;
+        return raw.slice(start, i);
+    };
+    const readValue = (): string | undefined => {
+        if (i >= len) return undefined;
+        const ch = raw.charAt(i);
+        if (ch === '"' || ch === "'") {
+            const quote = ch;
+            const start = i;
+            i++;
+            while (i < len && raw.charAt(i) !== quote) i++;
+            if (i < len) i++;
+            return raw.slice(start, i);
+        }
+        const start = i;
+        while (i < len && !isWs(raw.charCodeAt(i))) i++;
+        return raw.slice(start, i);
+    };
+
+    while (i < len) {
+        skipWs();
+        const rawName = readName();
+        if (!rawName) break;
+        const attr = rawName.toLowerCase();
+        skipWs();
+        let rawValue: string | undefined;
+        if (raw.charAt(i) === "=") {
+            i++;
+            skipWs();
+            rawValue = readValue();
+        }
+        if (!isAllowedNoscriptAttribute(tag, attr)) continue;
+        if (!rawValue && attr && attr in Object.prototype) continue;
+        if (!rawValue && attr) {
+            // boolean attribute allowed
+            attrs[attr] = "";
+            continue;
+        }
+        const safeVal = sanitizeNoscriptAttrValue(attr, rawValue, tag);
+        if (safeVal !== undefined) attrs[attr] = safeVal;
+    }
+    return attrs;
 }
 
 // Removed unused regex constants in favor of String APIs
