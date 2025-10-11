@@ -17,5 +17,9 @@
         "source.organizeImports.biome": "explicit"
     },
     "claudeCodeChat.permissions.yoloMode": true,
-    "chatgpt.openOnStartup": true
+    "chatgpt.openOnStartup": true,
+    "sonarlint.connectedMode.project": {
+        "connectionId": "larrybin",
+        "projectKey": "Larrybin_changan-penpen"
+    }
 }
