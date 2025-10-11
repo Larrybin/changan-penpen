@@ -184,7 +184,14 @@ function secureRandomInt(maxExclusive: number): number {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const nodeCrypto =
             require("node:crypto") as typeof import("node:crypto");
-        return nodeCrypto.randomBytes(4).readUInt32BE(0) % maxExclusive;
+        // Remove modulo bias: use rejection sampling
+        const range = 0xFFFFFFFF + 1;
+        const limit = Math.floor(range / maxExclusive) * maxExclusive;
+        let rand;
+        do {
+            rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
+        } while (rand >= limit);
+        return rand % maxExclusive;
     } catch {}
     return 0;
 }
