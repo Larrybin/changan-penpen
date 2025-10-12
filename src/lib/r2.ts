@@ -341,13 +341,16 @@ export async function listR2Files(options?: {
     const limit = options?.limit ?? 100;
     const cursor = options?.cursor;
     try {
-        const res = await env.next_cf_app_bucket.list({
+        const {
+            truncated,
+            cursor: bucketCursor,
+            objects,
+        } = await env.next_cf_app_bucket.list({
             prefix,
             limit,
             cursor,
         });
-        const nextCursor = res.truncated ? res.cursor : undefined;
-        const objects = res.objects ?? [];
+        const nextCursor = truncated ? bucketCursor : undefined;
         return { objects, cursor: nextCursor };
     } catch (error) {
         console.error("Error listing R2 files", error);
