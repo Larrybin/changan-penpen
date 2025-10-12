@@ -416,6 +416,13 @@ async function checkExternalServices(
                     return { ok: true };
                 }
             } catch (_error) {
+                try {
+                    console.debug("external connectivity check failed", {
+                        url,
+                        error: _error,
+                    });
+                } catch {}
+                // 继续尝试下一个候选
                 // 继续尝试下一个候选
             }
         }
