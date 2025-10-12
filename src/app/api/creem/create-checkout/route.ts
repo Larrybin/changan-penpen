@@ -125,22 +125,43 @@ export async function POST(request: Request) {
             );
         }
 
-        const { env } = await getCloudflareContext({ async: true });
-        const cf = env as unknown as Pick<
+        const cfContext = await getCloudflareContext({ async: true });
+        const cf = cfContext.env as unknown as Pick<
             CloudflareEnv,
             | "RATE_LIMITER"
             | "CREEM_API_URL"
             | "CREEM_API_KEY"
             | "CREEM_SUCCESS_URL"
             | "CREEM_CANCEL_URL"
+            | "UPSTASH_REDIS_REST_URL"
+            | "UPSTASH_REDIS_REST_TOKEN"
         >;
+        const maybeCtx = (
+            cfContext as {
+                ctx?: { waitUntil?: (promise: Promise<unknown>) => void };
+            }
+        ).ctx;
+        const waitUntil =
+            typeof maybeCtx?.waitUntil === "function"
+                ? maybeCtx.waitUntil.bind(maybeCtx)
+                : undefined;
 
         const rateLimitResult = await applyRateLimit({
             request,
             identifier: "creem:create-checkout",
-            uniqueToken: session.user.id,
-            env: { RATE_LIMITER: cf.RATE_LIMITER },
+            env: {
+                RATE_LIMITER: cf.RATE_LIMITER,
+                UPSTASH_REDIS_REST_URL: cf.UPSTASH_REDIS_REST_URL,
+                UPSTASH_REDIS_REST_TOKEN: cf.UPSTASH_REDIS_REST_TOKEN,
+            },
             message: "Too many checkout attempts",
+            upstash: {
+                strategy: { type: "sliding", requests: 3, window: "10 s" },
+                analytics: true,
+                prefix: "@ratelimit/checkout",
+                includeHeaders: true,
+            },
+            waitUntil,
         });
         if (!rateLimitResult.ok) {
             return rateLimitResult.response;

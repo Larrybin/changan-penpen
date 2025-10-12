@@ -23,6 +23,8 @@ declare namespace Cloudflare {
                 CREEM_SUCCESS_URL: string;
                 CREEM_CANCEL_URL: string;
                 CREEM_LOG_WEBHOOK_SIGNATURE: string;
+                UPSTASH_REDIS_REST_URL: string;
+                UPSTASH_REDIS_REST_TOKEN: string;
                 HEALTH_ACCESS_TOKEN?: string;
                 ADMIN_FORCE_SECURE_COOKIES?: string;
                 SENTRY_DSN?: string;
@@ -48,6 +50,8 @@ declare namespace Cloudflare {
 }
 interface CloudflareEnv extends Cloudflare.Env {
         RATE_LIMITER: RateLimit;
+        UPSTASH_REDIS_REST_URL: string;
+        UPSTASH_REDIS_REST_TOKEN: string;
 }
 
 // Begin runtime types

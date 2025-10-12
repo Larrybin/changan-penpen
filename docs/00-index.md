@@ -28,6 +28,7 @@
 1. [troubleshooting.md](troubleshooting.md) — Common issues, diagnostic commands, fix scripts
 2. [security.md](security.md) — Principle of least privilege, dependency security, pinned Actions
 3. [style-guide.md](style-guide.md) — Code, commit, and docs style
+4. [upstash-ratelimit.md](upstash-ratelimit.md) — Upstash integration for Workers edge throttling
 
 ## Collaboration & Release
 1. [contributing.md](contributing.md) — Contribution flow, PR template, test requirements

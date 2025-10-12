@@ -21,6 +21,8 @@ declare namespace Cloudflare {
         CF_ACCOUNT_ID?: string;
         CF_PAGES?: string;
         CF_WORKER?: string;
+        UPSTASH_REDIS_REST_URL?: string;
+        UPSTASH_REDIS_REST_TOKEN?: string;
         // for rate limiter binding used in applyRateLimit
         RATE_LIMITER?: RateLimitBinding;
     }
