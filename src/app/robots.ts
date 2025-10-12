@@ -1,4 +1,3 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { MetadataRoute } from "next";
 
 import { resolveAppUrl } from "@/lib/seo";
@@ -6,16 +5,9 @@ import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.s
 
 export default async function robots(): Promise<MetadataRoute.Robots | string> {
     const settings = await getSiteSettingsPayload();
-    let envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
-    if (!envAppUrl) {
-        try {
-            const { env } = await getCloudflareContext({ async: true });
-            envAppUrl = env.NEXT_PUBLIC_APP_URL;
-        } catch (error) {
-            console.warn("Falling back to process env for robots", { error });
-            envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-        }
-    }
+    // 避免在构建时触发 Cloudflare runtime（Windows/CI 上易崩溃）
+    // 仅使用进程环境变量，缺省时由 resolveAppUrl 回退到站点设置
+    const envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
     const baseUrl = resolveAppUrl(settings, {
         envAppUrl,
     });

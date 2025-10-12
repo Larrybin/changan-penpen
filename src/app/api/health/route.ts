@@ -43,17 +43,35 @@ async function checkDb(): Promise<CheckResult> {
     }
 }
 
+type R2ListLike = { list: (options?: unknown) => Promise<unknown> };
+type R2EnvLike = { next_cf_app_bucket: R2ListLike };
+
+function hasR2Bucket(env: unknown): env is R2EnvLike {
+    try {
+        const rec = env as Record<string, unknown> | null | undefined;
+        const bucket = (rec as any)?.next_cf_app_bucket as
+            | { list?: unknown }
+            | undefined;
+        return (
+            !!bucket &&
+            typeof (bucket as { list?: unknown }).list === "function"
+        );
+    } catch {
+        return false;
+    }
+}
+
 async function checkR2(env: CloudflareBindings): Promise<CheckResult> {
     try {
         // 确认绑定存在
-        if (!env || !("next_cf_app_bucket" in env)) {
+        if (!hasR2Bucket(env)) {
             return {
                 ok: false,
                 error: "R2 binding next_cf_app_bucket missing",
             };
         }
         // 列表请求（limit=1）验证可访问性
-        await (env as unknown as CloudflareEnv).next_cf_app_bucket.list({
+        await env.next_cf_app_bucket.list({
             limit: 1,
         });
         return { ok: true };
@@ -275,7 +293,7 @@ async function checkEnvAndBindings(
 
         // 检查关键绑定是否存在
         const missingBindings: string[] = [];
-        if (!(env as unknown as CloudflareEnv)?.next_cf_app_bucket) {
+        if (!hasR2Bucket(env)) {
             missingBindings.push("next_cf_app_bucket");
         }
         // AI 和 ASSETS 绑定可选：仅记录，不阻断
