@@ -60,6 +60,7 @@ export declare const configureScope: (
     setUser: (user: Record<string, unknown>) => void;
   }) => void
 ) => void;
+export declare const setUser: (user: Record<string, unknown>) => void;
 export declare const startSpan: <T>(options: Record<string, unknown>, callback: () => T) => T;
 export declare const startInactiveSpan: typeof startSpan;
 export declare const getCurrentHub: () => { getClient: () => unknown };
@@ -68,6 +69,17 @@ export declare const withMonitor: <T>(
   callback: () => T
 ) => T;
 export declare const withSentryInstrumentation: <T>(callback: () => T) => T;
+export declare const replayIntegration: (
+  options?: Record<string, unknown>
+) => { name: string; options: Record<string, unknown> | undefined };
+export declare const feedbackIntegration: (
+  options?: Record<string, unknown>
+) => { name: string; options: Record<string, unknown> | undefined };
+export declare const captureRouterTransitionStart: (...args: unknown[]) => string;
+export declare const captureRequestError: (
+  error: unknown,
+  context?: Record<string, unknown>
+) => string | undefined;
 
 export interface WithSentryOptions {
   name?: string;
@@ -94,8 +106,13 @@ declare const _default: {
   flush: typeof flush;
   close: typeof close;
   addBreadcrumb: typeof addBreadcrumb;
+  setUser: typeof setUser;
   configureScope: typeof configureScope;
   startSpan: typeof startSpan;
   startInactiveSpan: typeof startInactiveSpan;
+  replayIntegration: typeof replayIntegration;
+  feedbackIntegration: typeof feedbackIntegration;
+  captureRouterTransitionStart: typeof captureRouterTransitionStart;
+  captureRequestError: typeof captureRequestError;
 };
 export default _default;

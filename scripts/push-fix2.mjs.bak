@@ -254,7 +254,7 @@ function classifyChanges(files) {
     const isFlow = (f) =>
         f.startsWith(".github/workflows/") || f.startsWith(".github/actions/");
     const isBind = (f) =>
-        f === "wrangler.jsonc" ||
+        f === "wrangler.toml" ||
         f === "cloudflare-env.d.ts" ||
         f.startsWith("types/cloudflare-env") ||
         f.startsWith("src/types/cloudflare-env");
@@ -285,7 +285,7 @@ if (process.env.SKIP_BOM_CHECK !== "1") {
         "components.json",
         "tsconfig.json",
         "tsconfig.translate.json",
-        "wrangler.jsonc",
+        "wrangler.toml",
     ];
     const yamlAndMd = getTrackedFiles([
         ".github/workflows/**/*.yml",

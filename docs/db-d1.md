@@ -33,7 +33,7 @@ Tips:
 - Restore flow: deploy rollback + re‑import your exported SQLite snapshot.
 
 ## 5) Troubleshooting
-- Connection errors: verify D1 binding name in `wrangler.jsonc` and Cloudflare dashboard.
+- Connection errors: verify D1 binding name in `wrangler.toml` and Cloudflare dashboard.
 - Missing tables after deploy: ensure migrations ran; check CI job logs.
 - Local dev out of sync: reset and re‑apply migrations (`pnpm db:reset:local` then migrate).
 

@@ -38,7 +38,7 @@
 - Grep examples (ripgrep):
   - `rg -n -F ".github/workflows/" README.md` - list workflow references in README
   - `rg -n "\\.route\\.ts$|/api/.*/route\\.ts$|/page\\.tsx$" src` - scan routes/pages
-  - `rg -n -F "wrangler.jsonc" docs` - find env docs cross‑references
+  - `rg -n -F "wrangler.toml" docs` - find env docs cross‑references
 - API index suggestions: `pnpm run suggest:api-index` 打印页面/API 路由候选,便于维护 `docs/api-index.md`.
 
 ## Controls (Env Flags)

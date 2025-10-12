@@ -12,7 +12,7 @@
 | `pnpm test` | Vitest unit tests | Coverage to be expanded |
 | `pnpm build` | Next.js production build | Uses Node runtime |
 | `pnpm deploy:cf` | OpenNext build + `wrangler deploy` | Cloudflare Workers deploy |
-| `pnpm cf-typegen` | Regenerate CF bindings/types | Run after editing `wrangler.jsonc` |
+| `pnpm cf-typegen` | Regenerate CF bindings/types | Run after editing `wrangler.toml` |
 | `pnpm typecheck` | CF typegen + `tsc --noEmit` | Ensures types are in sync |
 | `pnpm check:all` | Biome check + typecheck (+ docs checks) | Add docs checks below |
 | `pnpm translate` | Batch translate content | Requires AI keys in `.dev.vars` |
@@ -32,6 +32,7 @@
 - Env vars: `.dev.vars` for local; use `wrangler secret put` in Workers mode if missing
 - Request replay: `wrangler dev --persist` to keep D1 state under `.wrangler/state`
 - AI/R2: ensure `CLOUDFLARE_R2_URL`, `GEMINI_API_KEY`, etc., are set or features will degrade
+- Worker Sentry debug route: visit `/debug-sentry` after deploying to trigger a sample Cloudflare error
 - Shell encoding: prefer PowerShell 7 and set UTF-8 in profile to avoid garbled output:
   - `[Console]::InputEncoding  = [System.Text.Encoding]::UTF8`
   - `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`
@@ -49,7 +50,7 @@
 - Studio: `pnpm db:studio:local` (drizzle-kit)
 
 ## 4. Cloudflare Bindings
-- After editing `wrangler.jsonc`, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts`
+- After editing `wrangler.toml`, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts`
 - If adding KV/Durable Objects, update `docs/opennext.md` and `docs/deployment/cloudflare-workers.md` in the PR
 
 ## 5. UI & i18n

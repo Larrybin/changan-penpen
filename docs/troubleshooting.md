@@ -3,7 +3,7 @@
 ## Common Issues
 
 ### Build fails on Workers target
-- Ensure `wrangler.jsonc` has required bindings and `nodejs_compat` only if needed.
+- Ensure `wrangler.toml` has required bindings and compatibility flags such as `nodejs_compat`/`nodejs_als` only when required.
 - Clear `.open-next` and rebuild: `rm -rf .open-next && pnpm deploy:cf`.
 
 ### Health check returns 503

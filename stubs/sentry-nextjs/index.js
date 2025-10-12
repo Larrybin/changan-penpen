@@ -211,6 +211,30 @@ export const getCurrentHub = () => ({ getClient: () => undefined });
 export const withMonitor = (_options, callback) => callback();
 export const withSentryInstrumentation = (callback) => callback();
 
+export const replayIntegration = (options = {}) => ({
+  name: "ReplayIntegration",
+  options,
+});
+
+export const feedbackIntegration = (options = {}) => ({
+  name: "FeedbackIntegration",
+  options,
+});
+
+export const captureRouterTransitionStart = (...args) => {
+  if (state.options?.debug) {
+    console.debug("[sentry-stub] router transition", ...args);
+  }
+  return generateEventId();
+};
+
+export const captureRequestError = (error, context) => {
+  if (context?.info && state.options?.debug) {
+    console.debug("[sentry-stub] request context", context.info);
+  }
+  return captureException(error, context);
+};
+
 export default {
   init,
   captureException,
@@ -224,4 +248,8 @@ export default {
   configureScope,
   startSpan,
   startInactiveSpan,
+  replayIntegration,
+  feedbackIntegration,
+  captureRouterTransitionStart,
+  captureRequestError,
 };

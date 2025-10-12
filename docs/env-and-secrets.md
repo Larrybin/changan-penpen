@@ -7,7 +7,7 @@
 - `pnpm dev` reads `.env.local` if present; Workers flows use `.dev.vars`
 
 ## Cloudflare Bindings
-- Define bindings in `wrangler.jsonc`
+- Define bindings in `wrangler.toml`
   - D1: `next_cf_app`
   - R2: `next_cf_app_bucket`
   - AI: `AI`
@@ -33,7 +33,7 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 - Keep minimal variables in CI; prefer Workers secrets
 - Avoid leaking secrets into logs or client env (`NEXT_PUBLIC_*` is public)
 - Validate configuration via `/api/health` strict mode before rollout
-- Normalize encoding: ensure JSON/JSONC/YAML files (e.g., `wrangler.jsonc`, `.github/workflows/*.yml`) are saved as UTF-8 without BOM. The local push helper auto-strips BOM if found; configure your editor (e.g., VS Code `files.encoding = "utf8"`, `files.eol = "\n"`) and/or `.editorconfig` to prevent BOM from being reintroduced.
+- Normalize encoding: ensure JSON/JSONC/YAML files (e.g., `wrangler.toml`, `.github/workflows/*.yml`) are saved as UTF-8 without BOM. The local push helper auto-strips BOM if found; configure your editor (e.g., VS Code `files.encoding = "utf8"`, `files.eol = "\n"`) and/or `.editorconfig` to prevent BOM from being reintroduced.
 
 <!-- DOCSYNC:ENV_BINDINGS START -->
 ### Cloudflare Bindings (auto)
@@ -68,16 +68,21 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 - `NEXTJS_ENV`
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_SENTRY_DSN`
+- `NEXT_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE`
+- `NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE`
 - `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`
 - `OPENAI_API_KEY`
 - `OPENAI_BASE_URL`
 - `OPENAI_TRANSLATION_MODEL`
 - `SENTRY_DEBUG`
+- `SENTRY_ENABLE_LOGS`
 - `SENTRY_DSN`
 - `SENTRY_ENABLED`
+- `SENTRY_ENVIRONMENT`
 - `SENTRY_PROFILES_SAMPLE_RATE`
 - `SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE`
 - `SENTRY_REPLAYS_SESSION_SAMPLE_RATE`
+- `SENTRY_RELEASE`
 - `SENTRY_TRACES_SAMPLE_RATE`
 - `SENTRY_TUNNEL_ROUTE`
 - `TRANSLATION_PROVIDER`

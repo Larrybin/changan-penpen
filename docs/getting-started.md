@@ -33,7 +33,7 @@ Fill at least:
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (if using Google login)
 - `CREEM_API_KEY` and `CREEM_WEBHOOK_SECRET` (if billing callbacks)
 
-If you add D1/R2/AI bindings in `wrangler.jsonc`, run `pnpm cf-typegen`.
+If you add D1/R2/AI bindings in `wrangler.toml`, run `pnpm cf-typegen`.
 
 ## 4. Run Locally
 ```bash

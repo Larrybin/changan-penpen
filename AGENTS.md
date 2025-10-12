@@ -12,7 +12,7 @@ Use UTF8.
 - `pnpm dev` — Run Next.js dev server (localhost:3000).
 - `pnpm dev:cf` — Build via OpenNext Cloudflare and run Workers with Wrangler locally.
 - `pnpm build` / `pnpm start` — Production build and serve.
-- `pnpm deploy:cf` — Deploy to Cloudflare Workers (configured by `wrangler.jsonc`).
+- `pnpm deploy:cf` — Deploy to Cloudflare Workers (configured by `wrangler.toml`).
 - `pnpm db:migrate:local` — Apply D1 migrations from `src/drizzle` to local.
 - `pnpm lint` — Format and lint with Biome.
 - `pnpm cf-typegen` — Regenerate Cloudflare env bindings/types.
@@ -32,5 +32,5 @@ Use UTF8.
 ## Security & Configuration Tips
 - Local env: copy `.dev.vars.example` to `.dev.vars`. Never commit secrets.
 - Manage secrets with Wrangler: `pnpm run cf:secret BETTER_AUTH_SECRET`.
-- After adding bindings/secrets, run `pnpm cf-typegen` and keep `wrangler.jsonc` in sync.
+- After adding bindings/secrets, run `pnpm cf-typegen` and keep `wrangler.toml` in sync.
 

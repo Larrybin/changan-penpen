@@ -3,7 +3,7 @@
 > Object storage usage, bindings, upload flow, and environment differences.
 
 ## Binding
-- Define in `wrangler.jsonc` under `r2_buckets` and expose as `next_cf_app_bucket`.
+- Define in `wrangler.toml` under `r2_buckets` and expose as `next_cf_app_bucket`.
 - Access via `env.next_cf_app_bucket` (typed by `cloudflare-env.d.ts`).
 
 ## Upload/Read
@@ -16,7 +16,7 @@
 
 ## Static Assets
 - OpenNext builds static files under `.open-next/assets`.
-- Served via `ASSETS` binding configured in `wrangler.jsonc`.
+- Served via `ASSETS` binding configured in `wrangler.toml`.
 
 ## Tips
 - Namespacing: prefix objects per environment (e.g., `prod/…`, `stg/…`).
