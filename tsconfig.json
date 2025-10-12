@@ -22,7 +22,8 @@
             "@/*": ["./src/*"],
             "@refinedev/core": ["./src/lib/stubs/refine-core"],
             "@standard-schema/utils": ["./stubs/standard-schema-utils"],
-            "@sentry/nextjs": ["./stubs/sentry-nextjs"]
+            "@sentry/nextjs": ["./stubs/sentry-nextjs"],
+            "@sentry/cloudflare": ["./stubs/sentry-cloudflare"]
         }
     },
     "include": [

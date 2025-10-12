@@ -5,5 +5,7 @@ import { buildSentryOptions } from "./sentry.config";
 const options = buildSentryOptions("server");
 
 Sentry.init({
-  ...options,
+    ...options,
+    sendDefaultPii: true,
+    enableLogs: options.enableLogs ?? true,
 });

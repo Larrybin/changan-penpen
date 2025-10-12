@@ -33,13 +33,21 @@ if (process.argv.includes("dev")) {
     );
 }
 
+const sentryWebpackPluginOptions = {
+    org: process.env.SENTRY_ORG || "your-sentry-org",
+    project: process.env.SENTRY_PROJECT || "your-sentry-project",
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    silent: Boolean(process.env.CI),
+    disableLogger: true,
+    debug: process.env.SENTRY_DEBUG === "1",
+};
+
+const sentryBuildOptions = {
+    hideSourceMaps: true,
+};
+
 export default withSentryConfig(
     withNextIntl(nextConfig),
-    {
-        silent: true,
-        debug: process.env.SENTRY_DEBUG === "1",
-    },
-    {
-        hideSourceMaps: true,
-    },
+    sentryWebpackPluginOptions,
+    sentryBuildOptions,
 );

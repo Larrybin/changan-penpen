@@ -4,7 +4,7 @@
 // Idempotent: only replaces content between markers.
 // Markers: <!-- DOCSYNC:<KEY> START --> ... <!-- DOCSYNC:<KEY> END -->
 // First phase coverage:
-// - ENV/Bindings:   wrangler.jsonc, .dev.vars.example  -> docs/env-and-secrets.md
+// - ENV/Bindings:   wrangler.toml, .dev.vars.example  -> docs/env-and-secrets.md
 // - Workflows:      .github/workflows/*.yml            -> docs/ci-cd.md (overview table)
 // - Scripts table:  package.json                        -> docs/local-dev.md (auto section)
 // - API index:      src/app/**/route.ts                -> docs/api-index.md (auto section)
@@ -93,7 +93,7 @@ function replaceAnchored(text, key, body) {
 
 function gatherEnvBindings() {
     const out = { bindings: [], vars: [] };
-    const wrangler = path.join(root, "wrangler.jsonc");
+    const wrangler = path.join(root, "wrangler.toml");
     if (exists(wrangler)) {
         try {
             const json = JSON.parse(stripJsonc(readUtf8(wrangler)));
@@ -556,7 +556,7 @@ function main() {
 
     const results = [];
     // ENV & Bindings
-    if (shouldRun(["wrangler.jsonc", ".dev.vars.example"])) {
+    if (shouldRun(["wrangler.toml", ".dev.vars.example"])) {
         const body = renderEnvSection();
         const updated = applyToFile("docs/env-and-secrets.md", [
             ["ENV_BINDINGS", body],

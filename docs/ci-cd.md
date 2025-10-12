@@ -41,7 +41,7 @@
   - 仅对 Dependabot 的 minor/patch PR 且检查通过时开启 auto‑merge（需要仓库设置启用 “Allow auto‑merge”）
 
 ## 提交与文档同步
-- 修改 `.github/workflows/*.yml`、`package.json`、`wrangler.jsonc`、`scripts/`、`src/app/**/route.ts` 等关键文件时，请同步更新对应 docs（本文件、local‑dev、env 与 API 索引等）
+- 修改 `.github/workflows/*.yml`、`package.json`、`wrangler.toml`、`scripts/`、`src/app/**/route.ts` 等关键文件时，请同步更新对应 docs（本文件、local‑dev、env 与 API 索引等）
 
 <!-- DOCSYNC:WORKFLOWS_TABLE START -->
 ### Workflows Overview (auto)

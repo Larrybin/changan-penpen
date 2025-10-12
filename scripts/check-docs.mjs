@@ -2,7 +2,7 @@
 import { execSync } from "node:child_process";
 /**
  * Docs consistency checks (diff-based only):
- * - If certain files change (package.json, wrangler.jsonc, .dev.vars.example,
+ * - If certain files change (package.json, wrangler.toml, .dev.vars.example,
  *   .github/workflows/*.yml, routes/pages, migrations, scripts), require the
  *   corresponding docs to also change in the same diff.
  *
@@ -167,13 +167,13 @@ function main() {
 
         // Env/bindings -> env docs
         if (
-            changed.includes("wrangler.jsonc") ||
+            changed.includes("wrangler.toml") ||
             changed.includes(".dev.vars.example")
         ) {
             requireDocChange(
                 changed,
                 ["docs/env-and-secrets.md"],
-                "wrangler.jsonc or .dev.vars.example changed",
+                "wrangler.toml or .dev.vars.example changed",
                 errors,
             );
         }

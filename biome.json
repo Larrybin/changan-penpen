@@ -17,7 +17,7 @@
             "vitest.*",
             "tsconfig*.json",
             "package.json",
-            "wrangler.jsonc",
+            "wrangler.toml",
             "next.config.ts",
             "postcss.config.mjs",
             "drizzle*.ts"

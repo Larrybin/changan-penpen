@@ -2,7 +2,7 @@
 
 ## 审查范围与方法
 - 依据既有的“量身定做的代码审查方案”以及补充关注点，聚焦 Cloudflare Workers 运行时兼容性、安全、数据层约束、可观测性与 CI 质量闸。
-- 通过静态代码阅读、配置核对与脚本检查（包括 `wrangler.jsonc`、App Router API、Drizzle schema、鉴权/中间件、R2 上传工具、CI Workflow）完成。
+- 通过静态代码阅读、配置核对与脚本检查（包括 `wrangler.toml`、App Router API、Drizzle schema、鉴权/中间件、R2 上传工具、CI Workflow）完成。
 - 本报告按风险等级输出可复现的问题、影响面、修复建议与验证要点。
 
 ## 重大问题清单
@@ -23,7 +23,7 @@
 - **修复建议**：
   1. 以 `getCloudflareContext()` 或注入的 `env` 对象读取变量；在前端 bundle 中使用 `process.env.NODE_ENV` 时确保由 bundler 预编译替换。
   2. 新增单元测试/Smoke（在本地 `pnpm dev:cf`，临时移除 `nodejs_compat`）验证核心路由仍能返回 200。
-  3. 在 `wrangler.jsonc` 中保留兼容标志直至上述改造完成，并在 PR 模版中提醒检查。
+  3. 在 `wrangler.toml` 中保留兼容标志直至上述改造完成，并在 PR 模版中提醒检查。
 
 ### P0-2：健康检查泄露机密项名称
 - **证据**：`checkEnvAndBindings` 在返回体中包含 `Missing env: ... | Missing bindings: ...`，任何未授权请求都可枚举出机密变量列表。【F:src/app/api/health/route.ts†L113-L148】

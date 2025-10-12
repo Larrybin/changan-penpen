@@ -5,7 +5,7 @@ This project targets Cloudflare Workers using OpenNext.
 ## Prerequisites
 - `pnpm` installed
 - Cloudflare account and `wrangler` CLI authenticated: `pnpm dlx wrangler login`
-- Bindings and secrets configured in `wrangler.jsonc` and Cloudflare dashboard
+- Bindings and secrets configured in `wrangler.toml` and Cloudflare dashboard
 
 ## Typical Flows
 
@@ -35,12 +35,12 @@ This project targets Cloudflare Workers using OpenNext.
 Run `pnpm cf-typegen` after any change to bindings to refresh `cloudflare-env.d.ts`.
 
 ## Notes
-- Enable `nodejs_compat` in `wrangler.jsonc` only when Node APIs are required
+- Enable `nodejs_compat` and `nodejs_als` in `wrangler.toml` when Node APIs or AsyncLocalStorage features (e.g., Sentry) are required
 - Large/long‑running tasks should be offloaded; add timeouts for outbound calls
 - Keep `.dev.vars.example` and this doc in sync with deployments
 
 ## Edge Rate Limiting
 - Namespace setup: Create a Cloudflare Rate Limiting namespace (e.g. `wrangler ratelimit create creem-checkout --limit 10 --period 60`) and note the generated ID.
-- Binding: Update `wrangler.jsonc` so both the default worker and the `production` environment attach the namespace as `RATE_LIMITER`. Deploying without the binding leaves rate limiting disabled.
+- Binding: Update `wrangler.toml` so both the default worker and the `production` environment attach the namespace as `RATE_LIMITER`. Deploying without the binding leaves rate limiting disabled.
 - Verification: After deployment, hit `/api/creem/create-checkout` repeatedly with the same user session until a 429 appears, confirming the edge policy works. Use `wrangler tail` to capture the `[rate-limit]` log line for auditing.
 - Rollback: Removing the binding or setting a larger quota in the Cloudflare Dashboard takes effect immediately. Document any temporary overrides in the release checklist.

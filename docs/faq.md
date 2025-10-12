@@ -11,7 +11,7 @@
 
 ## Why does `/api/health` fail on strict mode?
 - External service or DB/R2 check failed; try `/api/health?fast=1` first
-- Check credentials and bindings in `wrangler.jsonc` and `.dev.vars`
+- Check credentials and bindings in `wrangler.toml` and `.dev.vars`
 
 ## Where do I find environment variables?
 - `docs/env-and-secrets.md` and `.dev.vars.example`

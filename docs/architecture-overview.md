@@ -58,7 +58,7 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 6. External deps — R2, Creem, Workers AI through typed `CloudflareEnv` bindings and env vars.
 
 ## Cloudflare Bindings & Env
-- Wrangler config — enable `nodejs_compat`, `global_fetch_strictly_public` in `wrangler.jsonc` when needed.
+- Wrangler config — enable `nodejs_compat`, `nodejs_als`, `global_fetch_strictly_public` in `wrangler.toml` when needed.
 - Bindings — `next_cf_app` (D1), `next_cf_app_bucket` (R2), `AI`, `ASSETS`.
 - Types — run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.d.ts`.
 - Secrets — manage with `wrangler secret`; keep `.dev.vars.example` up‑to‑date.
@@ -73,7 +73,7 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 - New page — add `src/app/<route>/page.tsx` and reuse module components.
 - New domain — create `src/modules/<feature>/{components,services,schemas}`.
 - New API — prefer Server Actions; for REST add `src/app/api/<name>/<action>.route.ts`.
-- Cron/Workers — update `wrangler.jsonc`, `docs/opennext.md`, and deployment docs.
+- Cron/Workers — update `wrangler.toml`, `docs/opennext.md`, and deployment docs.
 
 ## Compatibility Notes
 - OpenNext Workers do not allow Node `fs` writes; enable `nodejs_compat` only if required and supported.
