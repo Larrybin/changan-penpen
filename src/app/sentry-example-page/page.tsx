@@ -27,7 +27,8 @@ export default function SentryExamplePage() {
             <header className="space-y-2">
                 <h1 className="text-3xl font-semibold">Sentry 演示页面</h1>
                 <p className="text-muted-foreground text-base leading-relaxed">
-                    点击下方按钮触发前端或 API 错误，确认事件是否成功上报到 Sentry。
+                    点击下方按钮触发前端或 API 错误，确认事件是否成功上报到
+                    Sentry。
                 </p>
             </header>
             <div className="flex flex-wrap gap-4">
@@ -52,7 +53,8 @@ export default function SentryExamplePage() {
                 </p>
             ) : null}
             <p className="text-sm text-muted-foreground">
-                若需要排查真实请求，可在 Sentry 控制台的 Issues、Traces 或 Replays 栏目查看事件详情。
+                若需要排查真实请求，可在 Sentry 控制台的 Issues、Traces 或
+                Replays 栏目查看事件详情。
             </p>
         </div>
     );

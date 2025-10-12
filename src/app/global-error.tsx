@@ -14,7 +14,7 @@ export default function GlobalError({ error }: GlobalErrorProps) {
     }, [error]);
 
     return (
-        <html>
+        <html lang="zh-CN">
             <body>
                 <NextError statusCode={0} />
             </body>
