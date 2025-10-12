@@ -25,7 +25,10 @@ const nextConfig: NextConfig = {
 };
 
 // Only run during `next dev`, not during `next build`
-if (process.argv.includes("dev")) {
+if (
+    process.argv.includes("dev") &&
+    !["0", "false"].includes((process.env.OPENNEXT_DEV || "").toLowerCase())
+) {
     import("@opennextjs/cloudflare").then(
         ({ initOpenNextCloudflareForDev }) => {
             initOpenNextCloudflareForDev();
@@ -51,7 +54,7 @@ const sentryWebpackPluginOptions = {
     debug: process.env.SENTRY_DEBUG === "1",
 };
 
-const sentryBuildOptions = {
+const _sentryBuildOptions = {
     hideSourceMaps: true,
 };
 

@@ -16,16 +16,9 @@ export default function Page() {
     const [isConnected, setIsConnected] = useState(true);
 
     useEffect(() => {
-        async function checkConnectivity() {
-            const diag = (Sentry as any).diagnoseSdkConnectivity;
-            if (typeof diag === "function") {
-                const result = await diag();
-                setIsConnected(result !== "sentry-unreachable");
-            } else {
-                setIsConnected(true);
-            }
-        }
-        checkConnectivity();
+        // Assume connected in dev; if you need hard verification,
+        // call a lightweight endpoint or use SDK's diagnose API when available.
+        setIsConnected(true);
     }, []);
 
     return (

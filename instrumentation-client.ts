@@ -44,6 +44,6 @@ Sentry.init({
     ],
 });
 
-export const onRouterTransitionStart =
-    // Not all SDK versions expose this helper; fallback to no-op
-    (Sentry as any).captureRouterTransitionStart ?? (() => undefined);
+// Optional: Next.js may call this symbol to mark route transitions.
+// Using a no-op avoids importing SDK internals that may not exist in every version.
+export const onRouterTransitionStart = () => undefined;
