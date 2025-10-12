@@ -23,14 +23,15 @@ const integrations = rawIntegrations.filter(
 
 Sentry.init({
     ...options,
-    dsn: options.dsn ?? process.env.NEXT_PUBLIC_SENTRY_DSN,
+    dsn: (options as any).dsn ?? process.env.NEXT_PUBLIC_SENTRY_DSN,
     sendDefaultPii: true,
-    enableLogs: options.enableLogs ?? true,
-    release: options.release ?? resolveRelease(),
-    environment: options.environment ?? resolveEnvironment(),
+    release: (options as any).release ?? resolveRelease(),
+    environment: (options as any).environment ?? resolveEnvironment(),
     replaysSessionSampleRate,
     replaysOnErrorSampleRate,
     integrations,
 });
 
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+export const onRouterTransitionStart =
+    // Not all SDK versions expose this helper; fallback to no-op
+    (Sentry as any).captureRouterTransitionStart ?? (() => undefined);

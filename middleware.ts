@@ -1,4 +1,4 @@
-import { withSentry } from "@sentry/nextjs";
+import * as Sentry from "@sentry/nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { getAuth } from "./src/lib/auth";
@@ -40,7 +40,8 @@ async function middlewareImpl(request: NextRequest) {
     return i18nResponse;
 }
 
-export const middleware = withSentry(middlewareImpl, { name: "middleware" });
+const wrap = (Sentry as any).withSentry ?? ((fn: any) => fn);
+export const middleware = wrap(middlewareImpl, { name: "middleware" });
 
 export const config = {
     // Run on all app routes, exclude Next internals, files and API

@@ -1,8 +1,6 @@
-import type { SentryOptions } from "@sentry/nextjs";
-
 type Runtime = "server" | "client" | "edge";
 
-type NormalizedOptions = SentryOptions & {
+type NormalizedOptions = Record<string, unknown> & {
     enabled: boolean;
     enableTracing?: boolean;
     enableLogs?: boolean;

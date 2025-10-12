@@ -58,5 +58,4 @@ const sentryBuildOptions = {
 export default withSentryConfig(
     withNextIntl(nextConfig),
     sentryWebpackPluginOptions,
-    sentryBuildOptions,
 );

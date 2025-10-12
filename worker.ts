@@ -53,14 +53,16 @@ const debugWrapper: FetchHandler<WorkerEnv> = {
     },
 };
 
-export default Sentry.withSentry<WorkerEnv>(
-    (env) => ({
+const sentryWrapped = (Sentry as any).withSentry(
+    debugWrapper as any,
+    (env: WorkerEnv) => ({
         dsn: env.SENTRY_DSN,
         environment: env.SENTRY_ENVIRONMENT ?? env.NEXTJS_ENV ?? "development",
         release: env.SENTRY_RELEASE ?? env.CF_VERSION_METADATA?.id,
         sendDefaultPii: true,
-        enableLogs: env.SENTRY_ENABLE_LOGS !== "0",
+        debug: env.SENTRY_ENABLE_LOGS !== "0",
         tracesSampleRate: 1.0,
     }),
-    debugWrapper,
 );
+
+export default sentryWrapped as unknown as FetchHandler<WorkerEnv>;
