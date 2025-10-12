@@ -5,13 +5,27 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-    dsn: "https://c0cd3ee1c06ce98d87d4e0148f47aad6@o4510176162217984.ingest.us.sentry.io/4510176166019072",
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
     // Add optional integrations for additional features
-    integrations: [Sentry.replayIntegration()],
+    integrations: [
+        (Sentry as any).browserTracingIntegration
+            ? (Sentry as any).browserTracingIntegration()
+            : undefined,
+        Sentry.replayIntegration(),
+    ].filter(Boolean) as any,
 
     // Define how likely traces are sampled. Adjust this value in production
     tracesSampleRate: 1,
+
+    // Ensure trace headers propagate to your API/worker endpoints
+    tracePropagationTargets: [
+        /^\/api\//,
+        /localhost/,
+        /127\.0\.0\.1/,
+        /\.workers\.dev/,
+        /\.pages\.dev/,
+    ],
 
     // Define how likely Replay events are sampled.
     // This sets the sample rate to be 10%. You may want this to be 100% while

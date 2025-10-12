@@ -11,6 +11,10 @@ const options = buildSentryOptions("client");
 const { replaysSessionSampleRate, replaysOnErrorSampleRate } = buildClientReplayRates();
 
 const rawIntegrations = [
+    // Optional performance instrumentation if available in current SDK
+    (Sentry as any).browserTracingIntegration
+        ? (Sentry as any).browserTracingIntegration()
+        : undefined,
     replaysSessionSampleRate > 0 || replaysOnErrorSampleRate > 0
         ? Sentry.replayIntegration()
         : undefined,
@@ -30,6 +34,14 @@ Sentry.init({
     replaysSessionSampleRate,
     replaysOnErrorSampleRate,
     integrations,
+    // Allow browser to propagate trace headers to API/worker endpoints
+    tracePropagationTargets: [
+        /^\/api\//,
+        /localhost/,
+        /127\.0\.0\.1/,
+        /\.workers\.dev/,
+        /\.pages\.dev/,
+    ],
 });
 
 export const onRouterTransitionStart =

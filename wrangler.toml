@@ -15,9 +15,6 @@ upload_source_maps = true
 [observability]
     enabled = true
 
-[[rate_limits]]
-    binding = "RATE_LIMITER"
-    namespace = "rate-limiters/creem"
 
 [[d1_databases]]
     binding = "next_cf_app"
@@ -37,9 +34,6 @@ upload_source_maps = true
 
 [env.production]
 
-[[env.production.rate_limits]]
-    binding = "RATE_LIMITER"
-    namespace = "rate-limiters/creem"
 
 [[env.production.d1_databases]]
     binding = "next_cf_app"
