@@ -50,24 +50,26 @@ function buildQuery(params?: GetListParams) {
     }
 
     if (params.filters) {
-        params.filters.forEach((filter) => {
-            if (!filter) {
-                return;
-            }
-            if (typeof filter.field !== "undefined") {
+        for (const filter of params.filters) {
+            if (!filter) continue;
+            if (filter.field !== undefined) {
                 if (filter.value !== undefined && filter.value !== null) {
-                    searchParams.append(
-                        String(filter.field),
-                        String(filter.value),
-                    );
+                    const val = filter.value as unknown;
+                    if (
+                        typeof val === "string" ||
+                        typeof val === "number" ||
+                        typeof val === "boolean"
+                    ) {
+                        searchParams.append(String(filter.field), String(val));
+                    }
                 }
-                return;
+                continue;
             }
             if (
                 (filter.operator === "or" || filter.operator === "and") &&
                 Array.isArray(filter.value)
             ) {
-                filter.value.forEach((inner) => {
+                for (const inner of filter.value) {
                     if (
                         inner &&
                         typeof inner === "object" &&
@@ -75,19 +77,23 @@ function buildQuery(params?: GetListParams) {
                         (inner as Filter).field !== undefined
                     ) {
                         const innerFilter = inner as Filter;
-                        if (
-                            innerFilter.value !== undefined &&
-                            innerFilter.value !== null
-                        ) {
-                            searchParams.append(
-                                String(innerFilter.field),
-                                String(innerFilter.value),
-                            );
+                        const v = innerFilter.value as unknown;
+                        if (v !== undefined && v !== null) {
+                            if (
+                                typeof v === "string" ||
+                                typeof v === "number" ||
+                                typeof v === "boolean"
+                            ) {
+                                searchParams.append(
+                                    String(innerFilter.field),
+                                    String(v),
+                                );
+                            }
                         }
                     }
-                });
+                }
             }
-        });
+        }
     }
 
     if (params.sorters && params.sorters.length > 0) {
@@ -113,12 +119,14 @@ export const adminDataProvider = {
         const items = Array.isArray(rawData)
             ? (rawData as TData[])
             : ([] as TData[]);
-        const total =
-            typeof payload.total === "number"
-                ? payload.total
-                : Array.isArray(rawData)
-                  ? rawData.length
-                  : items.length;
+        let total: number;
+        if (typeof payload.total === "number") {
+            total = payload.total;
+        } else if (Array.isArray(rawData)) {
+            total = rawData.length;
+        } else {
+            total = items.length;
+        }
         return {
             data: items,
             total,
@@ -187,13 +195,18 @@ export const adminDataProvider = {
     },
     custom: async ({ url, method, meta, payload }: CustomParams) => {
         const requestUrl = url ? `${API_BASE}${url}` : API_BASE;
+        const extraHeaders = (meta?.headers ?? undefined) as
+            | Record<string, string>
+            | undefined;
+        const headersObj: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+        if (extraHeaders) Object.assign(headersObj, extraHeaders);
+
         const response = await fetch(requestUrl, {
             method: method ?? "GET",
             credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
-                ...(meta?.headers ?? {}),
-            },
+            headers: headersObj,
             body: payload ? JSON.stringify(payload) : undefined,
         });
         return (await parseResponse(response)) as Awaited<CustomReturn>;

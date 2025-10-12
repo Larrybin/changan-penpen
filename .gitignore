@@ -67,3 +67,6 @@ scripts/push-fix2.mjs
 # Local logs and temp artifacts
 logs/
 TEMP_*
+
+# Sentry Config File
+.env.sentry-build-plugin
