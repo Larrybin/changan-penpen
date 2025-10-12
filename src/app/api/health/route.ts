@@ -87,8 +87,20 @@ function resolveAllowDetails(
     envRecord: Record<string, unknown>,
     providedToken: string,
 ): boolean {
-    const configuredToken = String(envRecord.HEALTH_ACCESS_TOKEN ?? "").trim();
-    const envMode = String(envRecord.NEXTJS_ENV ?? "").toLowerCase();
+    const configuredToken =
+        typeof (envRecord as Record<string, unknown>).HEALTH_ACCESS_TOKEN ===
+        "string"
+            ? (
+                  (envRecord as Record<string, string>).HEALTH_ACCESS_TOKEN ||
+                  ""
+              ).trim()
+            : "";
+    const envMode =
+        typeof (envRecord as Record<string, unknown>).NEXTJS_ENV === "string"
+            ? (
+                  (envRecord as Record<string, string>).NEXTJS_ENV || ""
+              ).toLowerCase()
+            : "";
     return configuredToken
         ? providedToken === configuredToken
         : envMode !== "production";
@@ -238,10 +250,22 @@ async function checkEnvAndBindings(
         const requiredSecrets = ["BETTER_AUTH_SECRET", "CLOUDFLARE_R2_URL"];
         const missing = requiredSecrets.filter((k) => !envRecord?.[k]);
 
-        const googleClientId = String(envRecord?.GOOGLE_CLIENT_ID ?? "").trim();
-        const googleClientSecret = String(
-            envRecord?.GOOGLE_CLIENT_SECRET ?? "",
-        ).trim();
+        const googleClientId =
+            typeof (envRecord as Record<string, unknown>).GOOGLE_CLIENT_ID ===
+            "string"
+                ? (
+                      (envRecord as Record<string, string>).GOOGLE_CLIENT_ID ||
+                      ""
+                  ).trim()
+                : "";
+        const googleClientSecret =
+            typeof (envRecord as Record<string, unknown>)
+                .GOOGLE_CLIENT_SECRET === "string"
+                ? (
+                      (envRecord as Record<string, string>)
+                          .GOOGLE_CLIENT_SECRET || ""
+                  ).trim()
+                : "";
         if (Boolean(googleClientId) !== Boolean(googleClientSecret)) {
             return {
                 ok: false,
