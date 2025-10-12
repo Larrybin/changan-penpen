@@ -4,6 +4,8 @@ type Runtime = "server" | "client" | "edge";
 
 type NormalizedOptions = SentryOptions & {
     enabled: boolean;
+    enableTracing?: boolean;
+    enableLogs?: boolean;
 };
 
 const parseSampleRate = (value: string | undefined, fallback: number): number => {

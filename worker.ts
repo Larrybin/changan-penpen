@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/cloudflare";
 
+// @ts-ignore - generated at build time by OpenNext
 import appModule from "./.open-next/worker";
 
 type VersionMetadata = {

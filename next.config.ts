@@ -60,4 +60,3 @@ export default withSentryConfig(
     sentryWebpackPluginOptions,
     sentryBuildOptions,
 );
-

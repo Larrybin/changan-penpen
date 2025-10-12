@@ -11,6 +11,8 @@ export interface SentryOptions {
   debug?: boolean;
   sendDefaultPii?: boolean;
   autoSessionTracking?: boolean;
+  enableLogs?: boolean;
+  integrations?: unknown[];
 }
 
 export interface CaptureContext {
@@ -81,6 +83,8 @@ export declare const captureRequestError: (
   context?: Record<string, unknown>
 ) => string | undefined;
 
+export declare const diagnoseSdkConnectivity: () => Promise<string>;
+
 export interface WithSentryOptions {
   name?: string;
 }
@@ -114,5 +118,6 @@ declare const _default: {
   feedbackIntegration: typeof feedbackIntegration;
   captureRouterTransitionStart: typeof captureRouterTransitionStart;
   captureRequestError: typeof captureRequestError;
+  diagnoseSdkConnectivity: typeof diagnoseSdkConnectivity;
 };
 export default _default;

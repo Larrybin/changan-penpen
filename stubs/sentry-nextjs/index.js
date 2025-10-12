@@ -235,6 +235,17 @@ export const captureRequestError = (error, context) => {
   return captureException(error, context);
 };
 
+export const diagnoseSdkConnectivity = async () => {
+  try {
+    if (state.options?.debug) {
+      console.debug("[sentry-stub] diagnose connectivity");
+    }
+    return Promise.resolve("ok");
+  } catch {
+    return Promise.resolve("unknown");
+  }
+};
+
 export default {
   init,
   captureException,
@@ -252,4 +263,5 @@ export default {
   feedbackIntegration,
   captureRouterTransitionStart,
   captureRequestError,
+  diagnoseSdkConnectivity,
 };
