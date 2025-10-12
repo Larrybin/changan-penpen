@@ -346,10 +346,8 @@ export async function listR2Files(options?: {
             limit,
             cursor,
         });
-        const nextCursor = (res as any)?.truncated
-            ? (res as any)?.cursor
-            : undefined;
-        const objects = ((res as any)?.objects ?? []) as R2Object[];
+        const nextCursor = res.truncated ? res.cursor : undefined;
+        const objects = res.objects ?? [];
         return { objects, cursor: nextCursor };
     } catch (error) {
         console.error("Error listing R2 files", error);
