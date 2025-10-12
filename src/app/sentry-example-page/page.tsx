@@ -48,7 +48,11 @@ export default function SentryExamplePage() {
                 </button>
             </div>
             {status ? (
-                <p className="rounded-md border border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-blue-900">
+                <p
+                    aria-atomic="true"
+                    aria-live="polite"
+                    className="rounded-md border border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-blue-900"
+                >
                     {status}
                 </p>
             ) : null}
