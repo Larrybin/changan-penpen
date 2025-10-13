@@ -130,10 +130,10 @@ MIT © 2025 Muhammad Arifin
 #### Workflows (top)
 | Workflow | Triggers | File |
 | --- | --- | --- |
+| Build |  | .github/workflows/build.yml |
 | CI |  | .github/workflows/ci.yml |
 | Dependabot Auto‑Merge |  | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare |  | .github/workflows/deploy.yml |
-| SonarCloud |  | .github/workflows/sonarcloud.yml |
 <!-- DOCSYNC:README_AUTOMATION END -->
 
 <!-- DOCSYNC:README_STRUCTURE START -->
