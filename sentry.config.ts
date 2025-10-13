@@ -2,9 +2,21 @@ type Runtime = "server" | "client" | "edge";
 
 type NormalizedOptions = Record<string, unknown> & {
     enabled: boolean;
+    dsn?: string;
+    environment?: string;
+    release?: string;
+    debug?: boolean;
+    sendDefaultPii?: boolean;
     enableTracing?: boolean;
     enableLogs?: boolean;
+    tracesSampleRate?: number;
+    profilesSampleRate?: number;
+    autoSessionTracking?: boolean;
+    tunnel?: string;
 };
+
+export const DEFAULT_SENTRY_DSN =
+    "https://c0cd3ee1c06ce98d87d4e0148f47aad6@o4510176162217984.ingest.us.sentry.io/4510176166019072";
 
 const parseSampleRate = (value: string | undefined, fallback: number): number => {
     if (!value) {
@@ -57,21 +69,18 @@ export const resolveRelease = (): string | undefined => {
 
 const resolveDsn = (runtime: Runtime): string | undefined => {
     if (runtime === "client") {
-        return process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
+        return (
+            process.env.NEXT_PUBLIC_SENTRY_DSN ||
+            process.env.SENTRY_DSN ||
+            DEFAULT_SENTRY_DSN
+        );
     }
 
-    return process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+    return process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN || DEFAULT_SENTRY_DSN;
 };
 
 const resolveDefaultTraceRate = (runtime: Runtime): number => {
-    const environment = resolveEnvironment();
-    const isProduction = environment === "production" || process.env.NODE_ENV === "production";
-
-    if (runtime === "client") {
-        return isProduction ? 0.1 : 1.0;
-    }
-
-    return isProduction ? 0.1 : 1.0;
+    return 1.0;
 };
 
 export const buildSentryOptions = (runtime: Runtime): NormalizedOptions => {

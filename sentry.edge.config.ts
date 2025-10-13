@@ -5,15 +5,25 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+import { buildSentryOptions, DEFAULT_SENTRY_DSN } from "./sentry.config";
+
+const options = buildSentryOptions("edge");
+const { enableTracing: _enableTracing, enableLogs: _enableLogs, ...restOptions } = options;
+const normalized = restOptions as Parameters<typeof Sentry.init>[0] & {
+    dsn?: string;
+    tracesSampleRate?: number;
+};
+
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1.0,
-
-  // Keep integrations minimal for compatibility across SDK versions
-  integrations: [],
-
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
+    ...normalized,
+    dsn:
+        (typeof normalized.dsn === "string" ? normalized.dsn : undefined) ??
+        process.env.SENTRY_DSN ??
+        DEFAULT_SENTRY_DSN,
+    tracesSampleRate:
+        typeof normalized.tracesSampleRate === "number"
+            ? normalized.tracesSampleRate
+            : 1.0,
+    // Keep integrations minimal for compatibility across SDK versions
+    integrations: normalized.integrations ?? [],
 });
