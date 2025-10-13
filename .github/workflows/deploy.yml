@@ -226,6 +226,14 @@ jobs:
           wranglerVersion: '4.42.1'
           command: d1 execute next-cf-app --env production --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name='site_settings';"
 
+      - name: Build OpenNext bundle (Cloudflare)
+        run: |
+          set -euo pipefail
+          npx @opennextjs/cloudflare build
+        env:
+          # Ensure Next.js gets prod URL for correct routing during OpenNext build
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
+
       - name: Deploy to Production (code)
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
         with:

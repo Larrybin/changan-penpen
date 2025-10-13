@@ -61,3 +61,6 @@
 <!-- DOCSYNC:WORKFLOWS_TABLE END -->
 
 <!-- sync: workflows updated in build.yml; table kept in sync by autogen -->
+
+## 部署流程更新说明（2025-10-13）
+- deploy.yml 已在“Deploy to Production (code)”之前新增“Build OpenNext bundle (Cloudflare)”步骤，执行 `npx @opennextjs/cloudflare build` 以生成 `.open-next/worker`，确保 Wrangler 部署的脚本包含有效的 `fetch` 处理器并避免 10068 错误。
