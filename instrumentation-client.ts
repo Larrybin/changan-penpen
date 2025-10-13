@@ -5,6 +5,7 @@ type IntegrationArray = Extract<IntegrationsUnion, unknown[]>;
 type IntegrationType = IntegrationArray extends (infer T)[] ? T : never;
 
 import {
+    DEFAULT_SENTRY_DSN,
     buildClientReplayRates,
     buildSentryOptions,
     resolveEnvironment,
@@ -29,11 +30,17 @@ const integrations: IntegrationType[] = rawIntegrations.filter(
 );
 
 const optRec = options as Record<string, unknown>;
+const normalizedTracesSampleRate =
+    typeof optRec.tracesSampleRate === "number"
+        ? (optRec.tracesSampleRate as number)
+        : 1.0;
 Sentry.init({
     ...options,
     dsn:
         (typeof optRec.dsn === "string" ? (optRec.dsn as string) : undefined) ??
-        process.env.NEXT_PUBLIC_SENTRY_DSN,
+        process.env.NEXT_PUBLIC_SENTRY_DSN ??
+            process.env.SENTRY_DSN ??
+            DEFAULT_SENTRY_DSN,
     sendDefaultPii: true,
     release:
         (typeof optRec.release === "string"
@@ -43,6 +50,7 @@ Sentry.init({
         (typeof optRec.environment === "string"
             ? (optRec.environment as string)
             : undefined) ?? resolveEnvironment(),
+    tracesSampleRate: normalizedTracesSampleRate,
     replaysSessionSampleRate,
     replaysOnErrorSampleRate,
     integrations,
