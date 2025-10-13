@@ -9,7 +9,6 @@ import type {
 } from "@refinedev/core";
 
 type CustomParams = Parameters<NonNullable<DataProvider["custom"]>>[0];
-type CustomReturn = ReturnType<NonNullable<DataProvider["custom"]>>;
 
 const API_BASE = "/api/admin";
 
@@ -193,7 +192,12 @@ export const adminDataProvider = {
             data: { id } as TData,
         };
     },
-    custom: async ({ url, method, meta, payload }: CustomParams) => {
+    custom: async <TData = Record<string, unknown>>({
+        url,
+        method,
+        meta,
+        payload,
+    }: CustomParams): Promise<TData | { data?: TData }> => {
         const requestUrl = url ? `${API_BASE}${url}` : API_BASE;
         const extraHeaders = (meta?.headers ?? undefined) as
             | Record<string, string>
@@ -209,7 +213,11 @@ export const adminDataProvider = {
             headers: headersObj,
             body: payload ? JSON.stringify(payload) : undefined,
         });
-        return (await parseResponse(response)) as Awaited<CustomReturn>;
+        const parsed = (await parseResponse(response)) as Record<string, unknown>;
+        if (typeof parsed === "object" && "data" in parsed) {
+            return parsed as { data?: TData };
+        }
+        return parsed as TData;
     },
     getApiUrl: () => API_BASE,
-} as unknown as DataProvider;
+} satisfies Required<DataProvider>;

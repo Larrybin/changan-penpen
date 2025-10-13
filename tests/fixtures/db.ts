@@ -3,9 +3,16 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import type { getDb } from "@/db";
 import * as schema from "@/db";
 
-export type TestDatabase = BetterSQLite3Database<typeof schema>;
+type CloudflareDatabase = Awaited<ReturnType<typeof getDb>>;
+type BatchArgs = Parameters<CloudflareDatabase["batch"]>;
+type BatchResult = ReturnType<CloudflareDatabase["batch"]>;
+
+export type TestDatabase = BetterSQLite3Database<typeof schema> & {
+    batch: (...args: BatchArgs) => BatchResult;
+};
 
 export interface CreateTestDbOptions {
     /**
@@ -132,8 +139,19 @@ export async function createTestDb(
         return inserted;
     };
 
+    const dbWithBatch = Object.assign(db, {
+        batch: (...args: BatchArgs): BatchResult => {
+            void args;
+            return Promise.reject(
+                new Error(
+                    "D1 batch is not implemented for the in-memory test database.",
+                ),
+            ) as BatchResult;
+        },
+    }) as TestDatabase;
+
     return {
-        db,
+        db: dbWithBatch,
         connection,
         reset,
         cleanup,
