@@ -49,9 +49,10 @@ type R2EnvLike = { next_cf_app_bucket: R2ListLike };
 function hasR2Bucket(env: unknown): env is R2EnvLike {
     try {
         const rec = env as Record<string, unknown> | null | undefined;
-        const bucket = (rec as any)?.next_cf_app_bucket as
-            | { list?: unknown }
-            | undefined;
+        const bucketVal = rec
+            ? (rec as Record<string, unknown>).next_cf_app_bucket
+            : undefined;
+        const bucket = bucketVal as { list?: unknown } | undefined;
         return (
             !!bucket &&
             typeof (bucket as { list?: unknown }).list === "function"

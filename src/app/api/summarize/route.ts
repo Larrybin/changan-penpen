@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
+import type { AiBinding } from "@/services/summarizer.service";
 import {
     SummarizerService,
     summarizeRequestSchema,
@@ -32,14 +33,14 @@ export async function POST(request: Request) {
 
         const { env } = await getCloudflareContext({ async: true });
 
-        type AiLike = {
-            run: (model: string, options?: unknown) => Promise<any>;
-        };
-        function hasAI(e: unknown): e is { AI: AiLike } {
+        function hasAI(e: unknown): e is { AI: AiBinding } {
             try {
                 const rec = e as Record<string, unknown> | null | undefined;
-                const ai = (rec as any)?.AI as { run?: unknown } | undefined;
-                return !!ai && typeof ai.run === "function";
+                const aiVal = rec
+                    ? (rec as Record<string, unknown>).AI
+                    : undefined;
+                const ai = aiVal as { run?: unknown } | undefined;
+                return Boolean(ai && typeof ai.run === "function");
             } catch {
                 return false;
             }

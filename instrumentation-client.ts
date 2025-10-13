@@ -1,4 +1,8 @@
 import * as Sentry from "@sentry/nextjs";
+type SentryInitOptions = Parameters<typeof Sentry.init>[0];
+type IntegrationsUnion = NonNullable<SentryInitOptions["integrations"]>;
+type IntegrationArray = Extract<IntegrationsUnion, unknown[]>;
+type IntegrationType = IntegrationArray extends (infer T)[] ? T : never;
 
 import {
     buildClientReplayRates,
@@ -10,27 +14,35 @@ import {
 const options = buildSentryOptions("client");
 const { replaysSessionSampleRate, replaysOnErrorSampleRate } = buildClientReplayRates();
 
-const rawIntegrations = [
-    // Optional performance instrumentation if available in current SDK
-    (Sentry as any).browserTracingIntegration
-        ? (Sentry as any).browserTracingIntegration()
-        : undefined,
+type MaybeTracing = { browserTracingIntegration?: () => unknown };
+const maybeTracing = (Sentry as unknown as MaybeTracing).browserTracingIntegration;
+const rawIntegrations: Array<IntegrationType | undefined> = [
+    typeof maybeTracing === "function" ? (maybeTracing() as IntegrationType) : undefined,
     replaysSessionSampleRate > 0 || replaysOnErrorSampleRate > 0
         ? Sentry.replayIntegration()
         : undefined,
     Sentry.feedbackIntegration({ colorScheme: "system" }),
 ];
 
-const integrations = rawIntegrations.filter(
-    (integration): integration is NonNullable<(typeof rawIntegrations)[number]> => Boolean(integration),
+const integrations: IntegrationType[] = rawIntegrations.filter(
+    (integration): integration is IntegrationType => Boolean(integration),
 );
 
+const optRec = options as Record<string, unknown>;
 Sentry.init({
     ...options,
-    dsn: (options as any).dsn ?? process.env.NEXT_PUBLIC_SENTRY_DSN,
+    dsn:
+        (typeof optRec.dsn === "string" ? (optRec.dsn as string) : undefined) ??
+        process.env.NEXT_PUBLIC_SENTRY_DSN,
     sendDefaultPii: true,
-    release: (options as any).release ?? resolveRelease(),
-    environment: (options as any).environment ?? resolveEnvironment(),
+    release:
+        (typeof optRec.release === "string"
+            ? (optRec.release as string)
+            : undefined) ?? resolveRelease(),
+    environment:
+        (typeof optRec.environment === "string"
+            ? (optRec.environment as string)
+            : undefined) ?? resolveEnvironment(),
     replaysSessionSampleRate,
     replaysOnErrorSampleRate,
     integrations,
