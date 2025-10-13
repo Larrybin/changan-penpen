@@ -1,15 +1,16 @@
 # Self-check Execution Report
 
-This document captures the verification commands executed after integrating Upstash rate limiting. Network restrictions currently block fetching new npm packages, so runtime dependencies for `@upstash/ratelimit` and `@upstash/redis` are unavailable in the container.
+This document记录在引入 Upstash 限流后执行的最新自检命令及结果，方便追踪基线状态。
 
 ## Commands
 
 | Command | Result | Notes |
 | --- | --- | --- |
-| `pnpm check:all` | Failed | Type generation succeeded, but TypeScript cannot resolve the Upstash packages because they are not installed. |
-| `pnpm test` | Passed with skips | Vitest completed 23 suites (1 skipped). Tests that require `better-sqlite3` continue to skip because native bindings are not present in this environment. |
-| `pnpm build` | Failed | Next.js build stops with module resolution errors for `@upstash/ratelimit` and `@upstash/redis/cloudflare`. |
+| `pnpm check:all` | Passed | Biome、类型检查与文档/链接校验均通过。 |
+| `pnpm test` | Passed with skips | 166 个测试中有 1 个跳过（依赖本地数据库原生模块，CI 环境缺失）。覆盖率报告由 Vitest v8 backend 提供。 |
+| `pnpm build` | Passed | Next.js 生产构建完成。Sentry 提示缺少 auth token，需在配置凭证后重新验证 sourcemap 上传。 |
 
 ## Follow-up
 
-Installing the missing dependencies requires npm registry access. Once connectivity is restored, run `pnpm install` followed by the above commands to confirm a clean build.
+- 未来若更新依赖或调整限流实现，请重新运行以上命令并刷新本页记录。
+- 待补充：配置 Sentry `authToken` 以便生成发行版本并上传 source map。
