@@ -10,8 +10,12 @@
   - 生产部署 Job 条件：push 到 main 且非文档-only，或手动触发；并且质量门成功
   - Secrets/Vars：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`BETTER_AUTH_SECRET`、`GOOGLE_CLIENT_ID/SECRET`、`CLOUDFLARE_R2_URL`、`CREEM_API_KEY/WEBHOOK_SECRET`、`NEXT_PUBLIC_APP_URL`；`OPENAI_API_KEY`（可选）
   - Sentry（构建期与运行期）：`SENTRY_AUTH_TOKEN`（Secrets），`SENTRY_ORG`/`SENTRY_PROJECT`（Repository Variables，可缺省为 `next.config.ts` 默认），`SENTRY_DSN`、`NEXT_PUBLIC_SENTRY_DSN`（Secrets），`SENTRY_ENVIRONMENT` 与 `SENTRY_TUNNEL_ROUTE`（Variables，按需）
-- SonarCloud（`.github/workflows/sonarcloud.yml`）
-  - 消费 `coverage/lcov.info`（由该工作流内的 Vitest 步骤生成），在 SonarCloud 中聚合质量与技术债
+- Build（`.github/workflows/build.yml`）
+  - 触发：push 到 main、部分 PR 事件
+  - Jobs：
+    - `changes`：检测是否为 docs-only 变更，为后续 Job 决策
+    - `sonarcloud`：运行 Vitest 覆盖率（生成 `coverage/lcov.info` 与 `coverage-summary.json`），当前仅保留产物供后续使用
+    - `docs-only`：当仅有文档改动时快速跳过重型步骤
 - Dependabot Auto‑Merge（`.github/workflows/dependabot-automerge.yml`）
   - 仅对 Dependabot 的 minor/patch PR 且检查通过时开启 auto‑merge（squash）
 

@@ -15,7 +15,7 @@ Unified standards and a structured checklist for this repository. Goals: correct
 - Small scoped commits: group by feature/fix; keep diffs focused
 - Patch staging: use `git add --patch` and review with `git diff --staged`
  - Pre-push self-check: prefer `pnpm push` (typecheck, tests + coverage, docs & links, final Biome, optional Next build, auto commit message, rebase then push).
- - CI quality gate: PRs run SonarCloud to surface vulnerabilities, smells, and technical debt; PRs must include screenshots/notes and any migration changes
+ - CI quality gate: PRs 依赖 `ci.yml` 的 `build-and-test` Job（Biome、TypeScript、Docs/Links、Vitest 覆盖率阈值、Next 构建）通过；PR 需附截图/说明及迁移变更
 
 ## Code Style & Naming
 - TypeScript-first; components: PascalCase; variables/functions: camelCase; domain-driven modules under `src/modules/<feature>`
@@ -40,7 +40,7 @@ Unified standards and a structured checklist for this repository. Goals: correct
 - SQL injection: use ORM (Drizzle) parameter binding; avoid string concatenation
 - CSRF/CORS: minimal allowlists; mutating requests require CSRF or auth
 - Secrets: local `.dev.vars`; production via Wrangler `secret`; never hardcode secrets
- - Dependency hygiene: regular audits and updates (`pnpm outdated`, Renovate/Dependabot); CI quality scanning via SonarCloud
+ - Dependency hygiene: regular audits and updates (`pnpm outdated`, Renovate/Dependabot); CI 会在 `build-and-test` 中运行覆盖率与构建校验
 
 ## API / Database / Transactions
 - API calls: test failure/exception paths; define timeouts, retries, idempotency (e.g., idempotency keys for payments/webhooks)
@@ -90,7 +90,7 @@ Unified standards and a structured checklist for this repository. Goals: correct
   - [ ] Secrets via Wrangler/env bindings; no hardcoding
 - Tests
   - [ ] Critical paths and failure cases covered; Vitest passes
-  - [ ] Coverage artifact available (lcov consumed by Sonar)
+  - [ ] Coverage artifacts available（HTML / `coverage-summary.json` 上传为 Actions artifact）
 - Cloudflare
   - [ ] Wrangler bindings/types correct (`pnpm cf-typegen`)
   - [ ] D1/R2 bindings consistent locally/remotely
@@ -102,7 +102,7 @@ Unified standards and a structured checklist for this repository. Goals: correct
 ## Push & CI Quality Gates
 - Local: `pnpm push` blocks on TypeScript, Vitest, Docs/Links, final Biome, and optional Next build
 - CI:
- - SonarCloud: aggregates coverage/quality (consumes vitest `lcov`)
+ - CI `build-and-test`: 汇总覆盖率（`coverage-summary.json`）、上传 HTML 报告，并执行 Next.js 构建
 
 ## Dependencies & Vulnerability Management
 - Review `pnpm outdated` regularly; update by impact; canary/gradual rollout when needed
@@ -114,9 +114,9 @@ Unified standards and a structured checklist for this repository. Goals: correct
 
 ### Actions Version Pinning Policy (GitHub Actions)
 - Pin third‑party Actions to specific commit SHAs (not `vX` tags) to reduce supply‑chain risk
- - Scope: checkout, setup-node, pnpm/action-setup, cache, upload-artifact, SonarCloud, Cloudflare Wrangler, Dependabot helpers, etc.
+ - Scope: checkout, setup-node, pnpm/action-setup, cache, upload-artifact、build `sonarcloud` Job（Vitest 覆盖率）、Cloudflare Wrangler, Dependabot helpers, etc.
 - Upgrade process:
   - Periodically (monthly/after incidents) resolve the latest commit for upstream tags and update pins in a branch
-  - Open PR, run full CI (SonarCloud), merge once green
+  - Open PR, run full CI (`build-and-test`), merge once green
   - Keep `docs/ci-cd.md` and `docs/workflows/*` in sync
 - Example: `uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955`

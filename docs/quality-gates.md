@@ -16,14 +16,8 @@ Environment toggles:
 - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows (default is skipped)
 
 ## CI checks
-- SonarCloud (`.github/workflows/sonarcloud.yml`): consumes `coverage/lcov.info` to aggregate coverage and quality.
-
-Required configuration:
-- GitHub Secrets:
-  - `SONAR_TOKEN` (SonarCloud access token)
-- GitHub Actions Variables:
-  - `SONAR_PROJECT_KEY`, `SONAR_ORG`
-- `sonar-project.properties`: optionally set `sonar.projectKey` and `sonar.organization` (or rely on workflow vars)
+- CI（`.github/workflows/ci.yml`）：单一 `build-and-test` Job，串行执行 pnpm 安装、i18n 规范化校验、Biome/TypeScript、Docs/Links 检查、Vitest 覆盖率（生成 `coverage-summary.json` 与 HTML artifact）、覆盖率阈值校验，以及最终的 Next.js 构建。
+  - 覆盖率阈值直接读取同一 Job 产出的 `coverage-summary.json`，必要时会从 `coverage-final.json` 回填，当前未触发额外的 SonarCloud 流程。
 
 ## Common commands
 - `pnpm test` — run unit tests and generate coverage
