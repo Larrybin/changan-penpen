@@ -18,6 +18,6 @@
 ## Checklist
 - [ ] CI green (lint/test/build)
 - [ ] Migrations reviewed and applied
-- [ ] Health checks green (fast + strict)
+- [ ] Health checks green（自动 fast；严格模式如执行需确认）
 - [ ] Docs updated for user‑visible changes
 
