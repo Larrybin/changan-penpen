@@ -14,7 +14,7 @@
 | `pnpm deploy:cf` | OpenNext build + `wrangler deploy` | Cloudflare Workers deploy |
 | `pnpm cf-typegen` | Regenerate CF bindings/types | Run after editing `wrangler.toml` |
 | `pnpm typecheck` | CF typegen + `tsc --noEmit` | Ensures types are in sync |
-| `pnpm check:all` | 本地质量门（Biome 写入/校验、cf-typegen、tsc、构建、docs/link） | `CHECK_ENABLE_TESTS=1` 启用单测 |
+| `pnpm check:all` | 本地质量门（Biome 写入/校验、cf-typegen、tsc、构建、docs/link） | `CHECK_ENABLE_TESTS=1` 启用单测；`git push` 会自动运行 |
 | `pnpm translate` | Batch translate content | Requires AI keys in `.dev.vars` |
 | `pnpm db:generate` | Generate migration | Uses drizzle-kit |
 | `pnpm db:generate:named` | Generate named migration | e.g. `add_users_table` |

@@ -16,17 +16,18 @@
 - Lint links and headings during CI (if checker is configured)
 - Ensure UTF-8 and normalized LF line endings
 - Preview Markdown rendering in IDE
-- Local pre-push gate: `pnpm push` 默认执行:
-  - 增量文档自修复:补全相对链接 `.md` 后缀、去除 UTF-8 BOM、统一换行、清理行尾空格.
-  - 文档自动生成(锚点块覆盖):根据变更来源生成片段(ENV/Bindings、Workflows 概览、Scripts 表、API 索引).
-  - Biome 写入(增量/全量)与最终 `biome check`.
-  - 文档一致性 `check:docs` 与本地链接校验 `check:links`.
-  - 变更范围感知的 `tsc`/测试/可选 Next.js 构建.
-  - 不产生额外提交:对自动修复与文档自动生成的变更,统一以"修订最近一次提交(amend)"的方式合入;若触达上限(默认 50 个文件)会中止.
-  - 每次 push 前会创建轻量 tag 作为回滚点(形如 `prepush-<timestamp>-<sha>`).
-    - 查看备份:`pnpm run push:rollback -- --list`
-    - 打印回滚指令:`pnpm run push:rollback`
-    - 直接本地回滚(危险):`ROLLBACK_APPLY=1 pnpm run push:rollback`
+- Local pre-push gate: 任意 `git push` 默认先执行 `pnpm check:all`，失败会阻止推送:
+  - Biome 写入修复 + 最终 `pnpm exec biome check .`
+  - `pnpm run cf-typegen`（仅绑定文件变更时）
+  - `pnpm exec tsc --noEmit`
+  - Next.js 构建（Windows 可通过 `SKIP_NEXT_BUILD=1` 跳过）
+  - 可选 Vitest（设置 `CHECK_ENABLE_TESTS=1`）
+  - 文档一致性 `pnpm run check:docs` 与链接校验 `pnpm run check:links`
+  - 可使用 `ALLOW_DIRECT_PUSH=1` / `HUSKY_BYPASS=1` / `SKIP_PRE_PUSH_CHECK_ALL=1` 进行一次性绕过
+- 如需自动提交与备份 tag，可继续使用 `pnpm push`；回滚命令不变:
+  - 查看备份:`pnpm run push:rollback -- --list`
+  - 打印回滚指令:`pnpm run push:rollback`
+  - 直接本地回滚(危险):`ROLLBACK_APPLY=1 pnpm run push:rollback`
 
 ## Monthly Review (suggested)
 - [ ] Check outdated content or broken links
