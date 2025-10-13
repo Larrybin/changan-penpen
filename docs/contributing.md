@@ -6,7 +6,7 @@ Thank you for your interest in the project! Please follow these steps to keep co
 1. Create a branch (e.g., `feature/<topic>` or `fix/<issue-id>`). Keep it focused and short‑lived.
 2. Sync latest `main` before you branch and before opening a PR.
 3. Develop and validate locally (see `docs/local-dev.md`).
-4. Run local quality gates: `pnpm check:all && pnpm test && pnpm build`.
+4. Run local quality gates: `pnpm check:all`（若需连同单测可加 `CHECK_ENABLE_TESTS=1`，或另外执行 `pnpm test`）。
 5. Open a PR with a clear description, screenshots for UI, and links to issues.
 
 ## 2) Coding Standards
@@ -20,6 +20,7 @@ Thank you for your interest in the project! Please follow these steps to keep co
 - PRs must pass CI and include docs updates for user‑visible or ops changes.
 
 ## 4) Local Checks
+- Prefer `pnpm check:all` for the full quality gate（包含 Biome 写入/校验、cf-typegen、tsc、构建、docs/link；`CHECK_ENABLE_TESTS=1` 可附带单测）。
 - `pnpm biome:check` and `pnpm typecheck` should pass before pushing.
 - Run `pnpm test` for the affected modules; add tests for critical logic.
 - If you changed Cloudflare bindings or env keys, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts` (or `pnpm typecheck`, which includes it).
@@ -40,4 +41,3 @@ Thank you for your interest in the project! Please follow these steps to keep co
 ## 8) Reviews
 - Be kind, specific, and actionable. Suggest improvements with examples.
 - Maintainers may request splitting large PRs into smaller ones.
-

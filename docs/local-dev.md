@@ -14,7 +14,7 @@
 | `pnpm deploy:cf` | OpenNext build + `wrangler deploy` | Cloudflare Workers deploy |
 | `pnpm cf-typegen` | Regenerate CF bindings/types | Run after editing `wrangler.toml` |
 | `pnpm typecheck` | CF typegen + `tsc --noEmit` | Ensures types are in sync |
-| `pnpm check:all` | Biome check + typecheck (+ docs checks) | Add docs checks below |
+| `pnpm check:all` | 本地质量门（Biome 写入/校验、cf-typegen、tsc、构建、docs/link） | `CHECK_ENABLE_TESTS=1` 启用单测 |
 | `pnpm translate` | Batch translate content | Requires AI keys in `.dev.vars` |
 | `pnpm db:generate` | Generate migration | Uses drizzle-kit |
 | `pnpm db:generate:named` | Generate named migration | e.g. `add_users_table` |
@@ -69,10 +69,10 @@
 - More in `docs/troubleshooting.md`
 
 ## 8. Daily Quality Gate
-1. `pnpm lint`
-2. `pnpm test` (if tests exist)
-3. Update docs when changing DB/config/process and link them in PR
-4. Track CI & Deploy with `gh run watch`
+1. `pnpm check:all`（需要连同单测时先设置 `CHECK_ENABLE_TESTS=1`）
+2. 针对重点模块补跑 `pnpm test` 或专项脚本（如端到端、自定义基准）
+3. 更新涉及的文档（DB/配置/流程）并在 PR 中链接
+4. 使用 `gh run watch` 关注 CI & 部署状态
 
 ---
 
@@ -94,7 +94,7 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `build:cf` | `npx @opennextjs/cloudflare build` |
 | `cf-typegen` | `pnpm exec wrangler types && pnpm exec wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts` |
 | `cf:secret` | `npx wrangler secret put` |
-| `check:all` | `pnpm run biome:check && pnpm run typecheck && pnpm run check:docs && pnpm run check:links` |
+| `check:all` | `node scripts/check-all.mjs` |
 | `check:docs` | `node scripts/check-docs.mjs` |
 | `check:links` | `node scripts/check-links.mjs` |
 | `db:generate` | `drizzle-kit generate` |
@@ -128,5 +128,3 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
 | `wrangler:dev` | `npx wrangler dev` |
 <!-- DOCSYNC:SCRIPTS_TABLE_AUTO END -->
-
-

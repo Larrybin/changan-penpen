@@ -121,7 +121,7 @@ MIT © 2025 Muhammad Arifin
 | `build` | `next build` |
 | `start` | `next start` |
 | `push` | `node -e "const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}" && node scripts/push-fix2.mjs` |
-| `check:all` | `pnpm run biome:check && pnpm run typecheck && pnpm run check:docs && pnpm run check:links` |
+| `check:all` | `node scripts/check-all.mjs` |
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
 | `lint` | `npx biome format --write` |
 | `test` | `vitest run` |
