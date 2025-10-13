@@ -5,12 +5,14 @@ This document complements `docs/deployment/cloudflare-workers.md` and `docs/work
 ## Pre‑deploy
 - Ensure CI is green and coverage thresholds hold
 - Verify `/api/health?fast=1` passes in staging
+- 如需严格模式，手动验证 `/api/health`
 - Review DB migrations and data impacts; export D1 snapshot if necessary
 
 ## Deploy
 - Push to `main` or run the Deploy workflow targeting production
 - OpenNext build → `wrangler deploy`
-- Health gates must pass in fast mode first, then strict
+- 自动健康检查：`GET /api/health?fast=1`（workflow 默认调用）
+- 严格模式 `/api/health` 需人工触发（执行后再标记成功）
 
 ## Post‑deploy
 - Check Sentry dashboards and Workers Analytics
@@ -24,7 +26,7 @@ This document complements `docs/deployment/cloudflare-workers.md` and `docs/work
 ## Checklist
 - [ ] CI passed (lint/test/build)
 - [ ] Migrations reviewed
-- [ ] Health checks green (fast + strict)
+- [ ] 健康检查通过（自动 fast；如执行严格模式请确认）
 - [ ] Observability dashboards clean
 - [ ] Docs updated if process changed
 
