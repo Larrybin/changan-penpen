@@ -1,5 +1,10 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Ratelimit } from "@upstash/ratelimit";
+
+// Local re-definition to align with @upstash/ratelimit template literal type
+type Unit = "ms" | "s" | "m" | "h" | "d";
+type Duration = `${number} ${Unit}` | `${number}${Unit}`;
+
 import { Redis } from "@upstash/redis/cloudflare";
 
 interface RateLimitBinding {
@@ -15,19 +20,19 @@ type RateLimiterEnv = {
 interface SlidingWindowStrategy {
     type: "sliding";
     requests: number;
-    window: string;
+    window: Duration;
 }
 
 interface FixedWindowStrategy {
     type: "fixed";
     requests: number;
-    window: string;
+    window: Duration;
 }
 
 interface TokenBucketStrategy {
     type: "tokenBucket";
     refillRate: number;
-    interval: string;
+    interval: Duration;
     capacity: number;
 }
 
@@ -57,7 +62,7 @@ export interface ApplyRateLimitOptions {
 export interface RateLimitMetadata {
     limit?: number;
     remaining?: number;
-    reset?: Date | string;
+    reset?: Date | string | number;
 }
 
 export type ApplyRateLimitResult =
@@ -202,7 +207,9 @@ function ensureUpstashLimiter(
     return limiter;
 }
 
-function computeRetryAfterSeconds(reset?: Date | string): number | null {
+function computeRetryAfterSeconds(
+    reset?: Date | string | number,
+): number | null {
     if (!reset) {
         return null;
     }
@@ -246,7 +253,9 @@ function buildUpstashErrorResponse(
             const resetValue =
                 metadata.reset instanceof Date
                     ? Math.ceil(metadata.reset.getTime() / 1000)
-                    : metadata.reset;
+                    : typeof metadata.reset === "number"
+                      ? Math.ceil(metadata.reset / 1000)
+                      : metadata.reset;
             headers.set("X-RateLimit-Reset", String(resetValue));
         }
     }
@@ -298,7 +307,7 @@ export async function applyRateLimit(
             if (typeof waitUntil === "function") {
                 waitUntil(result.pending);
             } else {
-                result.pending.catch((error) => {
+                result.pending.catch((error: unknown) => {
                     console.warn("[rate-limit] pending analytics rejected", {
                         identifier,
                         error,
@@ -341,7 +350,7 @@ export async function applyRateLimit(
         if (outcome.success) {
             return { ok: true, skipped: false };
         }
-    } catch (error) {
+    } catch (error: unknown) {
         console.warn("[rate-limit] failed to evaluate", {
             key: compositeKey,
             error,
