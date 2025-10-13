@@ -22,7 +22,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - Edge-native: OpenNext build, deploy to Cloudflare Workers (100+ PoPs)
 - Data & storage: Cloudflare D1 + R2 via Drizzle ORM
 - CI/CD suite: Biome, TypeScript checks, Vitest tests
-- Auto-fix & auto-merge: workflows for safe rolling PRs
+- Auto-merge guardrails: Dependabot auto-merge with local `pnpm push` self-heal
 - Health checks: `/api/health` with fast/strict modes
 - Observability: Workers Analytics, optional Sentry, structured logs
 - i18n & AI translation: built-in locales and scripts (Gemini/OpenAI)
@@ -133,7 +133,7 @@ MIT © 2025 Muhammad Arifin
 | CI |  | .github/workflows/ci.yml |
 | Dependabot Auto‑Merge |  | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare |  | .github/workflows/deploy.yml |
-| SonarCloud |  | .github/workflows/sonarcloud.yml |
+| Build (SonarCloud + coverage) |  | .github/workflows/build.yml |
 <!-- DOCSYNC:README_AUTOMATION END -->
 
 <!-- DOCSYNC:README_STRUCTURE START -->
