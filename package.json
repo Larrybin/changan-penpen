@@ -67,11 +67,7 @@
         "drizzle-zod": "^0.8.3",
         "lucide-react": "^0.545.0",
         "next": "15.5.4",
-<<<<<<< HEAD
         "next-intl": "^4.3.12",
-=======
-        "next-intl": "^4.3.9",
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
         "react": "19.2.0",
         "react-dom": "19.2.0",
         "react-hook-form": "^7.65.0",

@@ -13,13 +13,8 @@ importers:
   .:
     dependencies:
       '@hookform/resolvers':
-<<<<<<< HEAD
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.65.0(react@19.2.0))
-=======
-        specifier: ^5.2.1
-        version: 5.2.1(react-hook-form@7.65.0(react@19.2.0))
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
       '@opennextjs/cloudflare':
         specifier: ^1.10.1
         version: 1.10.1(wrangler@4.42.2(@cloudflare/workers-types@4.20251011.0))
@@ -87,13 +82,8 @@ importers:
         specifier: 15.5.4
         version: 15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       next-intl:
-<<<<<<< HEAD
         specifier: ^4.3.12
         version: 4.3.12(next@15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
-=======
-        specifier: ^4.3.9
-        version: 4.3.9(next@15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
       react:
         specifier: 19.2.0
         version: 19.2.0
@@ -6704,11 +6694,7 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-<<<<<<< HEAD
   '@hookform/resolvers@5.2.2(react-hook-form@7.65.0(react@19.2.0))':
-=======
-  '@hookform/resolvers@5.2.1(react-hook-form@7.65.0(react@19.2.0))':
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
     dependencies:
       '@standard-schema/utils': link:stubs/standard-schema-utils
       react-hook-form: 7.65.0(react@19.2.0)
@@ -7941,11 +7927,6 @@ snapshots:
 
   '@sentry/core@10.19.0': {}
 
-<<<<<<< HEAD
-=======
-  '@sentry/core@8.55.0': {}
-
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
   '@sentry/nextjs@10.19.0(@opentelemetry/context-async-hooks@2.1.0(@opentelemetry/api@1.9.0))(@opentelemetry/core@2.1.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.1.0(@opentelemetry/api@1.9.0))(next@15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(webpack@5.102.1(esbuild@0.25.10))':
     dependencies:
       '@opentelemetry/api': 1.9.0
@@ -10217,21 +10198,13 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-<<<<<<< HEAD
   next-intl@4.3.12(next@15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(typescript@5.9.3):
-=======
-  next-intl@4.3.9(next@15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(typescript@5.9.3):
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
     dependencies:
       '@formatjs/intl-localematcher': 0.5.10
       negotiator: 1.0.0
       next: 15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
-<<<<<<< HEAD
       use-intl: 4.3.12(react@19.2.0)
-=======
-      use-intl: 4.3.9(react@19.2.0)
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
     optionalDependencies:
       typescript: 5.9.3
 
@@ -11028,19 +11001,11 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.2
 
-<<<<<<< HEAD
   use-intl@4.3.12(react@19.2.0):
     dependencies:
       '@formatjs/fast-memoize': 2.2.7
       '@schummar/icu-type-parser': 1.21.5
       intl-messageformat: 10.7.18
-=======
-  use-intl@4.3.9(react@19.2.0):
-    dependencies:
-      '@formatjs/fast-memoize': 2.2.7
-      '@schummar/icu-type-parser': 1.21.5
-      intl-messageformat: 10.7.16
->>>>>>> 700d396 (chore(deps): bump the react-ecosystem group with 5 updates)
       react: 19.2.0
 
   use-sidecar@1.1.3(@types/react@19.2.2)(react@19.2.0):
