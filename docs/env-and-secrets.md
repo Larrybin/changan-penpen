@@ -12,6 +12,18 @@
   - R2: `next_cf_app_bucket`
   - AI: `AI`
   - Static assets: `ASSETS`
+  - Version metadata: `CF_VERSION_METADATA`
+    - 注意：`version_metadata` 不会从顶层自动继承到环境配置；在生产环境需要显式添加：
+      - 顶层：
+        ```toml
+        [version_metadata]
+        binding = "CF_VERSION_METADATA"
+        ```
+      - 生产环境：
+        ```toml
+        [env.production.version_metadata]
+        binding = "CF_VERSION_METADATA"
+        ```
 
 Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.d.ts`.
 

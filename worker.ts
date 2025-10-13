@@ -53,8 +53,9 @@ const debugWrapper: FetchHandler<WorkerEnv> = {
     },
 };
 
-const sentryWrapped = (Sentry as any).withSentry(
-    debugWrapper as any,
+const sentryFetch = (Sentry as any).withSentry(
+    async (request: Request, env: WorkerEnv, ctx: ExecutionContext) =>
+        debugWrapper.fetch(request, env, ctx),
     (env: WorkerEnv) => ({
         dsn: env.SENTRY_DSN,
         environment: env.SENTRY_ENVIRONMENT ?? env.NEXTJS_ENV ?? "development",
@@ -63,6 +64,14 @@ const sentryWrapped = (Sentry as any).withSentry(
         debug: env.SENTRY_ENABLE_LOGS !== "0",
         tracesSampleRate: 1.0,
     }),
-);
+) as (request: Request, env: WorkerEnv, ctx: ExecutionContext) => Promise<Response>;
 
-export default sentryWrapped as unknown as FetchHandler<WorkerEnv>;
+export async function fetch(
+    request: Request,
+    env: WorkerEnv,
+    ctx: ExecutionContext,
+) {
+    return sentryFetch(request, env, ctx);
+}
+
+export default { fetch } as FetchHandler<WorkerEnv>;
