@@ -51,6 +51,21 @@ export interface UploadConstraints {
     rateLimit?: UploadRateLimitOptions;
 }
 
+// 统一获取 R2 绑定的宽化类型，避免对全局 Env 声明顺序的敏感依赖
+type R2BucketLike = {
+    put: (key: string, value: unknown, options?: unknown) => Promise<unknown>;
+    get: (key: string) => Promise<R2Object | null>;
+    list: (options?: unknown) => Promise<unknown>;
+};
+
+function getR2Bucket(env: unknown): R2BucketLike {
+    const rec = env as Record<string, unknown> | null | undefined;
+    const bucket = rec
+        ? (rec as Record<string, unknown>).next_cf_app_bucket
+        : undefined;
+    return bucket as unknown as R2BucketLike;
+}
+
 function normalizeFolder(folder: string | undefined) {
     const val = (folder ?? "uploads").trim();
     let start = 0;
@@ -278,7 +293,8 @@ export async function uploadToR2(
 
         const arrayBuffer = await file.arrayBuffer();
 
-        const result = await env.next_cf_app_bucket.put(key, arrayBuffer, {
+        const bucket = getR2Bucket(env);
+        const result = await bucket.put(key, arrayBuffer, {
             httpMetadata: buildHttpMetadataForUpload(detectedMime, file.name),
             customMetadata: buildCustomMetadataForUpload(
                 file,
@@ -324,7 +340,8 @@ export async function uploadToR2(
 export async function getFromR2(key: string): Promise<R2Object | null> {
     try {
         const { env } = await getCloudflareContext({ async: true });
-        return env.next_cf_app_bucket.get(key);
+        const bucket = getR2Bucket(env);
+        return bucket.get(key);
     } catch (error) {
         console.error("Error getting data from R2", error);
         return null;
@@ -341,7 +358,8 @@ export async function listR2Files(options?: {
     const limit = options?.limit ?? 100;
     const cursor = options?.cursor;
     try {
-        const listResult = (await env.next_cf_app_bucket.list({
+        const bucket = getR2Bucket(env);
+        const listResult = (await bucket.list({
             prefix,
             limit,
             cursor,
