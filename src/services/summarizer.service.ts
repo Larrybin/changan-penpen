@@ -31,8 +31,13 @@ export type SummaryResult = {
     };
 };
 
+// 采用结构化约束，避免对全局 Ai 类型的硬依赖
+export type AiBinding = {
+    run: (model: string, options: unknown) => Promise<any>;
+};
+
 export class SummarizerService {
-    constructor(private readonly ai: Ai) {}
+    constructor(private readonly ai: AiBinding) {}
 
     async summarize(
         text: string,

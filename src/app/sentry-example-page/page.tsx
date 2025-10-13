@@ -93,6 +93,19 @@ export default function Page() {
                     <span>Throw Sample Error</span>
                 </button>
 
+                <button
+                    type="button"
+                    onClick={() => {
+                        Sentry.captureMessage(
+                            "User triggered test log",
+                            "info",
+                        );
+                    }}
+                    disabled={!isConnected}
+                >
+                    <span>Send Sentry Log</span>
+                </button>
+
                 {hasSentError ? (
                     <p className="success">Error sent to Sentry.</p>
                 ) : !isConnected ? (

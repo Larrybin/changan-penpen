@@ -9,6 +9,7 @@
   - 触发：push 到 main、pull_request 到 main、`workflow_dispatch`（手动）
   - 生产部署 Job 条件：push 到 main 且非文档-only，或手动触发；并且质量门成功
   - Secrets/Vars：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`BETTER_AUTH_SECRET`、`GOOGLE_CLIENT_ID/SECRET`、`CLOUDFLARE_R2_URL`、`CREEM_API_KEY/WEBHOOK_SECRET`、`NEXT_PUBLIC_APP_URL`；`OPENAI_API_KEY`（可选）
+  - Sentry（构建期与运行期）：`SENTRY_AUTH_TOKEN`（Secrets），`SENTRY_ORG`/`SENTRY_PROJECT`（Repository Variables，可缺省为 `next.config.ts` 默认），`SENTRY_DSN`、`NEXT_PUBLIC_SENTRY_DSN`（Secrets），`SENTRY_ENVIRONMENT` 与 `SENTRY_TUNNEL_ROUTE`（Variables，按需）
 - SonarCloud（`.github/workflows/sonarcloud.yml`）
   - 消费 `coverage/lcov.info`（由该工作流内的 Vitest 步骤生成），在 SonarCloud 中聚合质量与技术债
 - Dependabot Auto‑Merge（`.github/workflows/dependabot-automerge.yml`）
@@ -42,6 +43,12 @@
 
 ## 提交与文档同步
 - 修改 `.github/workflows/*.yml`、`package.json`、`wrangler.toml`、`scripts/`、`src/app/**/route.ts` 等关键文件时，请同步更新对应 docs（本文件、local‑dev、env 与 API 索引等）
+
+## Sentry 集成说明（新增）
+- CI 与 Deploy 的构建步骤已注入 `SENTRY_AUTH_TOKEN`、`SENTRY_ORG`、`SENTRY_PROJECT` 等变量用于 source maps 上传；
+- 生产环境会在部署后同步 `SENTRY_DSN` 到 Workers Secret，用于运行期上报；
+- 客户端/浏览器上报使用 `NEXT_PUBLIC_SENTRY_DSN`；服务端/Edge 使用 `SENTRY_DSN`；
+- 可选启用隧道：在 Repository Variables 中设置 `SENTRY_TUNNEL_ROUTE=/monitoring`。
 
 <!-- DOCSYNC:WORKFLOWS_TABLE START -->
 ### Workflows Overview (auto)

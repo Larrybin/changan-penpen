@@ -32,7 +32,20 @@ export async function POST(request: Request) {
 
         const { env } = await getCloudflareContext({ async: true });
 
-        if (!env.AI) {
+        type AiLike = {
+            run: (model: string, options?: unknown) => Promise<any>;
+        };
+        function hasAI(e: unknown): e is { AI: AiLike } {
+            try {
+                const rec = e as Record<string, unknown> | null | undefined;
+                const ai = (rec as any)?.AI as { run?: unknown } | undefined;
+                return !!ai && typeof ai.run === "function";
+            } catch {
+                return false;
+            }
+        }
+
+        if (!hasAI(env)) {
             return new Response(
                 JSON.stringify({
                     success: false,
