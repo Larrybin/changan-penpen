@@ -10,12 +10,11 @@
 ## Steps (high level)
 1. Checkout and set up PNPM cache
 2. `pnpm install --frozen-lockfile`
-3. `pnpm lint && pnpm test --coverage && pnpm build`
+3. 复用 `ci.yml` 质量门（Biome/tsc/Vitest/构建）
 4. OpenNext build + `wrangler deploy`
 5. Health checks:
-   - `GET /api/health?fast=1` must return 200 `{ ok: true }`
-   - `GET /api/health` (strict) must return 200 before marking success
-6. Post‑deploy notifications
+   - Workflow automatically calls `GET /api/health?fast=1` and expects 200 `{ ok: true }`
+   - 严格模式 `GET /api/health` 需人工触发（如仍建议执行）
 
 ## Rollback
 - `wrangler deploy --rollback`
