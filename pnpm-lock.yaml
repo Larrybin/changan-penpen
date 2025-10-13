@@ -74,7 +74,7 @@ importers:
         version: 0.44.5(@cloudflare/workers-types@4.20251011.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.5)(better-sqlite3@12.2.0)(kysely@0.28.8)
       drizzle-zod:
         specifier: ^0.8.3
-        version: 0.8.3(drizzle-orm@0.44.5(@cloudflare/workers-types@4.20251011.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.5)(better-sqlite3@12.2.0)(kysely@0.28.8))(zod@4.1.8)
+        version: 0.8.3(drizzle-orm@0.44.5(@cloudflare/workers-types@4.20251011.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.5)(better-sqlite3@12.2.0)(kysely@0.28.8))(zod@4.1.12)
       lucide-react:
         specifier: ^0.545.0
         version: 0.545.0(react@19.1.0)
@@ -100,8 +100,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       zod:
-        specifier: ^4.1.8
-        version: 4.1.8
+        specifier: ^4.1.12
+        version: 4.1.12
     devDependencies:
       '@babel/parser':
         specifier: ^7.28.4
@@ -5294,8 +5294,8 @@ packages:
   zod@3.22.3:
     resolution: {integrity: sha512-EjIevzuJRiRPbVH4mGc8nApb/lVLKVpmUhAaR5R5doKGfAnGJ6Gr3CViAVjP+4FWSxCsybeWQdcgCtbX+7oZug==}
 
-  zod@4.1.8:
-    resolution: {integrity: sha512-5R1P+WwQqmmMIEACyzSvo4JXHY5WiAFHRMg+zBZKgKS+Q1viRa0C1hmUKtHltoIFKtIdki3pRxkmpP74jnNYHQ==}
+  zod@4.1.12:
+    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
 
 snapshots:
 
@@ -6453,7 +6453,7 @@ snapshots:
   '@better-auth/core@1.3.27':
     dependencies:
       better-call: 1.0.19
-      zod: 4.1.8
+      zod: 4.1.12
 
   '@better-auth/utils@0.3.0': {}
 
@@ -9109,7 +9109,7 @@ snapshots:
       jose: 6.1.0
       kysely: 0.28.8
       nanostores: 1.0.1
-      zod: 4.1.8
+      zod: 4.1.12
     optionalDependencies:
       next: 15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react: 19.1.0
@@ -9412,10 +9412,10 @@ snapshots:
       better-sqlite3: 12.2.0
       kysely: 0.28.8
 
-  drizzle-zod@0.8.3(drizzle-orm@0.44.5(@cloudflare/workers-types@4.20251011.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.5)(better-sqlite3@12.2.0)(kysely@0.28.8))(zod@4.1.8):
+  drizzle-zod@0.8.3(drizzle-orm@0.44.5(@cloudflare/workers-types@4.20251011.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.5)(better-sqlite3@12.2.0)(kysely@0.28.8))(zod@4.1.12):
     dependencies:
       drizzle-orm: 0.44.5(@cloudflare/workers-types@4.20251011.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.5)(better-sqlite3@12.2.0)(kysely@0.28.8)
-      zod: 4.1.8
+      zod: 4.1.12
 
   dunder-proto@1.0.1:
     dependencies:
@@ -11304,4 +11304,4 @@ snapshots:
 
   zod@3.22.3: {}
 
-  zod@4.1.8: {}
+  zod@4.1.12: {}
