@@ -42,6 +42,8 @@ CREEM_WEBHOOK_SECRET=whsec_xxx
 CREEM_LOG_WEBHOOK_SIGNATURE=1
 CLOUDFLARE_R2_URL=your-r2-url-here
 CLOUDFLARE_API_TOKEN=your-api-token-here
+UPSTASH_REDIS_REST_URL=https://us1-example.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-rest-token
 
 # AI Translation
 TRANSLATION_PROVIDER=gemini

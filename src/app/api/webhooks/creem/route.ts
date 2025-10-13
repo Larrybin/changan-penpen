@@ -47,14 +47,33 @@ export async function POST(request: Request) {
     try {
         const raw = await request.text();
         const signature = request.headers.get("creem-signature") || "";
-        const { env } = await getCloudflareContext({ async: true });
+        const cfContext = await getCloudflareContext({ async: true });
+        const env = cfContext.env as unknown as CloudflareEnv;
+        const maybeCtx = (
+            cfContext as {
+                ctx?: { waitUntil?: (promise: Promise<unknown>) => void };
+            }
+        ).ctx;
+        const waitUntil =
+            typeof maybeCtx?.waitUntil === "function"
+                ? maybeCtx.waitUntil.bind(maybeCtx)
+                : undefined;
 
         const rateLimitResult = await applyRateLimit({
             request,
             identifier: "creem:webhook",
-            uniqueToken: signature,
-            env,
+            env: {
+                RATE_LIMITER: env.RATE_LIMITER,
+                UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
+                UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
+            },
             message: "Too many webhook requests",
+            upstash: {
+                strategy: { type: "fixed", requests: 60, window: "60 s" },
+                prefix: "@ratelimit/webhook",
+                includeHeaders: true,
+            },
+            waitUntil,
         });
         if (!rateLimitResult.ok) {
             return rateLimitResult.response;
