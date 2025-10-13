@@ -223,51 +223,78 @@ export function getTrackedFiles(globs) {
     }
 }
 
-export function getChangedFiles() {
+export function getChangedFiles({
+    announceFallback = false,
+    commandHint = "pnpm check:all",
+} = {}) {
+    const fallbackHint = `建议先运行 \`git add -A\` 后再执行 \`${commandHint}\`，以确保校验覆盖最新改动。`;
+
+    const attemptMessages = {
+        base: (base) =>
+            `未检测到已暂存改动，已改为与 \`origin/${base}\` 对比。${fallbackHint}`,
+        range: (range) =>
+            `未检测到已暂存改动，已改为使用 CHECK_RANGE="${range}"。${fallbackHint}`,
+        head: () =>
+            `未检测到已暂存改动，已改为对比上一提交 (HEAD~1)。${fallbackHint}`,
+    };
+
+    function captureDiff(args) {
+        const res = spawnSync("git", args, { encoding: "utf8" });
+        if (res.status !== 0) return [];
+        return (res.stdout || "").split(/\r?\n/).filter(Boolean);
+    }
+
     try {
-        const res = spawnSync(
-            "git",
-            ["diff", "--name-only", "--diff-filter=ACMR", "--cached"],
-            { encoding: "utf8" },
-        );
-        const lines = (res.stdout || "").split(/\r?\n/).filter(Boolean);
-        if (lines.length) return lines;
+        const staged = captureDiff([
+            "diff",
+            "--name-only",
+            "--diff-filter=ACMR",
+            "--cached",
+        ]);
+        if (staged.length) return { files: staged, source: "staged" };
     } catch {}
-    try {
-        const base = process.env.GITHUB_BASE_REF;
-        if (base) {
+
+    const base = process.env.GITHUB_BASE_REF;
+    if (base) {
+        try {
             try {
                 spawnSync("git", ["fetch", "origin", base, "--depth=1"], {
                     stdio: "ignore",
                 });
             } catch {}
-            const res = spawnSync(
-                "git",
-                ["diff", "--name-only", `origin/${base}...HEAD`],
-                { encoding: "utf8" },
-            );
-            const lines = (res.stdout || "").split(/\r?\n/).filter(Boolean);
-            if (lines.length) return lines;
+            const baseFiles = captureDiff([
+                "diff",
+                "--name-only",
+                `origin/${base}...HEAD`,
+            ]);
+            if (baseFiles.length) {
+                if (announceFallback) console.log(attemptMessages.base(base));
+                return { files: baseFiles, source: "base" };
+            }
+        } catch {}
+    }
+
+    const range = process.env.CHECK_RANGE;
+    if (range) {
+        try {
+            const rangeFiles = captureDiff(["diff", "--name-only", range]);
+            if (rangeFiles.length) {
+                if (announceFallback) console.log(attemptMessages.range(range));
+                return { files: rangeFiles, source: "range" };
+            }
+        } catch {}
+    }
+
+    try {
+        const headFiles = captureDiff(["diff", "--name-only", "HEAD~1"]);
+        if (headFiles.length) {
+            if (announceFallback) console.log(attemptMessages.head());
+            return { files: headFiles, source: "head" };
         }
     } catch {}
-    try {
-        const range = process.env.CHECK_RANGE;
-        if (range) {
-            const res = spawnSync("git", ["diff", "--name-only", range], {
-                encoding: "utf8",
-            });
-            const lines = (res.stdout || "").split(/\r?\n/).filter(Boolean);
-            if (lines.length) return lines;
-        }
-    } catch {}
-    try {
-        const res = spawnSync("git", ["diff", "--name-only", "HEAD~1"], {
-            encoding: "utf8",
-        });
-        const lines = (res.stdout || "").split(/\r?\n/).filter(Boolean);
-        if (lines.length) return lines;
-    } catch {}
-    return [];
+
+    if (announceFallback) console.log(`未检测到改动。${fallbackHint}`);
+    return { files: [], source: "none" };
 }
 
 export function classifyChanges(files) {

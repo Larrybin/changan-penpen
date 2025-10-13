@@ -109,7 +109,10 @@ if (!SKIP_BOM) {
 }
 
 // --- 2) 变更感知 ----------------------------------------------------------
-const changedFiles = getChangedFiles();
+const { files: changedFiles } = getChangedFiles({
+    announceFallback: true,
+    commandHint: "pnpm check:all",
+});
 const CH = classifyChanges(changedFiles);
 const DO_CF_TYPEGEN = CH.bindingsChanged;
 const DO_TSC = !CH.docsOnly && !CH.workflowsOnly;
