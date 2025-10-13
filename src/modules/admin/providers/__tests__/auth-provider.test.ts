@@ -2,10 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { adminAuthProvider } from "../auth-provider";
 
 const originalFetch = global.fetch;
-const fetchMock = vi.fn<
-    Parameters<typeof fetch>,
-    ReturnType<typeof fetch>
->();
+const fetchMock = vi.fn<typeof fetch>();
 
 describe("adminAuthProvider", () => {
     beforeEach(() => {

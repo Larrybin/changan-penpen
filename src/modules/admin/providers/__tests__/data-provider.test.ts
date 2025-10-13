@@ -2,10 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { adminDataProvider } from "../data-provider";
 
 const originalFetch = global.fetch;
-const fetchMock = vi.fn<
-    Parameters<typeof fetch>,
-    ReturnType<typeof fetch>
->();
+const fetchMock = vi.fn<typeof fetch>();
 
 describe("adminDataProvider", () => {
     beforeEach(() => {
@@ -28,7 +25,7 @@ describe("adminDataProvider", () => {
             ),
         );
 
-        const result = await adminDataProvider.getList({
+        const result = await adminDataProvider.getList?.({
             resource: "todos",
             pagination: { current: 2, pageSize: 10 },
             filters: [
@@ -64,7 +61,7 @@ describe("adminDataProvider", () => {
             }),
         );
 
-        const result = await adminDataProvider.getList({
+        const result = await adminDataProvider.getList?.({
             resource: "todos",
             pagination: { page: 1, pageSize: 20 },
         });
@@ -81,7 +78,7 @@ describe("adminDataProvider", () => {
         );
 
         await expect(
-            adminDataProvider.getOne({ resource: "todos", id: 1 }),
+            adminDataProvider.getOne?.({ resource: "todos", id: 1 }),
         ).rejects.toThrow("Not found");
     });
 
@@ -103,7 +100,7 @@ describe("adminDataProvider", () => {
                 ),
             );
 
-        await adminDataProvider.create({
+        await adminDataProvider.create?.({
             resource: "todos",
             variables: { title: "Task" },
         });
@@ -114,7 +111,7 @@ describe("adminDataProvider", () => {
             body: JSON.stringify({ title: "Task" }),
         });
 
-        await adminDataProvider.update({
+        await adminDataProvider.update?.({
             resource: "todos",
             id: 1,
             variables: { title: "Updated" },
@@ -130,7 +127,7 @@ describe("adminDataProvider", () => {
     it("deletes resources and returns deleted id", async () => {
         fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
 
-        const result = await adminDataProvider.deleteOne({
+        const result = await adminDataProvider.deleteOne?.({
             resource: "todos",
             id: 7,
         });
@@ -149,7 +146,7 @@ describe("adminDataProvider", () => {
             }),
         );
 
-        const result = await adminDataProvider.custom({
+        const result = await adminDataProvider.custom?.({
             url: "/reports",
             method: "POST",
             payload: { type: "summary" },
