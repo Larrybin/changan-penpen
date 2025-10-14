@@ -68,3 +68,5 @@ scripts/push-fix2.mjs
 logs/
 TEMP_*
 
+# Ignore nested template repo copy (local only)
+cloudflare-workers-nextjs-saas-template-main/
