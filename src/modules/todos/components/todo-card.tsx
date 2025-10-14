@@ -80,7 +80,7 @@ export function TodoCard({ todo }: TodoCardProps) {
                             </h3>
                             {todo.description && (
                                 <p
-                                    className={`text-sm mt-1 ${todo.completed ? "text-muted-foreground" : "text-muted-foreground"}`}
+                                    className={`text-sm mt-1 text-muted-foreground${todo.completed ? " line-through" : ""}`}
                                 >
                                     {todo.description}
                                 </p>
