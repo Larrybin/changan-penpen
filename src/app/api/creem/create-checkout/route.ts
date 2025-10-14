@@ -263,18 +263,23 @@ export async function POST(request: Request) {
 
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
-            status === 400 || status === 404 || status === 422;
+            const isClientError =
+                status === 400 || status === 404 || status === 422;
+            const errorMessage = isClientError
+                ? "Create checkout failed due to invalid request"
+                : "Create checkout failed";
             const mapped = _mapUpstreamToHttp(status);
             return new Response(
                 JSON.stringify({
                     success: false,
-                    error: "Create checkout failed",
+                    error: errorMessage,
                     data: null,
                     meta: {
                         status,
                         attempts,
                         contentType: contentType || null,
                         upstreamBodySnippet: snippet,
+                        isClientError,
                     },
                 }),
                 {
