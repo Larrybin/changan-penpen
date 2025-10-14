@@ -33,7 +33,6 @@ updates:
         patterns:
           - "next"
           - "next-intl"
-          - "@sentry/nextjs"
 
       cloudflare-workers:
         applies-to: version-updates

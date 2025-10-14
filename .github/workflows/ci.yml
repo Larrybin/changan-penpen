@@ -177,14 +177,3 @@ jobs:
 
       - name: Build (Next.js)
         run: pnpm build
-        env:
-          # Sentry sourcemap upload & build‑time config
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ vars.SENTRY_ORG || 'jiang-bin' }}
-          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || 'javascript-nextjs' }}
-          # DSNs for client/server
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-          # Optional tuning
-          SENTRY_ENVIRONMENT: ${{ vars.SENTRY_ENVIRONMENT || 'development' }}
-          SENTRY_TUNNEL_ROUTE: ${{ vars.SENTRY_TUNNEL_ROUTE || '/monitoring' }}

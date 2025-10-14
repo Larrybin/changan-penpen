@@ -25,7 +25,7 @@ Unified standards and a structured checklist for this repository. Goals: correct
 ## Architecture & Boundaries
 - App Router: split SSR/CSR appropriately; avoid Node-only deps on the Edge; Server Actions do minimal I/O and orchestration
 - Data flow: schema (zod) → actions/services → components; avoid heavy I/O in components
-- Observability: Sentry captures errors (user vs system); avoid sensitive logs (mask/hash)
+- Observability: 使用 Workers Analytics + 结构化日志；避免在日志中暴露敏感信息（掩码/哈希）
 
 ## Types & Errors
 - Strict TS; no `any` escaping public boundaries; precise types for public APIs
@@ -86,7 +86,7 @@ Unified standards and a structured checklist for this repository. Goals: correct
   - [ ] Critical copy localized; dates/numbers/plurals correct
 - Security
   - [ ] XSS/SQL injection/CSRF/CORS checks pass
-  - [ ] Sentry/logging avoid sensitive data
+  - [ ] 日志避免敏感数据（Workers Analytics / tail 输出）
   - [ ] Secrets via Wrangler/env bindings; no hardcoding
 - Tests
   - [ ] Critical paths and failure cases covered; Vitest passes
