@@ -171,10 +171,11 @@ function buildNextPayload(
     basePayload: SiteSettingsPayload,
     input: UpdateSiteSettingsInput,
 ): SiteSettingsPayload {
-    const nextPayload: SiteSettingsPayload = buildNextPayload(
-        basePayload,
-        input,
-    );
+    const nextPayload: SiteSettingsPayload = {
+        ...basePayload,
+        ...input,
+        enabledLanguages: [...basePayload.enabledLanguages],
+    };
 
     if (input.enabledLanguages !== undefined) {
         const fallbackLanguage = nextPayload.defaultLanguage ?? "en";
@@ -211,24 +212,6 @@ export async function updateSiteSettings(
         basePayload,
         input,
     );
-
-    if (input.enabledLanguages !== undefined) {
-        const fallbackLanguage = nextPayload.defaultLanguage ?? "en";
-        nextPayload.enabledLanguages =
-            input.enabledLanguages.length > 0
-                ? [...input.enabledLanguages]
-                : [fallbackLanguage];
-    }
-
-    if (
-        nextPayload.defaultLanguage &&
-        !nextPayload.enabledLanguages.includes(nextPayload.defaultLanguage)
-    ) {
-        nextPayload.enabledLanguages = [
-            nextPayload.defaultLanguage,
-            ...nextPayload.enabledLanguages,
-        ].filter((language, index, arr) => arr.indexOf(language) === index);
-    }
 
     const payload = {
         siteName: nextPayload.siteName,
