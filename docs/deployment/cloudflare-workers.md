@@ -22,9 +22,9 @@ This project targets Cloudflare Workers using OpenNext.
 - Health gate: CI and rollout should hit `/api/health?fast=1` first, then strict mode without `fast`
 
 ### Deployment Audit Trail
-- GitHub Actions 的 `Deploy Production` job 会生成部署审计摘要，内容包含版本号、执行者以及推送到生产的提交列表。
-- 摘要会自动写入该 workflow run 的 **Summary** 标签页（来自 `$GITHUB_STEP_SUMMARY`），用于长期留存。
-- 同一摘要还会通过环境部署注释同步到 GitHub `production` Environment，在仓库 Settings → Environments → production → Deployment history 中可以直接点击最新记录查看，并跳转到完整的运行摘要。
+- GitHub Actions 的 `Deploy Production` job 会生成部署审计摘要,内容包含版本号,执行者以及推送到生产的提交列表.
+- 摘要会自动写入该 workflow run 的 **Summary** 标签页(来自 `$GITHUB_STEP_SUMMARY`),用于长期留存.
+- 同一摘要还会通过环境部署注释同步到 GitHub `production` Environment,在仓库 Settings → Environments → production → Deployment history 中可以直接点击最新记录查看,并跳转到完整的运行摘要.
 
 ### Rollback
 - `wrangler deploy --rollback`
@@ -38,6 +38,10 @@ This project targets Cloudflare Workers using OpenNext.
 - Secrets: `BETTER_AUTH_SECRET`, `CREEM_API_KEY`, `OPENAI_API_KEY`/`GEMINI_API_KEY`(可选,用于 AI 功能), etc.
 
 Run `pnpm cf-typegen` after any change to bindings to refresh `cloudflare-env.d.ts`.
+
+Tip
+- CI 变量：工作流支持从 `Actions → Variables` 读取 `CREEM_API_URL`（优先）或 `CREEM_API_URL_PRODUCTION`（回退）。建议统一使用 `CREEM_API_URL`。
+- 自动下发 Secrets：变量 `SYNC_PRODUCTION_SECRETS` 未显式设为 `false` 时，CI 将自动把 GitHub Secrets 同步到 Cloudflare（production 环境）。如需关闭，请将其设置为 `false`。
 
 ## Notes
 - Enable `nodejs_compat` and `nodejs_als` in `wrangler.toml` when Node APIs or AsyncLocalStorage features are required

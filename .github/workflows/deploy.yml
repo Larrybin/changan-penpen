@@ -115,6 +115,19 @@ jobs:
           CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
           CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
 
+      - name: Check CREEM_API_URL variable(s)
+        shell: bash
+        env:
+          CREEM_API_URL: ${{ vars.CREEM_API_URL }}
+          CREEM_API_URL_PRODUCTION: ${{ vars.CREEM_API_URL_PRODUCTION }}
+        run: |
+          set -euo pipefail
+          url="${CREEM_API_URL:-${CREEM_API_URL_PRODUCTION:-}}"
+          if [ -z "$url" ]; then
+            echo "Missing CREEM API URL. Configure one of: 'Actions → Variables' → CREEM_API_URL (preferred) or CREEM_API_URL_PRODUCTION."
+            exit 1
+          fi
+
       - name: Check NEXT_PUBLIC_APP_URL (Production)
         run: |
           set -euo pipefail
@@ -227,7 +240,7 @@ jobs:
           wranglerVersion: '4.42.1'
           command: >-
             deploy --env production
-            --var "CREEM_API_URL=${{ vars.CREEM_API_URL_PRODUCTION }}"
+            --var "CREEM_API_URL=${{ vars.CREEM_API_URL || vars.CREEM_API_URL_PRODUCTION }}"
             --var "NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}"
             --var "TRANSLATION_PROVIDER=${{ vars.TRANSLATION_PROVIDER || 'gpt' }}"
             --var "OPENAI_BASE_URL=${{ vars.OPENAI_BASE_URL }}"
@@ -241,7 +254,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Sync Production secrets
-        if: vars.SYNC_PRODUCTION_SECRETS == 'true'
+        if: ${{ vars.SYNC_PRODUCTION_SECRETS != 'false' }}
         run: |
           set -euo pipefail
           sync_if_set () {
@@ -273,7 +286,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Skip production secret sync (disabled)
-        if: vars.SYNC_PRODUCTION_SECRETS != 'true'
+        if: ${{ vars.SYNC_PRODUCTION_SECRETS == 'false' }}
         run: echo "Skipping production secret sync (set vars.SYNC_PRODUCTION_SECRETS to 'true' to enable)."
 
       - name: Wait for deployment
