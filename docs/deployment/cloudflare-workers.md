@@ -40,8 +40,8 @@ This project targets Cloudflare Workers using OpenNext.
 Run `pnpm cf-typegen` after any change to bindings to refresh `cloudflare-env.d.ts`.
 
 Tip
-- CI 变量：工作流支持从 `Actions → Variables` 读取 `CREEM_API_URL`（优先）或 `CREEM_API_URL_PRODUCTION`（回退）。建议统一使用 `CREEM_API_URL`。
-- 自动下发 Secrets：变量 `SYNC_PRODUCTION_SECRETS` 未显式设为 `false` 时，CI 将自动把 GitHub Secrets 同步到 Cloudflare（production 环境）。如需关闭，请将其设置为 `false`。
+- CI 变量:工作流支持从 `Actions → Variables` 读取 `CREEM_API_URL`(优先)或 `CREEM_API_URL_PRODUCTION`(回退).建议统一使用 `CREEM_API_URL`.
+- 自动下发 Secrets:变量 `SYNC_PRODUCTION_SECRETS` 未显式设为 `false` 时,CI 将自动把 GitHub Secrets 同步到 Cloudflare(production 环境).如需关闭,请将其设置为 `false`.
 
 ## Notes
 - Enable `nodejs_compat` and `nodejs_als` in `wrangler.toml` when Node APIs or AsyncLocalStorage features are required
