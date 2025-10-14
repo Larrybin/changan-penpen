@@ -21,6 +21,11 @@ This project targets Cloudflare Workers using OpenNext.
 - `pnpm deploy:cf` - OpenNext build + `wrangler deploy`
 - Health gate: CI and rollout should hit `/api/health?fast=1` first, then strict mode without `fast`
 
+### Deployment Audit Trail
+- GitHub Actions 的 `Deploy Production` job 会生成部署审计摘要，内容包含版本号、执行者以及推送到生产的提交列表。
+- 摘要会自动写入该 workflow run 的 **Summary** 标签页（来自 `$GITHUB_STEP_SUMMARY`），用于长期留存。
+- 同一摘要还会通过环境部署注释同步到 GitHub `production` Environment，在仓库 Settings → Environments → production → Deployment history 中可以直接点击最新记录查看，并跳转到完整的运行摘要。
+
 ### Rollback
 - `wrangler deploy --rollback`
 - Restore D1 backup if schema/data changed (see `docs/db-d1.md`)
