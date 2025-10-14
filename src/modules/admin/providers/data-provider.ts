@@ -213,7 +213,10 @@ export const adminDataProvider = {
             headers: headersObj,
             body: payload ? JSON.stringify(payload) : undefined,
         });
-        const parsed = (await parseResponse(response)) as Record<string, unknown>;
+        const parsed = (await parseResponse(response)) as Record<
+            string,
+            unknown
+        >;
         if (typeof parsed === "object" && "data" in parsed) {
             return parsed as { data?: TData };
         }

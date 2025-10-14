@@ -5,10 +5,30 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+const parseBoolean = (value: string | undefined): boolean | undefined => {
+    if (value === undefined) {
+        return undefined;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "1" || normalized === "true" || normalized === "yes") {
+        return true;
+    }
+
+    if (normalized === "0" || normalized === "false" || normalized === "no") {
+        return false;
+    }
+
+    return undefined;
+};
+
+const sentryFlag = parseBoolean(process.env.SENTRY_ENABLED);
+const isSentryEnabled = sentryFlag ?? true;
+
 const nextConfig: NextConfig = {
     webpack: (config) => {
         config.resolve = config.resolve || {};
-        config.resolve.alias = {
+        const alias: Record<string, string> = {
             ...(config.resolve.alias ?? {}),
             "@refinedev/core": path.resolve(
                 __dirname,
@@ -20,6 +40,15 @@ const nextConfig: NextConfig = {
             ),
             "next-intl/config": path.resolve(__dirname, "next-intl.config.ts"),
         };
+
+        if (!isSentryEnabled) {
+            alias["@sentry/nextjs"] = path.resolve(
+                __dirname,
+                "stubs/sentry-nextjs",
+            );
+        }
+
+        config.resolve.alias = alias;
         return config;
     },
 };
@@ -58,7 +87,10 @@ const _sentryBuildOptions = {
     hideSourceMaps: true,
 };
 
-export default withSentryConfig(
-    withNextIntl(nextConfig),
-    sentryWebpackPluginOptions,
-);
+const withIntl = withNextIntl(nextConfig);
+
+const finalConfig = isSentryEnabled
+    ? withSentryConfig(withIntl, sentryWebpackPluginOptions)
+    : withIntl;
+
+export default finalConfig;
