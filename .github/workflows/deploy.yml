@@ -74,6 +74,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
@@ -289,6 +291,99 @@ jobs:
           fi
           echo "Checking production health at $url"
           curl -fsS --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 5 --max-time 20 -w "\nHTTP %{http_code}\n" "$url"
+
+      - name: 生成部署审计摘要
+        id: deployment_audit
+        run: |
+          set -euo pipefail
+
+          head="${{ github.sha }}"
+          base="${{ github.event.before }}"
+          zero="0000000000000000000000000000000000000000"
+
+          if [ -z "$base" ] || [ "$base" = "$zero" ]; then
+            if git rev-parse "${head}^" >/dev/null 2>&1; then
+              base=$(git rev-parse "${head}^")
+            else
+              base="$head"
+            fi
+          fi
+
+          range=""
+          commits=""
+
+          if [ "$base" = "$head" ]; then
+            commits=$(git log -1 --pretty=format:'- %h %an %s' "$head" || true)
+            range="${head:0:7}"
+          else
+            commits=$(git log --pretty=format:'- %h %an %s' "${base}..${head}" || true)
+            if [ -z "$commits" ]; then
+              commits=$(git log -1 --pretty=format:'- %h %an %s' "$head" || true)
+              range="${head:0:7}"
+            else
+              range="${base:0:7}..${head:0:7}"
+            fi
+          fi
+
+          if [ -z "$commits" ]; then
+            commits="- (无可用提交)"
+          fi
+
+          version=$(jq -r '.version' package.json 2>/dev/null || echo "unknown")
+          actor="${{ github.actor }}"
+
+          summary=$(cat <<EOF
+### 部署审计
+
+- 版本号: ${version}
+- 执行者: ${actor}
+- 提交范围: ${range}
+
+#### 提交列表
+${commits}
+EOF
+)
+
+          printf '%s\n' "$summary" >> "$GITHUB_STEP_SUMMARY"
+          printf 'summary_json=%s\n' "$(printf '%s' "$summary" | jq -Rs .)" >> "$GITHUB_OUTPUT"
+
+      - name: 将部署审计写入环境注释
+        if: steps.deployment_audit.outputs.summary_json != ''
+        uses: actions/github-script@60b8bdf9b6a0c1e86c5d132c08f9cbbb3d1f3f88
+        env:
+          SUMMARY_JSON: ${{ steps.deployment_audit.outputs.summary_json }}
+          DEPLOYMENT_ID: ${{ github.deployment_id }}
+        with:
+          script: |
+            const summary = JSON.parse(process.env.SUMMARY_JSON || '""');
+            if (!summary) {
+              core.warning('缺少部署摘要内容，跳过环境注释。');
+              return;
+            }
+
+            const deploymentId = process.env.DEPLOYMENT_ID;
+            if (!deploymentId) {
+              core.warning('未能获取 deployment_id，无法写入环境注释。');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const logUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            const compact = summary.replace(/\s+/g, ' ').trim();
+            const description = compact.length > 140 ? `${compact.slice(0, 137)}...` : compact;
+
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: Number(deploymentId),
+              state: 'success',
+              description,
+              log_url: logUrl,
+              environment: 'production',
+              environment_url: `${logUrl}#summary`,
+              auto_inactive: false
+            });
 
       - name: Post-deployment verification
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
