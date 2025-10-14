@@ -168,15 +168,17 @@ function isAllowedUriScheme(url: string): boolean {
     return false;
 }
 
+function stripWrappingQuotes(value: string): string {
+    return value.replace(/^['"]+/, "").replace(/['"]+$/, "");
+}
+
 function sanitizeNoscriptAttrValue(
     attribute: string,
     raw: string | undefined,
     _tag: string,
 ): string | undefined {
     if (!raw) return "";
-    const val = String(raw)
-        .trim()
-        .replace(/(?:^['"]|['"]$)/g, "");
+    const val = stripWrappingQuotes(String(raw).trim());
     if (!val) return "";
     if (attribute === "href" || attribute === "src") {
         // sanitize script-like schemes in URLs
@@ -492,7 +494,7 @@ function sanitizeAttributeValue(
     if (!value) {
         return "";
     }
-    const trimmed = value.trim().replace(/(?:^['"]|['"]$)/g, "");
+    const trimmed = stripWrappingQuotes(value.trim());
     if (!trimmed) {
         return "";
     }
