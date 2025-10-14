@@ -34,34 +34,30 @@ env:
   COV_FUNCTIONS: '10'
 
 jobs:
-  build-and-test:
+  lint-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout
+      - &checkout
+        name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
-      - name: Setup pnpm
+      - &setup-pnpm
+        name: Setup pnpm
         uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Setup Node
+      - &setup-node
+        name: Setup Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies (composite)
+      - &install
+        name: Install dependencies (composite)
         uses: ./.github/actions/install-and-heal
-
-      - name: Cache Next.js build cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('next.config.*', 'package.json', 'tsconfig.json', 'tsconfig.*.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Run i18n normalization
         run: pnpm run fix:i18n
@@ -73,14 +69,35 @@ jobs:
       - name: Lint (Biome)
         run: pnpm exec biome check .
 
-      - name: Type check (tsc)
-        run: pnpm exec tsc --noEmit
-
       - name: Docs consistency
         run: pnpm run check:docs
 
       - name: Link check (local markdown)
         run: pnpm run check:links
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - *checkout
+      - *setup-pnpm
+      - *setup-node
+      - *install
+
+      - name: Type check (tsc)
+        run: pnpm exec tsc --noEmit
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - lint-docs
+      - typecheck
+    steps:
+      - *checkout
+      - *setup-pnpm
+      - *setup-node
+      - *install
 
       - name: List test cases (Vitest)
         run: |
@@ -171,6 +188,25 @@ jobs:
               process.exit(1);
             }
           "
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - unit-tests
+    steps:
+      - *checkout
+      - *setup-pnpm
+      - *setup-node
+      - *install
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('next.config.*', 'package.json', 'tsconfig.json', 'tsconfig.*.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Show NEXT_PUBLIC_APP_URL (diagnostic)
         run: echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
