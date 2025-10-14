@@ -4,8 +4,12 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_call:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -30,6 +34,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [ "${{ github.event_name }}" != "push" ]; then
+            echo "Non-push event detected; forcing docs_only=false"
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           base="${{ github.event.before }}"
           if [ -z "${base}" ]; then
             base=$(git rev-list HEAD~1 -n 1 || true)
@@ -55,7 +64,7 @@ jobs:
   sonarcloud:
     name: SonarCloud
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true'
+    if: needs.changes.outputs.docs_only != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -85,12 +94,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test (Vitest with coverage lcov)
+      - name: Generate coverage (fallback)
+        if: github.event_name != 'workflow_run'
         run: >
           pnpm exec vitest run --coverage
           --coverage.reporter=lcov
           --coverage.reporter=json-summary
           --coverage.reporter=text
+
+      - name: Download coverage artifact from CI
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: coverage-html
+          path: coverage
+          run-id: ${{ github.event.workflow_run.id }}
 
       - name: Ensure coverage exists
         run: |

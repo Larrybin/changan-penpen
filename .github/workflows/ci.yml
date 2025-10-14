@@ -91,6 +91,7 @@ jobs:
       - name: Test (Vitest with coverage — summary only)
         run: >-
           pnpm exec vitest run --coverage
+          --coverage.reporter=lcov
           --coverage.reporter=json-summary
           --coverage.reporter=html
           --coverage.reporter=text

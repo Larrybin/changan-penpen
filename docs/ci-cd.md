@@ -10,10 +10,10 @@
   - 生产部署 Job 条件：push 到 main 且非文档-only，或手动触发；并且质量门成功
   - Secrets/Vars：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`BETTER_AUTH_SECRET`、`GOOGLE_CLIENT_ID/SECRET`、`CLOUDFLARE_R2_URL`、`CREEM_API_KEY/WEBHOOK_SECRET`、`NEXT_PUBLIC_APP_URL`；`OPENAI_API_KEY`（可选）
 - Build（`.github/workflows/build.yml`）
-  - 触发：push 到 main、部分 PR 事件
+  - 触发：push（仅 main 分支）、`workflow_call`、`workflow_run`（CI 成功后接力）
   - Jobs：
-    - `changes`：检测是否为 docs-only 变更，为后续 Job 决策
-    - `sonarcloud`：运行 Vitest 覆盖率（生成 `coverage/lcov.info` 与 `coverage-summary.json`），当前仅保留产物供后续使用
+    - `changes`：检测是否为 docs-only 变更，为后续 Job 决策（`workflow_run` 场景直接视为非文档改动）
+    - `sonarcloud`：复用 CI 上传的覆盖率工件（`coverage/lcov.info` / `coverage-summary.json`），必要时在 push/main 或直接调用时回退执行一次 Vitest 覆盖率
     - `docs-only`：当仅有文档改动时快速跳过重型步骤
 - Dependabot Auto‑Merge（`.github/workflows/dependabot-automerge.yml`）
   - 仅对 Dependabot 的 minor/patch PR 且检查通过时开启 auto‑merge（squash）
@@ -52,7 +52,7 @@
 ### Workflows Overview (auto)
 | Workflow | Triggers | File |
 | --- | --- | --- |
-| Build | push, pull_request | .github/workflows/build.yml |
+| Build | push (main), workflow_call, workflow_run | .github/workflows/build.yml |
 | CI | workflow_dispatch, push, pull_request, workflow_call | .github/workflows/ci.yml |
 | Dependabot Auto‑Merge | pull_request_target | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare | workflow_dispatch, push, pull_request | .github/workflows/deploy.yml |
