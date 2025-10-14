@@ -4,7 +4,11 @@
 ## 工作流概览
 - CI（`.github/workflows/ci.yml`）
   - 触发：push / pull_request（忽略 main 的纯文档变更），以及 `workflow_call`（被部署复用）
-  - 步骤：Biome、TypeScript、Docs/Links 检查、Vitest 覆盖率阈值校验
+  - Jobs：
+    - `lint-docs`：Biome、文档一致性与链接检查，同时确保 i18n 字段规范化
+    - `typecheck`：TypeScript `tsc --noEmit`
+    - `unit-tests`：Vitest 测试与覆盖率生成/阈值校验，上传 HTML 报告 artifact
+    - `build`：复用 `.next/cache` 执行 `pnpm build`
 - 部署（`.github/workflows/deploy.yml`）
   - 触发：push 到 main、pull_request 到 main、`workflow_dispatch`（手动）
   - 生产部署 Job 条件：push 到 main 且非文档-only，或手动触发；并且质量门成功
