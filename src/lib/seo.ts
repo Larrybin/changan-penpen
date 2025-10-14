@@ -12,7 +12,7 @@ type ResolveAppUrlOptions = {
 function getGlobalEnvOverride(key: string): string | undefined {
     try {
         const fromGlobal = (
-            globalThis as unknown as {
+            globalThis as {
                 __ENV__?: Record<string, string | undefined>;
             }
         )?.__ENV__?.[key];
@@ -267,8 +267,7 @@ function sanitizeNoscriptContent(input: string): string {
         j++;
         while (j < len) {
             const _c = input.charCodeAt(j);
-            const isAlphaNum = (c: number) => isAlphaNumCode(c);
-            if (!isAlphaNum) break;
+            if (!isAlphaNumCode(_c)) break;
             j++;
         }
         const name = input.slice(nameStart, j).toLowerCase();
