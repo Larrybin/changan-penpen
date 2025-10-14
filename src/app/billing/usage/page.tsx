@@ -60,7 +60,24 @@ export default async function UsagePage() {
             unit: r.unit,
         });
     }
-    const sortedDates = Object.keys(byDate).sort();
+    const sortedDates = Object.keys(byDate).sort((a, b) => {
+        const timeA = new Date(a).getTime();
+        const timeB = new Date(b).getTime();
+
+        const aIsValid = !Number.isNaN(timeA);
+        const bIsValid = !Number.isNaN(timeB);
+
+        if (aIsValid && bIsValid) {
+            return timeA - timeB;
+        }
+        if (aIsValid) {
+            return -1;
+        }
+        if (bIsValid) {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
 
     return (
         <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
