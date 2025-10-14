@@ -32,7 +32,6 @@
 - Env vars: `.dev.vars` for local; use `wrangler secret put` in Workers mode if missing
 - Request replay: `wrangler dev --persist` to keep D1 state under `.wrangler/state`
 - AI/R2: ensure `CLOUDFLARE_R2_URL`, `GEMINI_API_KEY`, etc., are set or features will degrade
-- Worker Sentry debug route: visit `/debug-sentry` after deploying to trigger a sample Cloudflare error
 - Shell encoding: prefer PowerShell 7 and set UTF-8 in profile to avoid garbled output:
   - `[Console]::InputEncoding  = [System.Text.Encoding]::UTF8`
   - `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`

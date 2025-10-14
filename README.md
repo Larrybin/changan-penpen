@@ -24,7 +24,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - CI/CD suite: Biome, TypeScript checks, Vitest tests
 - Auto-merge guardrails: Dependabot auto-merge with local `pnpm push` self-heal
 - Health checks: `/api/health` with fast/strict modes
-- Observability: Workers Analytics, optional Sentry, structured logs
+- Observability: Workers Analytics 与结构化日志
 - i18n & AI translation: built-in locales and scripts (Gemini/OpenAI)
 
 ---

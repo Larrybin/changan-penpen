@@ -22,9 +22,9 @@
 - Avoid logging secrets or PII
 
 ## Monitoring
-- Sentry (browser/server/edge) — capture exceptions and slow requests
-- Workers Analytics — edge metrics and usage trends
-- Alerting — wire health failures and error rate spikes to on‑call channels
+- Workers Analytics — Edge 侧访问与性能指标
+- `wrangler tail` / 日志聚合 — 捕获异常与慢请求，必要时自建或引入第三方
+- Alerting — 基于健康检查失败或日志指标构建告警
 
 ## Playbooks
 - Health fails on DB: re‑run migrations, check D1 binding, confirm region

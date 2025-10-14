@@ -1,8 +1,3 @@
 {
-  "servers": {
-    "Sentry": {
-      "url": "https://mcp.sentry.dev/mcp/jiang-bin/javascript-nextjs",
-      "type": "http"
-    }
-  }
+  "servers": {}
 }

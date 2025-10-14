@@ -5,10 +5,6 @@ declare namespace Cloudflare {
         interface Env {
                 NEXTJS_ENV: string;
                 NEXT_PUBLIC_APP_URL: string;
-                NEXT_PUBLIC_SENTRY_DSN: string;
-                NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE?: string;
-                NEXT_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE?: string;
-                NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE?: string;
                 CLOUDFLARE_ACCOUNT_ID: string;
                 CLOUDFLARE_D1_TOKEN: string;
                 CLOUDFLARE_R2_URL: string;
@@ -27,17 +23,6 @@ declare namespace Cloudflare {
                 UPSTASH_REDIS_REST_TOKEN: string;
                 HEALTH_ACCESS_TOKEN?: string;
                 ADMIN_FORCE_SECURE_COOKIES?: string;
-                SENTRY_DSN?: string;
-                SENTRY_ENVIRONMENT?: string;
-                SENTRY_RELEASE?: string;
-                SENTRY_ENABLE_LOGS?: string;
-                SENTRY_TRACES_SAMPLE_RATE?: string;
-                SENTRY_PROFILES_SAMPLE_RATE?: string;
-                SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE?: string;
-                SENTRY_REPLAYS_SESSION_SAMPLE_RATE?: string;
-                SENTRY_TUNNEL_ROUTE?: string;
-                SENTRY_DEBUG?: string;
-                SENTRY_ENABLED?: string;
                 RATE_LIMITER: RateLimit;
                 next_cf_app_bucket: R2Bucket;
                 next_cf_app: D1Database;

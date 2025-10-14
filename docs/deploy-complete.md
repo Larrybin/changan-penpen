@@ -15,7 +15,7 @@ This document complements `docs/deployment/cloudflare-workers.md` and `docs/work
 - 严格模式 `/api/health` 需人工触发（执行后再标记成功）
 
 ## Post‑deploy
-- Check Sentry dashboards and Workers Analytics
+- Review Workers Analytics 与实时日志（`wrangler tail`）
 - Verify auth and key flows (login, critical APIs)
 - Communicate release notes and known issues
 

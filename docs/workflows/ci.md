@@ -14,7 +14,7 @@ CI 直接在同一 Job 中生成 `coverage-summary.json` 并校验阈值,产物�
 3. `pnpm exec biome check .`,`pnpm run check:docs`,`pnpm run check:links` 完成本地代码与文档一致性检查.
 4. 运行 `pnpm exec vitest run --coverage`,生成 HTML 报告与 `coverage-summary.json`(必要时 fallback 到 `coverage-final.json`).
 5. 上传 coverage artifact,并根据环境阈值(行/语句/分支/函数)校验 `coverage-summary.json`.
-6. 输出诊断信息(如 `NEXT_PUBLIC_APP_URL`),执行 `pnpm build`(可透传 Sentry 相关 Secrets/Vars).
+6. 输出诊断信息(如 `NEXT_PUBLIC_APP_URL`),执行 `pnpm build`。
 
 ## Concurrency & Caching
 - `concurrency: ci-${{ github.ref }}` to avoid duplicate runs

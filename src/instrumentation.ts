@@ -1,13 +1,8 @@
-import * as Sentry from "@sentry/nextjs";
-
 export async function register() {
-    if (process.env.NEXT_RUNTIME === "nodejs") {
-        await import("../sentry.server.config");
-    }
-
-    if (process.env.NEXT_RUNTIME === "edge") {
-        await import("../sentry.edge.config");
-    }
+    // 与根目录 instrumentation 保持一致，预留扩展点。
 }
 
-export const onRequestError = Sentry.captureRequestError;
+export function onRequestError(error: unknown, request: Request) {
+    const details = request?.url ?? "unknown request";
+    console.error("App Router request error:", error, details);
+}

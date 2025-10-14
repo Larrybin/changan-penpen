@@ -35,7 +35,7 @@ This project targets Cloudflare Workers using OpenNext.
 Run `pnpm cf-typegen` after any change to bindings to refresh `cloudflare-env.d.ts`.
 
 ## Notes
-- Enable `nodejs_compat` and `nodejs_als` in `wrangler.toml` when Node APIs or AsyncLocalStorage features (e.g., Sentry) are required
+- Enable `nodejs_compat` and `nodejs_als` in `wrangler.toml` when Node APIs or AsyncLocalStorage features are required
 - Large/long‑running tasks should be offloaded; add timeouts for outbound calls
 - Keep `.dev.vars.example` and this doc in sync with deployments
 

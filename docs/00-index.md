@@ -21,7 +21,7 @@
 1. [deployment/cloudflare-workers.md](deployment/cloudflare-workers.md) — Build, deploy, rollback, health checks
 2. [ci-cd.md](ci-cd.md) — Pipeline overview (including permissions and quality gates)
 3. [workflows/ci.md](workflows/ci.md), [workflows/deploy.md](workflows/deploy.md)
-4. [health-and-observability.md](health-and-observability.md) — Health checks, logs, Sentry, Workers Analytics
+4. [health-and-observability.md](health-and-observability.md) — Health checks, logs, Workers Analytics
 5. [api-index.md](api-index.md) — Key pages and API route index
 
 ## Risk Control & Troubleshooting

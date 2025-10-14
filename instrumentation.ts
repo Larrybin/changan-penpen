@@ -1,22 +1,8 @@
 export async function register() {
-    if (process.env.NEXT_RUNTIME === "nodejs") {
-        await import("./sentry.server.config");
-    }
-
-    if (process.env.NEXT_RUNTIME === "edge") {
-        await import("./sentry.edge.config");
-    }
-
-    if (!process.env.NEXT_RUNTIME) {
-        await import("./sentry.server.config");
-    }
+    // 保留占位以便未来接入自定义 instrumentation。
 }
 
-type CaptureRequestErrorArgs = Parameters<
-    typeof import("@sentry/nextjs").captureRequestError
->;
-
-export const onRequestError = (...args: CaptureRequestErrorArgs) => {
-    const Sentry = require("@sentry/nextjs") as typeof import("@sentry/nextjs");
-    Sentry.captureRequestError(...args);
-};
+export function onRequestError(error: unknown, request: Request) {
+    const details = request?.url ?? "unknown request";
+    console.error("Next.js request error:", error, details);
+}
