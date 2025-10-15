@@ -70,3 +70,8 @@
 ## CI 测试流程更新说明（2025-10-15）
 - `ci.yml` 中“List test cases (Vitest)”改为仅使用 `pnpm exec vitest list --reporter=verbose`，不再使用 `--dry-run` 兜底调用（Vitest 3 已不支持 `--dry-run/--dryRun`）。
 - 目的：避免在新版本 Vitest 下出现 `Unknown option --dryRun` 失败，同时保持快速列举用例能力；正式测试仍在“Test (Vitest with coverage)”步骤执行。
+
+## 部署工作流修复（2025-10-15）
+- `deploy.yml` 将 `actions/github-script` 从一个无效的提交 SHA 固定，调整为稳定标签 `v7`，修复运行时报错：
+  `An action could not be found at the URI ... actions/github-script/tarball/<SHA>`。
+  若需继续使用 SHA 固定，请在后续安全审计中替换为官方 `v7` 对应的可信提交哈希。
