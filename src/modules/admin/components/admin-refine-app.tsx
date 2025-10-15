@@ -47,6 +47,16 @@ export function AdminRefineApp({ children, user }: AdminRefineAppProps) {
                     },
                 },
                 {
+                    name: "users",
+                    list: adminRoutes.users.list,
+                    show: adminRoutes.users.show(":id"),
+                    meta: {
+                        label: "用户",
+                        icon: "user-circle",
+                        group: "运营",
+                    },
+                },
+                {
                     name: "orders",
                     list: adminRoutes.billing.orders,
                     meta: {

@@ -19,6 +19,10 @@ const adminRoutes = {
     usage: {
         list: "/admin/usage",
     },
+    users: {
+        list: "/admin/users",
+        show: (id: string) => `/admin/users/${id}`,
+    },
     settings: {
         site: "/admin/settings/site",
     },
