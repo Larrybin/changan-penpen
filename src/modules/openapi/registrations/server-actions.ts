@@ -48,8 +48,5 @@ export function registerServerActionPaths(registry: OpenAPIRegistry) {
             },
         },
         security: [{ BetterAuthSession: [] }],
-        extensions: {
-            "x-internal": true,
-        },
     });
 }

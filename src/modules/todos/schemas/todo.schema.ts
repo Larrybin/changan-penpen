@@ -97,8 +97,7 @@ export const insertTodoSchema = createInsertSchema(todos, {
         .optional()
         .or(z.literal(""))
         .openapi({ description: "截止日期 (ISO 字符串)" }),
-}).openapi({
-    refId: "InsertTodoInput",
+}).openapi("InsertTodoInput", {
     description: "Server Action 创建 Todo 时的表单数据结构。",
 });
 

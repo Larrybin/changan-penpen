@@ -36,8 +36,7 @@ const usageRecordRequestSchema = z
             example: 5,
         }),
     })
-    .openapi({
-        refId: "UsageRecordRequest",
+    .openapi("UsageRecordRequest", {
         description: "记录用量时提交的请求体。",
     });
 
@@ -51,8 +50,7 @@ const usageRecordDataSchema = z
             example: 420,
         }),
     })
-    .openapi({
-        refId: "UsageRecordResult",
+    .openapi("UsageRecordResult", {
         description: "记录成功后返回的日期与剩余积分。",
     });
 
@@ -82,8 +80,7 @@ const usageStatsRowSchema = z
             .openapi({ example: 25, description: "当日累计使用量" }),
         unit: z.string().openapi({ example: "calls" }),
     })
-    .openapi({
-        refId: "UsageStatsRow",
+    .openapi("UsageStatsRow", {
         description: "每日用量明细。",
     });
 
@@ -99,8 +96,7 @@ const usageStatsDataSchema = z
             .array(usageStatsRowSchema)
             .openapi({ description: "每日聚合结果列表" }),
     })
-    .openapi({
-        refId: "UsageStatsPayload",
+    .openapi("UsageStatsPayload", {
         description: "Usage Stats 接口返回的聚合数据。",
     });
 
@@ -194,7 +190,7 @@ export function registerUsagePaths(registry: OpenAPIRegistry) {
                         example: "30",
                     }),
                 })
-                .openapi({ refId: "UsageStatsQuery" }),
+                .openapi("UsageStatsQuery"),
         },
         responses: {
             200: {

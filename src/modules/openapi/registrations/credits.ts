@@ -19,8 +19,7 @@ const creditBalanceDataSchema = z
             .min(0)
             .openapi({ example: 480, description: "当前积分余额" }),
     })
-    .openapi({
-        refId: "CreditBalancePayload",
+    .openapi("CreditBalancePayload", {
         description: "余额查询返回的积分数据。",
     });
 
@@ -52,8 +51,7 @@ const creditTransactionSchema = z
         createdAt: z.string().openapi({ example: "2025-03-01T10:00:00.000Z" }),
         updatedAt: z.string().openapi({ example: "2025-03-01T10:00:00.000Z" }),
     })
-    .openapi({
-        refId: "CreditTransaction",
+    .openapi("CreditTransaction", {
         description: "积分流水记录。",
     });
 
@@ -64,8 +62,7 @@ const creditHistoryDataSchema = z
             .openapi({ description: "流水列表" }),
         pagination: paginationSchema,
     })
-    .openapi({
-        refId: "CreditHistoryPayload",
+    .openapi("CreditHistoryPayload", {
         description: "积分流水查询结果。",
     });
 
@@ -129,7 +126,7 @@ export function registerCreditsPaths(registry: OpenAPIRegistry) {
                         .optional()
                         .openapi({ example: "10", description: "每页条数" }),
                 })
-                .openapi({ refId: "CreditHistoryQuery" }),
+                .openapi("CreditHistoryQuery"),
         },
         responses: {
             200: {

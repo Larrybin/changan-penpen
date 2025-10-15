@@ -15,14 +15,13 @@ const adminUserSchema = z
         name: z.string().openapi({ example: "Admin User" }),
         email: z.string().email().openapi({ example: "admin@example.com" }),
     })
-    .openapi({ refId: "AdminUser" });
+    .openapi("AdminUser");
 
 const adminSessionResponseSchema = z
     .object({
         user: adminUserSchema,
     })
-    .openapi({
-        refId: "AdminSessionResponse",
+    .openapi("AdminSessionResponse", {
         description: "Admin session 接口返回的当前管理员信息。",
     });
 
@@ -35,8 +34,7 @@ const adminUsageRowSchema = z
         unit: z.string().openapi({ example: "calls" }),
         email: z.string().nullable().openapi({ example: "user@example.com" }),
     })
-    .openapi({
-        refId: "AdminUsageRow",
+    .openapi("AdminUsageRow", {
         description: "管理员视角的用量记录。",
     });
 
@@ -45,8 +43,7 @@ const adminUsageResponseSchema = z
         data: z.array(adminUsageRowSchema),
         total: z.number().int().openapi({ example: 120 }),
     })
-    .openapi({
-        refId: "AdminUsageResponse",
+    .openapi("AdminUsageResponse", {
         description: "Admin 用量列表 API 返回的聚合结果。",
     });
 
@@ -64,8 +61,7 @@ const adminCreditHistoryRowSchema = z
             .openapi({ example: "customer@example.com" }),
         userId: z.string().openapi({ example: "tenant_1" }),
     })
-    .openapi({
-        refId: "AdminCreditHistoryRow",
+    .openapi("AdminCreditHistoryRow", {
         description: "积分流水记录（管理后台）。",
     });
 
@@ -74,8 +70,7 @@ const adminCreditHistoryResponseSchema = z
         data: z.array(adminCreditHistoryRowSchema),
         total: z.number().int().openapi({ example: 200 }),
     })
-    .openapi({
-        refId: "AdminCreditHistoryResponse",
+    .openapi("AdminCreditHistoryResponse", {
         description: "管理员积分流水查询结果。",
     });
 
@@ -125,7 +120,7 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
                         .optional()
                         .openapi({ example: "ai.summarize" }),
                 })
-                .openapi({ refId: "AdminUsageQuery" }),
+                .openapi("AdminUsageQuery"),
         },
         responses: {
             200: {
@@ -171,7 +166,7 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
                         .optional()
                         .openapi({ example: "tenant_1" }),
                 })
-                .openapi({ refId: "AdminCreditsHistoryQuery" }),
+                .openapi("AdminCreditsHistoryQuery"),
         },
         responses: {
             200: {

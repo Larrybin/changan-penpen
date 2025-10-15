@@ -34,8 +34,7 @@ export const summarizerConfigSchema = z
                 example: "English",
             }),
     })
-    .openapi({
-        refId: "SummarizerConfig",
+    .openapi("SummarizerConfig", {
         description: "Workers AI 摘要可选配置",
     });
 
@@ -55,8 +54,7 @@ export const summarizeRequestSchema = z
             description: "可选的摘要配置。如果缺省则使用默认值。",
         }),
     })
-    .openapi({
-        refId: "SummarizeRequest",
+    .openapi("SummarizeRequest", {
         description: "AI 摘要接口的请求负载",
     });
 
@@ -89,8 +87,7 @@ export const summaryResultSchema = z
             })
             .openapi({ description: "估算 token 消耗" }),
     })
-    .openapi({
-        refId: "SummaryResult",
+    .openapi("SummaryResult", {
         description: "AI 摘要接口成功返回的数据结构",
     });
 
