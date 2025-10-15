@@ -40,6 +40,11 @@ export default defineConfig({
         },
         alias: {
             "@": path.resolve(__dirname, "./src"),
+            // Stub Next.js-only module so Vite/Vitest can transform files that import it
+            "server-only": path.resolve(
+                __dirname,
+                "./vitest.stubs/server-only.ts",
+            ),
         },
     },
     css: {

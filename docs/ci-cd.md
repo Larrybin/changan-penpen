@@ -66,3 +66,7 @@
 
 ## 部署流程更新说明（2025-10-13）
 - deploy.yml 已在“Deploy to Production (code)”之前新增“Build OpenNext bundle (Cloudflare)”步骤，执行 `npx @opennextjs/cloudflare build` 以生成 `.open-next/worker`，确保 Wrangler 部署的脚本包含有效的 `fetch` 处理器并避免 10068 错误。
+
+## CI 测试流程更新说明（2025-10-15）
+- `ci.yml` 中“List test cases (Vitest)”改为仅使用 `pnpm exec vitest list --reporter=verbose`，不再使用 `--dry-run` 兜底调用（Vitest 3 已不支持 `--dry-run/--dryRun`）。
+- 目的：避免在新版本 Vitest 下出现 `Unknown option --dryRun` 失败，同时保持快速列举用例能力；正式测试仍在“Test (Vitest with coverage)”步骤执行。
