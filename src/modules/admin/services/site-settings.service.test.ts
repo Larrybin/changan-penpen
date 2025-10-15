@@ -5,29 +5,27 @@ import { updateSiteSettings } from "./site-settings.service";
 
 const { dbState } = vi.hoisted(() => ({
     dbState: {
-        row: null as
-            | {
-                  id: number;
-                  siteName: string;
-                  domain: string;
-                  logoUrl: string;
-                  faviconUrl: string;
-                  seoTitle: string;
-                  seoDescription: string;
-                  seoOgImage: string;
-                  sitemapEnabled: number;
-                  robotsRules: string;
-                  brandPrimaryColor: string;
-                  brandSecondaryColor: string;
-                  brandFontFamily: string;
-                  headHtml: string;
-                  footerHtml: string;
-                  defaultLanguage: string;
-                  enabledLanguages: string;
-                  createdAt?: string;
-                  updatedAt?: string;
-              }
-            | null,
+        row: null as {
+            id: number;
+            siteName: string;
+            domain: string;
+            logoUrl: string;
+            faviconUrl: string;
+            seoTitle: string;
+            seoDescription: string;
+            seoOgImage: string;
+            sitemapEnabled: number;
+            robotsRules: string;
+            brandPrimaryColor: string;
+            brandSecondaryColor: string;
+            brandFontFamily: string;
+            headHtml: string;
+            footerHtml: string;
+            defaultLanguage: string;
+            enabledLanguages: string;
+            createdAt?: string;
+            updatedAt?: string;
+        } | null,
     },
 }));
 
@@ -97,7 +95,7 @@ vi.mock("@/db", () => ({
                     headHtml: "",
                     footerHtml: "",
                     defaultLanguage: "en",
-                    enabledLanguages: "[\"en\"]",
+                    enabledLanguages: '["en"]',
                     ...values,
                 } as typeof dbState.row;
             },
@@ -139,7 +137,7 @@ describe("updateSiteSettings", () => {
             headHtml: "",
             footerHtml: "",
             defaultLanguage: "en",
-            enabledLanguages: "[\"en\"]",
+            enabledLanguages: '["en"]',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -188,7 +186,7 @@ describe("updateSiteSettings", () => {
 
         expect(result.defaultLanguage).toBe("fr");
         expect(result.enabledLanguages).toEqual(["fr"]);
-        expect(dbState.row?.enabledLanguages).toBe("[\"fr\"]");
+        expect(dbState.row?.enabledLanguages).toBe('["fr"]');
         expect(setCachedSiteSettingsMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 defaultLanguage: "fr",
