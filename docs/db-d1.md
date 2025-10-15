@@ -37,3 +37,7 @@ Tips:
 - Missing tables after deploy: ensure migrations ran; check CI job logs.
 - Local dev out of sync: reset and re‑apply migrations (`pnpm db:reset:local` then migrate).
 
+## 6) Recent Updates
+- 2025-10-15：新增 `credit_transactions` 表，用于记录积分来源/消耗并保留剩余额度。
+- `user` 表新增 `current_credits`、`last_credit_refresh_at` 字段，作为积分余额与月度刷新时间。
+- 兼容性：`customers.credits` 与 `credits_history` 仍保留作为现有购买记录来源，后续可根据需要迁移。

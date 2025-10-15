@@ -1,6 +1,7 @@
-import { desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { desc, eq, like, or, sql } from "drizzle-orm";
 import {
     creditsHistory,
+    creditTransactions,
     customers,
     getDb,
     subscriptions,
@@ -11,6 +12,7 @@ import type {
     AdminUserDetail,
     AdminUserListItem,
     AdminUserRole,
+    AdminUserTransaction,
 } from "@/modules/admin/users/models";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
 import { normalizePagination } from "@/modules/admin/utils/pagination";
@@ -99,6 +101,7 @@ export async function listUsers(
             name: user.name,
             emailVerified: user.emailVerified,
             createdAt: user.createdAt,
+            currentCredits: user.currentCredits,
         })
         .from(user)
         .orderBy(desc(user.createdAt))
@@ -118,21 +121,7 @@ export async function listUsers(
         : await totalQuery;
     const total = totalRows[0]?.count ?? 0;
 
-    const userIds = userRows.map((row) => row.id);
-    const customerRows = userIds.length
-        ? await db
-              .select({
-                  userId: customers.userId,
-                  credits: customers.credits,
-              })
-              .from(customers)
-              .where(inArray(customers.userId, userIds))
-        : [];
-
-    const customerMap = new Map(
-        customerRows.map((row) => [row.userId, row.credits]),
-    );
-
+    const _userIds = userRows.map((row) => row.id);
     return {
         data: userRows.map((row) => ({
             id: row.id,
@@ -141,7 +130,7 @@ export async function listUsers(
             role: resolveRole(row.email, adminEmails),
             status: resolveStatus(row.emailVerified),
             createdAt: toNullableString(row.createdAt),
-            credits: customerMap.get(row.id) ?? null,
+            credits: row.currentCredits ?? 0,
         })),
         total,
         page,
@@ -168,6 +157,8 @@ export async function getUserDetail(
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
             image: user.image,
+            currentCredits: user.currentCredits,
+            lastCreditRefreshAt: user.lastCreditRefreshAt,
         })
         .from(user)
         .where(eq(user.id, userId))
@@ -233,6 +224,22 @@ export async function getUserDetail(
         .orderBy(desc(usageDaily.date))
         .limit(30);
 
+    const transactionRows = await db
+        .select({
+            id: creditTransactions.id,
+            amount: creditTransactions.amount,
+            remainingAmount: creditTransactions.remainingAmount,
+            type: creditTransactions.type,
+            description: creditTransactions.description,
+            expirationDate: creditTransactions.expirationDate,
+            paymentIntentId: creditTransactions.paymentIntentId,
+            createdAt: creditTransactions.createdAt,
+        })
+        .from(creditTransactions)
+        .where(eq(creditTransactions.userId, userId))
+        .orderBy(desc(creditTransactions.createdAt))
+        .limit(20);
+
     return {
         user: {
             id: userRow.id,
@@ -244,6 +251,8 @@ export async function getUserDetail(
             createdAt: toNullableString(userRow.createdAt),
             updatedAt: toNullableString(userRow.updatedAt),
             image: userRow.image ?? null,
+            currentCredits: userRow.currentCredits ?? 0,
+            lastCreditRefreshAt: toNullableString(userRow.lastCreditRefreshAt),
         },
         customer: customerRow
             ? {
@@ -278,5 +287,17 @@ export async function getUserDetail(
             totalAmount: usage.totalAmount,
             unit: usage.unit,
         })),
+        transactions: transactionRows.map(
+            (transaction): AdminUserTransaction => ({
+                id: transaction.id,
+                amount: transaction.amount,
+                remainingAmount: transaction.remainingAmount,
+                type: transaction.type,
+                description: transaction.description,
+                expirationDate: toNullableString(transaction.expirationDate),
+                paymentIntentId: transaction.paymentIntentId ?? null,
+                createdAt: toNullableString(transaction.createdAt),
+            }),
+        ),
     };
 }

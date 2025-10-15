@@ -10,7 +10,7 @@ export interface AdminUserListItem extends BaseRecord {
     role: AdminUserRole;
     status: AdminUserStatus;
     createdAt?: string | null;
-    credits?: number | null;
+    credits: number;
 }
 
 export interface AdminUserCreditHistoryItem {
@@ -50,6 +50,8 @@ export interface AdminUserDetail {
         createdAt: string | null;
         updatedAt: string | null;
         image: string | null;
+        currentCredits: number;
+        lastCreditRefreshAt: string | null;
     };
     customer: {
         id: number;
@@ -60,4 +62,16 @@ export interface AdminUserDetail {
     subscriptions: AdminUserSubscriptionItem[];
     creditsHistory: AdminUserCreditHistoryItem[];
     usage: AdminUserUsageItem[];
+    transactions: AdminUserTransaction[];
+}
+
+export interface AdminUserTransaction {
+    id: string;
+    amount: number;
+    remainingAmount: number;
+    type: string;
+    description: string;
+    expirationDate: string | null;
+    paymentIntentId?: string | null;
+    createdAt: string | null;
 }

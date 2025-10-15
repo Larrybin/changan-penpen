@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { AppLocale } from "@/i18n/config";
 import { buildLocalizedPath, localeCurrencyMap } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
+import CreditsSection from "@/modules/billing/components/credits-section";
 import PricingGrid from "@/modules/creem/components/pricing-grid";
 import {
     CREDITS_TIERS,
@@ -87,6 +88,9 @@ export default async function Page() {
                 </p>
             </div>
             <PricingGrid />
+            <div className="mt-12">
+                <CreditsSection />
+            </div>
             <Script id="billing-structured-data" type="application/ld+json">
                 {JSON.stringify(structuredData)}
             </Script>

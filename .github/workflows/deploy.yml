@@ -345,17 +345,11 @@ jobs:
           version=$(jq -r '.version' package.json 2>/dev/null || echo "unknown")
           actor="${{ github.actor }}"
 
-          summary=$(
-            printf '%s\n' \
-              "### 部署审计" \
-              "" \
-              "- 版本号: ${version}" \
-              "- 执行者: ${actor}" \
-              "- 提交范围: ${range}" \
-              "" \
-              "#### 提交列表" \
-              "${commits}"
-          )
+          printf -v summary '### 部署审计\n\n- 版本号: %s\n- 执行者: %s\n- 提交范围: %s\n\n#### 提交列表\n%s' \
+            "${version}" \
+            "${actor}" \
+            "${range}" \
+            "${commits}"
 
           printf '%s\n' "$summary" >> "$GITHUB_STEP_SUMMARY"
           printf 'summary_json=%s\n' "$(printf '%s' "$summary" | jq -Rs .)" >> "$GITHUB_OUTPUT"

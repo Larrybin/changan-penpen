@@ -225,16 +225,16 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                                     当前积分
                                 </p>
                                 <p className="text-2xl font-semibold">
-                                    {detail.customer?.credits ?? 0}
+                                    {detail.user.currentCredits}
                                 </p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground">
-                                    最近更新时间
+                                    积分刷新时间
                                 </p>
                                 <p className="text-sm">
                                     {formatRelativeTime(
-                                        detail.customer?.updatedAt,
+                                        detail.user.lastCreditRefreshAt,
                                     )}
                                 </p>
                             </div>
@@ -242,7 +242,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                         <Separator />
                         <div>
                             <p className="text-xs text-muted-foreground">
-                                积分流水
+                                充值渠道（Creem）流水
                             </p>
                             {detail.creditsHistory.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
@@ -285,6 +285,67 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                                                     </tr>
                                                 ),
                                             )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                        <Separator />
+                        <div>
+                            <p className="text-xs text-muted-foreground">
+                                系统交易记录
+                            </p>
+                            {detail.transactions.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    暂无系统交易记录。
+                                </p>
+                            ) : (
+                                <div className="overflow-x-auto rounded-md border">
+                                    <table className="min-w-full text-sm">
+                                        <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                                            <tr>
+                                                <th className="px-3 py-2">
+                                                    类型
+                                                </th>
+                                                <th className="px-3 py-2">
+                                                    数量
+                                                </th>
+                                                <th className="px-3 py-2">
+                                                    剩余
+                                                </th>
+                                                <th className="px-3 py-2">
+                                                    描述
+                                                </th>
+                                                <th className="px-3 py-2">
+                                                    创建时间
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {detail.transactions.map((item) => (
+                                                <tr
+                                                    key={item.id}
+                                                    className="border-t"
+                                                >
+                                                    <td className="px-3 py-2 uppercase">
+                                                        {item.type}
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        {item.amount}
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        {item.remainingAmount}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                                                        {item.description}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                                                        {formatDateTime(
+                                                            item.createdAt,
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>

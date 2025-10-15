@@ -8,6 +8,10 @@ export const user = sqliteTable("user", {
         .default(false)
         .notNull(),
     image: text("image"),
+    currentCredits: integer("current_credits").notNull().default(0),
+    lastCreditRefreshAt: integer("last_credit_refresh_at", {
+        mode: "timestamp",
+    }),
     createdAt: integer("created_at", { mode: "timestamp" })
         .defaultNow()
         .notNull(),

@@ -9,7 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { customers, getDb, subscriptions } from "@/db";
+import { customers, getDb, subscriptions, user as userTable } from "@/db";
 import { getSession } from "@/modules/auth/utils/auth-utils";
 import { SUBSCRIPTION_TIERS } from "@/modules/creem/config/subscriptions";
 
@@ -22,14 +22,21 @@ export default async function Dashboard() {
     if (session?.user) {
         try {
             const db = await getDb();
+            const [userBalance] = await db
+                .select({ currentCredits: userTable.currentCredits })
+                .from(userTable)
+                .where(eq(userTable.id, session.user.id))
+                .limit(1);
+
+            credits = userBalance?.currentCredits ?? 0;
+
             const rows = await db
-                .select({ id: customers.id, credits: customers.credits })
+                .select({ id: customers.id })
                 .from(customers)
                 .where(eq(customers.userId, session.user.id))
                 .limit(1);
 
             if (rows.length > 0) {
-                credits = rows[0].credits ?? 0;
                 const subs = await db
                     .select({
                         status: subscriptions.status,

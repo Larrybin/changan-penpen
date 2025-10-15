@@ -16,6 +16,10 @@ export {
     verification,
 } from "@/modules/auth/schemas/auth.schema";
 export {
+    CREDIT_TRANSACTION_TYPE,
+    creditTransactions,
+} from "@/modules/billing/schemas/credits.schema";
+export {
     creditsHistory,
     customers,
     subscriptions,

@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db";
+import { CREDIT_TRANSACTION_TYPE, getDb } from "@/db";
+import { addCredits } from "@/modules/billing/services/credits.service";
 import type {
     CreemCustomer,
     CreemSubscription,
@@ -156,7 +157,10 @@ export async function addCreditsToCustomer(
     }
 
     const userRow = await db
-        .select({ credits: customers.credits })
+        .select({
+            credits: customers.credits,
+            userId: customers.userId,
+        })
         .from(customers)
         .where(eq(customers.id, customerId))
         .limit(1);
@@ -168,6 +172,16 @@ export async function addCreditsToCustomer(
         .update(customers)
         .set({ credits: newCredits, updatedAt: now })
         .where(eq(customers.id, customerId));
+
+    if (userRow[0].userId) {
+        await addCredits({
+            userId: userRow[0].userId,
+            amount: credits,
+            description: description || "Credits purchase",
+            type: CREDIT_TRANSACTION_TYPE.PURCHASE,
+            paymentIntentId: creemOrderId ?? null,
+        });
+    }
 
     await db.insert(creditsHistory).values({
         customerId,

@@ -126,6 +126,8 @@ Billing / Payments
 | --- | --- | --- | --- | --- |
 | `/api/creem/create-checkout` | `POST` | Billing (`modules/creem`) | Create checkout session | Login |
 | `/api/creem/customer-portal` | `POST` | Billing (`modules/creem`) | Redirect to customer portal | Login |
+| `/api/credits/balance` | `GET` | Billing (`modules/billing`) | Fetch current credit balance (auto refresh monthly credits) | Login |
+| `/api/credits/history` | `GET` | Billing (`modules/billing`) | Paginated credit transactions | Login |
 | `/api/webhooks/creem` | `POST` | Billing (`modules/creem`) | Payment webhook | Signature required |
 
 Usage Tracking
@@ -158,6 +160,8 @@ Appendix: Full API route files (scan)
 - src/app/api/admin/orders/route.ts
 - src/app/api/admin/products/[id]/route.ts
 - src/app/api/admin/products/route.ts
+- src/app/api/credits/balance/route.ts
+- src/app/api/credits/history/route.ts
 - src/app/api/admin/reports/route.ts
 - src/app/api/admin/session/route.ts
 - src/app/api/admin/site-settings/route.ts
