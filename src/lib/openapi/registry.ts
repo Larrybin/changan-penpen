@@ -14,7 +14,8 @@ export function createAppOpenApiRegistry() {
         type: "apiKey",
         in: "cookie",
         name: "better-auth.session_token",
-        description: "Better Auth 登录态 Cookie。前后端请求均需携带以访问受保护接口。",
+        description:
+            "Better Auth 登录态 Cookie。前后端请求均需携带以访问受保护接口。",
     });
 
     registry.registerComponent("schemas", "ApiErrorResponse", apiErrorSchema);

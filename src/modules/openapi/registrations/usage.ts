@@ -31,14 +31,10 @@ const usageRecordRequestSchema = z
                 description: "业务侧自定义的扩展字段",
                 example: { source: "dashboard", model: "llama" },
             }),
-        consumeCredits: z
-            .number()
-            .positive()
-            .optional()
-            .openapi({
-                description: "同时扣减的积分数量，可选",
-                example: 5,
-            }),
+        consumeCredits: z.number().positive().optional().openapi({
+            description: "同时扣减的积分数量，可选",
+            example: 5,
+        }),
     })
     .openapi({
         refId: "UsageRecordRequest",
@@ -50,13 +46,10 @@ const usageRecordDataSchema = z
         date: z
             .string()
             .openapi({ example: "2025-03-05", description: "记录所属日期" }),
-        credits: z
-            .number()
-            .nullable()
-            .openapi({
-                description: "扣减后剩余积分，若不扣减则为 null",
-                example: 420,
-            }),
+        credits: z.number().nullable().openapi({
+            description: "扣减后剩余积分，若不扣减则为 null",
+            example: 420,
+        }),
     })
     .openapi({
         refId: "UsageRecordResult",
@@ -196,13 +189,10 @@ export function registerUsagePaths(registry: OpenAPIRegistry) {
         request: {
             query: z
                 .object({
-                    days: z
-                        .string()
-                        .optional()
-                        .openapi({
-                            description: "查询最近 N 天，默认 30，最大 90",
-                            example: "30",
-                        }),
+                    days: z.string().optional().openapi({
+                        description: "查询最近 N 天，默认 30，最大 90",
+                        example: "30",
+                    }),
                 })
                 .openapi({ refId: "UsageStatsQuery" }),
         },

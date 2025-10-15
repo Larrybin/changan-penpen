@@ -43,26 +43,14 @@ const creditTransactionSchema = z
         type: z
             .string()
             .openapi({ example: "MONTHLY_REFRESH", description: "交易类型" }),
-        description: z
-            .string()
-            .openapi({ example: "月度额度刷新" }),
-        expirationDate: z
-            .string()
-            .nullable()
-            .openapi({
-                description: "过期时间（如有）",
-                example: "2025-04-01T00:00:00.000Z",
-            }),
-        paymentIntentId: z
-            .string()
-            .nullable()
-            .openapi({ example: null }),
-        createdAt: z
-            .string()
-            .openapi({ example: "2025-03-01T10:00:00.000Z" }),
-        updatedAt: z
-            .string()
-            .openapi({ example: "2025-03-01T10:00:00.000Z" }),
+        description: z.string().openapi({ example: "月度额度刷新" }),
+        expirationDate: z.string().nullable().openapi({
+            description: "过期时间（如有）",
+            example: "2025-04-01T00:00:00.000Z",
+        }),
+        paymentIntentId: z.string().nullable().openapi({ example: null }),
+        createdAt: z.string().openapi({ example: "2025-03-01T10:00:00.000Z" }),
+        updatedAt: z.string().openapi({ example: "2025-03-01T10:00:00.000Z" }),
     })
     .openapi({
         refId: "CreditTransaction",

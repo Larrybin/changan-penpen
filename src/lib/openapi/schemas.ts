@@ -1,13 +1,11 @@
 import "./extend";
-import { z } from "zod/v4";
 import type { ZodTypeAny } from "zod/v4";
+import { z } from "zod/v4";
 
 export const apiErrorSchema = z
     .object({
         success: z.literal(false).openapi({ example: false }),
-        error: z
-            .string()
-            .openapi({ example: "Internal server error" }),
+        error: z.string().openapi({ example: "Internal server error" }),
         code: z.string().optional().openapi({ example: "ERR_UNEXPECTED" }),
         data: z.unknown().nullable().optional(),
     })
@@ -70,11 +68,7 @@ export function createSuccessResponseSchema<Schema extends ZodTypeAny>(
         .object({
             success: z.literal(true).openapi({ example: true }),
             data: schema,
-            error: z
-                .unknown()
-                .nullable()
-                .optional()
-                .openapi({ example: null }),
+            error: z.unknown().nullable().optional().openapi({ example: null }),
         })
         .openapi({
             refId: options.refId,

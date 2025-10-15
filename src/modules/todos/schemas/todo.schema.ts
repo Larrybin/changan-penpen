@@ -55,10 +55,7 @@ export const insertTodoSchema = createInsertSchema(todos, {
         .max(1000, TODO_VALIDATION_MESSAGES.DESCRIPTION_TOO_LONG)
         .optional()
         .openapi({ description: "任务描述", example: "补充自动化 API 文档" }),
-    categoryId: z
-        .number()
-        .optional()
-        .openapi({ description: "分类 ID，可选" }),
+    categoryId: z.number().optional().openapi({ description: "分类 ID，可选" }),
     userId: z
         .string()
         .min(1, "User ID is required")
@@ -82,7 +79,10 @@ export const insertTodoSchema = createInsertSchema(todos, {
         .url(TODO_VALIDATION_MESSAGES.INVALID_IMAGE_URL)
         .optional()
         .or(z.literal(""))
-        .openapi({ description: "关联图片地址，可选", example: "https://cdn.example.com/todo.png" }),
+        .openapi({
+            description: "关联图片地址，可选",
+            example: "https://cdn.example.com/todo.png",
+        }),
     imageAlt: z
         .string()
         .optional()

@@ -55,12 +55,8 @@ const adminCreditHistoryRowSchema = z
         id: z.number().int().openapi({ example: 456 }),
         amount: z.number().openapi({ example: 100 }),
         type: z.string().openapi({ example: "MANUAL_ADJUST" }),
-        description: z
-            .string()
-            .openapi({ example: "手动调整：补发额度" }),
-        createdAt: z
-            .string()
-            .openapi({ example: "2025-03-05T09:30:00.000Z" }),
+        description: z.string().openapi({ example: "手动调整：补发额度" }),
+        createdAt: z.string().openapi({ example: "2025-03-05T09:30:00.000Z" }),
         customerEmail: z
             .string()
             .email()

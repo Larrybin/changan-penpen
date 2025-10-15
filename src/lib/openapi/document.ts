@@ -1,14 +1,13 @@
 import { OpenApiGeneratorV31 } from "@asteasolutions/zod-to-openapi";
 
 import { resolveAppUrl } from "@/lib/seo";
-import { createAppOpenApiRegistry } from "./registry";
 import { registerAllOpenApiPaths } from "@/modules/openapi/register";
+import { createAppOpenApiRegistry } from "./registry";
 
 const DEFAULT_SERVER = "http://localhost:3000";
 
-let documentCache:
-    | ReturnType<OpenApiGeneratorV31["generateDocument"]>
-    | null = null;
+let documentCache: ReturnType<OpenApiGeneratorV31["generateDocument"]> | null =
+    null;
 
 export function getOpenApiDocument() {
     if (documentCache) {
@@ -40,7 +39,8 @@ export function getOpenApiDocument() {
         servers: [
             {
                 url: serverUrl,
-                description: "默认应用访问地址，可在 NEXT_PUBLIC_APP_URL 中覆盖",
+                description:
+                    "默认应用访问地址，可在 NEXT_PUBLIC_APP_URL 中覆盖",
             },
         ],
         security: [{ BetterAuthSession: [] }],

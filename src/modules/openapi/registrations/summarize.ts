@@ -1,9 +1,9 @@
 import type { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
 import {
-    createSuccessResponseSchema,
     apiErrorSchema,
     authRequiredResponseSchema,
+    createSuccessResponseSchema,
 } from "@/lib/openapi/schemas";
 import {
     summarizeRequestSchema,

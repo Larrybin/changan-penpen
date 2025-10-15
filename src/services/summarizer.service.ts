@@ -51,11 +51,9 @@ export const summarizeRequestSchema = z
                 example:
                     "OpenAI announced a new suite of tools designed to make AI development more accessible...",
             }),
-        config: summarizerConfigSchema
-            .optional()
-            .openapi({
-                description: "可选的摘要配置。如果缺省则使用默认值。",
-            }),
+        config: summarizerConfigSchema.optional().openapi({
+            description: "可选的摘要配置。如果缺省则使用默认值。",
+        }),
     })
     .openapi({
         refId: "SummarizeRequest",
