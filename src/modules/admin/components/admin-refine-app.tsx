@@ -126,6 +126,15 @@ export function AdminRefineApp({ children, user }: AdminRefineAppProps) {
                     },
                 },
                 {
+                    name: "api-docs",
+                    list: adminRoutes.docs.api,
+                    meta: {
+                        label: "API 文档",
+                        icon: "book-open",
+                        group: "配置",
+                    },
+                },
+                {
                     name: "reports",
                     list: adminRoutes.reports.list,
                     meta: {

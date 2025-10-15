@@ -1,6 +1,8 @@
 ﻿# Routes & API Index
 
 > Quick reference for pages, APIs, and auth requirements. Update this file whenever a path or policy changes.
+>
+> ✅ 管理后台新增 Swagger UI：访问 `/admin/api-docs`（需管理员登录）。OpenAPI JSON 位于 `/api/openapi`，同样要求管理员权限。
 
 ## 1. Page Routes (App Router)
 
@@ -44,6 +46,7 @@ Admin Area `(admin)`
 - `/admin/catalog/coupons/create` — Create coupon (admin only)
 - `/admin/catalog/coupons/edit/[id]` — Edit coupon (admin only)
 - `/admin/settings/site` — Site settings (admin only)
+- `/admin/api-docs` — Swagger UI（admin only）
 - `/admin/tenants` — Tenants list (admin only)
 - `/admin/tenants/[id]` — Tenant detail (admin only)
 - `/admin/todos` — Todos (admin only)
@@ -118,6 +121,7 @@ Admin APIs
 | `/api/admin/todos` | `GET/POST` | Admin | List/create admin todos | Admin only |
 | `/api/admin/todos/[id]` | `GET` | Admin | Admin todo by id | Admin only |
 | `/api/admin/credits-history` | `GET` | Admin | Credits history | Admin only |
+| `/api/openapi` | `GET` | Docs | Generate OpenAPI 3.1 文档（需管理员登录） | Admin only |
 | `/api/admin/dashboard` | `GET` | Admin | Dashboard metrics | Admin only |
 
 Billing / Payments
@@ -144,6 +148,7 @@ Auth / Health / AI
 | `/api/auth/[...all]` | `GET/POST` | Auth | Better Auth Google OAuth & session | Public/Login |
 | `/api/health` | `GET` | Platform | Health check (fast/strict modes) | Public |
 | `/api/summarize` | `POST` | AI | Workers AI summarization | Login |
+| `/internal/actions/todos/create` | `POST` | Todos | Server Action（内部调试用） | Login |
 
 > See each `route.ts` and related services for details under `src/app/api/*`.
 

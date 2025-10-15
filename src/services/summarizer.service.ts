@@ -1,35 +1,102 @@
 import { z } from "zod/v4";
 
-export const summarizerConfigSchema = z.object({
-    maxLength: z.number().int().min(50).max(1000).optional().default(200),
-    style: z
-        .enum(["concise", "detailed", "bullet-points"])
-        .optional()
-        .default("concise"),
-    language: z.string().min(1).max(50).optional().default("English"),
-});
+import "@/lib/openapi/extend";
 
-export const summarizeRequestSchema = z.object({
-    text: z
-        .string()
-        .trim()
-        .min(50, "Text too short to summarize (minimum 50 characters)")
-        .max(50000, "Text too long (maximum 50,000 characters)"),
-    config: summarizerConfigSchema.optional(),
-});
+export const summarizerConfigSchema = z
+    .object({
+        maxLength: z
+            .number()
+            .int()
+            .min(50)
+            .max(1000)
+            .optional()
+            .default(200)
+            .openapi({
+                description: "限制摘要的最大词数",
+                example: 200,
+            }),
+        style: z
+            .enum(["concise", "detailed", "bullet-points"])
+            .optional()
+            .default("concise")
+            .openapi({
+                description: "摘要风格",
+                example: "concise",
+            }),
+        language: z
+            .string()
+            .min(1)
+            .max(50)
+            .optional()
+            .default("English")
+            .openapi({
+                description: "摘要输出语言",
+                example: "English",
+            }),
+    })
+    .openapi({
+        refId: "SummarizerConfig",
+        description: "Workers AI 摘要可选配置",
+    });
+
+export const summarizeRequestSchema = z
+    .object({
+        text: z
+            .string()
+            .trim()
+            .min(50, "Text too short to summarize (minimum 50 characters)")
+            .max(50000, "Text too long (maximum 50,000 characters)")
+            .openapi({
+                description: "待摘要的原文内容",
+                example:
+                    "OpenAI announced a new suite of tools designed to make AI development more accessible...",
+            }),
+        config: summarizerConfigSchema
+            .optional()
+            .openapi({
+                description: "可选的摘要配置。如果缺省则使用默认值。",
+            }),
+    })
+    .openapi({
+        refId: "SummarizeRequest",
+        description: "AI 摘要接口的请求负载",
+    });
 
 type SummaryStyles = z.infer<typeof summarizerConfigSchema>["style"];
 export type SummarizeRequest = z.infer<typeof summarizeRequestSchema>;
 export type SummarizerConfig = z.infer<typeof summarizerConfigSchema>;
-export type SummaryResult = {
-    summary: string;
-    originalLength: number;
-    summaryLength: number;
-    tokensUsed: {
-        input: number;
-        output: number;
-    };
-};
+export const summaryResultSchema = z
+    .object({
+        summary: z
+            .string()
+            .openapi({ example: "The announcement introduces new tooling..." }),
+        originalLength: z
+            .number()
+            .int()
+            .openapi({ description: "原文字符数", example: 1024 }),
+        summaryLength: z
+            .number()
+            .int()
+            .openapi({ description: "摘要字符数", example: 256 }),
+        tokensUsed: z
+            .object({
+                input: z
+                    .number()
+                    .int()
+                    .openapi({ description: "输入估算 token", example: 350 }),
+                output: z
+                    .number()
+                    .int()
+                    .openapi({ description: "输出估算 token", example: 90 }),
+            })
+            .openapi({ description: "估算 token 消耗" }),
+    })
+    .openapi({
+        refId: "SummaryResult",
+        description: "AI 摘要接口成功返回的数据结构",
+    });
+
+export type SummaryResult = z.infer<typeof summaryResultSchema>;
 
 // 采用结构化约束，避免对全局 Ai 类型的硬依赖
 export type AiRunResult = { response?: string } & Record<string, unknown>;

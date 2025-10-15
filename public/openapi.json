@@ -1,0 +1,1972 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Changan-penpen API",
+    "version": "1.0.0",
+    "description": "自动生成的 OpenAPI 文档，结合 Zod schema 同步维护 API 与 Server Action。"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "默认应用访问地址，可在 NEXT_PUBLIC_APP_URL 中覆盖"
+    }
+  ],
+  "security": [
+    {
+      "BetterAuthSession": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "AI",
+      "description": "AI 摘要能力"
+    },
+    {
+      "name": "Usage",
+      "description": "用量记录与统计"
+    },
+    {
+      "name": "Credits",
+      "description": "积分余额与流水"
+    },
+    {
+      "name": "Admin",
+      "description": "管理后台接口"
+    },
+    {
+      "name": "Internal Actions",
+      "description": "仅供内部 Server Action 使用的文档化说明"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BetterAuthSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token",
+        "description": "Better Auth 登录态 Cookie。前后端请求均需携带以访问受保护接口。"
+      }
+    },
+    "schemas": {
+      "ApiErrorResponse": {
+        "~standard": {
+          "vendor": "zod",
+          "version": 1
+        },
+        "def": {
+          "type": "object",
+          "shape": {
+            "success": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "literal",
+                "values": [
+                  false
+                ]
+              },
+              "type": "literal",
+              "values": {}
+            },
+            "error": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "string"
+              },
+              "type": "string",
+              "format": null,
+              "minLength": null,
+              "maxLength": null
+            },
+            "code": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "optional",
+                "innerType": {
+                  "~standard": {
+                    "vendor": "zod",
+                    "version": 1
+                  },
+                  "def": {
+                    "type": "string"
+                  },
+                  "type": "string",
+                  "format": null,
+                  "minLength": null,
+                  "maxLength": null
+                }
+              },
+              "type": "optional"
+            },
+            "data": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "optional",
+                "innerType": {
+                  "~standard": {
+                    "vendor": "zod",
+                    "version": 1
+                  },
+                  "def": {
+                    "type": "nullable",
+                    "innerType": {
+                      "~standard": {
+                        "vendor": "zod",
+                        "version": 1
+                      },
+                      "def": {
+                        "type": "unknown"
+                      },
+                      "type": "unknown"
+                    }
+                  },
+                  "type": "nullable"
+                }
+              },
+              "type": "optional"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "AuthRequiredResponse": {
+        "~standard": {
+          "vendor": "zod",
+          "version": 1
+        },
+        "def": {
+          "type": "object",
+          "shape": {
+            "success": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "literal",
+                "values": [
+                  false
+                ]
+              },
+              "type": "literal",
+              "values": {}
+            },
+            "error": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "string"
+              },
+              "type": "string",
+              "format": null,
+              "minLength": null,
+              "maxLength": null
+            }
+          }
+        },
+        "type": "object"
+      },
+      "AdminUnauthorizedResponse": {
+        "~standard": {
+          "vendor": "zod",
+          "version": 1
+        },
+        "def": {
+          "type": "object",
+          "shape": {
+            "message": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "string"
+              },
+              "type": "string",
+              "format": null,
+              "minLength": null,
+              "maxLength": null
+            }
+          }
+        },
+        "type": "object"
+      },
+      "PaginationMeta": {
+        "~standard": {
+          "vendor": "zod",
+          "version": 1
+        },
+        "def": {
+          "type": "object",
+          "shape": {
+            "total": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "number",
+                "checks": [
+                  {
+                    "~standard": {
+                      "vendor": "zod",
+                      "version": 1
+                    },
+                    "def": {
+                      "type": "number",
+                      "check": "number_format",
+                      "abort": false,
+                      "format": "safeint"
+                    },
+                    "type": "number",
+                    "minValue": -9007199254740991,
+                    "maxValue": 9007199254740991,
+                    "isInt": true,
+                    "isFinite": true,
+                    "format": "safeint"
+                  },
+                  {}
+                ]
+              },
+              "type": "number",
+              "minValue": 0,
+              "maxValue": 9007199254740991,
+              "isInt": true,
+              "isFinite": true,
+              "format": "safeint"
+            },
+            "pages": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "number",
+                "checks": [
+                  {
+                    "~standard": {
+                      "vendor": "zod",
+                      "version": 1
+                    },
+                    "def": {
+                      "type": "number",
+                      "check": "number_format",
+                      "abort": false,
+                      "format": "safeint"
+                    },
+                    "type": "number",
+                    "minValue": -9007199254740991,
+                    "maxValue": 9007199254740991,
+                    "isInt": true,
+                    "isFinite": true,
+                    "format": "safeint"
+                  },
+                  {}
+                ]
+              },
+              "type": "number",
+              "minValue": 0,
+              "maxValue": 9007199254740991,
+              "isInt": true,
+              "isFinite": true,
+              "format": "safeint"
+            },
+            "current": {
+              "~standard": {
+                "vendor": "zod",
+                "version": 1
+              },
+              "def": {
+                "type": "number",
+                "checks": [
+                  {
+                    "~standard": {
+                      "vendor": "zod",
+                      "version": 1
+                    },
+                    "def": {
+                      "type": "number",
+                      "check": "number_format",
+                      "abort": false,
+                      "format": "safeint"
+                    },
+                    "type": "number",
+                    "minValue": -9007199254740991,
+                    "maxValue": 9007199254740991,
+                    "isInt": true,
+                    "isFinite": true,
+                    "format": "safeint"
+                  },
+                  {}
+                ]
+              },
+              "type": "number",
+              "minValue": 1,
+              "maxValue": 9007199254740991,
+              "isInt": true,
+              "isFinite": true,
+              "format": "safeint"
+            }
+          }
+        },
+        "type": "object"
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/summarize": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "基于 Workers AI 对长文本进行摘要",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 50,
+                    "maxLength": 50000,
+                    "description": "待摘要的原文内容",
+                    "example": "OpenAI announced a new suite of tools designed to make AI development more accessible..."
+                  },
+                  "config": {
+                    "type": "object",
+                    "properties": {
+                      "maxLength": {
+                        "type": "integer",
+                        "minimum": 50,
+                        "maximum": 1000,
+                        "default": 200,
+                        "description": "限制摘要的最大词数",
+                        "example": 200
+                      },
+                      "style": {
+                        "type": "string",
+                        "enum": [
+                          "concise",
+                          "detailed",
+                          "bullet-points"
+                        ],
+                        "default": "concise",
+                        "description": "摘要风格",
+                        "example": "concise"
+                      },
+                      "language": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50,
+                        "default": "English",
+                        "description": "摘要输出语言",
+                        "example": "English"
+                      }
+                    },
+                    "refId": "SummarizerConfig",
+                    "description": "可选的摘要配置。如果缺省则使用默认值。"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "refId": "SummarizeRequest",
+                "description": "AI 摘要接口的请求负载"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "摘要生成成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ],
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "string",
+                          "example": "The announcement introduces new tooling..."
+                        },
+                        "originalLength": {
+                          "type": "integer",
+                          "description": "原文字符数",
+                          "example": 1024
+                        },
+                        "summaryLength": {
+                          "type": "integer",
+                          "description": "摘要字符数",
+                          "example": 256
+                        },
+                        "tokensUsed": {
+                          "type": "object",
+                          "properties": {
+                            "input": {
+                              "type": "integer",
+                              "description": "输入估算 token",
+                              "example": 350
+                            },
+                            "output": {
+                              "type": "integer",
+                              "description": "输出估算 token",
+                              "example": 90
+                            }
+                          },
+                          "required": [
+                            "input",
+                            "output"
+                          ],
+                          "description": "估算 token 消耗"
+                        }
+                      },
+                      "required": [
+                        "summary",
+                        "originalLength",
+                        "summaryLength",
+                        "tokensUsed"
+                      ],
+                      "refId": "SummaryResult",
+                      "description": "AI 摘要接口成功返回的数据结构"
+                    },
+                    "error": {
+                      "example": null
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "refId": "SummarizeSuccessResponse",
+                  "description": "AI 文本摘要接口返回的摘要结果。",
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "summary": "The announcement introduces a toolset that simplifies AI application delivery...",
+                      "originalLength": 1024,
+                      "summaryLength": 256,
+                      "tokensUsed": {
+                        "input": 350,
+                        "output": 90
+                      }
+                    },
+                    "error": null
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或会话失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "AuthRequiredResponse",
+                  "description": "当请求缺少有效登录会话时返回。"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Workers AI 不可用或内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usage/record": {
+      "post": {
+        "tags": [
+          "Usage"
+        ],
+        "summary": "记录用户某项功能的用量",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "feature": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "ai.summarize",
+                    "description": "功能唯一标识"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "example": 1,
+                    "description": "本次使用量"
+                  },
+                  "unit": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "calls",
+                    "description": "计量单位"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {},
+                    "description": "业务侧自定义的扩展字段",
+                    "example": {
+                      "source": "dashboard",
+                      "model": "llama"
+                    }
+                  },
+                  "consumeCredits": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "同时扣减的积分数量，可选",
+                    "example": 5
+                  }
+                },
+                "required": [
+                  "feature",
+                  "amount",
+                  "unit"
+                ],
+                "refId": "UsageRecordRequest",
+                "description": "记录用量时提交的请求体。"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "记录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ],
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "example": "2025-03-05",
+                          "description": "记录所属日期"
+                        },
+                        "credits": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "description": "扣减后剩余积分，若不扣减则为 null",
+                          "example": 420
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "credits"
+                      ],
+                      "refId": "UsageRecordResult",
+                      "description": "记录成功后返回的日期与剩余积分。"
+                    },
+                    "error": {
+                      "example": null
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "refId": "UsageRecordResponse",
+                  "description": "记录用量成功时的响应体。",
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "date": "2025-03-05",
+                      "credits": 420
+                    },
+                    "error": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "AuthRequiredResponse",
+                  "description": "当请求缺少有效登录会话时返回。"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usage/stats": {
+      "get": {
+        "tags": [
+          "Usage"
+        ],
+        "summary": "按日聚合查询用量统计",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "查询最近 N 天，默认 30，最大 90",
+              "example": "30"
+            },
+            "required": false,
+            "description": "查询最近 N 天，默认 30，最大 90",
+            "name": "days",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "统计查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ],
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "fromDate": {
+                          "type": "string",
+                          "example": "2025-02-04",
+                          "description": "统计起始日期"
+                        },
+                        "toDate": {
+                          "type": "string",
+                          "example": "2025-03-05",
+                          "description": "统计结束日期"
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "date": {
+                                "type": "string",
+                                "example": "2025-03-01",
+                                "description": "统计日期"
+                              },
+                              "feature": {
+                                "type": "string",
+                                "example": "ai.summarize",
+                                "description": "功能唯一标识"
+                              },
+                              "totalAmount": {
+                                "type": "number",
+                                "example": 25,
+                                "description": "当日累计使用量"
+                              },
+                              "unit": {
+                                "type": "string",
+                                "example": "calls"
+                              }
+                            },
+                            "required": [
+                              "date",
+                              "feature",
+                              "totalAmount",
+                              "unit"
+                            ],
+                            "refId": "UsageStatsRow",
+                            "description": "每日用量明细。"
+                          },
+                          "description": "每日聚合结果列表"
+                        }
+                      },
+                      "required": [
+                        "fromDate",
+                        "toDate",
+                        "rows"
+                      ],
+                      "refId": "UsageStatsPayload",
+                      "description": "Usage Stats 接口返回的聚合数据。"
+                    },
+                    "error": {
+                      "example": null
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "refId": "UsageStatsResponse",
+                  "description": "用量统计查询的响应体。",
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "fromDate": "2025-02-04",
+                      "toDate": "2025-03-05",
+                      "rows": [
+                        {
+                          "date": "2025-03-05",
+                          "feature": "ai.summarize",
+                          "totalAmount": 3,
+                          "unit": "calls"
+                        }
+                      ]
+                    },
+                    "error": null
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "AuthRequiredResponse",
+                  "description": "当请求缺少有效登录会话时返回。"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/credits/balance": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "查询当前积分余额（自动刷新月度赠送）",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ],
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "credits": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "example": 480,
+                          "description": "当前积分余额"
+                        }
+                      },
+                      "required": [
+                        "credits"
+                      ],
+                      "refId": "CreditBalancePayload",
+                      "description": "余额查询返回的积分数据。"
+                    },
+                    "error": {
+                      "example": null
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "refId": "CreditBalanceResponse",
+                  "description": "积分余额查询成功时返回。",
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "credits": 480
+                    },
+                    "error": null
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "AuthRequiredResponse",
+                  "description": "当请求缺少有效登录会话时返回。"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/credits/history": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "分页查询积分流水记录",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "1",
+              "description": "页码"
+            },
+            "required": false,
+            "description": "页码",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "10",
+              "description": "每页条数"
+            },
+            "required": false,
+            "description": "每页条数",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ],
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "transactions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer",
+                                "example": 123
+                              },
+                              "amount": {
+                                "type": "number",
+                                "example": 50
+                              },
+                              "remainingAmount": {
+                                "type": "number",
+                                "example": 20,
+                                "description": "尚未消耗的数量"
+                              },
+                              "type": {
+                                "type": "string",
+                                "example": "MONTHLY_REFRESH",
+                                "description": "交易类型"
+                              },
+                              "description": {
+                                "type": "string",
+                                "example": "月度额度刷新"
+                              },
+                              "expirationDate": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "description": "过期时间（如有）",
+                                "example": "2025-04-01T00:00:00.000Z"
+                              },
+                              "paymentIntentId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "example": null
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "example": "2025-03-01T10:00:00.000Z"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "example": "2025-03-01T10:00:00.000Z"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "amount",
+                              "remainingAmount",
+                              "type",
+                              "description",
+                              "expirationDate",
+                              "paymentIntentId",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "refId": "CreditTransaction",
+                            "description": "积分流水记录。"
+                          },
+                          "description": "流水列表"
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "example": 120,
+                              "description": "总记录数"
+                            },
+                            "pages": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "example": 12,
+                              "description": "总页数"
+                            },
+                            "current": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "example": 1,
+                              "description": "当前页码（从 1 开始）"
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "pages",
+                            "current"
+                          ],
+                          "refId": "PaginationMeta",
+                          "description": "通用分页元信息。"
+                        }
+                      },
+                      "required": [
+                        "transactions",
+                        "pagination"
+                      ],
+                      "refId": "CreditHistoryPayload",
+                      "description": "积分流水查询结果。"
+                    },
+                    "error": {
+                      "example": null
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "refId": "CreditHistoryResponse",
+                  "description": "积分流水分页查询成功时返回。"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "AuthRequiredResponse",
+                  "description": "当请求缺少有效登录会话时返回。"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/session": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "校验当前登录用户是否具备管理员权限",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "管理员会话有效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "user_123"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Admin User"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email",
+                          "example": "admin@example.com"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email"
+                      ],
+                      "refId": "AdminUser"
+                    }
+                  },
+                  "required": [
+                    "user"
+                  ],
+                  "refId": "AdminSessionResponse",
+                  "description": "Admin session 接口返回的当前管理员信息。"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或无管理员权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "refId": "AdminUnauthorizedResponse",
+                  "description": "Admin 接口鉴权失败时的统一响应结构。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/usage": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "分页查询租户用量概览",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "perPage",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "tenant_1"
+            },
+            "required": false,
+            "name": "tenantId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "ai.summarize"
+            },
+            "required": false,
+            "name": "feature",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "userId": {
+                            "type": "string",
+                            "example": "tenant_1"
+                          },
+                          "date": {
+                            "type": "string",
+                            "example": "2025-03-05"
+                          },
+                          "feature": {
+                            "type": "string",
+                            "example": "ai.summarize"
+                          },
+                          "totalAmount": {
+                            "type": "number",
+                            "example": 12
+                          },
+                          "unit": {
+                            "type": "string",
+                            "example": "calls"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "example": "user@example.com"
+                          }
+                        },
+                        "required": [
+                          "userId",
+                          "date",
+                          "feature",
+                          "totalAmount",
+                          "unit",
+                          "email"
+                        ],
+                        "refId": "AdminUsageRow",
+                        "description": "管理员视角的用量记录。"
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "example": 120
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ],
+                  "refId": "AdminUsageResponse",
+                  "description": "Admin 用量列表 API 返回的聚合结果。"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或无管理员权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "refId": "AdminUnauthorizedResponse",
+                  "description": "Admin 接口鉴权失败时的统一响应结构。"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/credits-history": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "分页查询所有租户的积分流水",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "20"
+            },
+            "required": false,
+            "name": "perPage",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "tenant_1"
+            },
+            "required": false,
+            "name": "tenantId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 456
+                          },
+                          "amount": {
+                            "type": "number",
+                            "example": 100
+                          },
+                          "type": {
+                            "type": "string",
+                            "example": "MANUAL_ADJUST"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "手动调整：补发额度"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "example": "2025-03-05T09:30:00.000Z"
+                          },
+                          "customerEmail": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "email",
+                            "example": "customer@example.com"
+                          },
+                          "userId": {
+                            "type": "string",
+                            "example": "tenant_1"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "amount",
+                          "type",
+                          "description",
+                          "createdAt",
+                          "customerEmail",
+                          "userId"
+                        ],
+                        "refId": "AdminCreditHistoryRow",
+                        "description": "积分流水记录（管理后台）。"
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "example": 200
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ],
+                  "refId": "AdminCreditHistoryResponse",
+                  "description": "管理员积分流水查询结果。"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或无管理员权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "refId": "AdminUnauthorizedResponse",
+                  "description": "Admin 接口鉴权失败时的统一响应结构。"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/actions/todos/create": {
+      "post": {
+        "tags": [
+          "Internal Actions"
+        ],
+        "summary": "Server Action：创建 Todo 任务",
+        "description": "仅供前端表单通过 Server Action 调用，用于演示型 Todo 功能。",
+        "security": [
+          {
+            "BetterAuthSession": []
+          }
+        ],
+        "extensions": {
+          "x-internal": true
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255,
+                    "description": "任务标题",
+                    "example": "完成 Swagger 接入"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "任务描述",
+                    "example": "补充自动化 API 文档"
+                  },
+                  "categoryId": {
+                    "type": "number",
+                    "description": "分类 ID，可选"
+                  },
+                  "userId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "任务所属用户 ID"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "in_progress",
+                      "completed",
+                      "archived"
+                    ],
+                    "description": "任务状态",
+                    "example": "pending"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "urgent"
+                    ],
+                    "description": "优先级",
+                    "example": "medium"
+                  },
+                  "imageUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ],
+                    "description": "关联图片地址，可选",
+                    "example": "https://cdn.example.com/todo.png"
+                  },
+                  "imageAlt": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ],
+                    "description": "图片替代文本"
+                  },
+                  "completed": {
+                    "type": "boolean",
+                    "description": "是否已完成",
+                    "example": false
+                  },
+                  "dueDate": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ],
+                    "description": "截止日期 (ISO 字符串)"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "updatedAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title",
+                  "userId"
+                ],
+                "refId": "InsertTodoInput",
+                "description": "Server Action 创建 Todo 时的表单数据结构。"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "创建成功，Server Action 会触发页面重定向。"
+          },
+          "400": {
+            "description": "表单校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "ERR_UNEXPECTED"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "ApiErrorResponse",
+                  "description": "通用错误响应封装，包含错误信息与可选错误码。"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ],
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "refId": "AuthRequiredResponse",
+                  "description": "当请求缺少有效登录会话时返回。"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}
