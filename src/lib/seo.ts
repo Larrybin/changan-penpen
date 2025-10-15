@@ -169,7 +169,32 @@ function isAllowedUriScheme(url: string): boolean {
 }
 
 function stripWrappingQuotes(value: string): string {
-    return value.replace(/^['"]+/, "").replace(/['"]+$/, "");
+    let start = 0;
+    let end = value.length;
+
+    while (start < end) {
+        const char = value.charAt(start);
+        if (char === "'" || char === '"') {
+            start += 1;
+            continue;
+        }
+        break;
+    }
+
+    while (end > start) {
+        const char = value.charAt(end - 1);
+        if (char === "'" || char === '"') {
+            end -= 1;
+            continue;
+        }
+        break;
+    }
+
+    if (start === 0 && end === value.length) {
+        return value;
+    }
+
+    return value.slice(start, end);
 }
 
 function sanitizeNoscriptAttrValue(
