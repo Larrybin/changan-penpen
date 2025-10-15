@@ -10,6 +10,7 @@
 2. [getting-started.md](getting-started.md) — 5‑minute quick start (local & production)
 3. [local-dev.md](local-dev.md) — Local development and debugging tips
 4. [testing.md](testing.md) — Test strategy, Vitest plan, mocking guidelines
+5. [extending.md](extending.md) — 模块扩展与多平台部署操作指引
 
 ## Environment, Config, and Resources
 1. [env-and-secrets.md](env-and-secrets.md) — Env matrix and rotation policy

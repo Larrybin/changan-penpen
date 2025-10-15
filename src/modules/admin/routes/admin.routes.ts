@@ -37,6 +37,9 @@ const adminRoutes = {
     auditLogs: {
         list: "/admin/audit-logs",
     },
+    docs: {
+        api: "/admin/api-docs",
+    },
 } as const;
 
 export default adminRoutes;
