@@ -4,6 +4,90 @@ import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.servi
 
 const now = () => new Date().toISOString();
 
+type CatalogTable = typeof products | typeof coupons | typeof contentPages;
+
+interface AuditConfig {
+    targetType: string;
+    create: string;
+    update: string;
+    delete: string;
+}
+
+type InferInsert<TTable extends CatalogTable> = TTable["$inferInsert"];
+type InferSelect<TTable extends CatalogTable> = TTable["$inferSelect"];
+
+interface CrudConfig<TInput, TTable extends CatalogTable> {
+    table: TTable;
+    buildCreateValues: (
+        input: TInput,
+        timestamp: string,
+    ) => InferInsert<TTable>;
+    buildUpdateValues: (
+        input: TInput,
+        timestamp: string,
+    ) => Partial<InferInsert<TTable>>;
+    audit: AuditConfig;
+}
+
+function buildCrudService<TInput, TTable extends CatalogTable>({
+    table,
+    buildCreateValues,
+    buildUpdateValues,
+    audit,
+}: CrudConfig<TInput, TTable>) {
+    return {
+        async create(input: TInput, adminEmail: string) {
+            const db = await getDb();
+            const timestamp = now();
+            const [inserted] = await db
+                .insert(table)
+                .values(
+                    buildCreateValues(input, timestamp) as InferInsert<TTable>,
+                )
+                .returning();
+
+            await recordAdminAuditLog({
+                adminEmail,
+                action: audit.create,
+                targetType: audit.targetType,
+                targetId: `${inserted.id}`,
+                metadata: JSON.stringify(input),
+            });
+
+            return inserted as InferSelect<TTable>;
+        },
+        async update(id: number, input: TInput, adminEmail: string) {
+            const db = await getDb();
+            const [updated] = await db
+                .update(table)
+                .set(buildUpdateValues(input, now()) as never)
+                .where(eq(table.id, id))
+                .returning();
+
+            await recordAdminAuditLog({
+                adminEmail,
+                action: audit.update,
+                targetType: audit.targetType,
+                targetId: `${id}`,
+                metadata: JSON.stringify(input),
+            });
+
+            return updated as InferSelect<TTable>;
+        },
+        async delete(id: number, adminEmail: string) {
+            const db = await getDb();
+            await db.delete(table).where(eq(table.id, id));
+
+            await recordAdminAuditLog({
+                adminEmail,
+                action: audit.delete,
+                targetType: audit.targetType,
+                targetId: `${id}`,
+            });
+        },
+    };
+}
+
 export async function listProducts() {
     const db = await getDb();
     const rows = await db.select().from(products).orderBy(products.createdAt);
@@ -31,79 +115,43 @@ export interface ProductInput {
     metadata?: string;
 }
 
-export async function createProduct(input: ProductInput, adminEmail: string) {
-    const db = await getDb();
-    const timestamp = now();
-    const [inserted] = await db
-        .insert(products)
-        .values({
-            slug: input.slug,
-            name: input.name,
-            description: input.description ?? "",
-            priceCents: input.priceCents ?? 0,
-            currency: input.currency ?? "USD",
-            type: input.type ?? "one_time",
-            status: input.status ?? "draft",
-            metadata: input.metadata ?? "",
+const normalizeProductInput = (
+    input: ProductInput,
+): Omit<typeof products.$inferInsert, "createdAt" | "updatedAt"> => ({
+    slug: input.slug,
+    name: input.name,
+    description: input.description ?? "",
+    priceCents: input.priceCents ?? 0,
+    currency: input.currency ?? "USD",
+    type: input.type ?? "one_time",
+    status: input.status ?? "draft",
+    metadata: input.metadata ?? "",
+});
+
+const productCrud = buildCrudService<ProductInput, typeof products>({
+    table: products,
+    buildCreateValues: (input, timestamp) =>
+        ({
+            ...normalizeProductInput(input),
             createdAt: timestamp,
             updatedAt: timestamp,
-        })
-        .returning();
-
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "create_product",
+        }) satisfies typeof products.$inferInsert,
+    buildUpdateValues: (input, timestamp) =>
+        ({
+            ...normalizeProductInput(input),
+            updatedAt: timestamp,
+        }) satisfies Partial<typeof products.$inferInsert>,
+    audit: {
         targetType: "product",
-        targetId: `${inserted.id}`,
-        metadata: JSON.stringify(input),
-    });
+        create: "create_product",
+        update: "update_product",
+        delete: "delete_product",
+    },
+});
 
-    return inserted;
-}
-
-export async function updateProduct(
-    id: number,
-    input: ProductInput,
-    adminEmail: string,
-) {
-    const db = await getDb();
-    const [updated] = await db
-        .update(products)
-        .set({
-            slug: input.slug,
-            name: input.name,
-            description: input.description ?? "",
-            priceCents: input.priceCents ?? 0,
-            currency: input.currency ?? "USD",
-            type: input.type ?? "one_time",
-            status: input.status ?? "draft",
-            metadata: input.metadata ?? "",
-            updatedAt: now(),
-        })
-        .where(eq(products.id, id))
-        .returning();
-
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "update_product",
-        targetType: "product",
-        targetId: `${id}`,
-        metadata: JSON.stringify(input),
-    });
-
-    return updated;
-}
-
-export async function deleteProduct(id: number, adminEmail: string) {
-    const db = await getDb();
-    await db.delete(products).where(eq(products.id, id));
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "delete_product",
-        targetType: "product",
-        targetId: `${id}`,
-    });
-}
+export const createProduct = productCrud.create;
+export const updateProduct = productCrud.update;
+export const deleteProduct = productCrud.delete;
 
 export interface CouponInput {
     code: string;
@@ -131,80 +179,47 @@ export async function getCouponById(id: number) {
     return rows[0] ?? null;
 }
 
-export async function createCoupon(input: CouponInput, adminEmail: string) {
-    const db = await getDb();
-    const timestamp = now();
-    const [inserted] = await db
-        .insert(coupons)
-        .values({
-            code: input.code,
-            description: input.description ?? "",
-            discountType: input.discountType ?? "percentage",
-            discountValue: input.discountValue ?? 0,
-            maxRedemptions: input.maxRedemptions ?? null,
+const normalizeCouponInput = (
+    input: CouponInput,
+): Omit<
+    typeof coupons.$inferInsert,
+    "createdAt" | "updatedAt" | "redeemedCount"
+> => ({
+    code: input.code,
+    description: input.description ?? "",
+    discountType: input.discountType ?? "percentage",
+    discountValue: input.discountValue ?? 0,
+    maxRedemptions: input.maxRedemptions ?? null,
+    startsAt: input.startsAt ?? null,
+    endsAt: input.endsAt ?? null,
+    status: input.status ?? "inactive",
+});
+
+const couponCrud = buildCrudService<CouponInput, typeof coupons>({
+    table: coupons,
+    buildCreateValues: (input, timestamp) =>
+        ({
+            ...normalizeCouponInput(input),
             redeemedCount: 0,
-            startsAt: input.startsAt ?? null,
-            endsAt: input.endsAt ?? null,
-            status: input.status ?? "inactive",
             createdAt: timestamp,
             updatedAt: timestamp,
-        })
-        .returning();
-
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "create_coupon",
+        }) satisfies typeof coupons.$inferInsert,
+    buildUpdateValues: (input, timestamp) =>
+        ({
+            ...normalizeCouponInput(input),
+            updatedAt: timestamp,
+        }) satisfies Partial<typeof coupons.$inferInsert>,
+    audit: {
         targetType: "coupon",
-        targetId: `${inserted.id}`,
-        metadata: JSON.stringify(input),
-    });
+        create: "create_coupon",
+        update: "update_coupon",
+        delete: "delete_coupon",
+    },
+});
 
-    return inserted;
-}
-
-export async function updateCoupon(
-    id: number,
-    input: CouponInput,
-    adminEmail: string,
-) {
-    const db = await getDb();
-    const [updated] = await db
-        .update(coupons)
-        .set({
-            code: input.code,
-            description: input.description ?? "",
-            discountType: input.discountType ?? "percentage",
-            discountValue: input.discountValue ?? 0,
-            maxRedemptions: input.maxRedemptions ?? null,
-            startsAt: input.startsAt ?? null,
-            endsAt: input.endsAt ?? null,
-            status: input.status ?? "inactive",
-            updatedAt: now(),
-        })
-        .where(eq(coupons.id, id))
-        .returning();
-
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "update_coupon",
-        targetType: "coupon",
-        targetId: `${id}`,
-        metadata: JSON.stringify(input),
-    });
-
-    return updated;
-}
-
-export async function deleteCoupon(id: number, adminEmail: string) {
-    const db = await getDb();
-    await db.delete(coupons).where(eq(coupons.id, id));
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "delete_coupon",
-        targetType: "coupon",
-        targetId: `${id}`,
-    });
-}
+export const createCoupon = couponCrud.create;
+export const updateCoupon = couponCrud.update;
+export const deleteCoupon = couponCrud.delete;
 
 export interface ContentPageInput {
     title: string;
@@ -231,77 +246,39 @@ export async function getContentPageById(id: number) {
     return rows[0] ?? null;
 }
 
-export async function createContentPage(
+const normalizeContentPageInput = (
     input: ContentPageInput,
-    adminEmail: string,
-) {
-    const db = await getDb();
-    const timestamp = now();
-    const [inserted] = await db
-        .insert(contentPages)
-        .values({
-            title: input.title,
-            slug: input.slug,
-            summary: input.summary ?? "",
-            language: input.language ?? "en",
-            status: input.status ?? "draft",
-            content: input.content ?? "",
-            publishedAt: input.publishedAt ?? null,
+): Omit<typeof contentPages.$inferInsert, "createdAt" | "updatedAt"> => ({
+    title: input.title,
+    slug: input.slug,
+    summary: input.summary ?? "",
+    language: input.language ?? "en",
+    status: input.status ?? "draft",
+    content: input.content ?? "",
+    publishedAt: input.publishedAt ?? null,
+});
+
+const contentPageCrud = buildCrudService<ContentPageInput, typeof contentPages>({
+    table: contentPages,
+    buildCreateValues: (input, timestamp) =>
+        ({
+            ...normalizeContentPageInput(input),
             createdAt: timestamp,
             updatedAt: timestamp,
-        })
-        .returning();
-
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "create_content_page",
+        }) satisfies typeof contentPages.$inferInsert,
+    buildUpdateValues: (input, timestamp) =>
+        ({
+            ...normalizeContentPageInput(input),
+            updatedAt: timestamp,
+        }) satisfies Partial<typeof contentPages.$inferInsert>,
+    audit: {
         targetType: "content_page",
-        targetId: `${inserted.id}`,
-        metadata: JSON.stringify(input),
-    });
+        create: "create_content_page",
+        update: "update_content_page",
+        delete: "delete_content_page",
+    },
+});
 
-    return inserted;
-}
-
-export async function updateContentPage(
-    id: number,
-    input: ContentPageInput,
-    adminEmail: string,
-) {
-    const db = await getDb();
-    const [updated] = await db
-        .update(contentPages)
-        .set({
-            title: input.title,
-            slug: input.slug,
-            summary: input.summary ?? "",
-            language: input.language ?? "en",
-            status: input.status ?? "draft",
-            content: input.content ?? "",
-            publishedAt: input.publishedAt ?? null,
-            updatedAt: now(),
-        })
-        .where(eq(contentPages.id, id))
-        .returning();
-
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "update_content_page",
-        targetType: "content_page",
-        targetId: `${id}`,
-        metadata: JSON.stringify(input),
-    });
-
-    return updated;
-}
-
-export async function deleteContentPage(id: number, adminEmail: string) {
-    const db = await getDb();
-    await db.delete(contentPages).where(eq(contentPages.id, id));
-    await recordAdminAuditLog({
-        adminEmail,
-        action: "delete_content_page",
-        targetType: "content_page",
-        targetId: `${id}`,
-    });
-}
+export const createContentPage = contentPageCrud.create;
+export const updateContentPage = contentPageCrud.update;
+export const deleteContentPage = contentPageCrud.delete;
