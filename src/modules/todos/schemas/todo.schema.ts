@@ -104,7 +104,8 @@ export const insertTodoSchema = createInsertSchema(todos, {
 export const createTodoClientSchema = insertTodoSchema
     .omit({ userId: true })
     .openapi("CreateTodoClientInput", {
-        description: "Server Action 创建 Todo 时客户端提交的表单数据，不包含用户 ID。",
+        description:
+            "Server Action 创建 Todo 时客户端提交的表单数据，不包含用户 ID。",
     });
 
 export const selectTodoSchema = createSelectSchema(todos);
