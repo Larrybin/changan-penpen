@@ -142,7 +142,9 @@ if (DO_CF_TYPEGEN) {
     try {
         // Avoid pnpm run to prevent Windows script-shell issues; call binaries directly
         run("pnpm exec wrangler types");
-        run("pnpm exec wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts");
+        run(
+            "pnpm exec wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+        );
         CF_TYPEGEN = true;
     } catch (error) {
         timeEnd("cf-typegen");
