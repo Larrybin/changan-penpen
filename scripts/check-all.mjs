@@ -140,7 +140,9 @@ if (!STRICT_MODE) {
 if (DO_CF_TYPEGEN) {
     timeStart("cf-typegen");
     try {
-        run("pnpm run cf-typegen");
+        // Avoid pnpm run to prevent Windows script-shell issues; call binaries directly
+        run("pnpm exec wrangler types");
+        run("pnpm exec wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts");
         CF_TYPEGEN = true;
     } catch (error) {
         timeEnd("cf-typegen");
@@ -176,10 +178,10 @@ if (DO_TESTS) {
     try {
         if (FAST_VITEST && !FULL_COVERAGE) {
             console.log("\n运行 Vitest（快速模式）…");
-            run("pnpm run test:ci");
+            run("pnpm exec vitest run --reporter=dot");
         } else {
             console.log("\n运行 Vitest（完整模式）…");
-            run("pnpm run test");
+            run("pnpm exec vitest run");
         }
         TEST_OK = true;
         timeEnd("vitest");
@@ -201,7 +203,8 @@ if (DO_NEXT_BUILD) {
     } catch {}
     timeStart("next-build");
     try {
-        run("pnpm run build");
+        // Use direct binary to avoid npm script-shell on Windows
+        run("pnpm exec next build");
         NEXT_BUILD_STATUS = "built";
     } catch (error) {
         timeEnd("next-build");
@@ -219,9 +222,9 @@ if (SKIP_DOCS_CHECK) {
     timeStart("docs-checks");
     try {
         // Removed docs consistency check to reduce noise and avoid non-critical failures
-        // Keep link checks only
+        // Keep link checks only; call script file directly to avoid script-shell
         DOCS_OK = true; // Considered pass (consistency check disabled)
-        run("pnpm run check:links");
+        run("node scripts/check-links.mjs");
         LINKS_OK = true;
     } catch (error) {
         timeEnd("docs-checks");
