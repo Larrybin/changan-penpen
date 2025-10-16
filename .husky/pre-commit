@@ -1,6 +1,13 @@
 #!/usr/bin/env sh
 # Format staged files and run typecheck before committing
 
+# Ensure pnpm exists (Windows/git-bash friendly)
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "[pre-commit] pnpm is not installed or not in PATH." >&2
+  echo "             Install pnpm: https://pnpm.io/installation" >&2
+  exit 1
+fi
+
 pnpm exec lint-staged || exit 1
 
 # BOM check for staged text files (JSON/JSONC/YAML/Markdown)
