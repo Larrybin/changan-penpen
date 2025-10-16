@@ -267,8 +267,13 @@ export function useList<TData = BaseRecord>(params: GetListParams) {
     const hasHydrated = useHasHydrated();
     const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+    const paramsKeyRef = useRef<string | undefined>();
 
     useEffect(() => {
+        if (paramsKeyRef.current === serializedParams) {
+            return;
+        }
+        paramsKeyRef.current = serializedParams;
         hasFetchedRef.current = false;
         setIsLoadingState(true);
         setIsFetching(false);
@@ -354,8 +359,13 @@ export function useOne<TData = BaseRecord>(params: GetOneParams) {
     const hasHydrated = useHasHydrated();
     const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+    const paramsKeyRef = useRef<string | undefined>();
 
     useEffect(() => {
+        if (paramsKeyRef.current === serializedParams) {
+            return;
+        }
+        paramsKeyRef.current = serializedParams;
         hasFetchedRef.current = false;
         setIsLoadingState(true);
         setIsFetching(false);
@@ -436,8 +446,13 @@ export function useCustom<TData = BaseRecord>(params: CustomParams) {
     const hasHydrated = useHasHydrated();
     const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+    const paramsKeyRef = useRef<string | undefined>();
 
     useEffect(() => {
+        if (paramsKeyRef.current === serializedParams) {
+            return;
+        }
+        paramsKeyRef.current = serializedParams;
         hasFetchedRef.current = false;
         setIsLoadingState(true);
         setIsFetching(false);
