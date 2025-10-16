@@ -63,7 +63,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "租户",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
             {
                 accessorKey: "credits",
                 header: "积分",
@@ -71,7 +71,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "积分",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
             {
                 accessorKey: "subscriptionStatus",
                 header: "订阅",
@@ -79,7 +79,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "订阅",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
             {
                 accessorKey: "ordersCount",
                 header: "订单数",
@@ -87,7 +87,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "订单数",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
             {
                 accessorKey: "revenueCents",
                 header: "营收",
@@ -95,7 +95,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "营收",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
             {
                 accessorKey: "totalUsage",
                 header: "用量",
@@ -103,7 +103,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "用量",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
             {
                 accessorKey: "createdAt",
                 header: "创建时间",
@@ -114,7 +114,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "创建时间",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
             {
                 id: "actions",
                 header: "",
@@ -133,7 +133,7 @@ export function TenantsListPage() {
                 meta: {
                     label: "操作",
                 },
-            },
+            } satisfies ColumnDef<TenantSummaryRecord>,
         ],
         [],
     );

@@ -73,7 +73,7 @@ export function UsersListPage() {
                         {row.original.email}
                     </span>
                 ),
-            },
+            } satisfies ColumnDef<AdminUserListItem>,
             {
                 accessorKey: "name",
                 header: "姓名",
@@ -84,7 +84,7 @@ export function UsersListPage() {
                     ) : (
                         <span className="text-muted-foreground">未填写</span>
                     ),
-            },
+            } satisfies ColumnDef<AdminUserListItem>,
             {
                 accessorKey: "role",
                 header: "角色",
@@ -100,7 +100,7 @@ export function UsersListPage() {
                         {row.original.role === "admin" ? "管理员" : "普通用户"}
                     </Badge>
                 ),
-            },
+            } satisfies ColumnDef<AdminUserListItem>,
             {
                 accessorKey: "status",
                 header: "状态",
@@ -116,7 +116,7 @@ export function UsersListPage() {
                         {row.original.status === "active" ? "已验证" : "待验证"}
                     </Badge>
                 ),
-            },
+            } satisfies ColumnDef<AdminUserListItem>,
             {
                 accessorKey: "credits",
                 header: "积分",
@@ -124,7 +124,7 @@ export function UsersListPage() {
                 cell: ({ row }) => (
                     <span>{row.original.credits.toLocaleString()}</span>
                 ),
-            },
+            } satisfies ColumnDef<AdminUserListItem>,
             {
                 accessorKey: "createdAt",
                 header: "创建时间",
@@ -136,7 +136,7 @@ export function UsersListPage() {
                               "yyyy-MM-dd HH:mm",
                           )
                         : "-",
-            },
+            } satisfies ColumnDef<AdminUserListItem>,
             {
                 id: "actions",
                 header: "",
@@ -152,7 +152,7 @@ export function UsersListPage() {
                         </Button>
                     </div>
                 ),
-            },
+            } satisfies ColumnDef<AdminUserListItem>,
         ],
         [],
     );

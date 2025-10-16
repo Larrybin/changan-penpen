@@ -1,5 +1,6 @@
 "use client";
 
+import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
 import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
@@ -37,7 +38,7 @@ export function CreditsHistoryPageOptimized() {
     });
 
     // 使用列工厂创建积分历史列
-    const columns = useMemo(() => {
+    const columns = useMemo<ColumnDef<CreditHistoryEntry, unknown>[]>(() => {
         // 获取标准积分历史列
         const standardColumns =
             createCreditHistoryColumns<CreditHistoryEntry>();
@@ -48,7 +49,7 @@ export function CreditsHistoryPageOptimized() {
             cell: ({ row }) => (
                 <div className="font-medium">#{row.getValue("id")}</div>
             ),
-        };
+        } satisfies ColumnDef<CreditHistoryEntry, unknown>;
 
         // 替换第一列为自定义ID列
         return [idColumn, ...standardColumns.slice(1)];
@@ -66,9 +67,14 @@ export function CreditsHistoryPageOptimized() {
                     >
                         <Input
                             placeholder="按租户 ID 过滤"
-                            value={tableData.filterValues.tenantId || ""}
+                            value={
+                                typeof tableData.filterValues.tenantId ===
+                                "string"
+                                    ? tableData.filterValues.tenantId
+                                    : ""
+                            }
                             onChange={(event) =>
-                                tableData.setFilter?.(
+                                tableData.setFilter(
                                     "tenantId",
                                     event.target.value,
                                 )
@@ -81,9 +87,9 @@ export function CreditsHistoryPageOptimized() {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                onClick={() =>
-                                    tableData.setFilter?.("tenantId", "")
-                                }
+                                onClick={() => {
+                                    tableData.clearFilter("tenantId");
+                                }}
                             >
                                 清除
                             </Button>

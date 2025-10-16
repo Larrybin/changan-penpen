@@ -22,25 +22,55 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { type UseFormProps, useForm } from "react-hook-form";
+import {
+    type FieldValues,
+    type Path,
+    type Resolver,
+    type UseFormProps,
+    type UseFormReturn,
+    useForm,
+} from "react-hook-form";
 import type { z } from "zod";
 
-export interface UseZodFormOptions<T extends z.ZodType> {
-    schema: T;
-    defaultValues?: z.infer<T>;
+type ZodFormCompatibleSchema = z.ZodTypeAny & {
+    _input: FieldValues;
+    _output: FieldValues;
+};
+
+type EnsureFieldValues<T> = T extends FieldValues ? T : never;
+
+type SchemaRawInput<TSchema extends z.ZodTypeAny> = z.input<TSchema>;
+type SchemaRawOutput<TSchema extends z.ZodTypeAny> = z.output<TSchema>;
+type SchemaInput<TSchema extends ZodFormCompatibleSchema> = EnsureFieldValues<
+    SchemaRawInput<TSchema>
+>;
+type SchemaOutput<TSchema extends ZodFormCompatibleSchema> = EnsureFieldValues<
+    SchemaRawOutput<TSchema>
+>;
+
+export interface UseZodFormOptions<
+    TSchema extends ZodFormCompatibleSchema,
+    TInput extends FieldValues = SchemaInput<TSchema>,
+    TOutput extends FieldValues = SchemaOutput<TSchema>,
+> {
+    schema: TSchema;
+    defaultValues?: UseFormProps<TInput>["defaultValues"];
     onSubmit?: (
-        values: z.infer<T>,
+        values: TOutput,
         event?: React.BaseSyntheticEvent,
     ) => Promise<void> | void;
-    mode?: UseFormProps["mode"];
-    reValidateMode?: UseFormProps["reValidateMode"];
-    shouldUnregister?: boolean;
-    shouldFocusError?: boolean;
+    mode?: UseFormProps<TInput>["mode"];
+    reValidateMode?: UseFormProps<TInput>["reValidateMode"];
+    shouldUnregister?: UseFormProps<TInput>["shouldUnregister"];
+    shouldFocusError?: UseFormProps<TInput>["shouldFocusError"];
 }
 
-export interface UseZodFormReturn<T extends z.ZodType> {
+export interface UseZodFormReturn<
+    TFieldValues extends FieldValues,
+    TTransformedValues extends FieldValues = TFieldValues,
+> {
     // React Hook Form 返回值
-    form: ReturnType<typeof useForm<z.infer<T>>>;
+    form: UseFormReturn<TFieldValues, unknown, TTransformedValues>;
     // 额外的状态和方法
     isSubmitting: boolean;
     error: string | null;
@@ -48,12 +78,16 @@ export interface UseZodFormReturn<T extends z.ZodType> {
     clearMessages: () => void;
     handleSubmit: (event?: React.BaseSyntheticEvent) => Promise<void>;
     // 便捷方法
-    getFieldError: (field: keyof z.infer<T>) => string | undefined;
-    setFieldError: (field: keyof z.infer<T>, message: string) => void;
-    clearFieldError: (field: keyof z.infer<T>) => void;
+    getFieldError: (field: Path<TFieldValues>) => string | undefined;
+    setFieldError: (field: Path<TFieldValues>, message: string) => void;
+    clearFieldError: (field: Path<TFieldValues>) => void;
 }
 
-export function useZodForm<T extends z.ZodType>({
+export function useZodForm<
+    TSchema extends ZodFormCompatibleSchema,
+    TInput extends FieldValues = SchemaInput<TSchema>,
+    TOutput extends FieldValues = SchemaOutput<TSchema>,
+>({
     schema,
     defaultValues,
     onSubmit,
@@ -61,13 +95,26 @@ export function useZodForm<T extends z.ZodType>({
     reValidateMode = "onChange",
     shouldUnregister = false,
     shouldFocusError = true,
-}: UseZodFormOptions<T>): UseZodFormReturn<T> {
+}: UseZodFormOptions<TSchema, TInput, TOutput>): UseZodFormReturn<
+    TInput,
+    TOutput
+> {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const form = useForm<z.infer<T>>({
-        resolver: zodResolver(schema),
+    // zodResolver preserves the schema's input/output types, but the helper's
+    // overloads do not accept our narrowed schema constraint. Coerce once so
+    // we can reuse the derived FieldValues types with React Hook Form.
+    // biome-ignore lint/suspicious/noExplicitAny: Resolver overloads require the concrete schema type while our generic constraint already restricts inputs/outputs to FieldValues.
+    const resolver = zodResolver(schema as any) as unknown as Resolver<
+        TInput,
+        unknown,
+        TOutput
+    >;
+
+    const form = useForm<TInput, unknown, TOutput>({
+        resolver,
         defaultValues,
         mode,
         reValidateMode,
@@ -101,19 +148,19 @@ export function useZodForm<T extends z.ZodType>({
         }
     };
 
-    const getFieldError = (field: keyof z.infer<T>) => {
-        const fieldError = form.formState.errors[field as string];
+    const getFieldError = (field: Path<TInput>) => {
+        const { error: fieldError } = form.getFieldState(field);
         return typeof fieldError?.message === "string"
             ? fieldError.message
             : undefined;
     };
 
-    const setFieldError = (field: keyof z.infer<T>, message: string) => {
-        form.setError(field as string, { message });
+    const setFieldError = (field: Path<TInput>, message: string) => {
+        form.setError(field, { message });
     };
 
-    const clearFieldError = (field: keyof z.infer<T>) => {
-        form.clearErrors(field as string);
+    const clearFieldError = (field: Path<TInput>) => {
+        form.clearErrors(field);
     };
 
     return {
@@ -130,17 +177,13 @@ export function useZodForm<T extends z.ZodType>({
 }
 
 // 简化版本的 Hook，用于只需要基本功能的场景
-export function useSimpleForm<T extends z.ZodType>({
-    schema,
-    defaultValues,
-    onSubmit,
-}: UseZodFormOptions<T>) {
+export function useSimpleForm<
+    TSchema extends ZodFormCompatibleSchema,
+    TInput extends FieldValues = SchemaInput<TSchema>,
+    TOutput extends FieldValues = SchemaOutput<TSchema>,
+>(options: UseZodFormOptions<TSchema, TInput, TOutput>) {
     const { form, handleSubmit, isSubmitting, error, success, clearMessages } =
-        useZodForm({
-            schema,
-            defaultValues,
-            onSubmit,
-        });
+        useZodForm<TSchema, TInput, TOutput>(options);
 
     return {
         form,

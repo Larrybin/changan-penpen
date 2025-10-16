@@ -100,7 +100,11 @@ export function ServerActionDemo() {
     });
 
     // 使用删除任务的 Server Action
-    const deleteTodo = useServerAction(deleteTodoAction, {
+    const deleteTodo = useServerAction<
+        { id: number },
+        { success: boolean; deletedId: number }
+    >({
+        action: deleteTodoAction,
         onSuccess: (_data, input) => {
             setTodos((prev) => prev.filter((todo) => todo.id !== input.id));
             toast.success("任务删除成功！");

@@ -1,7 +1,7 @@
 "use client";
 
 import type { CrudFilter } from "@refinedev/core";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 export interface SearchFilterConfig {
     field: string;
@@ -70,6 +70,7 @@ export function useSearchFilter(
     const [filterValues, setFilterValues] =
         useState<Record<string, unknown>>(initialFilters);
     const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+    const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // 防抖搜索
     const setSearch = useCallback(
@@ -77,10 +78,12 @@ export function useSearchFilter(
             setSearchState(newSearch);
 
             if (debounceMs > 0) {
-                const timeoutId = setTimeout(() => {
+                if (debounceTimeout.current) {
+                    clearTimeout(debounceTimeout.current);
+                }
+                debounceTimeout.current = setTimeout(() => {
                     setDebouncedSearch(newSearch);
                 }, debounceMs);
-                return () => clearTimeout(timeoutId);
             } else {
                 setDebouncedSearch(newSearch);
             }
@@ -238,27 +241,52 @@ export const commonFilters = {
     range: (field: string): SearchFilterConfig => ({
         field,
         operator: "between",
-        transform: (value: readonly [unknown, unknown]) => ({
-            start: value?.[0] ?? null,
-            end: value?.[1] ?? null,
-        }),
+        transform: (value: unknown) => {
+            const range =
+                Array.isArray(value) && value.length >= 2
+                    ? [value[0], value[1]]
+                    : ([undefined, undefined] as const);
+            return {
+                start: range[0] ?? null,
+                end: range[1] ?? null,
+            };
+        },
     }),
 
     // 列表过滤
     inList: (field: string): SearchFilterConfig => ({
         field,
         operator: "in",
-        transform: (value: unknown[]) => value,
+        transform: (value: unknown) =>
+            Array.isArray(value) ? value : value !== undefined ? [value] : [],
     }),
 
     // 日期范围
     dateRange: (field: string): SearchFilterConfig => ({
         field,
         operator: "between",
-        transform: (range: [Date, Date]) => [
-            range[0].toISOString(),
-            range[1].toISOString(),
-        ],
+        transform: (value: unknown) => {
+            const range =
+                Array.isArray(value) && value.length >= 2
+                    ? [value[0], value[1]]
+                    : ([undefined, undefined] as const);
+            const [start, end] = range as [
+                Date | string | null | undefined,
+                Date | string | null | undefined,
+            ];
+            const toIso = (date: Date | string | null | undefined) => {
+                if (date instanceof Date) {
+                    return date.toISOString();
+                }
+                if (typeof date === "string") {
+                    return new Date(date).toISOString();
+                }
+                return null;
+            };
+            const startIso = toIso(start);
+            const endIso = toIso(end);
+            return [startIso, endIso].filter((item): item is string => !!item);
+        },
     }),
 };
 
@@ -280,7 +308,12 @@ export const useTenantSearch = createSearchFilterHook({
         {
             field: "createdAt",
             operator: "gte",
-            transform: (date: Date) => date.toISOString(),
+            transform: (value: unknown) =>
+                value instanceof Date
+                    ? value.toISOString()
+                    : typeof value === "string"
+                      ? new Date(value).toISOString()
+                      : value,
         },
     ],
 });
@@ -299,6 +332,16 @@ export const useOrderSearch = createSearchFilterHook({
         {
             field: "createdAt",
             operator: "between",
+            transform: (value: unknown) =>
+                Array.isArray(value)
+                    ? value.map((item) =>
+                          item instanceof Date
+                              ? item.toISOString()
+                              : typeof item === "string"
+                                ? new Date(item).toISOString()
+                                : item,
+                      )
+                    : value,
         },
     ],
 });
@@ -317,6 +360,16 @@ export const useCreditSearch = createSearchFilterHook({
         {
             field: "createdAt",
             operator: "between",
+            transform: (value: unknown) =>
+                Array.isArray(value)
+                    ? value.map((item) =>
+                          item instanceof Date
+                              ? item.toISOString()
+                              : typeof item === "string"
+                                ? new Date(item).toISOString()
+                                : item,
+                      )
+                    : value,
         },
     ],
 });

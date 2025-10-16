@@ -57,7 +57,7 @@ export function CreditsHistoryPage() {
                 meta: {
                     label: "记录",
                 },
-            },
+            } satisfies ColumnDef<CreditHistoryEntry>,
             {
                 accessorKey: "customerEmail",
                 header: "租户",
@@ -72,7 +72,7 @@ export function CreditsHistoryPage() {
                 meta: {
                     label: "租户",
                 },
-            },
+            } satisfies ColumnDef<CreditHistoryEntry>,
             {
                 accessorKey: "type",
                 header: "类型",
@@ -84,7 +84,7 @@ export function CreditsHistoryPage() {
                 meta: {
                     label: "类型",
                 },
-            },
+            } satisfies ColumnDef<CreditHistoryEntry>,
             {
                 accessorKey: "amount",
                 header: "积分",
@@ -95,7 +95,7 @@ export function CreditsHistoryPage() {
                 meta: {
                     label: "积分",
                 },
-            },
+            } satisfies ColumnDef<CreditHistoryEntry>,
             {
                 accessorKey: "description",
                 header: "备注",
@@ -103,7 +103,7 @@ export function CreditsHistoryPage() {
                 meta: {
                     label: "备注",
                 },
-            },
+            } satisfies ColumnDef<CreditHistoryEntry>,
             {
                 accessorKey: "createdAt",
                 header: "时间",
@@ -118,7 +118,7 @@ export function CreditsHistoryPage() {
                 meta: {
                     label: "时间",
                 },
-            },
+            } satisfies ColumnDef<CreditHistoryEntry>,
         ],
         [],
     );
