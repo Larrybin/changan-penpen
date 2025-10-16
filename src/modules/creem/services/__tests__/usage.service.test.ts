@@ -13,7 +13,12 @@ import { customers } from "@/modules/creem/schemas/billing.schema";
 import { usageDaily, usageEvents } from "@/modules/creem/schemas/usage.schema";
 import type { TestDbContext } from "../../../../../tests/fixtures/db";
 import { createTestDb } from "../../../../../tests/fixtures/db";
-import { decrementCredits, getUsageDaily, recordUsage } from "../usage.service";
+import {
+    CREDIT_TRANSACTION_TYPE,
+    creditTransactions,
+    user,
+} from "@/db";
+import { getUsageDaily, recordUsage } from "../usage.service";
 
 describe("creem usage service", () => {
     let ctx: TestDbContext;
@@ -138,12 +143,19 @@ describe("creem usage service", () => {
         ).rejects.toThrow("Usage amount must be a positive number");
     });
 
-    it("decrements credits when requested", async () => {
+    it("consumes credits through the billing ledger when requested", async () => {
         if (skipIfUnavailable()) {
             return;
         }
 
-        const now = new Date().toISOString();
+        const now = new Date();
+
+        ctx.db
+            .update(user)
+            .set({ currentCredits: 120, updatedAt: now })
+            .where(eq(user.id, userId))
+            .run();
+
         ctx.db
             .insert(customers)
             .values({
@@ -153,6 +165,19 @@ describe("creem usage service", () => {
                 name: "Usage",
                 country: "US",
                 credits: 120,
+                createdAt: now.toISOString(),
+                updatedAt: now.toISOString(),
+            })
+            .run();
+
+        ctx.db
+            .insert(creditTransactions)
+            .values({
+                userId,
+                amount: 120,
+                remainingAmount: 120,
+                type: CREDIT_TRANSACTION_TYPE.PURCHASE,
+                description: "Initial top up",
                 createdAt: now,
                 updatedAt: now,
             })
@@ -168,6 +193,27 @@ describe("creem usage service", () => {
 
         expect(result.newCredits).toBe(100);
 
+        const transactions = ctx.db
+            .select()
+            .from(creditTransactions)
+            .orderBy(creditTransactions.createdAt)
+            .all();
+
+        expect(transactions).toHaveLength(2);
+        expect(
+            transactions.some(
+                (txn) =>
+                    txn.type === CREDIT_TRANSACTION_TYPE.USAGE &&
+                    txn.amount === -20 &&
+                    txn.description.includes("Usage: storage.upload"),
+            ),
+        ).toBe(true);
+
+        const purchaseTxn = transactions.find(
+            (txn) => txn.type === CREDIT_TRANSACTION_TYPE.PURCHASE,
+        );
+        expect(purchaseTxn?.remainingAmount).toBe(100);
+
         const stored = ctx.db
             .select({ credits: customers.credits })
             .from(customers)
@@ -176,14 +222,49 @@ describe("creem usage service", () => {
         expect(stored?.credits).toBe(100);
     });
 
-    it("throws when decrementing credits for missing customer", async () => {
+    it("throws when consuming more credits than available", async () => {
         if (skipIfUnavailable()) {
             return;
         }
 
-        await expect(decrementCredits(userId, 10)).rejects.toThrow(
-            "Customer not found for user",
-        );
+        const now = new Date();
+
+        ctx.db
+            .update(user)
+            .set({ currentCredits: 5, updatedAt: now })
+            .where(eq(user.id, userId))
+            .run();
+
+        ctx.db
+            .insert(creditTransactions)
+            .values({
+                userId,
+                amount: 5,
+                remainingAmount: 5,
+                type: CREDIT_TRANSACTION_TYPE.PURCHASE,
+                description: "Initial",
+                createdAt: now,
+                updatedAt: now,
+            })
+            .run();
+
+        await expect(
+            recordUsage({
+                userId,
+                feature: "storage.upload",
+                amount: 1,
+                unit: "files",
+                consumeCredits: 10,
+            }),
+        ).rejects.toThrow("Insufficient credits");
+
+        const transactions = ctx.db
+            .select()
+            .from(creditTransactions)
+            .orderBy(creditTransactions.createdAt)
+            .all();
+        expect(transactions).toHaveLength(1);
+        expect(transactions[0]?.remainingAmount).toBe(5);
     });
 
     it("retrieves usage daily records within the requested range", async () => {
