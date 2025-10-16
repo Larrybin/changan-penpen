@@ -265,6 +265,12 @@ describe("creem usage service", () => {
             .all();
         expect(transactions).toHaveLength(1);
         expect(transactions[0]?.remainingAmount).toBe(5);
+
+        const events = ctx.db.select().from(usageEvents).all();
+        expect(events).toHaveLength(0);
+
+        const daily = ctx.db.select().from(usageDaily).all();
+        expect(daily).toHaveLength(0);
     });
 
     it("retrieves usage daily records within the requested range", async () => {
