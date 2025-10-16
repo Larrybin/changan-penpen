@@ -265,8 +265,16 @@ export function useList<TData = BaseRecord>(params: GetListParams) {
     const [isFetching, setIsFetching] = useState<boolean>(false);
     const hasFetchedRef = useRef<boolean>(false);
     const hasHydrated = useHasHydrated();
-    const _serialized = useSerializedParams(params);
+    const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+
+    useEffect(() => {
+        hasFetchedRef.current = false;
+        setIsLoadingState(true);
+        setIsFetching(false);
+        setError(null);
+        setData(undefined);
+    }, [serializedParams]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
@@ -344,8 +352,16 @@ export function useOne<TData = BaseRecord>(params: GetOneParams) {
     const [isFetching, setIsFetching] = useState<boolean>(false);
     const hasFetchedRef = useRef<boolean>(false);
     const hasHydrated = useHasHydrated();
-    const _serialized = useSerializedParams(params);
+    const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+
+    useEffect(() => {
+        hasFetchedRef.current = false;
+        setIsLoadingState(true);
+        setIsFetching(false);
+        setError(null);
+        setData(undefined);
+    }, [serializedParams]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
@@ -418,8 +434,16 @@ export function useCustom<TData = BaseRecord>(params: CustomParams) {
     const [isFetching, setIsFetching] = useState<boolean>(false);
     const hasFetchedRef = useRef<boolean>(false);
     const hasHydrated = useHasHydrated();
-    const _serialized = useSerializedParams(params);
+    const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+
+    useEffect(() => {
+        hasFetchedRef.current = false;
+        setIsLoadingState(true);
+        setIsFetching(false);
+        setError(null);
+        setData(undefined);
+    }, [serializedParams]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
