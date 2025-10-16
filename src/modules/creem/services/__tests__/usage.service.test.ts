@@ -9,15 +9,11 @@ import {
     vi,
 } from "vitest";
 import * as dbModule from "@/db";
+import { CREDIT_TRANSACTION_TYPE, creditTransactions, user } from "@/db";
 import { customers } from "@/modules/creem/schemas/billing.schema";
 import { usageDaily, usageEvents } from "@/modules/creem/schemas/usage.schema";
 import type { TestDbContext } from "../../../../../tests/fixtures/db";
 import { createTestDb } from "../../../../../tests/fixtures/db";
-import {
-    CREDIT_TRANSACTION_TYPE,
-    creditTransactions,
-    user,
-} from "@/db";
 import { getUsageDaily, recordUsage } from "../usage.service";
 
 describe("creem usage service", () => {
