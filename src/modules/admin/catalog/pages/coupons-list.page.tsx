@@ -2,7 +2,9 @@
 
 import { useDelete, useList } from "@refinedev/core";
 import Link from "next/link";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { CouponRecord } from "@/modules/admin/types/resource.types";
 
@@ -13,22 +15,21 @@ export function CouponsListPage() {
     const { mutateAsync: deleteCoupon } = useDelete();
     const isLoading = query.isLoading;
     const coupons = result?.data ?? [];
+    const skeletonRows = Array.from({ length: 6 });
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-semibold">优惠券管理</h1>
-                    <p className="text-sm text-muted-foreground">
-                        维护折扣码、有效期与状态。
-                    </p>
-                </div>
-                <Button asChild>
-                    <Link href={`${adminRoutes.catalog.coupons}/create`}>
-                        新建优惠券
-                    </Link>
-                </Button>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="优惠券管理"
+                description="维护折扣码、有效期与状态。"
+                actions={
+                    <Button asChild>
+                        <Link href={`${adminRoutes.catalog.coupons}/create`}>
+                            新建优惠券
+                        </Link>
+                    </Button>
+                }
+            />
             <div className="overflow-x-auto rounded-md border">
                 <table className="min-w-full text-sm">
                     <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
@@ -41,16 +42,21 @@ export function CouponsListPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {isLoading && (
-                            <tr>
-                                <td
-                                    colSpan={5}
-                                    className="px-4 py-6 text-center text-muted-foreground"
-                                >
-                                    加载中...
-                                </td>
-                            </tr>
-                        )}
+                        {isLoading &&
+                            skeletonRows.map((_, rowIndex) => (
+                                <tr key={`coupon-skeleton-${rowIndex}`}>
+                                    {Array.from({ length: 5 }).map(
+                                        (_, cellIndex) => (
+                                            <td
+                                                key={`coupon-skeleton-cell-${rowIndex}-${cellIndex}`}
+                                                className="px-4 py-3"
+                                            >
+                                                <Skeleton className="h-5 w-full" />
+                                            </td>
+                                        ),
+                                    )}
+                                </tr>
+                            ))}
                         {!isLoading && coupons.length === 0 && (
                             <tr>
                                 <td

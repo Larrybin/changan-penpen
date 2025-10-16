@@ -1,6 +1,7 @@
 "use client";
 
 import { useOne } from "@refinedev/core";
+import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import {
     Card,
@@ -10,6 +11,8 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminUserDetail } from "@/modules/admin/users/models";
 
 interface UserDetailClientProps {
@@ -93,6 +96,113 @@ const getInitials = (value: string | null | undefined) => {
     return (first ?? "U").toUpperCase();
 };
 
+const DEFAULT_TABLE_SKELETON_ROWS = 4;
+
+function UserDetailSkeleton() {
+    const statsSkeleton = Array.from({ length: 4 });
+    const tableSkeleton = Array.from({ length: DEFAULT_TABLE_SKELETON_ROWS });
+
+    return (
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="用户详情"
+                description="查看用户资料、积分与用量数据。"
+                breadcrumbs={[
+                    { label: "Admin", href: adminRoutes.dashboard.overview },
+                    { label: "用户管理", href: adminRoutes.users.list },
+                    { label: "加载中" },
+                ]}
+            />
+
+            <Card>
+                <CardHeader className="flex flex-row items-center gap-4">
+                    <Skeleton className="size-16 rounded-full" />
+                    <div className="flex flex-1 flex-col gap-2">
+                        <Skeleton className="h-6 w-40" />
+                        <Skeleton className="h-4 w-48" />
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            <Skeleton className="h-5 w-20 rounded-full" />
+                            <Skeleton className="h-5 w-20 rounded-full" />
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                    {statsSkeleton.map((_, index) => (
+                        <div key={index} className="space-y-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-5 w-full" />
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+
+            <div className="grid gap-[var(--grid-gap-section)] md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="mt-2 h-4 w-48" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <Skeleton className="h-20 w-full rounded-md" />
+                            <Skeleton className="h-20 w-full rounded-md" />
+                        </div>
+                        <Separator />
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-36" />
+                            <div className="space-y-2">
+                                {tableSkeleton.map((_, index) => (
+                                    <Skeleton
+                                        key={`credits-${index}`}
+                                        className="h-6 w-full rounded"
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-36" />
+                            <div className="space-y-2">
+                                {tableSkeleton.map((_, index) => (
+                                    <Skeleton
+                                        key={`transactions-${index}`}
+                                        className="h-6 w-full rounded"
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-5 w-28" />
+                        <Skeleton className="mt-2 h-4 w-52" />
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {tableSkeleton.map((_, index) => (
+                            <Skeleton
+                                key={`usage-${index}`}
+                                className="h-6 w-full rounded"
+                            />
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="mt-2 h-4 w-48" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-5 w-3/5" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
 export function UserDetailClient({ userId }: UserDetailClientProps) {
     const { query } = useOne<AdminUserDetail>({
         resource: "users",
@@ -100,17 +210,26 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
     });
 
     if (query.isLoading) {
-        return (
-            <div className="py-10 text-center text-muted-foreground">
-                正在加载用户数据...
-            </div>
-        );
+        return <UserDetailSkeleton />;
     }
 
     if (query.error) {
         return (
-            <div className="py-10 text-center text-destructive">
-                加载用户数据时出现错误，请稍后重试。
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader
+                    title="用户详情"
+                    breadcrumbs={[
+                        {
+                            label: "Admin",
+                            href: adminRoutes.dashboard.overview,
+                        },
+                        { label: "用户管理", href: adminRoutes.users.list },
+                        { label: "加载失败" },
+                    ]}
+                />
+                <div className="py-10 text-center text-destructive">
+                    加载用户数据时出现错误，请稍后重试。
+                </div>
             </div>
         );
     }
@@ -119,8 +238,21 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
 
     if (!detail) {
         return (
-            <div className="py-10 text-center text-muted-foreground">
-                未找到该用户。
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader
+                    title="用户详情"
+                    breadcrumbs={[
+                        {
+                            label: "Admin",
+                            href: adminRoutes.dashboard.overview,
+                        },
+                        { label: "用户管理", href: adminRoutes.users.list },
+                        { label: "未找到用户" },
+                    ]}
+                />
+                <div className="py-10 text-center text-muted-foreground">
+                    未找到该用户。
+                </div>
             </div>
         );
     }
@@ -130,13 +262,16 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
         : "暂无订阅记录";
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-xl font-semibold">用户详情</h1>
-                <p className="text-sm text-muted-foreground">
-                    查看用户资料、积分与用量数据。
-                </p>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="用户详情"
+                description="查看用户资料、积分与用量数据。"
+                breadcrumbs={[
+                    { label: "Admin", href: adminRoutes.dashboard.overview },
+                    { label: "用户管理", href: adminRoutes.users.list },
+                    { label: detail.user.email ?? detail.user.id },
+                ]}
+            />
 
             <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
@@ -210,7 +345,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                 </CardContent>
             </Card>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-[var(--grid-gap-section)] md:grid-cols-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>积分信息</CardTitle>

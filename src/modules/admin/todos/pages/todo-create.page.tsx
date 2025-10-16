@@ -4,6 +4,7 @@ import { type CrudFilter, useCreate, useList } from "@refinedev/core";
 import { useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
 import { useState } from "react";
+import { PageHeader } from "@/components/layout/page-header";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import { AdminTodoForm } from "@/modules/admin/todos/components/todo-form";
 
@@ -51,13 +52,11 @@ export default function AdminTodoCreatePage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-semibold">新建 Todo</h1>
-                <p className="text-sm text-muted-foreground">
-                    填写任务信息并保存，自动同步到 SaaS 租户数据中。
-                </p>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="新建 Todo"
+                description="填写任务信息并保存，自动同步到 SaaS 租户数据中。"
+            />
             <AdminTodoForm
                 onSubmit={handleSubmit}
                 submitLabel="创建"

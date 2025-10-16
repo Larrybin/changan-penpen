@@ -1,18 +1,24 @@
 "use client";
 
 import { type CrudFilter, useList } from "@refinedev/core";
+import type { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data/data-table";
+import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminUserListItem } from "@/modules/admin/users/models";
 
-const PAGE_SIZE = 20;
+const INITIAL_PAGE_SIZE = 20;
 
 export function UsersListPage() {
     const [search, setSearch] = useState("");
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize, setPageSize] = useState(INITIAL_PAGE_SIZE);
 
     const filters: CrudFilter[] = useMemo(() => {
         if (!search.trim()) {
@@ -28,162 +34,182 @@ export function UsersListPage() {
         ];
     }, [search]);
 
+    useEffect(() => {
+        setPageIndex(0);
+    }, []);
+
     const { query, result } = useList<AdminUserListItem>({
         resource: "users",
         pagination: {
-            pageSize: PAGE_SIZE,
+            current: pageIndex + 1,
+            pageSize,
         },
         filters,
     });
 
-    const isLoading = query.isLoading;
-    const isError = Boolean(query.error);
     const users = result?.data ?? [];
-    const total = result?.total ?? 0;
+    const total = result?.total ?? users.length;
+    const rawPageCount = pageSize > 0 ? Math.ceil(total / pageSize) : 0;
+    const pageCount = Math.max(rawPageCount, 1);
+
+    useEffect(() => {
+        const maxIndex = Math.max(pageCount - 1, 0);
+        if (pageIndex > maxIndex) {
+            setPageIndex(maxIndex);
+        }
+    }, [pageIndex, pageCount]);
+
+    const isError = Boolean(query.error);
+    const isLoading = query.isLoading || query.isFetching;
+
+    const columns = useMemo<ColumnDef<AdminUserListItem>[]>(
+        () => [
+            {
+                accessorKey: "email",
+                header: "邮箱",
+                meta: { label: "邮箱" },
+                cell: ({ row }) => (
+                    <span className="font-medium text-foreground">
+                        {row.original.email}
+                    </span>
+                ),
+            },
+            {
+                accessorKey: "name",
+                header: "姓名",
+                meta: { label: "姓名" },
+                cell: ({ row }) =>
+                    row.original.name ? (
+                        row.original.name
+                    ) : (
+                        <span className="text-muted-foreground">未填写</span>
+                    ),
+            },
+            {
+                accessorKey: "role",
+                header: "角色",
+                meta: { label: "角色" },
+                cell: ({ row }) => (
+                    <Badge
+                        variant={
+                            row.original.role === "admin"
+                                ? "default"
+                                : "secondary"
+                        }
+                    >
+                        {row.original.role === "admin" ? "管理员" : "普通用户"}
+                    </Badge>
+                ),
+            },
+            {
+                accessorKey: "status",
+                header: "状态",
+                meta: { label: "状态" },
+                cell: ({ row }) => (
+                    <Badge
+                        variant={
+                            row.original.status === "active"
+                                ? "default"
+                                : "outline"
+                        }
+                    >
+                        {row.original.status === "active" ? "已验证" : "待验证"}
+                    </Badge>
+                ),
+            },
+            {
+                accessorKey: "credits",
+                header: "积分",
+                meta: { label: "积分" },
+                cell: ({ row }) => (
+                    <span>{row.original.credits.toLocaleString()}</span>
+                ),
+            },
+            {
+                accessorKey: "createdAt",
+                header: "创建时间",
+                meta: { label: "创建时间" },
+                cell: ({ row }) =>
+                    row.original.createdAt
+                        ? format(
+                              new Date(row.original.createdAt),
+                              "yyyy-MM-dd HH:mm",
+                          )
+                        : "-",
+            },
+            {
+                id: "actions",
+                header: "",
+                enableHiding: false,
+                cell: ({ row }) => (
+                    <div className="flex justify-end">
+                        <Button asChild size="sm" variant="ghost">
+                            <Link
+                                href={adminRoutes.users.show(row.original.id)}
+                            >
+                                查看
+                            </Link>
+                        </Button>
+                    </div>
+                ),
+            },
+        ],
+        [],
+    );
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h1 className="text-xl font-semibold">用户管理</h1>
-                    <p className="text-sm text-muted-foreground">
-                        浏览、筛选并查看所有注册用户的资料。
-                    </p>
-                </div>
-                <form
-                    className="flex w-full gap-2 md:w-auto"
-                    onSubmit={(event) => event.preventDefault()}
-                >
-                    <Input
-                        placeholder="按邮箱筛选"
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                    />
-                    <Button type="submit" variant="outline">
-                        搜索
-                    </Button>
-                </form>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="用户管理"
+                description="浏览、筛选并查看所有注册用户的资料。"
+                breadcrumbs={[
+                    { label: "Admin", href: adminRoutes.dashboard.overview },
+                    { label: "用户管理" },
+                ]}
+                actions={
+                    <form
+                        className="flex w-full gap-2 md:w-auto"
+                        onSubmit={(event) => event.preventDefault()}
+                    >
+                        <Input
+                            placeholder="按邮箱筛选"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                        />
+                        <Button type="submit" variant="outline">
+                            搜索
+                        </Button>
+                    </form>
+                }
+            />
 
-            <div className="overflow-x-auto rounded-md border">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
-                        <tr>
-                            <th className="px-4 py-3">邮箱</th>
-                            <th className="px-4 py-3">姓名</th>
-                            <th className="px-4 py-3">角色</th>
-                            <th className="px-4 py-3">状态</th>
-                            <th className="px-4 py-3">积分</th>
-                            <th className="px-4 py-3">创建时间</th>
-                            <th className="px-4 py-3" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {isLoading && (
-                            <tr>
-                                <td
-                                    colSpan={7}
-                                    className="px-4 py-6 text-center text-muted-foreground"
-                                >
-                                    加载中...
-                                </td>
-                            </tr>
-                        )}
-
-                        {isError && (
-                            <tr>
-                                <td
-                                    colSpan={7}
-                                    className="px-4 py-6 text-center text-destructive"
-                                >
-                                    获取用户数据失败，请稍后再试。
-                                </td>
-                            </tr>
-                        )}
-
-                        {!isLoading && !isError && users.length === 0 && (
-                            <tr>
-                                <td
-                                    colSpan={7}
-                                    className="px-4 py-6 text-center text-muted-foreground"
-                                >
-                                    暂无用户数据。
-                                </td>
-                            </tr>
-                        )}
-
-                        {users.map((userItem) => {
-                            const createdLabel = userItem.createdAt
-                                ? new Date(userItem.createdAt).toLocaleString()
-                                : "-";
-
-                            return (
-                                <tr key={userItem.id} className="border-t">
-                                    <td className="px-4 py-3">
-                                        <div className="font-medium">
-                                            {userItem.email ?? "-"}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-muted-foreground">
-                                        {userItem.name ?? "-"}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Badge
-                                            variant={
-                                                userItem.role === "admin"
-                                                    ? "default"
-                                                    : "secondary"
-                                            }
-                                        >
-                                            {userItem.role === "admin"
-                                                ? "管理员"
-                                                : "普通用户"}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Badge
-                                            variant={
-                                                userItem.status === "active"
-                                                    ? "default"
-                                                    : "outline"
-                                            }
-                                        >
-                                            {userItem.status === "active"
-                                                ? "已验证"
-                                                : "待验证"}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {userItem.credits ?? 0}
-                                    </td>
-                                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                                        {createdLabel}
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="ghost"
-                                        >
-                                            <Link
-                                                href={adminRoutes.users.show(
-                                                    String(userItem.id),
-                                                )}
-                                            >
-                                                查看
-                                            </Link>
-                                        </Button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="text-xs text-muted-foreground">
-                共 {total} 名用户，页面正在接入更多筛选条件。
-            </div>
+            <DataTable
+                columns={columns}
+                data={users}
+                pageCount={pageCount}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                onPageChange={(nextPage) => {
+                    const maxIndex = Math.max(pageCount - 1, 0);
+                    const clamped = Math.min(Math.max(nextPage, 0), maxIndex);
+                    setPageIndex(clamped);
+                }}
+                onPageSizeChange={(nextSize) => {
+                    setPageSize(nextSize);
+                    setPageIndex(0);
+                }}
+                totalCount={total}
+                itemNameSingular="用户"
+                itemNamePlural="用户"
+                isLoading={isLoading}
+                emptyState={
+                    isError
+                        ? "获取用户数据失败，请稍后再试。"
+                        : "暂无用户数据。"
+                }
+                skeletonRowCount={Math.min(pageSize, 5)}
+                getRowHref={(row) => adminRoutes.users.show(row.id)}
+            />
         </div>
     );
 }

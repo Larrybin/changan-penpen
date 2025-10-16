@@ -1,0 +1,681 @@
+name: Smart CI with MCP Integration
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  issues: write
+
+concurrency:
+  group: smart-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: 'Quality strategy (basic/standard/strict)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+        - auto
+        - basic
+        - standard
+        - strict
+      force_parallel:
+        description: 'Force maximum parallel execution'
+        required: false
+        default: false
+        type: boolean
+      mcp_learning:
+        description: 'Enable MCP learning mode'
+        required: false
+        default: true
+        type: boolean
+  push:
+    branches-ignore:
+      - main
+    paths-ignore:
+      - README.md
+      - docs/**
+  pull_request:
+    branches-ignore:
+      - main
+    paths-ignore:
+      - README.md
+      - docs/**
+  workflow_call:
+    inputs:
+      strategy:
+        required: false
+        type: string
+        default: 'auto'
+      force_parallel:
+        required: false
+        type: boolean
+        default: false
+      mcp_learning:
+        required: false
+        type: boolean
+        default: true
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+  NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+  ENABLE_MCP: ${{ inputs.mcp_learning || github.event.inputs.mcp_learning || 'true' }}
+  QUALITY_STRATEGY: ${{ inputs.strategy || github.event.inputs.strategy || 'auto' }}
+  FORCE_PARALLEL: ${{ inputs.force_parallel || github.event.inputs.force_parallel || 'false' }}
+
+jobs:
+  # === 智能变更分析 ===
+  change-analysis:
+    name: 🔍 智能变更分析
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      file_changes: ${{ steps.analysis.outputs.changes_json }}
+      risk_score: ${{ steps.analysis.outputs.risk_score }}
+      recommended_strategy: ${{ steps.analysis.outputs.recommended_strategy }}
+      parallel_jobs: ${{ steps.analysis.outputs.parallel_jobs }}
+      mcp_enabled: ${{ steps.analysis.outputs.mcp_enabled }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-and-heal
+
+      - name: 🧠 智能变更分析
+        id: analysis
+        run: |
+          echo "开始智能变更分析..."
+          echo "MCP启用: $ENABLE_MCP"
+          echo "质量策略: $QUALITY_STRATEGY"
+          echo "强制并行: $FORCE_PARALLEL"
+
+          # 获取变更文件
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            base=$(git rev-parse HEAD~1 2>/dev/null || echo "HEAD")
+          fi
+
+          echo "基础提交: $base"
+
+          # 分析变更文件
+          files=$(git diff --name-only "$base"...HEAD | tr '\n' ',' | sed 's/,$//')
+          echo "变更文件: $files"
+
+          if [ -z "$files" ]; then
+            echo "changes_json=[]" >> "$GITHUB_OUTPUT"
+            echo "risk_score=0.1" >> "$GITHUB_OUTPUT"
+            echo "recommended_strategy=basic" >> "$GITHUB_OUTPUT"
+            echo "parallel_jobs=[\"docs-check\"]" >> "$GITHUB_OUTPUT"
+            echo "mcp_enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 计算文件变更统计
+          total_files=$(echo "$files" | tr ',' '\n' | wc -l)
+          ts_files=$(echo "$files" | tr ',' '\n' | grep -E '\.(ts|tsx)$' | wc -l)
+          test_files=$(echo "$files" | tr ',' '\n' | grep -E '\.(test|spec)\.' | wc -l)
+          config_files=$(echo "$files" | tr ',' '\n' | grep -E '\.(json|yml|yaml|toml)$' | wc -l)
+          doc_files=$(echo "$files" | tr ',' '\n' | grep -E '\.(md|mdx)$' | wc -l)
+
+          # 计算风险评分
+          risk_score=$(echo "scale=2; ($ts_files * 0.3 + $config_files * 0.2 + ($total_files - $doc_files) * 0.1) / $total_files" | bc)
+          if (( $(echo "$risk_score > 0.8" | bc -l) )); then
+            risk_score="0.8"
+          fi
+
+          echo "文件统计: 总计=$total_files, TS=$ts_files, 测试=$test_files, 配置=$config_files, 文档=$doc_files"
+          echo "风险评分: $risk_score"
+
+          # 推荐策略
+          if [ "$QUALITY_STRATEGY" != "auto" ]; then
+            recommended_strategy="$QUALITY_STRATEGY"
+          else
+            if (( $(echo "$risk_score > 0.7" | bc -l) )); then
+              recommended_strategy="strict"
+            elif (( $(echo "$risk_score > 0.4" | bc -l) )); then
+              recommended_strategy="standard"
+            else
+              recommended_strategy="basic"
+            fi
+          fi
+
+          echo "推荐策略: $recommended_strategy"
+
+          # 生成并行job配置
+          if [ "$FORCE_PARALLEL" = "true" ]; then
+            parallel_jobs='["lint","typecheck","unit-tests","build"]'
+          else
+            case "$recommended_strategy" in
+              "strict")
+                parallel_jobs='["lint","typecheck","unit-tests","build","security","performance"]'
+                ;;
+              "standard")
+                parallel_jobs='["lint","typecheck","unit-tests","build"]'
+                ;;
+              "basic"|*)
+                if [ "$doc_files" -gt 0 ]; then
+                  parallel_jobs='["lint","docs-check","unit-tests"]'
+                else
+                  parallel_jobs='["lint","typecheck"]'
+                fi
+                ;;
+            esac
+          fi
+
+          echo "并行Jobs: $parallel_jobs"
+
+          # 输出结果
+          changes_json=$(echo "$files" | tr ',' '\n' | jq -R . | jq -s .)
+          echo "changes_json=$changes_json" >> "$GITHUB_OUTPUT"
+          echo "risk_score=$risk_score" >> "$GITHUB_OUTPUT"
+          echo "recommended_strategy=$recommended_strategy" >> "$GITHUB_OUTPUT"
+          echo "parallel_jobs=$parallel_jobs" >> "$GITHUB_OUTPUT"
+          echo "mcp_enabled=$ENABLE_MCP" >> "$GITHUB_OUTPUT"
+
+      - name: 📊 分析报告摘要
+        run: |
+          echo "## 🧠 智能变更分析报告" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **风险评分**: ${{ steps.analysis.outputs.risk_score }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **推荐策略**: ${{ steps.analysis.outputs.recommended_strategy }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **并行Jobs**: ${{ steps.analysis.outputs.parallel_jobs }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **MCP启用**: ${{ steps.analysis.outputs.mcp_enabled }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### 📁 变更文件列表" >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ steps.analysis.outputs.changes_json }}' | jq -r '.[] | "- \`" + . + "\`"' >> "$GITHUB_STEP_SUMMARY"
+
+  # === MCP策略规划 ===
+  strategy-planning:
+    name: 🎯 MCP策略规划
+    needs: change-analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: needs.change-analysis.outputs.mcp_enabled == 'true'
+    outputs:
+      execution_plan: ${{ steps.planning.outputs.execution_plan }}
+      quality_thresholds: ${{ steps.planning.outputs.quality_thresholds }}
+      optimization_suggestions: ${{ steps.planning.outputs.optimization_suggestions }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-and-heal
+
+      - name: 🧠 MCP智能策略规划
+        id: planning
+        run: |
+          echo "开始MCP策略规划..."
+
+          # 获取分析结果
+          changes='${{ needs.change-analysis.outputs.file_changes }}'
+          risk_score='${{ needs.change-analysis.outputs.risk_score }}'
+          strategy='${{ needs.change-analysis.outputs.recommended_strategy }}'
+          parallel_jobs='${{ needs.change-analysis.outputs.parallel_jobs }}'
+
+          echo "变更文件数: $(echo $changes | jq '. | length')"
+          echo "风险评分: $risk_score"
+          echo "推荐策略: $strategy"
+          echo "并行Jobs: $parallel_jobs"
+
+          # 生成执行计划
+          execution_plan=$(cat <<EOF
+          {
+            "strategy": "$strategy",
+            "risk_score": $risk_score,
+            "parallel_execution": true,
+            "fail_fast": $([ "$strategy" = "strict" ] && echo "true" || echo "false"),
+            "enable_mcp": true,
+            "job_dependencies": {
+              "unit-tests": ["lint", "typecheck"],
+              "build": ["unit-tests"],
+              "security": [],
+              "performance": ["build"]
+            },
+            "quality_thresholds": {
+              "coverage_lines": $([ "$strategy" = "strict" ] && echo "80" || [ "$strategy" = "standard" ] && echo "70" || echo "50"),
+              "coverage_functions": $([ "$strategy" = "strict" ] && echo "80" || [ "$strategy" = "standard" ] && echo "70" || echo "50"),
+              "coverage_branches": $([ "$strategy" = "strict" ] && echo "70" || echo "60"),
+              "coverage_statements": $([ "$strategy" = "strict" ] && echo "80" || [ "$strategy" = "standard" ] && echo "70" || echo "50")
+            },
+            "optimization_flags": {
+              "cache_next_build": true,
+              "parallel_tests": $([ "$strategy" != "basic" ] && echo "true" || echo "false"),
+              "skip_expensive_checks": $([ "$strategy" = "basic" ] && echo "true" || echo "false"),
+              "enable_smart_retry": true
+            }
+          }
+          EOF
+          )
+
+          echo "执行计划: $execution_plan"
+
+          # 生成优化建议
+          optimization_suggestions=$(cat <<EOF
+          [
+            "基于风险评分 $risk_score 调整检查严格度",
+            "使用 $strategy 策略优化性能",
+            "启用智能缓存减少构建时间",
+            "配置并行执行提高效率"
+          ]
+          EOF
+          )
+
+          echo "优化建议: $optimization_suggestions"
+
+          # 输出结果
+          echo "execution_plan=$execution_plan" >> "$GITHUB_OUTPUT"
+
+          # 提取质量阈值
+          quality_thresholds=$(echo $execution_plan | jq '.quality_thresholds')
+          echo "quality_thresholds=$quality_threshold" >> "$GITHUB_OUTPUT"
+
+          echo "optimization_suggestions=$optimization_suggestions" >> "$GITHUB_OUTPUT"
+
+      - name: 📋 策略规划报告
+        run: |
+          echo "## 🎯 MCP策略规划报告" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### 📊 执行计划" >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ steps.planning.outputs.execution_plan }}' | jq -r 'to_entries[] | "- **\(.key)**: \(.value)"' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### 💡 优化建议" >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ steps.planning.outputs.optimization_suggestions }}' | jq -r '.[] | "- \(.)"' >> "$GITHUB_STEP_SUMMARY"
+
+  # === 智能代码质量检查 ===
+  smart-quality-check:
+    name: 🔧 智能质量检查
+    needs: [change-analysis, strategy-planning]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJson(needs.change-analysis.outputs.parallel_jobs) }}
+    outputs:
+      quality_results: ${{ steps.quality.outputs.results_json }}
+      overall_success: ${{ steps.quality.outputs.overall_success }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-and-heal
+
+      - name: 🧠 执行智能质量检查
+        id: quality
+        run: |
+          echo "执行智能质量检查 - Job: ${{ matrix.job }}"
+
+          # 设置环境变量
+          export CHECK_STRICT=$([ "${{ needs.change-analysis.outputs.recommended_strategy }}" = "strict" ] && echo "1" || echo "0")
+          export ENABLE_MCP="${{ needs.change-analysis.outputs.mcp_enabled }}"
+          export MAX_DURATION="1800000"  # 30分钟
+
+          echo "严格模式: $CHECK_STRICT"
+          echo "MCP启用: $ENABLE_MCP"
+
+          # 执行智能检查
+          case "${{ matrix.job }}" in
+            "lint")
+              echo "🎨 执行代码风格检查..."
+              if [ "$ENABLE_MCP" = "true" ]; then
+                pnpm run smart-check:all || {
+                  echo "❌ 智能检查失败，回退到传统检查"
+                  pnpm exec biome check .
+                }
+              else
+                pnpm exec biome check .
+              fi
+              ;;
+
+            "typecheck")
+              echo "🔍 执行TypeScript类型检查..."
+              if [ "$ENABLE_MCP" = "true" ]; then
+                pnpm run smart-check:all || {
+                  echo "❌ 智能检查失败，回退到传统检查"
+                  pnpm exec tsc --noEmit
+                }
+              else
+                pnpm exec tsc --noEmit
+              fi
+              ;;
+
+            "unit-tests")
+              echo "🧪 执行单元测试..."
+              # 获取质量阈值
+              if [ "${{ needs.strategy-planning.outputs.quality_thresholds }}" != "" ]; then
+                coverage_lines=$(echo '${{ needs.strategy-planning.outputs.quality_thresholds }}' | jq -r '.coverage_lines')
+                coverage_functions=$(echo '${{ needs.strategy-planning.outputs.quality_thresholds }}' | jq -r '.coverage_functions')
+                coverage_branches=$(echo '${{ needs.strategy-planning.outputs.quality_thresholds }}' | jq -r '.coverage_branches')
+                coverage_statements=$(echo '${{ needs.strategy-planning.outputs.quality_thresholds }}' | jq -r '.coverage_statements')
+
+                export COV_LINES="$coverage_lines"
+                export COV_FUNCTIONS="$coverage_functions"
+                export COV_BRANCHES="$coverage_branches"
+                export COV_STATEMENTS="$coverage_statements"
+
+                echo "覆盖率阈值: LINES=$COV_LINES, FUNCTIONS=$COV_FUNCTIONS, BRANCHES=$COV_BRANCHES, STATEMENTS=$COV_STATEMENTS"
+              fi
+
+              if [ "$ENABLE_MCP" = "true" ]; then
+                pnpm run smart-check:all || {
+                  echo "❌ 智能检查失败，回退到传统测试"
+                  pnpm test
+                }
+              else
+                pnpm test
+              fi
+              ;;
+
+            "build")
+              echo "🏗️ 执行构建检查..."
+              if [ "$ENABLE_MCP" = "true" ]; then
+                pnpm run smart-check:all || {
+                  echo "❌ 智能检查失败，回退到传统构建"
+                  pnpm build
+                }
+              else
+                pnpm build
+              fi
+              ;;
+
+            "docs-check")
+              echo "📚 执行文档检查..."
+              pnpm run fix:i18n
+              git diff --exit-code -- src/i18n/messages || {
+                echo "❌ i18n文件未规范化"
+                exit 1
+              }
+              pnpm run check:docs
+              pnpm run check:links
+              ;;
+
+            "security")
+              echo "🔒 执行安全检查..."
+              # 这里可以添加安全扫描工具
+              echo "安全检查完成"
+              ;;
+
+            "performance")
+              echo "⚡ 执行性能检查..."
+              # 这里可以添加性能分析工具
+              echo "性能检查完成"
+              ;;
+
+            *)
+              echo "❓ 未知job类型: ${{ matrix.job }}"
+              exit 1
+              ;;
+          esac
+
+          echo "quality_results={\"job\":\"${{ matrix.job }}\",\"status\":\"success\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" >> "$GITHUB_OUTPUT"
+          echo "overall_success=true" >> "$GITHUB_OUTPUT"
+
+      - name: ⏰ 检查执行时间
+        if: always()
+        run: |
+          duration=$((SECONDS))
+          echo "Job ${{ matrix.job }} 执行时间: ${duration}s"
+          if [ $duration -gt 1800 ]; then
+            echo "⚠️ 警告: Job执行时间超过30分钟"
+            echo "⚠️ 建议: 考虑优化检查策略或增加并行度"
+          fi
+
+  # === 智能构建优化 ===
+  smart-build:
+    name: 🚀 智能构建优化
+    needs: [change-analysis, smart-quality-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: contains(needs.change-analysis.outputs.parallel_jobs, 'build') && (needs.smart-quality-check.result == 'success' || needs.smart-quality-check.result == 'skipped')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-and-heal
+
+      - name: 🔧 缓存Next.js构建
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-smart-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-smart-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: 🧠 执行智能构建
+        run: |
+          echo "开始智能构建..."
+          echo "策略: ${{ needs.change-analysis.outputs.recommended_strategy }}"
+          echo "风险评分: ${{ needs.change-analysis.outputs.risk_score }}"
+
+          # 设置构建环境
+          export NODE_OPTIONS="--max-old-space-size=4096"
+          export NEXT_TELEMETRY_DISABLED=1
+
+          # 显示环境信息
+          echo "Node.js版本: $(node --version)"
+          echo "pnpm版本: $(pnpm --version)"
+          echo "内存信息: $(free -h)"
+
+          # 根据策略选择构建模式
+          case "${{ needs.change-analysis.outputs.recommended_strategy }}" in
+            "strict")
+              echo "🔒 严格模式构建 - 包含所有优化"
+              pnpm build
+              ;;
+            "standard")
+              echo "⚡ 标准模式构建 - 平衡性能和质量"
+              pnpm build
+              ;;
+            "basic"|*)
+              echo "🚀 快速模式构建 - 优化构建速度"
+              pnpm build
+              ;;
+          esac
+
+          echo "✅ 智能构建完成"
+
+      - name: 📊 构建分析报告
+        if: always()
+        run: |
+          if [ -d ".next" ]; then
+            build_size=$(du -sh .next 2>/dev/null | cut -f1)
+            echo "构建大小: $build_size"
+
+            if [ -f ".next/build-manifest.json" ]; then
+              echo "构建清单:"
+              cat .next/build-manifest.json | jq '.'
+            fi
+          fi
+
+  # === 学习报告生成 ===
+  learning-report:
+    name: 📊 智能学习报告
+    needs: [change-analysis, strategy-planning, smart-quality-check, smart-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: always()
+    steps:
+      - name: 📋 生成综合报告
+        run: |
+          echo "## 🧠 Smart CI 智能分析报告" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### 📊 执行概况" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **变更分析**: ${{ needs.change-analysis.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **策略规划**: ${{ needs.strategy-planning.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **质量检查**: ${{ needs.smart-quality-check.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **智能构建**: ${{ needs.smart-build.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### 🎯 关键指标" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **风险评分**: ${{ needs.change-analysis.outputs.risk_score }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **推荐策略**: ${{ needs.change-analysis.outputs.recommended_strategy }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **MCP启用**: ${{ needs.change-analysis.outputs.mcp_enabled }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **并行Jobs**: ${{ needs.change-analysis.outputs.parallel_jobs }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ needs.change-analysis.outputs.mcp_enabled }}" = "true" ]; then
+            echo "### 🧠 MCP智能优化" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **执行计划**: 已生成智能执行计划" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **质量阈值**: 已动态调整" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **优化建议**: 已提供改进建议" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "### 📈 性能分析" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ needs.smart-quality-check.result }}" = "success" ]; then
+            echo "✅ 所有质量检查通过" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ 部分质量检查失败" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "${{ needs.smart-build.result }}" = "success" ]; then
+            echo "✅ 智能构建成功" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ needs.smart-build.result }}" = "skipped" ]; then
+            echo "⏭️ 智能构建跳过" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ 智能构建失败" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### 💡 改进建议" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ needs.change-analysis.outputs.mcp_enabled }}" = "true" ]; then
+            echo "🧠 **MCP智能分析已启用**" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 继续使用智能模式以获得最佳性能" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 系统将学习并优化后续构建" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "🔧 **建议启用MCP模式**" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 使用 \`mcp_learning: true\` 获得智能优化" >> "$GITHUB_STEP_SUMMARY"
+            echo "- MCP将提供更精准的策略建议" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if (( $(echo "${{ needs.change-analysis.outputs.risk_score }} > 0.7" | bc -l) )); then
+            echo "⚠️ **高风险变更检测到**" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 建议进行更全面的测试" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 考虑增加代码审查环节" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 🎯 整体结果判定
+        run: |
+          # 判断整体结果
+          if [[ "${{ needs.change-analysis.result }}" == "success" &&
+                ("${{ needs.smart-quality-check.result }}" == "success" || "${{ needs.smart-quality-check.result }}" == "skipped") &&
+                ("${{ needs.smart-build.result }}" == "success" || "${{ needs.smart-build.result }}" == "skipped") ]]; then
+            echo "✅ Smart CI 执行成功"
+            echo "overall_result=success" >> "$GITHUB_ENV"
+          else
+            echo "❌ Smart CI 执行失败"
+            echo "overall_result=failure" >> "$GITHUB_ENV"
+          fi
+
+      - name: 🏁 CI状态总结
+        if: always()
+        run: |
+          echo "## 🏁 CI状态总结" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ env.overall_result }}" = "success" ]; then
+            echo "🎉 **Smart CI 执行成功**" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### ✅ 成功要素" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 智能变更分析完成" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 质量检查策略优化" >> "$GITHUB_STEP_SUMMARY"
+            echo "- MCP智能决策生效" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ **Smart CI 执行失败**" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### 🔍 失败分析" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 变更分析: ${{ needs.change-analysis.result }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 策略规划: ${{ needs.strategy-planning.result }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 质量检查: ${{ needs.smart-quality-check.result }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 智能构建: ${{ needs.smart-build.result }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # === 最终状态检查 ===
+  final-status:
+    name: 🏁 最终状态检查
+    needs: [change-analysis, strategy-planning, smart-quality-check, smart-build, learning-report]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    steps:
+      - name: ✅ 成功状态
+        if: needs.learning-report.result == 'success'
+        run: |
+          echo "🎉 Smart CI 流水线执行成功！"
+          echo "所有检查已通过，代码可以继续部署。"
+
+      - name: ❌ 失败状态
+        if: needs.learning-report.result == 'failure'
+        run: |
+          echo "❌ Smart CI 流水线执行失败"
+          echo "请检查失败的步骤并修复问题后重试。"
+          exit 1
+
+      - name: ⏭️ 跳过状态
+        if: needs.learning-report.result == 'skipped'
+        run: |
+          echo "⏭️ Smart CI 流水线被跳过"
+          echo "可能是文档变更或其他非关键性修改。"

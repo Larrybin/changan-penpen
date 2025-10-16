@@ -21,7 +21,7 @@ Thank you for your interest in the project! Please follow these steps to keep co
 
 ## 4) Local Checks
 - Prefer `pnpm check:all` for the full quality gate（包含 Biome 写入/校验、cf-typegen、tsc、构建、docs/link；`CHECK_ENABLE_TESTS=1` 可附带单测）。
-- `pnpm biome:check` and `pnpm typecheck` should pass before pushing.
+- `pnpm exec biome check` and `pnpm typecheck` should pass before pushing.
 - Run `pnpm test` for the affected modules; add tests for critical logic.
 - If you changed Cloudflare bindings or env keys, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts` (or `pnpm typecheck`, which includes it).
 

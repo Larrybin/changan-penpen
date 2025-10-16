@@ -1,0 +1,177 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "description": "预发布环境配置",
+    "environment": "staging",
+    "last_updated": "2025-10-16"
+  },
+  "database": {
+    "host": "${STAGING_DB_HOST}",
+    "port": 5432,
+    "ssl_enabled": true,
+    "pool_size": 10,
+    "max_connections": 25,
+    "timeout": "12s",
+    "connection_timeout": "8s",
+    "idle_timeout": "180s",
+    "health_check": {
+      "enabled": true,
+      "interval": "60s"
+    }
+  },
+  "security": {
+    "encryption_algorithm": "AES-192-GCM",
+    "session_timeout": "2h",
+    "secret_rotation": "45d",
+    "debug_enabled": true,
+    "password_policy": {
+      "min_length": 10,
+      "require_special_chars": true,
+      "require_numbers": true
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 300,
+      "burst_size": 50,
+      "block_duration": "10m"
+    },
+    "cors": {
+      "enabled": true,
+      "allowed_origins": ["${STAGING_APP_URL}", "http://localhost:3000"],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      "allowed_headers": ["Content-Type", "Authorization", "X-Requested-With", "X-Debug"],
+      "credentials": true
+    },
+    "authentication": {
+      "providers": ["google", "github"],
+      "session_name": "next-cf-staging-session",
+      "cookie_secure": true,
+      "cookie_http_only": true,
+      "same_site": "lax"
+    }
+  },
+  "performance": {
+    "cache_ttl": "2h",
+    "compression_enabled": true,
+    "cdn_enabled": true,
+    "monitoring_level": "medium",
+    "response_timeout": "20s",
+    "cache_control": {
+      "public": "max-age=3600",
+      "private": "max-age=1800"
+    },
+    "image_optimization": {
+      "enabled": true,
+      "quality": 82,
+      "format": "auto",
+      "placeholder": "blur"
+    },
+    "static_assets": {
+      "cache_headers": {
+        "max_age": "7d"
+      }
+    }
+  },
+  "features": {
+    "feature_flags": {
+      "new_ui": true,
+      "advanced_analytics": false,
+      "beta_features": false,
+      "debug_mode": true,
+      "maintenance_mode": false
+    },
+    "experiments": {
+      "enabled": true,
+      "traffic_split": {
+        "control": 70,
+        "variant": 30
+      }
+    }
+  },
+  "services": {
+    "external_apis": {
+      "timeout": "20s",
+      "retry_attempts": 4,
+      "circuit_breaker": {
+        "enabled": true,
+        "failure_threshold": 4,
+        "recovery_timeout": "45s",
+        "half_open_max_calls": 3
+      }
+    },
+    "notifications": {
+      "enabled": true,
+      "channels": ["email"],
+      "queue_size": 2000,
+      "retry_policy": {
+        "max_attempts": 3,
+        "backoff": "exponential"
+      }
+    },
+    "analytics": {
+      "enabled": true,
+      "provider": "internal",
+      "sampling_rate": 0.05,
+      "batch_size": 50,
+      "flush_interval": "30s"
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputs": ["console"],
+    "retention": "30d",
+    "structured_logging": {
+      "enabled": true,
+      "include_request_id": true,
+      "include_user_id": true,
+      "include_trace_id": false
+    },
+    "error_tracking": {
+      "enabled": true,
+      "sentry_dsn": "${STAGING_SENTRY_DSN}",
+      "environment": "staging"
+    }
+  },
+  "backup": {
+    "enabled": true,
+    "schedule": "0 3 * * *",
+    "retention": "30d",
+    "encryption": true
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics": {
+      "enabled": true,
+      "interval": "60s",
+      "retention": "15d"
+    },
+    "alerts": {
+      "enabled": true,
+      "channels": ["email"],
+      "thresholds": {
+        "error_rate": 0.05,
+        "response_time_p95": 5000,
+        "cpu_usage": 85,
+        "memory_usage": 90
+      }
+    },
+    "health_checks": {
+      "enabled": true,
+      "interval": "120s",
+      "endpoints": ["/api/health"]
+    }
+  },
+  "testing": {
+    "enabled": true,
+    "test_data": {
+      "auto_generate": true,
+      "sample_size": 100
+    },
+    "load_testing": {
+      "enabled": true,
+      "schedule": "0 1 * * 1",
+      "users": 100
+    }
+  }
+}

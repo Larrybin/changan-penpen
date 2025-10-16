@@ -1,13 +1,15 @@
 "use client";
 
 import { type CrudFilter, useDelete, useList } from "@refinedev/core";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminTodoRecord } from "@/modules/admin/types/resource.types";
 
@@ -64,21 +66,21 @@ export default function AdminTodoListPage() {
         );
     };
 
+    const skeletonRows = Array.from({ length: 6 });
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold">Todo 列表</h1>
-                    <p className="text-sm text-muted-foreground">
-                        查看、编辑并快速管理 SaaS 租户的任务数据
-                    </p>
-                </div>
-                <Link href={adminRoutes.todos.create}>
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> 新建 Todo
-                    </Button>
-                </Link>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="Todo 列表"
+                description="查看、编辑并快速管理 SaaS 租户的任务数据。"
+                actions={
+                    <Link href={adminRoutes.todos.create}>
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" /> 新建 Todo
+                        </Button>
+                    </Link>
+                }
+            />
 
             <Card>
                 <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -110,8 +112,45 @@ export default function AdminTodoListPage() {
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
-                        <div className="flex items-center justify-center py-10">
-                            <Loader2 className="h-5 w-5 animate-spin" />
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-border text-left">
+                                        {[
+                                            "标题",
+                                            "所属租户",
+                                            "分类",
+                                            "状态",
+                                            "优先级",
+                                            "截止日期",
+                                            "操作",
+                                        ].map((header) => (
+                                            <th
+                                                key={header}
+                                                className="px-4 py-3 font-medium"
+                                            >
+                                                {header}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {skeletonRows.map((_, index) => (
+                                        <tr key={`todo-skeleton-${index}`}>
+                                            {Array.from({ length: 7 }).map(
+                                                (__, cellIndex) => (
+                                                    <td
+                                                        key={`todo-skeleton-cell-${index}-${cellIndex}`}
+                                                        className="px-4 py-3"
+                                                    >
+                                                        <Skeleton className="h-5 w-full" />
+                                                    </td>
+                                                ),
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     ) : todos.length === 0 ? (
                         <div className="text-center text-muted-foreground py-10">

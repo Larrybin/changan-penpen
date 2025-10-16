@@ -1,13 +1,17 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
+import {
+    Form,
+    FormInput,
+    FormLabel,
+    FormMessage,
+    FormSubmit,
+    useZodForm,
+} from "@/components/form";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -16,15 +20,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
     createSignUpSchema,
@@ -44,14 +40,34 @@ export function SignupForm({
     const tShared = useTranslations("AuthForms.Shared");
     const tValidation = useTranslations("AuthForms.Validation");
     const tMessages = useTranslations("AuthForms.Messages");
-    const [isLoading, setIsLoading] = useState(false);
 
-    const form = useForm<SignUpSchema>({
-        resolver: zodResolver(createSignUpSchema(tValidation)),
+    const {
+        form,
+        isSubmitting,
+        error,
+        success,
+        clearMessages,
+        handleSubmit,
+        getFieldError,
+        setFieldError,
+        clearFieldError,
+    } = useZodForm({
+        schema: createSignUpSchema(tValidation),
         defaultValues: {
             username: "",
             email: "",
             password: "",
+        },
+        onSubmit: async (values: SignUpSchema) => {
+            const { success, messageKey } = await signUp(values);
+
+            if (success) {
+                toast.success(tMessages(messageKey));
+                router.push(dashboardRoutes.dashboard);
+            } else {
+                // 错误已经在 useZodForm 中处理了
+                throw new Error(tMessages(messageKey));
+            }
         },
     });
 
@@ -66,19 +82,6 @@ export function SignupForm({
         }
     };
 
-    async function onSubmit(values: SignUpSchema) {
-        setIsLoading(true);
-        const { success, messageKey } = await signUp(values);
-
-        if (success) {
-            toast.success(tMessages(messageKey));
-            router.push(dashboardRoutes.dashboard);
-        } else {
-            toast.error(tMessages(messageKey));
-        }
-        setIsLoading(false);
-    }
-
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card>
@@ -92,10 +95,7 @@ export function SignupForm({
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
-                        <form
-                            onSubmit={form.handleSubmit(onSubmit)}
-                            className="space-y-8"
-                        >
+                        <form onSubmit={handleSubmit} className="space-y-8">
                             <div className="grid gap-6">
                                 <Button
                                     type="button"
@@ -120,79 +120,57 @@ export function SignupForm({
                                     </span>
                                 </div>
                                 <div className="grid gap-6">
-                                    <FormField
-                                        control={form.control}
-                                        name="username"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    {tShared(
-                                                        "fields.username.label",
-                                                    )}
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder={tShared(
-                                                            "fields.username.placeholder",
-                                                        )}
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="email"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    {tShared(
-                                                        "fields.email.label",
-                                                    )}
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder={tShared(
-                                                            "fields.email.placeholder",
-                                                        )}
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="password"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    {tShared(
-                                                        "fields.password.label",
-                                                    )}
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder={tShared(
-                                                            "fields.password.placeholder",
-                                                        )}
-                                                        {...field}
-                                                        type="password"
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button
-                                        type="submit"
+                                    <div className="flex flex-col gap-2">
+                                        <FormLabel htmlFor="username">
+                                            {tShared("fields.username.label")}
+                                        </FormLabel>
+                                        <FormInput
+                                            id="username"
+                                            name="username"
+                                            placeholder={tShared(
+                                                "fields.username.placeholder",
+                                            )}
+                                            error={!!getFieldError("username")}
+                                        />
+                                        <FormMessage field="username" />
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <FormLabel htmlFor="email">
+                                            {tShared("fields.email.label")}
+                                        </FormLabel>
+                                        <FormInput
+                                            id="email"
+                                            name="email"
+                                            placeholder={tShared(
+                                                "fields.email.placeholder",
+                                            )}
+                                            error={!!getFieldError("email")}
+                                        />
+                                        <FormMessage field="email" />
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <FormLabel htmlFor="password">
+                                            {tShared("fields.password.label")}
+                                        </FormLabel>
+                                        <FormInput
+                                            id="password"
+                                            name="password"
+                                            type="password"
+                                            placeholder={tShared(
+                                                "fields.password.placeholder",
+                                            )}
+                                            error={!!getFieldError("password")}
+                                        />
+                                        <FormMessage field="password" />
+                                    </div>
+
+                                    <FormSubmit
+                                        isSubmitting={isSubmitting}
                                         className="w-full"
-                                        disabled={isLoading}
                                     >
-                                        {isLoading ? (
+                                        {isSubmitting ? (
                                             <>
                                                 <Loader2 className="size-4 animate-spin mr-2" />
                                                 {tShared("loading")}
@@ -200,7 +178,7 @@ export function SignupForm({
                                         ) : (
                                             tSignup("submit")
                                         )}
-                                    </Button>
+                                    </FormSubmit>
                                 </div>
                                 <div className="text-center text-sm">
                                     {tSignup("switchPrompt")}{" "}

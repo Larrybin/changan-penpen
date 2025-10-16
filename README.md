@@ -51,6 +51,44 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - Shared platform: `src/lib` for Cloudflare bindings, logging, cache, SEO, etc.
 - More in `docs/architecture-overview.md`
 
+### API Architecture
+The application includes 31+ API endpoints organized into 4 main categories:
+
+#### Authentication APIs
+- `/api/auth/[...all]` - Better Auth integration (GET, POST)
+
+#### Core APIs
+- `/api/health` - Health monitoring with fast/strict modes
+- `/api/summarize` - Content summarization service
+
+#### Admin APIs (22 endpoints)
+- `/api/admin/dashboard` - Dashboard analytics
+- `/api/admin/users` & `/api/admin/users/[id]` - User management
+- `/api/admin/todos` & `/api/admin/todos/[id]` - Todo administration
+- `/api/admin/products` & `/api/admin/products/[id]` - Product catalog
+- `/api/admin/orders` & `/api/admin/orders/[id]` - Order management
+- `/api/admin/tenants` & `/api/admin/tenants/[id]` - Tenant management
+- `/api/admin/credits-history` - Credits history
+- `/api/admin/reports` - System reports
+- `/api/admin/audit-logs` - Audit logs
+- `/api/admin/site-settings` - Site configuration
+- `/api/admin/categories` - Category management
+- `/api/admin/content-pages` & `/api/admin/content-pages/[id]` - Content pages
+- `/api/admin/coupons` & `/api/admin/coupons/[id]` - Coupon management
+- `/api/admin/session` - Admin session management
+- `/api/admin/usage` - Usage analytics
+
+#### Billing & Payment APIs
+- `/api/creem/create-checkout` - Payment checkout creation
+- `/api/creem/customer-portal` - Customer billing portal
+- `/api/webhooks/creem` - Payment webhooks (POST)
+
+#### Credits APIs
+- `/api/credits/balance` - User credit balance
+- `/api/credits/history` - Credit transaction history
+
+All APIs follow RESTful conventions and include proper authentication, error handling, and TypeScript safety.
+
 ---
 
 ## Docs Map

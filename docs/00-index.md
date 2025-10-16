@@ -12,6 +12,9 @@
 4. [testing.md](testing.md) — Test strategy, Vitest plan, mocking guidelines
 5. [extending.md](extending.md) — 模块扩展与多平台部署操作指引
 
+## UI & Experience
+1. [design-system.md](design-system.md) — Theme tokens, shared layout components, refactor roadmap
+
 ## Environment, Config, and Resources
 1. [env-and-secrets.md](env-and-secrets.md) — Env matrix and rotation policy
 2. [db-d1.md](db-d1.md) — D1 migrations, bootstrap, backup/restore

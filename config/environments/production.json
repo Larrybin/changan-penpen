@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "description": "生产环境配置",
+    "environment": "production",
+    "last_updated": "2025-10-16"
+  },
+  "database": {
+    "host": "${CLOUDFLARE_D1_HOST}",
+    "port": 5432,
+    "ssl_enabled": true,
+    "pool_size": 20,
+    "max_connections": 50,
+    "timeout": "10s",
+    "connection_timeout": "5s",
+    "idle_timeout": "300s",
+    "health_check": {
+      "enabled": true,
+      "interval": "30s"
+    }
+  },
+  "security": {
+    "encryption_algorithm": "AES-256-GCM",
+    "session_timeout": "30m",
+    "secret_rotation": "90d",
+    "debug_enabled": false,
+    "password_policy": {
+      "min_length": 12,
+      "require_special_chars": true,
+      "require_numbers": true,
+      "require_uppercase": true
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 1000,
+      "burst_size": 100,
+      "block_duration": "15m"
+    },
+    "cors": {
+      "enabled": true,
+      "allowed_origins": ["${NEXT_PUBLIC_APP_URL}"],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      "allowed_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+      "credentials": true
+    },
+    "authentication": {
+      "providers": ["google"],
+      "session_name": "next-cf-prod-session",
+      "cookie_secure": true,
+      "cookie_http_only": true,
+      "same_site": "strict"
+    },
+    "headers": {
+      "strict_transport_security": "max-age=31536000; includeSubDomains",
+      "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'",
+      "x_frame_options": "DENY",
+      "x_content_type_options": "nosniff"
+    }
+  },
+  "performance": {
+    "cache_ttl": "24h",
+    "compression_enabled": true,
+    "cdn_enabled": true,
+    "monitoring_level": "high",
+    "response_timeout": "15s",
+    "cache_control": {
+      "public": "max-age=31536000, immutable",
+      "private": "max-age=3600"
+    },
+    "image_optimization": {
+      "enabled": true,
+      "quality": 85,
+      "format": "auto",
+      "placeholder": "blur"
+    },
+    "static_assets": {
+      "cache_headers": {
+        "max_age": "1y",
+        "immutable": true
+      }
+    }
+  },
+  "features": {
+    "feature_flags": {
+      "new_ui": false,
+      "advanced_analytics": false,
+      "beta_features": false,
+      "debug_mode": false,
+      "maintenance_mode": false
+    },
+    "experiments": {
+      "enabled": false,
+      "traffic_split": {
+        "control": 90,
+        "variant": 10
+      }
+    }
+  },
+  "services": {
+    "external_apis": {
+      "timeout": "15s",
+      "retry_attempts": 5,
+      "circuit_breaker": {
+        "enabled": true,
+        "failure_threshold": 3,
+        "recovery_timeout": "30s",
+        "half_open_max_calls": 5
+      }
+    },
+    "notifications": {
+      "enabled": true,
+      "channels": ["email", "webhook"],
+      "queue_size": 5000,
+      "retry_policy": {
+        "max_attempts": 3,
+        "backoff": "exponential"
+      }
+    },
+    "analytics": {
+      "enabled": true,
+      "provider": "internal",
+      "sampling_rate": 0.01,
+      "batch_size": 100,
+      "flush_interval": "60s"
+    }
+  },
+  "logging": {
+    "level": "warn",
+    "format": "json",
+    "outputs": ["console", "file"],
+    "retention": "90d",
+    "structured_logging": {
+      "enabled": true,
+      "include_request_id": true,
+      "include_user_id": true,
+      "include_trace_id": true
+    },
+    "error_tracking": {
+      "enabled": true,
+      "sentry_dsn": "${SENTRY_DSN}",
+      "environment": "production"
+    }
+  },
+  "backup": {
+    "enabled": true,
+    "schedule": "0 2 * * *",
+    "retention": "90d",
+    "encryption": true,
+    "cross_region_backup": true,
+    "point_in_time_recovery": true
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics": {
+      "enabled": true,
+      "interval": "30s",
+      "retention": "30d"
+    },
+    "alerts": {
+      "enabled": true,
+      "channels": ["email", "slack"],
+      "thresholds": {
+        "error_rate": 0.01,
+        "response_time_p95": 2000,
+        "cpu_usage": 80,
+        "memory_usage": 85
+      }
+    },
+    "health_checks": {
+      "enabled": true,
+      "interval": "60s",
+      "endpoints": ["/api/health", "/api/health/db"]
+    }
+  },
+  "compliance": {
+    "enabled": true,
+    "audit_logging": true,
+    "data_retention": "7y",
+    "gdpr_compliance": true,
+    "access_logs": {
+      "enabled": true,
+      "retention": "2y"
+    }
+  }
+}

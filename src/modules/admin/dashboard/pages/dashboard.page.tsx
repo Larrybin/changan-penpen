@@ -2,6 +2,7 @@
 
 import { useCustom } from "@refinedev/core";
 import Link from "next/link";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -10,6 +11,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UsageSparkline } from "@/modules/admin/dashboard/components/usage-sparkline";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
@@ -62,83 +64,85 @@ export function AdminDashboardPage() {
 
     const isLoading = query.isLoading;
     const payload = query.data?.data;
+    const hasTrendData = (payload?.usageTrend?.length ?? 0) > 0;
+    const _hasOrderData = (payload?.latestOrders?.length ?? 0) > 0;
+    const _hasCreditData = (payload?.recentCredits?.length ?? 0) > 0;
+    const catalogSummary = payload?.catalogSummary ?? {
+        products: 0,
+        coupons: 0,
+        contentPages: 0,
+    };
+    const metricCards = [
+        {
+            label: "总营收",
+            value: formatCurrency(payload?.totals.revenueCents ?? 0),
+            skeletonClassName: "w-24",
+        },
+        {
+            label: "订单数",
+            value: (payload?.totals.orderCount ?? 0).toString(),
+            skeletonClassName: "w-16",
+        },
+        {
+            label: "活跃订阅",
+            value: (payload?.totals.activeSubscriptions ?? 0).toString(),
+            skeletonClassName: "w-16",
+        },
+        {
+            label: "站点积分总额",
+            value: (payload?.totals.totalCredits ?? 0).toLocaleString(),
+            skeletonClassName: "w-24",
+        },
+    ] as const;
 
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        站长总览
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        查看订单、营收、积分以及用量表现，快速跳转到常用运营操作。
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button asChild variant="outline">
-                        <Link href={adminRoutes.catalog.contentPages}>
-                            内容管理
-                        </Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                        <Link href={adminRoutes.catalog.products}>
-                            商品管理
-                        </Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                        <Link href={adminRoutes.catalog.coupons}>
-                            发放优惠券
-                        </Link>
-                    </Button>
-                    <Button asChild>
-                        <Link href={adminRoutes.reports.list}>导出报表</Link>
-                    </Button>
-                </div>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="站长总览"
+                description="查看订单、营收、积分以及用量表现，快速跳转到常用运营操作。"
+                actions={
+                    <div className="flex flex-wrap gap-2">
+                        <Button asChild variant="outline">
+                            <Link href={adminRoutes.catalog.contentPages}>
+                                内容管理
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline">
+                            <Link href={adminRoutes.catalog.products}>
+                                商品管理
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline">
+                            <Link href={adminRoutes.catalog.coupons}>
+                                发放优惠券
+                            </Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href={adminRoutes.reports.list}>
+                                导出报表
+                            </Link>
+                        </Button>
+                    </div>
+                }
+            />
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Card>
-                    <CardHeader>
-                        <CardDescription>总营收</CardDescription>
-                        <CardTitle className="text-2xl">
-                            {isLoading
-                                ? "-"
-                                : formatCurrency(
-                                      payload?.totals.revenueCents ?? 0,
-                                  )}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardDescription>订单数</CardDescription>
-                        <CardTitle className="text-2xl">
-                            {isLoading
-                                ? "-"
-                                : (payload?.totals.orderCount ?? 0)}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardDescription>活跃订阅</CardDescription>
-                        <CardTitle className="text-2xl">
-                            {isLoading
-                                ? "-"
-                                : (payload?.totals.activeSubscriptions ?? 0)}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardDescription>站点积分总额</CardDescription>
-                        <CardTitle className="text-2xl">
-                            {isLoading
-                                ? "-"
-                                : (payload?.totals.totalCredits ?? 0)}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
+                {metricCards.map((metric) => (
+                    <Card key={metric.label}>
+                        <CardHeader>
+                            <CardDescription>{metric.label}</CardDescription>
+                            <CardTitle className="text-2xl">
+                                {isLoading ? (
+                                    <Skeleton
+                                        className={`h-7 ${metric.skeletonClassName}`}
+                                    />
+                                ) : (
+                                    metric.value
+                                )}
+                            </CardTitle>
+                        </CardHeader>
+                    </Card>
+                ))}
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -150,21 +154,36 @@ export function AdminDashboardPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <UsageSparkline data={payload?.usageTrend ?? []} />
-                        <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                            {(payload?.usageTrend ?? [])
-                                .slice(-3)
-                                .map((item) => (
-                                    <div key={item.date} className="space-y-1">
-                                        <div className="text-muted-foreground">
-                                            {item.date}
-                                        </div>
-                                        <div className="font-medium">
-                                            {item.amount}
-                                        </div>
-                                    </div>
-                                ))}
-                        </div>
+                        {isLoading ? (
+                            <Skeleton className="h-48 w-full rounded-lg" />
+                        ) : hasTrendData ? (
+                            <>
+                                <UsageSparkline
+                                    data={payload?.usageTrend ?? []}
+                                />
+                                <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+                                    {(payload?.usageTrend ?? [])
+                                        .slice(-3)
+                                        .map((item) => (
+                                            <div
+                                                key={item.date}
+                                                className="space-y-1"
+                                            >
+                                                <div className="text-muted-foreground">
+                                                    {item.date}
+                                                </div>
+                                                <div className="font-medium">
+                                                    {item.amount}
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+                                暂无趋势数据。
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
                 <Card>
@@ -172,28 +191,41 @@ export function AdminDashboardPage() {
                         <CardTitle>目录概况</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                        <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">商品</span>
-                            <span className="font-medium">
-                                {payload?.catalogSummary.products ?? 0}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">
-                                优惠券
-                            </span>
-                            <span className="font-medium">
-                                {payload?.catalogSummary.coupons ?? 0}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">
-                                内容页
-                            </span>
-                            <span className="font-medium">
-                                {payload?.catalogSummary.contentPages ?? 0}
-                            </span>
-                        </div>
+                        {[
+                            {
+                                label: "商品",
+                                value: catalogSummary.products,
+                                skeletonClassName: "w-10",
+                            },
+                            {
+                                label: "优惠券",
+                                value: catalogSummary.coupons,
+                                skeletonClassName: "w-12",
+                            },
+                            {
+                                label: "内容页",
+                                value: catalogSummary.contentPages,
+                                skeletonClassName: "w-14",
+                            },
+                        ].map((item) => (
+                            <div
+                                key={item.label}
+                                className="flex items-center justify-between"
+                            >
+                                <span className="text-muted-foreground">
+                                    {item.label}
+                                </span>
+                                <span className="font-medium">
+                                    {isLoading ? (
+                                        <Skeleton
+                                            className={`h-5 ${item.skeletonClassName}`}
+                                        />
+                                    ) : (
+                                        item.value
+                                    )}
+                                </span>
+                            </div>
+                        ))}
                     </CardContent>
                 </Card>
             </div>
@@ -226,6 +258,26 @@ export function AdminDashboardPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {isLoading &&
+                                        Array.from({ length: 4 }).map(
+                                            (_, index) => (
+                                                <tr
+                                                    key={`orders-skeleton-${index}`}
+                                                    className="border-t"
+                                                >
+                                                    {Array.from({
+                                                        length: 4,
+                                                    }).map((__, cellIndex) => (
+                                                        <td
+                                                            key={`orders-skeleton-cell-${cellIndex}`}
+                                                            className="py-2 pr-4"
+                                                        >
+                                                            <Skeleton className="h-5 w-full" />
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ),
+                                        )}
                                     {(payload?.latestOrders ?? []).map(
                                         (order) => (
                                             <tr
@@ -292,6 +344,26 @@ export function AdminDashboardPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {isLoading &&
+                                        Array.from({ length: 4 }).map(
+                                            (_, index) => (
+                                                <tr
+                                                    key={`credits-skeleton-${index}`}
+                                                    className="border-t"
+                                                >
+                                                    {Array.from({
+                                                        length: 4,
+                                                    }).map((__, cellIndex) => (
+                                                        <td
+                                                            key={`credits-skeleton-cell-${cellIndex}`}
+                                                            className="py-2 pr-4"
+                                                        >
+                                                            <Skeleton className="h-5 w-full" />
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ),
+                                        )}
                                     {(payload?.recentCredits ?? []).map(
                                         (entry) => (
                                             <tr

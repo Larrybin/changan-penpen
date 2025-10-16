@@ -1,13 +1,19 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
+import {
+    Form,
+    FormError,
+    FormInput,
+    FormLabel,
+    FormMessage,
+    FormSubmit,
+    FormSuccess,
+    useZodForm,
+} from "@/components/form";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -16,15 +22,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
     createSignInSchema,
@@ -44,13 +42,33 @@ export function LoginForm({
     const tShared = useTranslations("AuthForms.Shared");
     const tValidation = useTranslations("AuthForms.Validation");
     const tMessages = useTranslations("AuthForms.Messages");
-    const [isLoading, setIsLoading] = useState(false);
 
-    const form = useForm<SignInSchema>({
-        resolver: zodResolver(createSignInSchema(tValidation)),
+    const {
+        form,
+        isSubmitting,
+        error,
+        success,
+        clearMessages,
+        handleSubmit,
+        getFieldError,
+        setFieldError,
+        clearFieldError,
+    } = useZodForm({
+        schema: createSignInSchema(tValidation),
         defaultValues: {
             email: "",
             password: "",
+        },
+        onSubmit: async (values: SignInSchema) => {
+            const { success, messageKey } = await signIn(values);
+
+            if (success) {
+                toast.success(tMessages(messageKey));
+                router.push(dashboardRoutes.dashboard);
+            } else {
+                // 错误已经在 useZodForm 中处理了
+                throw new Error(tMessages(messageKey));
+            }
         },
     });
 
@@ -66,21 +84,8 @@ export function LoginForm({
     };
 
     const handleForgotPassword = () => {
-        toast(tLogin("forgotUnavailable"));
+        toast.info(tLogin("forgotUnavailable"));
     };
-
-    async function onSubmit(values: SignInSchema) {
-        setIsLoading(true);
-        const { success, messageKey } = await signIn(values);
-
-        if (success) {
-            toast.success(tMessages(messageKey));
-            router.push(dashboardRoutes.dashboard);
-        } else {
-            toast.error(tMessages(messageKey));
-        }
-        setIsLoading(false);
-    }
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -95,10 +100,7 @@ export function LoginForm({
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
-                        <form
-                            onSubmit={form.handleSubmit(onSubmit)}
-                            className="space-y-8"
-                        >
+                        <form onSubmit={handleSubmit} className="space-y-8">
                             <div className="grid gap-6">
                                 <Button
                                     type="button"
@@ -123,52 +125,33 @@ export function LoginForm({
                                     </span>
                                 </div>
                                 <div className="grid gap-6">
-                                    <FormField
-                                        control={form.control}
+                                    <FormLabel htmlFor="email">
+                                        {tShared("fields.email.label")}
+                                    </FormLabel>
+                                    <FormInput
+                                        id="email"
                                         name="email"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    {tShared(
-                                                        "fields.email.label",
-                                                    )}
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder={tShared(
-                                                            "fields.email.placeholder",
-                                                        )}
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
+                                        placeholder={tShared(
+                                            "fields.email.placeholder",
                                         )}
+                                        error={!!getFieldError("email")}
                                     />
+                                    <FormMessage field="email" />
+
                                     <div className="flex flex-col gap-2">
-                                        <FormField
-                                            control={form.control}
+                                        <FormLabel htmlFor="password">
+                                            {tShared("fields.password.label")}
+                                        </FormLabel>
+                                        <FormInput
+                                            id="password"
                                             name="password"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>
-                                                        {tShared(
-                                                            "fields.password.label",
-                                                        )}
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder={tShared(
-                                                                "fields.password.placeholder",
-                                                            )}
-                                                            {...field}
-                                                            type="password"
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
+                                            type="password"
+                                            placeholder={tShared(
+                                                "fields.password.placeholder",
                                             )}
+                                            error={!!getFieldError("password")}
                                         />
+                                        <FormMessage field="password" />
                                         <button
                                             type="button"
                                             onClick={handleForgotPassword}
@@ -177,12 +160,15 @@ export function LoginForm({
                                             {tLogin("forgotPassword")}
                                         </button>
                                     </div>
-                                    <Button
-                                        type="submit"
+
+                                    <FormError error={error} />
+                                    <FormSuccess success={success} />
+
+                                    <FormSubmit
+                                        isSubmitting={isSubmitting}
                                         className="w-full"
-                                        disabled={isLoading}
                                     >
-                                        {isLoading ? (
+                                        {isSubmitting ? (
                                             <>
                                                 <Loader2 className="size-4 animate-spin mr-2" />
                                                 {tShared("loading")}
@@ -190,7 +176,7 @@ export function LoginForm({
                                         ) : (
                                             tLogin("submit")
                                         )}
-                                    </Button>
+                                    </FormSubmit>
                                 </div>
                                 <div className="text-center text-sm">
                                     {tLogin("switchPrompt")}{" "}

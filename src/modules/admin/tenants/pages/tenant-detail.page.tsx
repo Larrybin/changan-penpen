@@ -2,7 +2,9 @@
 
 import { useOne } from "@refinedev/core";
 import Link from "next/link";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 interface TenantDetailPageProps {
@@ -42,34 +44,96 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
     const isLoading = query.isLoading;
     const tenant = result?.data;
 
-    if (isLoading) {
-        return <p className="text-sm text-muted-foreground">加载中...</p>;
-    }
+    const breadcrumbs = [
+        { label: "Admin", href: adminRoutes.dashboard.overview },
+        { label: "租户总览", href: adminRoutes.tenants.list },
+    ] as const;
 
-    if (!tenant) {
+    if (isLoading) {
         return (
-            <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">未找到该租户。</p>
-                <Button asChild variant="outline">
-                    <Link href={adminRoutes.tenants.list}>返回列表</Link>
-                </Button>
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader
+                    title="租户详情"
+                    description="查看租户订阅、积分与用量信息。"
+                    breadcrumbs={[...breadcrumbs, { label: "加载中" }]}
+                    actions={
+                        <Button variant="outline" disabled>
+                            返回列表
+                        </Button>
+                    }
+                />
+
+                <section className="grid gap-4 sm:grid-cols-3">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                            key={`tenant-stat-skeleton-${index}`}
+                            className="rounded-lg border p-4"
+                        >
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="mt-3 h-7 w-24" />
+                        </div>
+                    ))}
+                </section>
+
+                <section className="grid gap-4 md:grid-cols-2">
+                    {["积分流水", "近期用量"].map((title) => (
+                        <div key={title} className="rounded-lg border">
+                            <div className="border-b px-4 py-3">
+                                <Skeleton className="h-4 w-24" />
+                            </div>
+                            <div className="p-4">
+                                {Array.from({ length: 4 }).map(
+                                    (_, rowIndex) => (
+                                        <Skeleton
+                                            key={`${title}-skeleton-row-${rowIndex}`}
+                                            className="mb-2 h-5 w-full last:mb-0"
+                                        />
+                                    ),
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </section>
             </div>
         );
     }
 
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-semibold">{tenant.email}</h1>
-                    <p className="text-sm text-muted-foreground">
-                        用户 ID：{tenant.id}
-                    </p>
+    if (!tenant) {
+        return (
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader
+                    title="租户详情"
+                    description="查看租户订阅、积分与用量信息。"
+                    breadcrumbs={[...breadcrumbs, { label: "未找到租户" }]}
+                    actions={
+                        <Button asChild variant="outline">
+                            <Link href={adminRoutes.tenants.list}>
+                                返回列表
+                            </Link>
+                        </Button>
+                    }
+                />
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    未找到该租户。
                 </div>
-                <Button asChild variant="outline">
-                    <Link href={adminRoutes.tenants.list}>返回列表</Link>
-                </Button>
             </div>
+        );
+    }
+
+    const pageTitle = tenant.email ?? tenant.name ?? tenant.id;
+
+    return (
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title={pageTitle}
+                description={`用户 ID：${tenant.id}`}
+                breadcrumbs={[...breadcrumbs, { label: pageTitle }]}
+                actions={
+                    <Button asChild variant="outline">
+                        <Link href={adminRoutes.tenants.list}>返回列表</Link>
+                    </Button>
+                }
+            />
 
             <section className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-lg border p-4">

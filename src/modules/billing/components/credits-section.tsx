@@ -9,6 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BalanceResponse {
     success: boolean;
@@ -128,7 +129,7 @@ export default function CreditsSection() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {isLoading ? (
-                        <div className="h-10 w-32 rounded-md bg-muted animate-pulse" />
+                        <Skeleton className="h-10 w-32" />
                     ) : error ? (
                         <p className="text-sm text-destructive">{error}</p>
                     ) : (
@@ -158,9 +159,9 @@ export default function CreditsSection() {
                 <CardContent>
                     {isLoading ? (
                         <div className="space-y-2">
-                            <div className="h-8 w-full rounded-md bg-muted animate-pulse" />
-                            <div className="h-8 w-full rounded-md bg-muted animate-pulse" />
-                            <div className="h-8 w-full rounded-md bg-muted animate-pulse" />
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
                         </div>
                     ) : error ? (
                         <p className="text-sm text-destructive">{error}</p>

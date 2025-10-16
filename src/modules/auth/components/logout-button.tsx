@@ -3,8 +3,8 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 import { signOut } from "@/modules/auth/actions/auth.action";
 import authRoutes from "../auth.route";
 

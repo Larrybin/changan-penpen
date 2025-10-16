@@ -183,8 +183,18 @@
 
     /* Layout & elevation tokens */
     --container-max-w: 72rem; /* ~max-w-6xl */
-    --container-px: 1rem; /* px-4 equivalent on md base */
-    --grid-gap-section: 2rem; /* gap-8 */
+    --container-px: clamp(
+        1rem,
+        3vw,
+        2.5rem
+    ); /* Responsive horizontal padding */
+    --grid-gap-section: clamp(
+        1.5rem,
+        3vw,
+        2.5rem
+    ); /* Section vertical rhythm */
+    --layout-page-padding-y: clamp(2.5rem, 4vw, 3.5rem);
+    --layout-sidebar-width: 16rem; /* 256px */
     --z-nav: 50;
     --z-dropdown: 40;
     --z-modal: 60;
