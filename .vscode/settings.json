@@ -17,9 +17,16 @@
         "source.organizeImports.biome": "explicit"
     },
     "claudeCodeChat.permissions.yoloMode": true,
-    "chatgpt.openOnStartup": true,
+    "chatgpt.openOnStartup": false,
     "sonarlint.connectedMode.project": {
         "connectionId": "larrybin",
         "projectKey": "Larrybin_changan-penpen"
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "path": "D:\\PowerShell-7.5.3-win-x64\\pwsh.exe",
+            "args": []
+        }
     }
 }

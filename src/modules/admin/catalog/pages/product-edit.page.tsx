@@ -2,7 +2,14 @@
 
 import { useOne } from "@refinedev/core";
 import { useParams } from "next/navigation";
+import { PageHeader } from "@/components/layout/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ProductForm } from "@/modules/admin/catalog/components/product-form";
+
+const PRODUCT_EDIT_SKELETON_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `product-edit-skeleton-${index}`,
+);
 
 export function ProductEditPage() {
     const params = useParams<{ id: string }>();
@@ -19,24 +26,44 @@ export function ProductEditPage() {
     });
 
     if (!isValidId) {
-        return <p className="text-sm text-muted-foreground">参数错误</p>;
+        return (
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader title="编辑商品" description="更新商品信息。" />
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    参数错误。
+                </div>
+            </div>
+        );
     }
 
     const isLoading = query.isLoading;
     if (isLoading) {
-        return <p className="text-sm text-muted-foreground">加载中...</p>;
+        return (
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader title="编辑商品" description="更新商品信息。" />
+                <div className="space-y-4">
+                    {PRODUCT_EDIT_SKELETON_KEYS.map((key) => (
+                        <Skeleton key={key} className="h-12 w-full" />
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     if (!result?.data) {
-        return <p className="text-sm text-muted-foreground">未找到该商品。</p>;
+        return (
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader title="编辑商品" description="更新商品信息。" />
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    未找到该商品。
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-xl font-semibold">编辑商品</h1>
-                <p className="text-sm text-muted-foreground">更新商品信息。</p>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader title="编辑商品" description="更新商品信息。" />
             <ProductForm id={id} initialData={result.data} />
         </div>
     );

@@ -1,36 +1,36 @@
-Use Chinese to talk with me.
-Use UTF8.
-
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Source lives in `src/`. Next.js App Router under `src/app` with `*.page.tsx`, `*.layout.tsx`, and `*.route.ts` files. 
-- Domain features in `src/modules/<feature>/{actions,components,hooks,models,schemas,utils}`; reusable UI in `src/components` and `src/components/ui`.
-- Data access in `src/db`; migrations in `src/drizzle`; shared helpers in `src/lib`; static assets in `public/`; docs in `docs/`.
+- Source in `src/`; Next.js App Router under `src/app` with `*.page.tsx`, `*.layout.tsx`, `*.route.ts`。
+- Domain features: `src/modules/<feature>/{actions,components,hooks,models,schemas,utils}`。
+- Reusable UI: `src/components`, `src/components/ui`。Data access: `src/db`；migrations: `src/drizzle`；shared helpers: `src/lib`；assets: `public/`；docs: `docs/`。
 
 ## Build, Test, and Development Commands
-- `pnpm dev` — Run Next.js dev server (localhost:3000).
-- `pnpm dev:cf` — Build via OpenNext Cloudflare and run Workers with Wrangler locally.
-- `pnpm build` / `pnpm start` — Production build and serve.
-- `pnpm deploy:cf` — Deploy to Cloudflare Workers (configured by `wrangler.toml`).
-- `pnpm db:migrate:local` — Apply D1 migrations from `src/drizzle` to local.
-- `pnpm lint` — Format and lint with Biome.
-- `pnpm cf-typegen` — Regenerate Cloudflare env bindings/types.
+- `pnpm dev` 本地 Next.js 开发 (http://localhost:3000)。
+- `pnpm dev:cf` 使用 OpenNext Cloudflare 构建并通过 Wrangler 本地运行。
+- `pnpm build` / `pnpm start` 生产构建与运行。
+- `pnpm deploy:cf` 部署到 Cloudflare Workers。
+- `pnpm db:migrate:local` 应用 D1 本地迁移；`pnpm db:migrate:prod` 远程迁移。
+- `pnpm lint` 使用 Biome 自动格式化；`pnpm typecheck` 生成绑定并做 TS 检查。
+- `pnpm test` 运行 Vitest；CI 用 `pnpm test:ci`。
+- 文档/链接检查：`pnpm run check:docs`，`pnpm run check:links`。
 
 ## Coding Style & Naming Conventions
-- TypeScript-first. Components: PascalCase; variables/functions: camelCase; modules are domain-driven.
-- Formatting: Biome with 4-space indent and double quotes. Run `pnpm lint` before committing.
-- File patterns: pages `*.page.tsx`, layouts `*.layout.tsx`, routes `*.route.ts`, services `*.service.ts`.
+- TypeScript 优先；4 空格缩进与双引号（Biome）。
+- 组件 PascalCase；变量/函数 camelCase；模块按领域划分。
+- 文件命名：页面 `*.page.tsx`，布局 `*.layout.tsx`，路由 `*.route.ts`，服务 `*.service.ts`。
+- 提交前运行 `pnpm lint`；仓库启用 `husky` + `lint-staged` 自动修复。
 
 ## Testing Guidelines
-- No test runner is configured yet. If adding tests, prefer Vitest; colocate as `*.test.ts` next to the unit. Keep tests deterministic; mock D1/R2 and external network calls.
+- 测试框架：Vitest。就近放置为 `*.test.ts`。
+- 保持确定性；对 D1/R2 与外部网络进行 mock（见 `docs/testing.md`）。
+- 运行：`pnpm test`；CI 使用 `pnpm test:ci`（dot 报告）。
 
 ## Commit & Pull Request Guidelines
-- Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`).
-- PRs must: describe the change, link issues, include screenshots/GIFs for UI, note DB/env changes. Ensure `pnpm lint` and `pnpm build` pass and include migrations in `src/drizzle` for schema updates.
+- 使用 Conventional Commits（如 `feat:`, `fix:`, `docs:`）。
+- PR 需：变更说明、关联 Issue、UI 变更附截图/GIF、注明 DB/环境变量改动。
+- 确保 `pnpm lint` 与 `pnpm build` 通过，数据库变更附 `src/drizzle` 迁移。
 
 ## Security & Configuration Tips
-- Local env: copy `.dev.vars.example` to `.dev.vars`. Never commit secrets.
-- Manage secrets with Wrangler: `pnpm run cf:secret BETTER_AUTH_SECRET`.
-- After adding bindings/secrets, run `pnpm cf-typegen` and keep `wrangler.toml` in sync.
-
+- 本地环境：复制 `.dev.vars.example` 为 `.dev.vars`；切勿提交机密。
+- 使用 Wrangler 管理 Secrets：`pnpm run cf:secret <NAME>`；添加绑定后运行 `pnpm cf-typegen`，同步 `wrangler.toml`。

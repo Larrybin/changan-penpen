@@ -2,7 +2,14 @@
 
 import { useOne } from "@refinedev/core";
 import { useParams } from "next/navigation";
+import { PageHeader } from "@/components/layout/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CouponForm } from "@/modules/admin/catalog/components/coupon-form";
+
+const COUPON_EDIT_SKELETON_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `coupon-edit-skeleton-${index}`,
+);
 
 export function CouponEditPage() {
     const params = useParams<{ id: string }>();
@@ -19,26 +26,44 @@ export function CouponEditPage() {
     });
 
     if (!isValidId) {
-        return <p className="text-sm text-muted-foreground">参数错误</p>;
+        return (
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader title="编辑优惠券" description="更新折扣信息。" />
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    参数错误。
+                </div>
+            </div>
+        );
     }
 
     const isLoading = query.isLoading;
     if (isLoading) {
-        return <p className="text-sm text-muted-foreground">加载中...</p>;
+        return (
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader title="编辑优惠券" description="更新折扣信息。" />
+                <div className="space-y-4">
+                    {COUPON_EDIT_SKELETON_KEYS.map((key) => (
+                        <Skeleton key={key} className="h-12 w-full" />
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     if (!result?.data) {
         return (
-            <p className="text-sm text-muted-foreground">未找到该优惠券。</p>
+            <div className="flex flex-col gap-[var(--grid-gap-section)]">
+                <PageHeader title="编辑优惠券" description="更新折扣信息。" />
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    未找到该优惠券。
+                </div>
+            </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-xl font-semibold">编辑优惠券</h1>
-                <p className="text-sm text-muted-foreground">更新折扣信息。</p>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader title="编辑优惠券" description="更新折扣信息。" />
             <CouponForm id={id} initialData={result.data} />
         </div>
     );

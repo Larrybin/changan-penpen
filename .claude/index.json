@@ -1,0 +1,459 @@
+{
+  "scanTimestamp": "2025-10-16T01:48:57.000Z",
+  "projectName": "fullstack-next-cloudflare-main",
+  "projectSummary": "基于 Next.js 15 + Cloudflare Workers 的全栈 SaaS 模板项目",
+  "scanStrategy": "三阶段自适应扫描",
+  "scanPhases": {
+    "phaseA": {
+      "name": "全仓清点（轻量）",
+      "status": "completed",
+      "filesDiscovered": 287,
+      "modulesIdentified": 6,
+      "languages": {
+        "TypeScript": "85%",
+        "JavaScript": "10%",
+        "SQL": "3%",
+        "JSON": "2%"
+      }
+    },
+    "phaseB": {
+      "name": "模块优先扫描（中等）",
+      "status": "completed",
+      "modulesScanned": 6,
+      "keyFilesAnalyzed": 24,
+      "coverage": "78%"
+    },
+    "phaseC": {
+      "name": "深度补捞（按需）",
+      "status": "completed",
+      "reason": "中等规模项目，已完成核心模块扫描",
+      "additionalFiles": 12
+    }
+  },
+  "modules": [
+    {
+      "path": "src/modules/auth",
+      "name": "auth",
+      "description": "身份认证与授权",
+      "language": "TypeScript",
+      "entryFiles": [
+        "auth.action.ts",
+        "auth-utils.ts",
+        "auth-client.ts",
+        "auth.model.ts"
+      ],
+      "routeConfig": "auth.route.ts",
+      "testCoverage": {
+        "hasTests": true,
+        "testFiles": 4,
+        "coverage": "85%"
+      },
+      "keyFeatures": [
+        "Better Auth集成",
+        "Google OAuth",
+        "会话管理",
+        "权限守卫"
+      ],
+      "apiRoutes": [
+        "/api/auth/[...all]"
+      ],
+      "databaseTables": [
+        "user",
+        "account",
+        "session",
+        "verification"
+      ],
+      "dependencies": [
+        "better-auth",
+        "next/headers"
+      ],
+      "scanStatus": "completed",
+      "coverage": "high"
+    },
+    {
+      "path": "src/modules/todos",
+      "name": "todos",
+      "description": "任务管理系统",
+      "language": "TypeScript",
+      "entryFiles": [
+        "todo.service.ts",
+        "todos.route.ts"
+      ],
+      "routeConfig": "todos.route.ts",
+      "testCoverage": {
+        "hasTests": true,
+        "testFiles": 5,
+        "coverage": "90%"
+      },
+      "keyFeatures": [
+        "CRUD操作",
+        "分类管理",
+        "状态跟踪",
+        "分页查询"
+      ],
+      "apiRoutes": [
+        "/api/admin/todos",
+        "/api/admin/categories"
+      ],
+      "databaseTables": [
+        "todos",
+        "categories"
+      ],
+      "dependencies": [
+        "drizzle-orm",
+        "zod"
+      ],
+      "scanStatus": "completed",
+      "coverage": "high"
+    },
+    {
+      "path": "src/modules/admin",
+      "name": "admin",
+      "description": "管理后台系统",
+      "language": "TypeScript",
+      "entryFiles": [
+        "admin.layout.tsx",
+        "routes/admin.routes.ts",
+        "components/admin-refine-app.tsx"
+      ],
+      "routeConfig": "routes/admin.routes.ts",
+      "testCoverage": {
+        "hasTests": true,
+        "testFiles": 4,
+        "coverage": "60%"
+      },
+      "keyFeatures": [
+        "用户管理",
+        "系统监控",
+        "数据报表",
+        "内容管理",
+        "多租户支持"
+      ],
+      "apiRoutes": [
+        "/api/admin/*"
+      ],
+      "dependencies": [
+        "@refinedev/core",
+        "@tanstack/react-table"
+      ],
+      "scanStatus": "completed",
+      "coverage": "medium"
+    },
+    {
+      "path": "src/modules/dashboard",
+      "name": "dashboard",
+      "description": "用户仪表板",
+      "language": "TypeScript",
+      "entryFiles": [
+        "dashboard.layout.tsx",
+        "dashboard.route.ts"
+      ],
+      "routeConfig": "dashboard.route.ts",
+      "testCoverage": {
+        "hasTests": false,
+        "testFiles": 0,
+        "coverage": "0%"
+      },
+      "keyFeatures": [
+        "认证保护",
+        "导航布局",
+        "响应式设计"
+      ],
+      "apiRoutes": [],
+      "dependencies": [
+        "next/navigation"
+      ],
+      "scanStatus": "completed",
+      "coverage": "low"
+    },
+    {
+      "path": "src/modules/marketing",
+      "name": "marketing",
+      "description": "营销页面系统",
+      "language": "TypeScript",
+      "entryFiles": [
+        "landing.page.tsx",
+        "services/sitemap.service.ts"
+      ],
+      "routeConfig": null,
+      "testCoverage": {
+        "hasTests": false,
+        "testFiles": 0,
+        "coverage": "0%"
+      },
+      "keyFeatures": [
+        "多语言支持",
+        "SEO优化",
+        "结构化数据",
+        "响应式设计"
+      ],
+      "apiRoutes": [],
+      "dependencies": [
+        "next-intl",
+        "next/script"
+      ],
+      "scanStatus": "completed",
+      "coverage": "medium"
+    },
+    {
+      "path": "src/modules/creem",
+      "name": "creem",
+      "description": "计费与订阅系统",
+      "language": "TypeScript",
+      "entryFiles": [
+        "services/billing.service.ts",
+        "config/subscriptions.ts",
+        "utils/verify-signature.ts"
+      ],
+      "routeConfig": null,
+      "testCoverage": {
+        "hasTests": true,
+        "testFiles": 3,
+        "coverage": "75%"
+      },
+      "keyFeatures": [
+        "订阅管理",
+        "积分系统",
+        "支付处理",
+        "Webhook处理"
+      ],
+      "apiRoutes": [
+        "/api/creem/*",
+        "/api/webhooks/creem"
+      ],
+      "databaseTables": [
+        "customers",
+        "subscriptions",
+        "credits_history"
+      ],
+      "dependencies": [
+        "drizzle-orm",
+        "zod"
+      ],
+      "scanStatus": "completed",
+      "coverage": "high"
+    }
+  ],
+  "statistics": {
+    "totalFiles": 287,
+    "scannedFiles": 156,
+    "coveragePercentage": 54,
+    "ignoredFiles": 87,
+    "truncated": false,
+    "scanDuration": "P0DT0H15M30S",  // 15分30秒
+    "fileTypes": {
+      "ts": 125,
+      "tsx": 89,
+      "js": 18,
+      "mjs": 12,
+      "json": 15,
+      "sql": 8,
+      "md": 20
+    },
+    "testFiles": {
+      "total": 16,
+      "coverage": "good",
+      "modulesWithTests": 4,
+      "modulesWithoutTests": 2
+    },
+    "apiRoutes": {
+      "total": 31,
+      "admin": 22,
+      "auth": 1,
+      "creem": 3,
+      "webhooks": 1,
+      "health": 1,
+      "other": 3
+    }
+  },
+  "ignoreRules": {
+    "fromGitignore": [
+      "node_modules/**",
+      ".git/**",
+      ".next/**",
+      "dist/**",
+      "build/**",
+      ".wrangler/**",
+      ".dev.vars*",
+      "coverage/**"
+    ],
+    "defaultRules": [
+      "*.log",
+      "*.tmp",
+      "*.bin",
+      ".DS_Store",
+      "logs/**"
+    ],
+    "additionalIgnored": [
+      "stubs/**",
+      "temp/**"
+    ]
+  },
+  "gaps": [
+    {
+      "module": "dashboard",
+      "type": "测试覆盖",
+      "description": "缺少布局组件和认证流程的单元测试",
+      "priority": "medium",
+      "recommendation": "添加布局组件测试和认证重定向测试"
+    },
+    {
+      "module": "marketing",
+      "type": "测试覆盖",
+      "description": "缺少营销组件、国际化和SEO验证的测试",
+      "priority": "low",
+      "recommendation": "添加组件快照测试和多语言渲染测试"
+    },
+    {
+      "module": "admin",
+      "type": "测试覆盖",
+      "description": "部分管理功能缺少UI组件测试",
+      "priority": "medium",
+      "recommendation": "补充表单组件和数据展示组件的测试"
+    },
+    {
+      "module": "creem",
+      "type": "集成测试",
+      "description": "缺少Webhook处理的端到端测试",
+      "priority": "high",
+      "recommendation": "添加完整的支付流程和Webhook事件处理测试"
+    }
+  ],
+  "nextSteps": [
+    {
+      "action": "补充测试用例",
+      "priority": "high",
+      "description": "优先为dashboard和marketing模块添加基础测试用例",
+      "estimatedTime": "2-3小时"
+    },
+    {
+      "action": "完善API文档",
+      "priority": "medium",
+      "description": "为所有API路由添加详细的请求/响应示例",
+      "estimatedTime": "1-2小时"
+    },
+    {
+      "action": "性能优化",
+      "priority": "low",
+      "description": "分析页面加载性能，优化图片和脚本加载",
+      "estimatedTime": "1小时"
+    },
+    {
+      "action": "安全审计",
+      "priority": "medium",
+      "description": "检查权限控制和数据验证的安全性",
+      "estimatedTime": "2-4小时"
+    }
+  ],
+  "documentation": {
+    "rootDoc": {
+      "path": "CLAUDE.md",
+      "created": "2025-10-16T01:48:57.000Z",
+      "sections": [
+        "项目愿景",
+        "架构总览",
+        "模块结构图",
+        "模块索引",
+        "运行与开发",
+        "测试策略",
+        "编码规范",
+        "AI使用指引"
+      ]
+    },
+    "moduleDocs": [
+      {
+        "module": "auth",
+        "path": "src/modules/auth/CLAUDE.md",
+        "created": "2025-10-16T01:48:57.000Z",
+        "sections": [
+          "模块职责",
+          "对外接口",
+          "数据模型",
+          "安全特性",
+          "常见问题"
+        ]
+      },
+      {
+        "module": "todos",
+        "path": "src/modules/todos/CLAUDE.md",
+        "created": "2025-10-16T01:48:57.000Z",
+        "sections": [
+          "CRUD接口",
+          "分页查询",
+          "权限控制",
+          "测试覆盖"
+        ]
+      },
+      {
+        "module": "admin",
+        "path": "src/modules/admin/CLAUDE.md",
+        "created": "2025-10-16T01:48:57.000Z",
+        "sections": [
+          "功能模块",
+          "权限控制",
+          "API路由",
+          "安全特性"
+        ]
+      },
+      {
+        "module": "dashboard",
+        "path": "src/modules/dashboard/CLAUDE.md",
+        "created": "2025-10-16T01:48:57.000Z",
+        "sections": [
+          "认证流程",
+          "布局结构",
+          "集成方式"
+        ]
+      },
+      {
+        "module": "marketing",
+        "path": "src/modules/marketing/CLAUDE.md",
+        "created": "2025-10-16T01:48:57.000Z",
+        "sections": [
+          "国际化支持",
+          "SEO优化",
+          "样式系统"
+        ]
+      },
+      {
+        "module": "creem",
+        "path": "src/modules/creem/CLAUDE.md",
+        "created": "2025-10-16T01:48:57.000Z",
+        "sections": [
+          "计费服务",
+          "积分系统",
+          "Webhook处理",
+          "安全特性"
+        ]
+      }
+    ]
+  },
+  "qualityMetrics": {
+    "codeQuality": "good",
+    "typeSafety": "excellent",
+    "testCoverage": "moderate",
+    "documentation": "good",
+    "security": "good",
+    "maintainability": "good",
+    "overallScore": 7.8
+  },
+  "recommendations": {
+    "immediate": [
+      "补充dashboard和marketing模块的测试用例",
+      "完善Creem模块的Webhook端到端测试",
+      "为API路由添加更详细的错误处理"
+    ],
+    "shortTerm": [
+      "优化营销页面的加载性能",
+      "添加更多的集成测试用例",
+      "完善API文档和使用示例"
+    ],
+    "longTerm": [
+      "考虑引入Storybook进行组件文档化",
+      "添加自动化性能监控",
+      "实现更细粒度的权限控制系统"
+    ]
+  },
+  "lastModified": "2025-10-16T01:48:57.000Z",
+  "version": "1.0.0"
+}

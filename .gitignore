@@ -70,3 +70,7 @@ TEMP_*
 
 # Ignore nested template repo copy (local only)
 cloudflare-workers-nextjs-saas-template-main/
+
+# Local agent tooling artifacts
+.claude/
+nul

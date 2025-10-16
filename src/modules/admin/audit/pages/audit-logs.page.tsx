@@ -1,7 +1,18 @@
 "use client";
 
 import { useList } from "@refinedev/core";
+import { PageHeader } from "@/components/layout/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AuditLogRecord } from "@/modules/admin/types/resource.types";
+
+const AUDIT_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `audit-log-skeleton-row-${index}`,
+);
+const AUDIT_SKELETON_CELL_KEYS = Array.from(
+    { length: 5 },
+    (_, index) => `audit-log-skeleton-cell-${index}`,
+);
 
 const formatDateTime = (value?: string | null) =>
     typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
@@ -30,13 +41,11 @@ export function AuditLogsPage() {
     const logs = result?.data ?? [];
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-xl font-semibold">操作日志</h1>
-                <p className="text-sm text-muted-foreground">
-                    追踪后台关键操作，满足审计需求。
-                </p>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="操作日志"
+                description="追踪后台关键操作，满足审计需求。"
+            />
             <div className="overflow-x-auto rounded-md border">
                 <table className="min-w-full text-sm">
                     <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
@@ -49,16 +58,19 @@ export function AuditLogsPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {isLoading && (
-                            <tr>
-                                <td
-                                    colSpan={5}
-                                    className="px-4 py-6 text-center text-muted-foreground"
-                                >
-                                    加载中...
-                                </td>
-                            </tr>
-                        )}
+                        {isLoading &&
+                            AUDIT_SKELETON_ROW_KEYS.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {AUDIT_SKELETON_CELL_KEYS.map((cellKey) => (
+                                        <td
+                                            key={`${rowKey}-${cellKey}`}
+                                            className="px-4 py-3"
+                                        >
+                                            <Skeleton className="h-5 w-full" />
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
                         {!isLoading && logs.length === 0 && (
                             <tr>
                                 <td

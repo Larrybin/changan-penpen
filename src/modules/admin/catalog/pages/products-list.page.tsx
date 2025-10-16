@@ -2,9 +2,20 @@
 
 import { useDelete, useList } from "@refinedev/core";
 import Link from "next/link";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ProductRecord } from "@/modules/admin/types/resource.types";
+
+const PRODUCT_LIST_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `product-list-row-${index}`,
+);
+const PRODUCT_LIST_SKELETON_CELL_KEYS = Array.from(
+    { length: 5 },
+    (_, index) => `product-list-cell-${index}`,
+);
 
 const formatCurrency = (
     amountCents?: number | null,
@@ -29,20 +40,18 @@ export function ProductsListPage() {
     const products = result?.data ?? [];
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-semibold">商品管理</h1>
-                    <p className="text-sm text-muted-foreground">
-                        维护 SaaS 套餐或一次性商品。
-                    </p>
-                </div>
-                <Button asChild>
-                    <Link href={`${adminRoutes.catalog.products}/create`}>
-                        新建商品
-                    </Link>
-                </Button>
-            </div>
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="商品管理"
+                description="维护 SaaS 套餐或一次性商品。"
+                actions={
+                    <Button asChild>
+                        <Link href={`${adminRoutes.catalog.products}/create`}>
+                            新建商品
+                        </Link>
+                    </Button>
+                }
+            />
             <div className="overflow-x-auto rounded-md border">
                 <table className="min-w-full text-sm">
                     <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
@@ -55,16 +64,21 @@ export function ProductsListPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {isLoading && (
-                            <tr>
-                                <td
-                                    colSpan={5}
-                                    className="px-4 py-6 text-center text-muted-foreground"
-                                >
-                                    加载中...
-                                </td>
-                            </tr>
-                        )}
+                        {isLoading &&
+                            PRODUCT_LIST_SKELETON_ROW_KEYS.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {PRODUCT_LIST_SKELETON_CELL_KEYS.map(
+                                        (cellKey) => (
+                                            <td
+                                                key={`${rowKey}-${cellKey}`}
+                                                className="px-4 py-3"
+                                            >
+                                                <Skeleton className="h-5 w-full" />
+                                            </td>
+                                        ),
+                                    )}
+                                </tr>
+                            ))}
                         {!isLoading && products.length === 0 && (
                             <tr>
                                 <td

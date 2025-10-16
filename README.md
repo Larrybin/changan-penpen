@@ -22,7 +22,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - Edge-native: OpenNext build, deploy to Cloudflare Workers (100+ PoPs)
 - Data & storage: Cloudflare D1 + R2 via Drizzle ORM
 - CI/CD suite: Biome, TypeScript checks, Vitest tests
-- Auto-merge guardrails: Dependabot auto-merge with local `pnpm push` self-heal
+- Auto-merge guardrails: Dependabot auto-merge with local `pnpm check:all` gate
 - Health checks: `/api/health` with fast/strict modes
 - Observability: Workers Analytics 与结构化日志
 - i18n & AI translation: built-in locales and scripts (Gemini/OpenAI)
@@ -50,6 +50,44 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - Data access: `src/db` + `src/drizzle` for schema and migrations
 - Shared platform: `src/lib` for Cloudflare bindings, logging, cache, SEO, etc.
 - More in `docs/architecture-overview.md`
+
+### API Architecture
+The application includes 31+ API endpoints organized into 4 main categories:
+
+#### Authentication APIs
+- `/api/auth/[...all]` - Better Auth integration (GET, POST)
+
+#### Core APIs
+- `/api/health` - Health monitoring with fast/strict modes
+- `/api/summarize` - Content summarization service
+
+#### Admin APIs (22 endpoints)
+- `/api/admin/dashboard` - Dashboard analytics
+- `/api/admin/users` & `/api/admin/users/[id]` - User management
+- `/api/admin/todos` & `/api/admin/todos/[id]` - Todo administration
+- `/api/admin/products` & `/api/admin/products/[id]` - Product catalog
+- `/api/admin/orders` & `/api/admin/orders/[id]` - Order management
+- `/api/admin/tenants` & `/api/admin/tenants/[id]` - Tenant management
+- `/api/admin/credits-history` - Credits history
+- `/api/admin/reports` - System reports
+- `/api/admin/audit-logs` - Audit logs
+- `/api/admin/site-settings` - Site configuration
+- `/api/admin/categories` - Category management
+- `/api/admin/content-pages` & `/api/admin/content-pages/[id]` - Content pages
+- `/api/admin/coupons` & `/api/admin/coupons/[id]` - Coupon management
+- `/api/admin/session` - Admin session management
+- `/api/admin/usage` - Usage analytics
+
+#### Billing & Payment APIs
+- `/api/creem/create-checkout` - Payment checkout creation
+- `/api/creem/customer-portal` - Customer billing portal
+- `/api/webhooks/creem` - Payment webhooks (POST)
+
+#### Credits APIs
+- `/api/credits/balance` - User credit balance
+- `/api/credits/history` - Credit transaction history
+
+All APIs follow RESTful conventions and include proper authentication, error handling, and TypeScript safety.
 
 ---
 
@@ -82,9 +120,6 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - `.github/workflows/ci.yml`: Biome, TypeScript, Vitest
 - `.github/workflows/deploy.yml`: production deploy incl. D1 migrations and health checks
 
-- `pnpm push`: auto-fix + typegen + typecheck + docs/link checks + final lint + rebase & push. Generates a fully automated commit message (subject + multi-line bullets) from the staged diff in the style of production commits (e.g., harden webhooks/fetch parsing, add CF env fallbacks, enforce R2 attachment, clean headers()/cookies()).
-- Note: `scripts/push-fix2.mjs` is a local helper and is ignored by Git; it is not distributed with the repository and CI/CD does not depend on it.
-
 See `docs/ci-cd.md` and `docs/workflows/*.md` for details.
 
 ### Supply Chain Notes
@@ -109,9 +144,8 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_AUTOMATION START -->
 ### Automation & DevOps (auto)
-- Local push integrates docs sync/autogen, lint/typecheck/tests, optional Next build, and rebase & push.
-- No extra commits: changes are amended into the last commit. Set `ALLOW_FORCE_PUSH=1` to handle non-fast-forward push after amend.
-- See more: docs/local-dev.md, docs/ci-cd.md, docs/docs-maintenance.md
+- Local workflow: run `pnpm check:all`, `pnpm typecheck`, `pnpm lint`, `pnpm test` before推送，确保质量门槛达标。
+- 详情参见 docs/local-dev.md、docs/ci-cd.md、docs/docs-maintenance.md。
 
 #### Common Scripts Snapshot
 | Script | Command |
@@ -120,7 +154,6 @@ MIT © 2025 Muhammad Arifin
 | `dev:cf` | `npx @opennextjs/cloudflare build && wrangler dev` |
 | `build` | `next build` |
 | `start` | `next start` |
-| `push` | `node -e "const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}" && node scripts/push-fix2.mjs` |
 | `check:all` | `node scripts/check-all.mjs` |
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
 | `lint` | `npx biome format --write` |
@@ -154,7 +187,6 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_QUALITY_GATES START -->
 ### Quality Gates (auto)
-- Local push runs: docs sync/autogen, Biome write+final check, TypeScript, docs/links checks, unit tests, optional Next build.
-- Thresholds and policies: see docs/quality-gates.md (coverage, fail-fast, skip toggles).
-- No extra commits: changes are amended into the last commit (ALLOW_FORCE_PUSH=1 for non-fast-forward).
+- 建议本地先执行 `pnpm check:all`、`pnpm lint`、`pnpm typecheck`、`pnpm test`，再进行提交或推送。
+- 门槛与策略详见 docs/quality-gates.md（覆盖率、fail-fast、跳过开关等）。
 <!-- DOCSYNC:README_QUALITY_GATES END -->

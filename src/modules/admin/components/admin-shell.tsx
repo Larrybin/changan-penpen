@@ -5,6 +5,7 @@ import { CheckSquare, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo } from "react";
+import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { adminAuthProvider } from "@/modules/admin/providers/auth-provider";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
@@ -59,20 +60,20 @@ export function AdminShell({ children, user }: AdminShellProps) {
 
     return (
         <div className="flex min-h-screen bg-muted/40">
-            <aside className="flex w-64 flex-col border-r border-border bg-background">
-                <div className="flex items-center space-x-2 px-6 py-5 border-b border-border">
+            <aside className="flex w-[var(--layout-sidebar-width)] flex-col border-r border-border bg-background">
+                <div className="flex items-center gap-2 border-b border-border px-6 py-5">
                     <CheckSquare className="h-5 w-5 text-primary" />
                     <span className="text-lg font-semibold">站长仪表盘</span>
                 </div>
-                <div className="px-6 py-4 border-b border-border">
+                <div className="border-b border-border px-6 py-4">
                     <p className="text-sm text-muted-foreground">
                         {user.email}
                     </p>
                 </div>
-                <nav className="px-3 py-4 space-y-4">
+                <nav className="flex flex-1 flex-col gap-4 px-3 py-4">
                     {groups.map(({ group, entries }) => (
-                        <div key={group} className="space-y-1">
-                            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div key={group} className="space-y-1.5">
+                            <p className="px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                 {group}
                             </p>
                             {entries.map((item) => {
@@ -92,7 +93,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
                         </div>
                     ))}
                 </nav>
-                <div className="px-6 py-4 mt-auto">
+                <div className="mt-auto px-6 py-4">
                     <Button
                         variant="ghost"
                         className="w-full justify-start text-sm"
@@ -103,7 +104,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
                 </div>
             </aside>
             <main className="flex-1 overflow-y-auto">
-                <div className="mx-auto max-w-6xl px-8 py-10">{children}</div>
+                <PageContainer fullHeight>{children}</PageContainer>
             </main>
         </div>
     );

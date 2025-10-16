@@ -1,0 +1,119 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "description": "基础环境配置",
+    "last_updated": "2025-10-16"
+  },
+  "database": {
+    "type": "postgresql",
+    "host": "localhost",
+    "port": 5432,
+    "database_name": "next_cf_app",
+    "ssl_enabled": false,
+    "pool_size": 5,
+    "max_connections": 20,
+    "timeout": "15s",
+    "retry_attempts": 3,
+    "retry_delay": "1s",
+    "migrations": {
+      "auto_run": true,
+      "backup_before_migrate": true
+    }
+  },
+  "security": {
+    "encryption_algorithm": "AES-128-GCM",
+    "session_timeout": "15m",
+    "secret_rotation": "60d",
+    "password_policy": {
+      "min_length": 8,
+      "require_special_chars": true,
+      "require_numbers": true
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 100,
+      "burst_size": 20
+    },
+    "cors": {
+      "enabled": true,
+      "allowed_origins": ["http://localhost:3000"],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE"],
+      "allowed_headers": ["Content-Type", "Authorization"]
+    },
+    "authentication": {
+      "providers": ["google"],
+      "session_name": "next-cf-session",
+      "cookie_secure": false
+    }
+  },
+  "performance": {
+    "cache_ttl": "30m",
+    "compression_enabled": true,
+    "cdn_enabled": false,
+    "monitoring_level": "basic",
+    "response_timeout": "30s",
+    "image_optimization": {
+      "enabled": true,
+      "quality": 80,
+      "format": "auto"
+    },
+    "static_assets": {
+      "cache_headers": {
+        "max_age": "1d"
+      }
+    }
+  },
+  "features": {
+    "feature_flags": {
+      "new_ui": false,
+      "advanced_analytics": false,
+      "beta_features": false,
+      "debug_mode": false
+    },
+    "experiments": {
+      "enabled": false,
+      "traffic_split": {
+        "control": 50,
+        "variant": 50
+      }
+    }
+  },
+  "services": {
+    "external_apis": {
+      "timeout": "30s",
+      "retry_attempts": 3,
+      "circuit_breaker": {
+        "enabled": true,
+        "failure_threshold": 5,
+        "recovery_timeout": "60s"
+      }
+    },
+    "notifications": {
+      "enabled": false,
+      "channels": ["email"],
+      "queue_size": 1000
+    },
+    "analytics": {
+      "enabled": false,
+      "provider": "internal",
+      "sampling_rate": 0.1
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputs": ["console"],
+    "retention": "7d",
+    "structured_logging": {
+      "enabled": true,
+      "include_request_id": true,
+      "include_user_id": true
+    }
+  },
+  "backup": {
+    "enabled": false,
+    "schedule": "0 2 * * *",
+    "retention": "30d",
+    "encryption": true
+  }
+}

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
-import { Toaster } from "react-hot-toast";
 
 import { InjectedHtml } from "@/components/seo/custom-html";
+import { Toast } from "@/components/ui/toast";
 import type { AppLocale } from "@/i18n/config";
 import { sanitizeCustomHtml } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
@@ -30,28 +30,7 @@ export default async function RootLayout({
                 <NextIntlClientProvider messages={messages}>
                     <main>{children}</main>
                 </NextIntlClientProvider>
-                <Toaster
-                    position="bottom-right"
-                    toastOptions={{
-                        className:
-                            "border rounded-md shadow-sm text-sm bg-[var(--color-info-subtle)] text-[var(--color-info-foreground)] border-[var(--color-info-border)]",
-                        duration: 3000,
-                        success: {
-                            className:
-                                "border rounded-md shadow-sm text-sm bg-[var(--color-success-subtle)] text-[var(--color-success-foreground)] border-[var(--color-success-border)]",
-                            duration: 2500,
-                        },
-                        error: {
-                            className:
-                                "border rounded-md shadow-sm text-sm bg-[var(--color-danger-subtle)] text-red-700 border-[var(--color-danger-border)]",
-                            duration: 3500,
-                        },
-                        loading: {
-                            className:
-                                "border rounded-md shadow-sm text-sm bg-[var(--color-info-subtle)] text-[var(--color-info-foreground)] border-[var(--color-info-border)]",
-                        },
-                    }}
-                />
+                <Toast />
                 <InjectedHtml nodes={footerNodes} />
             </body>
         </html>
