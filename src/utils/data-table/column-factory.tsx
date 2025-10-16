@@ -247,7 +247,7 @@ export const predefinedColumns = {
             cell: ({ row }) => formatters.id(row.getValue("id")),
             meta: { label },
             enableSorting: true,
-        } satisfies ColumnDef<T, unknown>),
+        }) satisfies ColumnDef<T, unknown>,
 
     // 邮箱列
     email: <T = RecordLike>(label = "邮箱"): ColumnDef<T, unknown> =>
@@ -264,7 +264,7 @@ export const predefinedColumns = {
             },
             meta: { label },
             enableSorting: true,
-        } satisfies ColumnDef<T, unknown>),
+        }) satisfies ColumnDef<T, unknown>,
 
     // 租户列
     tenant: <T = RecordLike>(label = "租户"): ColumnDef<T, unknown> =>
@@ -281,7 +281,7 @@ export const predefinedColumns = {
             },
             meta: { label },
             enableSorting: true,
-        } satisfies ColumnDef<T, unknown>),
+        }) satisfies ColumnDef<T, unknown>,
 
     // 金额列
     amount: <T = RecordLike>(
@@ -351,7 +351,7 @@ export const predefinedColumns = {
             ),
             meta: { label },
             enableSorting: true,
-        } satisfies ColumnDef<T, unknown>),
+        }) satisfies ColumnDef<T, unknown>,
 
     // 更新时间列
     updatedAt: <T = RecordLike>(label = "更新时间"): ColumnDef<T, unknown> =>
@@ -365,7 +365,7 @@ export const predefinedColumns = {
             ),
             meta: { label },
             enableSorting: true,
-        } satisfies ColumnDef<T, unknown>),
+        }) satisfies ColumnDef<T, unknown>,
 
     // 类型列
     type: <T = RecordLike>(

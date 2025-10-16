@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo } from "react";
 import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,8 @@ export function OrdersListPageOptimized() {
                         <Input
                             placeholder="按租户 ID 过滤"
                             value={
-                                typeof tableData.filterValues.tenantId === "string"
+                                typeof tableData.filterValues.tenantId ===
+                                "string"
                                     ? tableData.filterValues.tenantId
                                     : ""
                             }

@@ -134,9 +134,7 @@ export function AdvancedSearch({
                             const newValue = e.target.value;
                             handleFieldChange(
                                 field.key,
-                                newValue === ""
-                                    ? null
-                                    : Number(newValue),
+                                newValue === "" ? null : Number(newValue),
                             );
                         }}
                         placeholder={field.placeholder}

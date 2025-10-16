@@ -1,19 +1,43 @@
 import type * as React from "react";
 
+type DropdownMenuBaseProps = React.HTMLAttributes<HTMLElement> & {
+    children?: React.ReactNode;
+    asChild?: boolean;
+};
+
+type DropdownMenuComponent<P = DropdownMenuBaseProps> =
+    React.ForwardRefExoticComponent<
+        React.PropsWithoutRef<P> & React.RefAttributes<unknown>
+    >;
+
 declare module "@radix-ui/react-dropdown-menu" {
-    export const Root: React.ForwardRefExoticComponent<any>;
-    export const Trigger: React.ForwardRefExoticComponent<any>;
-    export const Group: React.ForwardRefExoticComponent<any>;
-    export const Portal: React.ForwardRefExoticComponent<any>;
-    export const Sub: React.ForwardRefExoticComponent<any>;
-    export const RadioGroup: React.ForwardRefExoticComponent<any>;
-    export const SubTrigger: React.ForwardRefExoticComponent<any>;
-    export const SubContent: React.ForwardRefExoticComponent<any>;
-    export const Content: React.ForwardRefExoticComponent<any>;
-    export const Item: React.ForwardRefExoticComponent<any>;
-    export const CheckboxItem: React.ForwardRefExoticComponent<any>;
-    export const ItemIndicator: React.ForwardRefExoticComponent<any>;
-    export const RadioItem: React.ForwardRefExoticComponent<any>;
-    export const Label: React.ForwardRefExoticComponent<any>;
-    export const Separator: React.ForwardRefExoticComponent<any>;
+    export const Root: DropdownMenuComponent;
+    export const Trigger: DropdownMenuComponent;
+    export const Group: DropdownMenuComponent;
+    export const Portal: DropdownMenuComponent;
+    export const Sub: DropdownMenuComponent;
+    export const RadioGroup: DropdownMenuComponent;
+    export const SubTrigger: DropdownMenuComponent<
+        DropdownMenuBaseProps & { inset?: boolean }
+    >;
+    export const SubContent: DropdownMenuComponent;
+    export const Content: DropdownMenuComponent<
+        DropdownMenuBaseProps & {
+            sideOffset?: number;
+            align?: "start" | "center" | "end" | "left" | "right";
+        }
+    >;
+    export const Item: DropdownMenuComponent;
+    export const CheckboxItem: DropdownMenuComponent<
+        DropdownMenuBaseProps & {
+            checked?: boolean | "indeterminate";
+            onCheckedChange?: (checked: boolean | "indeterminate") => void;
+        }
+    >;
+    export const ItemIndicator: DropdownMenuComponent;
+    export const RadioItem: DropdownMenuComponent;
+    export const Label: DropdownMenuComponent<
+        DropdownMenuBaseProps & { inset?: boolean }
+    >;
+    export const Separator: DropdownMenuComponent;
 }

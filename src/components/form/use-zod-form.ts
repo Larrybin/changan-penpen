@@ -1,4 +1,3 @@
-
 /**
  * useZodForm - 简化 Zod schema 集成的表单 Hook
  *
@@ -40,11 +39,13 @@ type ZodFormCompatibleSchema = z.ZodTypeAny & {
 
 type EnsureFieldValues<T> = T extends FieldValues ? T : never;
 
+type SchemaRawInput<TSchema extends z.ZodTypeAny> = z.input<TSchema>;
+type SchemaRawOutput<TSchema extends z.ZodTypeAny> = z.output<TSchema>;
 type SchemaInput<TSchema extends ZodFormCompatibleSchema> = EnsureFieldValues<
-    z.input<TSchema>
+    SchemaRawInput<TSchema>
 >;
 type SchemaOutput<TSchema extends ZodFormCompatibleSchema> = EnsureFieldValues<
-    z.output<TSchema>
+    SchemaRawOutput<TSchema>
 >;
 
 export interface UseZodFormOptions<
@@ -105,6 +106,7 @@ export function useZodForm<
     // zodResolver preserves the schema's input/output types, but the helper's
     // overloads do not accept our narrowed schema constraint. Coerce once so
     // we can reuse the derived FieldValues types with React Hook Form.
+    // biome-ignore lint/suspicious/noExplicitAny: Resolver overloads require the concrete schema type while our generic constraint already restricts inputs/outputs to FieldValues.
     const resolver = zodResolver(schema as any) as unknown as Resolver<
         TInput,
         unknown,

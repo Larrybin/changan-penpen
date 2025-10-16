@@ -1,16 +1,16 @@
 "use client";
 
 import {
-    type Cell as TableCellType,
-    type Column as TableColumn,
     type ColumnDef,
-    type Header as TableHeaderType,
-    type HeaderGroup as TableHeaderGroupType,
-    type Row as TableRowType,
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
     type SortingState,
+    type Cell as TableCellType,
+    type Column as TableColumn,
+    type HeaderGroup as TableHeaderGroupType,
+    type Header as TableHeaderType,
+    type Row as TableRowType,
     useReactTable,
     type VisibilityState,
 } from "@tanstack/react-table";
@@ -175,7 +175,9 @@ export function DataTable<TData, TValue>({
                     <DropdownMenuContent align="end" className="max-h-72">
                         {table
                             .getAllColumns()
-                            .filter((column: TableColumn<TData>) => column.getCanHide())
+                            .filter((column: TableColumn<TData>) =>
+                                column.getCanHide(),
+                            )
                             .map((column: TableColumn<TData>) => {
                                 const columnMeta = column.columnDef.meta as
                                     | ColumnLabelMeta
@@ -208,33 +210,37 @@ export function DataTable<TData, TValue>({
                         {table
                             .getHeaderGroups()
                             .map((headerGroup: TableHeaderGroupType<TData>) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header: TableHeaderType<TData>) => (
-                                    <TableHead
-                                        key={header.id}
-                                        className="bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                                    >
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef
-                                                      .header,
-                                                  header.getContext(),
-                                              )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map(
+                                        (header: TableHeaderType<TData>) => (
+                                            <TableHead
+                                                key={header.id}
+                                                className="bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                                            >
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                          header.column
+                                                              .columnDef.header,
+                                                          header.getContext(),
+                                                      )}
+                                            </TableHead>
+                                        ),
+                                    )}
+                                </TableRow>
+                            ))}
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
                             skeletonRowIds.map((rowId) => (
                                 <TableRow key={rowId}>
-                                    {visibleColumns.map((column: TableColumn<TData>) => (
-                                        <TableCell key={column.id}>
-                                            <Skeleton className="h-6 w-full" />
-                                        </TableCell>
-                                    ))}
+                                    {visibleColumns.map(
+                                        (column: TableColumn<TData>) => (
+                                            <TableCell key={column.id}>
+                                                <Skeleton className="h-6 w-full" />
+                                            </TableCell>
+                                        ),
+                                    )}
                                 </TableRow>
                             ))
                         ) : displayEmptyState ? (
@@ -247,57 +253,80 @@ export function DataTable<TData, TValue>({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            table.getRowModel().rows.map((row: TableRowType<TData>) => {
-                                const href = getRowHref?.(row.original);
+                            table
+                                .getRowModel()
+                                .rows.map((row: TableRowType<TData>) => {
+                                    const href = getRowHref?.(row.original);
 
-                                return (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={
-                                            row.getIsSelected()
-                                                ? "selected"
-                                                : undefined
-                                        }
-                                        className={href ? "cursor-pointer" : ""}
-                                    >
-                                        {row
-                                            .getVisibleCells()
-                                            .map((cell: TableCellType<TData>) => {
-                                            const columnId = cell.column.id;
-                                            const isExcluded =
-                                                excludeClickableColumns.includes(
-                                                    columnId,
-                                                );
-                                            const cellContent = flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext(),
-                                            );
-
-                                            if (href && !isExcluded) {
-                                                return (
-                                                    <TableCell
-                                                        key={cell.id}
-                                                        className="p-0"
-                                                    >
-                                                        <Link
-                                                            className="block px-4 py-3"
-                                                            href={href}
-                                                        >
-                                                            {cellContent}
-                                                        </Link>
-                                                    </TableCell>
-                                                );
+                                    return (
+                                        <TableRow
+                                            key={row.id}
+                                            data-state={
+                                                row.getIsSelected()
+                                                    ? "selected"
+                                                    : undefined
                                             }
+                                            className={
+                                                href ? "cursor-pointer" : ""
+                                            }
+                                        >
+                                            {row
+                                                .getVisibleCells()
+                                                .map(
+                                                    (
+                                                        cell: TableCellType<TData>,
+                                                    ) => {
+                                                        const columnId =
+                                                            cell.column.id;
+                                                        const isExcluded =
+                                                            excludeClickableColumns.includes(
+                                                                columnId,
+                                                            );
+                                                        const cellContent =
+                                                            flexRender(
+                                                                cell.column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            );
 
-                                            return (
-                                                <TableCell key={cell.id}>
-                                                    {cellContent}
-                                                </TableCell>
-                                            );
-                                        })}
-                                    </TableRow>
-                                );
-                            })
+                                                        if (
+                                                            href &&
+                                                            !isExcluded
+                                                        ) {
+                                                            return (
+                                                                <TableCell
+                                                                    key={
+                                                                        cell.id
+                                                                    }
+                                                                    className="p-0"
+                                                                >
+                                                                    <Link
+                                                                        className="block px-4 py-3"
+                                                                        href={
+                                                                            href
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            cellContent
+                                                                        }
+                                                                    </Link>
+                                                                </TableCell>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <TableCell
+                                                                key={cell.id}
+                                                            >
+                                                                {cellContent}
+                                                            </TableCell>
+                                                        );
+                                                    },
+                                                )}
+                                        </TableRow>
+                                    );
+                                })
                         )}
                     </TableBody>
                 </Table>

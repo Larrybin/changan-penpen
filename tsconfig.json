@@ -23,9 +23,7 @@
             "@refinedev/core": ["./src/lib/stubs/refine-core"],
             "@standard-schema/utils": ["./stubs/standard-schema-utils"],
             "@tanstack/react-table": ["./types/tanstack-react-table"],
-            "@radix-ui/react-dropdown-menu": [
-                "./types/radix-dropdown-menu"
-            ],
+            "@radix-ui/react-dropdown-menu": ["./types/radix-dropdown-menu"],
             "sonner": ["./types/sonner"],
             "nuqs": ["./types/nuqs"],
             "date-fns": ["./types/date-fns"]

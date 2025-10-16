@@ -9,7 +9,9 @@ declare module "@tanstack/react-table" {
 
     export interface ColumnDef<TData = RowData, TValue = unknown> {
         id?: string;
-        header?: React.ReactNode | ((ctx: HeaderContext<TData, TValue>) => React.ReactNode);
+        header?:
+            | React.ReactNode
+            | ((ctx: HeaderContext<TData, TValue>) => React.ReactNode);
         cell?: (ctx: CellContext<TData, TValue>) => React.ReactNode;
         accessorKey?: keyof TData | string;
         meta?: Record<string, unknown>;
@@ -79,12 +81,19 @@ declare module "@tanstack/react-table" {
         resetSorting(): void;
     }
 
-    export function flexRender(component: unknown, props: unknown): React.ReactNode;
-    export function getCoreRowModel<TData = RowData>(): () => { rows: Row<TData>[] };
-    export function getSortedRowModel<TData = RowData>(): () => { rows: Row<TData>[] };
-    export function useReactTable<TData = RowData>(options: {
+    export function flexRender(
+        component: unknown,
+        props: unknown,
+    ): React.ReactNode;
+    export function getCoreRowModel<TData = RowData>(): () => {
+        rows: Row<TData>[];
+    };
+    export function getSortedRowModel<TData = RowData>(): () => {
+        rows: Row<TData>[];
+    };
+    export function useReactTable<TData = RowData, TValue = unknown>(options: {
         data: TData[];
-        columns: ColumnDef<TData, any>[];
+        columns: ColumnDef<TData, TValue>[];
         pageCount?: number;
         manualPagination?: boolean;
         state?: {
