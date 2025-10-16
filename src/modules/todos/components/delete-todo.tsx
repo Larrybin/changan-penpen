@@ -30,13 +30,7 @@ export function DeleteTodo({ todoId }: DeleteTodoProps) {
                 const result = await deleteTodoAction(todoId);
 
                 if (!result.success) {
-                    const message =
-                        typeof result.error === "object" && result.error
-                            ? String(result.error.message ?? "")
-                            : typeof result.error === "string"
-                              ? result.error
-                              : "";
-                    throw new Error(message || "Failed to delete todo");
+                    throw new Error(result.error || "Failed to delete todo");
                 }
 
                 // Close dialog - no need to refresh since server action handles revalidation

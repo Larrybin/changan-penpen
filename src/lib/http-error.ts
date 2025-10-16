@@ -81,9 +81,12 @@ export function createApiErrorResponse<Details = ApiErrorDetails>(
     headers.set("X-Trace-Id", payload.traceId);
 
     try {
-        const requestHeaders = nextHeaders();
+        const requestHeaders = nextHeaders() as unknown as {
+            get(name: string): string | null;
+        };
         const requestId =
-            requestHeaders.get("cf-ray") ?? requestHeaders.get("x-request-id");
+            requestHeaders.get?.("cf-ray") ??
+            requestHeaders.get?.("x-request-id");
         if (requestId && !headers.has("X-Request-Id")) {
             headers.set("X-Request-Id", requestId);
         }
@@ -98,7 +101,9 @@ export function createApiErrorResponse<Details = ApiErrorDetails>(
 }
 
 export interface ApiErrorInit<Details = ApiErrorDetails>
-    extends CreateApiErrorResponseOptions<Details> {}
+    extends Omit<CreateApiErrorResponseOptions<Details>, "message"> {
+    message?: string;
+}
 
 export class ApiError<Details = ApiErrorDetails> extends Error {
     public readonly status: number;
@@ -107,7 +112,7 @@ export class ApiError<Details = ApiErrorDetails> extends Error {
     public readonly traceId?: string;
 
     constructor(message: string, init: ApiErrorInit<Details>) {
-        super(message);
+        super(init.message ?? message);
         this.name = "ApiError";
         this.status = init.status ?? 500;
         this.code = init.code;
