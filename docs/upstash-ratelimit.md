@@ -43,8 +43,8 @@ if (!rateLimit.ok) return rateLimit.response;
 ```
 
 ## Endpoint Examples
-- **Checkout API** (`src/app/api/creem/create-checkout/route.ts`): 3 sliding-window requests every 10 seconds per IP with analytics enabled.
-- **Webhook API** (`src/app/api/webhooks/creem/route.ts`): 60 fixed-window hits per minute. Using the signature as a unique token is optional; IP-based throttling is enabled by default.
+- **Checkout API** (`src/app/api/v1/creem/create-checkout/route.ts`): 3 sliding-window requests every 10 seconds per IP with analytics enabled.
+- **Webhook API** (`src/app/api/v1/webhooks/creem/route.ts`): 60 fixed-window hits per minute. Using the signature as a unique token is optional; IP-based throttling is enabled by default.
 - **Login or OTP flows**: call `applyRateLimit` with `upstash: { strategy: { type: "tokenBucket", refillRate: 5, interval: "60 s", capacity: 10 }, prefix: "@ratelimit/login" }` to smooth bursts while keeping limits strict.
 
 ## Local Verification

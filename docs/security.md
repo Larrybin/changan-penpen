@@ -16,7 +16,7 @@
 - Cookie security falls back to HTTPS detection via `X-Forwarded-Proto` / `CF-Visitor`.
 
 ## Operational Endpoints
-- `/api/health` exposes only boolean summaries unless the caller presents `HEALTH_ACCESS_TOKEN` via `X-Health-Token` or `Authorization: Bearer`; share the token exclusively with trusted monitors.
+- `/api/v1/health` exposes only boolean summaries unless the caller presents `HEALTH_ACCESS_TOKEN` via `X-Health-Token` or `Authorization: Bearer`; share the token exclusively with trusted monitors.
 
 ## Dependencies
 - Pin Actions to commit SHAs in workflows.
@@ -33,8 +33,8 @@
   - Node.js fallback: `require("node:crypto").randomBytes()`.
 - Adopted in these places:
   - Backoff jitter for upstream retries: `secureRandomInt()` replaces `Math.random()`
-    - `src/app/api/creem/create-checkout/route.ts`
-    - `src/app/api/creem/customer-portal/route.ts`
+    - `src/app/api/v1/creem/create-checkout/route.ts`
+    - `src/app/api/v1/creem/customer-portal/route.ts`
   - Object key/id generation: `createRandomId()` prefers `crypto.randomUUID()`; falls back to `getRandomValues` then `randomBytes`
     - `src/lib/r2.ts`
 - One‑time usage policy: generated values are used once and are not reused across requests.

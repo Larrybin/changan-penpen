@@ -6,6 +6,7 @@ type Unit = "ms" | "s" | "m" | "h" | "d";
 type Duration = `${number} ${Unit}` | `${number}${Unit}`;
 
 import { Redis } from "@upstash/redis/cloudflare";
+import { createApiErrorResponse } from "@/lib/http-error";
 
 interface RateLimitBinding {
     limit(options: { key: string }): Promise<{ success: boolean }>;
@@ -232,7 +233,7 @@ function buildUpstashErrorResponse(
     metadata: RateLimitMetadata,
     includeHeaders: boolean,
 ): Response {
-    const headers = new Headers({ "Content-Type": "application/json" });
+    const headers = new Headers();
     const retryAfterSeconds = computeRetryAfterSeconds(metadata.reset);
 
     if (retryAfterSeconds !== null) {
@@ -260,21 +261,21 @@ function buildUpstashErrorResponse(
         }
     }
 
-    const body = {
-        success: false,
-        error: message || "Too many requests",
-        data: null,
-        limit: metadata.limit,
-        remaining: metadata.remaining,
+    const details = {
+        limit: metadata.limit ?? null,
+        remaining: metadata.remaining ?? null,
         reset:
             metadata.reset instanceof Date
                 ? metadata.reset.toISOString()
-                : metadata.reset,
-        retryAfterSeconds: retryAfterSeconds ?? undefined,
-    };
+                : (metadata.reset ?? null),
+        retryAfterSeconds: retryAfterSeconds ?? null,
+    } as const;
 
-    return new Response(JSON.stringify(body), {
+    return createApiErrorResponse({
         status: 429,
+        code: "RATE_LIMITED",
+        message: message || "Too many requests",
+        details,
         headers,
     });
 }
@@ -358,17 +359,12 @@ export async function applyRateLimit(
         return { ok: true, skipped: true };
     }
 
-    const responseBody = {
-        success: false,
-        error: message || "Too many requests",
-        data: null,
-    };
-
     return {
         ok: false,
-        response: new Response(JSON.stringify(responseBody), {
+        response: createApiErrorResponse({
             status: 429,
-            headers: { "Content-Type": "application/json" },
+            code: "RATE_LIMITED",
+            message: message || "Too many requests",
         }),
     };
 }

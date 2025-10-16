@@ -1,26 +1,30 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+    act,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+} from "@testing-library/react";
 import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "@/i18n/messages/en.json";
 import LogoutButton from "../logout-button";
 
-function createToastMock() {
-    return Object.assign(vi.fn(), {
-        success: vi.fn(),
-        error: vi.fn(),
-    });
-}
+const toastMock = vi.hoisted(() => ({
+    success: vi.fn(),
+    error: vi.fn(),
+}));
 
-type ToastMock = ReturnType<typeof createToastMock>;
+vi.mock("@/lib/toast", () => ({
+    __esModule: true,
+    toast: toastMock,
+    default: toastMock,
+}));
 
-const importToast = async (): Promise<ToastMock> => {
-    const module = await import("react-hot-toast");
-    return module.default as unknown as ToastMock;
-};
-
-vi.mock("react-hot-toast", () => {
-    const toast = createToastMock();
-    return { default: toast };
+beforeEach(() => {
+    for (const fn of Object.values(toastMock)) {
+        fn.mockReset();
+    }
 });
 
 vi.mock("../../actions/auth.action", () => ({
@@ -33,7 +37,7 @@ vi.mock("../../actions/auth.action", () => ({
 
 describe("LogoutButton", () => {
     it("renders and triggers localized success toast on click", async () => {
-        const toast = await importToast();
+        const toast = toastMock;
 
         render(
             <NextIntlClientProvider
@@ -44,9 +48,11 @@ describe("LogoutButton", () => {
             </NextIntlClientProvider>,
         );
 
-        fireEvent.click(
-            screen.getByRole("button", { name: enMessages.Auth.logout }),
-        );
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole("button", { name: enMessages.Auth.logout }),
+            );
+        });
 
         await waitFor(() => {
             expect(toast.success).toHaveBeenCalledWith(

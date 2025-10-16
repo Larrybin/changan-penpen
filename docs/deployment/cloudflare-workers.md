@@ -19,7 +19,7 @@ This project targets Cloudflare Workers using OpenNext.
 
 ### Deploy
 - `pnpm deploy:cf` - OpenNext build + `wrangler deploy`
-- Health gate: CI and rollout should hit `/api/health?fast=1` first, then strict mode without `fast`
+- Health gate: CI and rollout should hit `/api/v1/health?fast=1` first, then strict mode without `fast`
 
 ### Deployment Audit Trail
 - GitHub Actions 的 `Deploy Production` job 会生成部署审计摘要,内容包含版本号,执行者以及推送到生产的提交列表.
@@ -51,5 +51,5 @@ Tip
 ## Edge Rate Limiting
 - Namespace setup: Create a Cloudflare Rate Limiting namespace (e.g. `wrangler ratelimit create creem-checkout --limit 10 --period 60`) and note the generated ID.
 - Binding: Update `wrangler.toml` so both the default worker and the `production` environment attach the namespace as `RATE_LIMITER`. Deploying without the binding leaves rate limiting disabled.
-- Verification: After deployment, hit `/api/creem/create-checkout` repeatedly with the same user session until a 429 appears, confirming the edge policy works. Use `wrangler tail` to capture the `[rate-limit]` log line for auditing.
+- Verification: After deployment, hit `/api/v1/creem/create-checkout` repeatedly with the same user session until a 429 appears, confirming the edge policy works. Use `wrangler tail` to capture the `[rate-limit]` log line for auditing.
 - Rollback: Removing the binding or setting a larger quota in the Cloudflare Dashboard takes effect immediately. Document any temporary overrides in the release checklist.

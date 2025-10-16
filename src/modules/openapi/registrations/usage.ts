@@ -127,7 +127,7 @@ const usageStatsResponseSchema = createSuccessResponseSchema(
 export function registerUsagePaths(registry: OpenAPIRegistry) {
     registry.registerPath({
         method: "post",
-        path: "/api/usage/record",
+        path: "/api/v1/usage/record",
         tags: [TAG],
         summary: "记录用户某项功能的用量",
         request: {
@@ -179,7 +179,7 @@ export function registerUsagePaths(registry: OpenAPIRegistry) {
 
     registry.registerPath({
         method: "get",
-        path: "/api/usage/stats",
+        path: "/api/v1/usage/stats",
         tags: [TAG],
         summary: "按日聚合查询用量统计",
         request: {

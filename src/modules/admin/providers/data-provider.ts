@@ -10,7 +10,7 @@ import type {
 
 type CustomParams = Parameters<NonNullable<DataProvider["custom"]>>[0];
 
-const API_BASE = "/api/admin";
+const API_BASE = "/api/v1/admin";
 
 async function parseResponse(
     response: Response,
@@ -21,10 +21,29 @@ async function parseResponse(
     >;
 
     if (!response.ok) {
-        const message =
-            (data && typeof data.message === "string" && data.message) ||
-            "Unexpected error";
-        throw new Error(message);
+        const errorMessage = (() => {
+            if (data && typeof data === "object") {
+                if (
+                    typeof (data as { message?: unknown }).message === "string"
+                ) {
+                    return (data as { message?: string }).message;
+                }
+                const nestedError = (data as { error?: unknown }).error;
+                if (
+                    nestedError &&
+                    typeof nestedError === "object" &&
+                    typeof (nestedError as { message?: unknown }).message ===
+                        "string"
+                ) {
+                    return (nestedError as { message: string }).message;
+                }
+                if (typeof nestedError === "string") {
+                    return nestedError;
+                }
+            }
+            return null;
+        })();
+        throw new Error(errorMessage || "Unexpected error");
     }
 
     return data;

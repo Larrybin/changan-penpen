@@ -1,3 +1,4 @@
+import { withSentry } from "@sentry/cloudflare";
 // @ts-ignore - generated at build time by OpenNext
 import appModule from "./.open-next/worker";
 
@@ -28,12 +29,54 @@ function toFetchHandler<Env>(handler: MaybeFetchHandler<Env>): FetchHandler<Env>
 
 const app = toFetchHandler(appModule as MaybeFetchHandler<CloudflareEnv>);
 
+function parseRate(value: string | undefined): number {
+    const parsed = Number.parseFloat(value ?? "0");
+    if (!Number.isFinite(parsed) || parsed < 0) {
+        return 0;
+    }
+    return parsed > 1 ? 1 : parsed;
+}
+
+const sentryHandler = withSentry<FetchHandler<CloudflareEnv>>(
+    (env) => {
+        const dsn = env.SENTRY_DSN ?? process.env.SENTRY_DSN;
+        const environment =
+            env.NEXTJS_ENV ?? process.env.NEXTJS_ENV ?? process.env.NODE_ENV ?? "development";
+        const release =
+            env.SENTRY_RELEASE ??
+            process.env.SENTRY_RELEASE ??
+            process.env.VERCEL_GIT_COMMIT_SHA;
+        const tracesSampleRate = parseRate(
+            env.SENTRY_TRACES_SAMPLE_RATE ?? process.env.SENTRY_TRACES_SAMPLE_RATE,
+        );
+        const profilesSampleRate = parseRate(
+            env.SENTRY_PROFILES_SAMPLE_RATE ?? process.env.SENTRY_PROFILES_SAMPLE_RATE,
+        );
+        const tunnel = env.SENTRY_TUNNEL ?? process.env.SENTRY_TUNNEL;
+
+        return {
+            dsn: dsn || undefined,
+            enabled: Boolean(dsn),
+            environment,
+            release,
+            tracesSampleRate,
+            profilesSampleRate,
+            tunnel: tunnel || undefined,
+        };
+    },
+    {
+        async fetch(request, env, ctx) {
+            return app.fetch(request, env, ctx);
+        },
+    },
+);
+
 export async function fetch(
     request: Request,
     env: CloudflareEnv,
     ctx: ExecutionContext,
 ) {
-    return app.fetch(request, env, ctx);
+    return sentryHandler.fetch(request, env, ctx);
 }
 
-export default { fetch } as FetchHandler<CloudflareEnv>;
+export default sentryHandler;

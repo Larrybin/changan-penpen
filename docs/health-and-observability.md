@@ -1,7 +1,7 @@
 # Health & Observability
 
 ## Health Endpoint
-- Path: `/api/health`
+- Path: `/api/v1/health`
 - Modes:
   - `?fast=1` — skip expensive checks (e.g., external services)
   - strict (no `fast`) — check DB, R2, external endpoints; returns 503 on failure

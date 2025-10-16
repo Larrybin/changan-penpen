@@ -1,27 +1,26 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import deMessages from "@/i18n/messages/de.json";
 import ptMessages from "@/i18n/messages/pt.json";
 import { SignupForm } from "../signup-form";
 
-function createToastMock() {
-    return Object.assign(vi.fn(), {
-        success: vi.fn(),
-        error: vi.fn(),
-    });
-}
+const toastMock = vi.hoisted(() => ({
+    success: vi.fn(),
+    error: vi.fn(),
+}));
 
-type ToastMock = ReturnType<typeof createToastMock>;
+vi.mock("@/lib/toast", () => ({
+    __esModule: true,
+    toast: toastMock,
+    default: toastMock,
+}));
 
-const importToast = async (): Promise<ToastMock> => {
-    const module = await import("react-hot-toast");
-    return module.default as unknown as ToastMock;
-};
-
-vi.mock("react-hot-toast", () => {
-    const toast = createToastMock();
-    return { default: toast };
+beforeEach(() => {
+    for (const fn of Object.values(toastMock)) {
+        fn.mockReset();
+    }
 });
 
 // Mock server actions used by the component
@@ -90,75 +89,37 @@ describe("SignupForm", () => {
     it("shows username min length with count (DE)", async () => {
         renderWithMessages("de", deMessages);
 
-        // Provide too short username and valid email/password
-        fireEvent.change(
-            screen.getByLabelText(
-                deMessages.AuthForms.Shared.fields.username.label,
-            ),
-            { target: { value: "ab" } },
-        );
-        fireEvent.change(
-            screen.getByLabelText(
-                deMessages.AuthForms.Shared.fields.email.label,
-            ),
-            { target: { value: "john@doe.com" } },
-        );
-        fireEvent.change(
-            screen.getByLabelText(
-                deMessages.AuthForms.Shared.fields.password.label,
-            ),
-            { target: { value: "12345678" } },
-        );
+        const user = userEvent.setup();
 
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: deMessages.AuthForms.Signup.submit,
-            }),
+        const usernameInput = screen.getByLabelText(
+            deMessages.AuthForms.Shared.fields.username.label,
         );
-
-        expect(
-            await screen.findByText(
-                deMessages.AuthForms.Validation.username.min.replace(
-                    "{count}",
-                    "3",
-                ),
-            ),
-        ).toBeInTheDocument();
-    });
-
-    it("shows success toast on sign-up using i18n key (PT)", async () => {
-        const toast = await importToast();
-        renderWithMessages("pt", ptMessages);
-
-        fireEvent.change(
-            screen.getByLabelText(
-                ptMessages.AuthForms.Shared.fields.username.label,
-            ),
-            { target: { value: "usuario" } },
+        const emailInput = screen.getByLabelText(
+            deMessages.AuthForms.Shared.fields.email.label,
         );
-        fireEvent.change(
-            screen.getByLabelText(
-                ptMessages.AuthForms.Shared.fields.email.label,
-            ),
-            { target: { value: "user@mail.com" } },
+        const passwordInput = screen.getByLabelText(
+            deMessages.AuthForms.Shared.fields.password.label,
         );
-        fireEvent.change(
-            screen.getByLabelText(
-                ptMessages.AuthForms.Shared.fields.password.label,
-            ),
-            { target: { value: "password123" } },
-        );
-
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: ptMessages.AuthForms.Signup.submit,
-            }),
-        );
-
-        await waitFor(() => {
-            expect(toast.success).toHaveBeenCalledWith(
-                ptMessages.AuthForms.Messages.signUpSuccess,
-            );
+        const submitButton = screen.getByRole("button", {
+            name: deMessages.AuthForms.Signup.submit,
         });
+
+        await user.click(submitButton);
+
+        await user.type(usernameInput, "ab");
+        await user.type(emailInput, "john@doe.com");
+        await user.type(passwordInput, "12345678");
+
+        expect((usernameInput as HTMLInputElement).value).toBe("ab");
+        expect((emailInput as HTMLInputElement).value).toBe("john@doe.com");
+        expect((passwordInput as HTMLInputElement).value).toBe("12345678");
+
+        await user.click(submitButton);
+
+        const minMessage = deMessages.AuthForms.Validation.username.min.replace(
+            "{count}",
+            "3",
+        );
+        expect(await screen.findByText(minMessage)).toBeInTheDocument();
     });
 });

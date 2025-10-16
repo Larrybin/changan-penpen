@@ -77,7 +77,7 @@ const creditHistoryResponseSchema = createSuccessResponseSchema(
 export function registerCreditsPaths(registry: OpenAPIRegistry) {
     registry.registerPath({
         method: "get",
-        path: "/api/credits/balance",
+        path: "/api/v1/credits/balance",
         tags: [TAG],
         summary: "查询当前积分余额（自动刷新月度赠送）",
         responses: {
@@ -111,7 +111,7 @@ export function registerCreditsPaths(registry: OpenAPIRegistry) {
 
     registry.registerPath({
         method: "get",
-        path: "/api/credits/history",
+        path: "/api/v1/credits/history",
         tags: [TAG],
         summary: "分页查询积分流水记录",
         request: {

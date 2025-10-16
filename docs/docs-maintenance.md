@@ -33,7 +33,7 @@
 - Prefer PowerShell 7 + UTF-8 in profile to avoid garbled output
 - Grep examples (ripgrep):
   - `rg -n -F ".github/workflows/" README.md` - list workflow references in README
-  - `rg -n "\\.route\\.ts$|/api/.*/route\\.ts$|/page\\.tsx$" src` - scan routes/pages
+  - `rg -n "\\.route\\.ts$|/api/v1/.*/route\\.ts$|/page\\.tsx$" src` - scan routes/pages
   - `rg -n -F "wrangler.toml" docs` - find env docs cross‑references
 - 维护 API 索引时，可参考路由目录 (`src/app/**/page.tsx`、`*.route.ts`) 手动比对 `docs/api-index.md`。
 

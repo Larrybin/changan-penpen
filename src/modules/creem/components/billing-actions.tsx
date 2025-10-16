@@ -30,7 +30,13 @@ function readErrorMessage(payload: unknown): string | undefined {
         return undefined;
     }
     const error = payload.error;
-    return typeof error === "string" ? error : undefined;
+    if (typeof error === "string") {
+        return error;
+    }
+    if (isRecord(error) && typeof error.message === "string") {
+        return error.message;
+    }
+    return undefined;
 }
 
 export default function BillingActions() {
@@ -42,7 +48,7 @@ export default function BillingActions() {
     ) {
         try {
             setLoading(`${tierId}-${productType}`);
-            const resp = await fetch("/api/creem/create-checkout", {
+            const resp = await fetch("/api/v1/creem/create-checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ tierId, productType }),
@@ -67,7 +73,7 @@ export default function BillingActions() {
     async function openCustomerPortal() {
         try {
             setLoading("portal");
-            const resp = await fetch("/api/creem/customer-portal");
+            const resp = await fetch("/api/v1/creem/customer-portal");
             const payload: unknown = await resp.json();
             if (!resp.ok) {
                 throw new Error(

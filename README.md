@@ -23,7 +23,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - Data & storage: Cloudflare D1 + R2 via Drizzle ORM
 - CI/CD suite: Biome, TypeScript checks, Vitest tests
 - Auto-merge guardrails: Dependabot auto-merge with local `pnpm check:all` gate
-- Health checks: `/api/health` with fast/strict modes
+- Health checks: `/api/v1/health` with fast/strict modes
 - Observability: Workers Analytics 与结构化日志
 - i18n & AI translation: built-in locales and scripts (Gemini/OpenAI)
 
@@ -39,7 +39,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 
 ### Production Deploy
 - Push to `main` triggers Deploy workflow by default
-- Steps: build → migrate → health checks (`/api/health?fast=1`) → release
+- Steps: build → migrate → health checks (`/api/v1/health?fast=1`) → release
 - On failure, the pipeline rolls back and notifies. See `docs/deployment/cloudflare-workers.md`.
 
 ---
@@ -55,37 +55,37 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 The application includes 31+ API endpoints organized into 4 main categories:
 
 #### Authentication APIs
-- `/api/auth/[...all]` - Better Auth integration (GET, POST)
+- `/api/v1/auth/[...all]` - Better Auth integration (GET, POST)
 
 #### Core APIs
-- `/api/health` - Health monitoring with fast/strict modes
-- `/api/summarize` - Content summarization service
+- `/api/v1/health` - Health monitoring with fast/strict modes
+- `/api/v1/summarize` - Content summarization service
 
 #### Admin APIs (22 endpoints)
-- `/api/admin/dashboard` - Dashboard analytics
-- `/api/admin/users` & `/api/admin/users/[id]` - User management
-- `/api/admin/todos` & `/api/admin/todos/[id]` - Todo administration
-- `/api/admin/products` & `/api/admin/products/[id]` - Product catalog
-- `/api/admin/orders` & `/api/admin/orders/[id]` - Order management
-- `/api/admin/tenants` & `/api/admin/tenants/[id]` - Tenant management
-- `/api/admin/credits-history` - Credits history
-- `/api/admin/reports` - System reports
-- `/api/admin/audit-logs` - Audit logs
-- `/api/admin/site-settings` - Site configuration
-- `/api/admin/categories` - Category management
-- `/api/admin/content-pages` & `/api/admin/content-pages/[id]` - Content pages
-- `/api/admin/coupons` & `/api/admin/coupons/[id]` - Coupon management
-- `/api/admin/session` - Admin session management
-- `/api/admin/usage` - Usage analytics
+- `/api/v1/admin/dashboard` - Dashboard analytics
+- `/api/v1/admin/users` & `/api/v1/admin/users/[id]` - User management
+- `/api/v1/admin/todos` & `/api/v1/admin/todos/[id]` - Todo administration
+- `/api/v1/admin/products` & `/api/v1/admin/products/[id]` - Product catalog
+- `/api/v1/admin/orders` & `/api/v1/admin/orders/[id]` - Order management
+- `/api/v1/admin/tenants` & `/api/v1/admin/tenants/[id]` - Tenant management
+- `/api/v1/admin/credits-history` - Credits history
+- `/api/v1/admin/reports` - System reports
+- `/api/v1/admin/audit-logs` - Audit logs
+- `/api/v1/admin/site-settings` - Site configuration
+- `/api/v1/admin/categories` - Category management
+- `/api/v1/admin/content-pages` & `/api/v1/admin/content-pages/[id]` - Content pages
+- `/api/v1/admin/coupons` & `/api/v1/admin/coupons/[id]` - Coupon management
+- `/api/v1/admin/session` - Admin session management
+- `/api/v1/admin/usage` - Usage analytics
 
 #### Billing & Payment APIs
-- `/api/creem/create-checkout` - Payment checkout creation
-- `/api/creem/customer-portal` - Customer billing portal
-- `/api/webhooks/creem` - Payment webhooks (POST)
+- `/api/v1/creem/create-checkout` - Payment checkout creation
+- `/api/v1/creem/customer-portal` - Customer billing portal
+- `/api/v1/webhooks/creem` - Payment webhooks (POST)
 
 #### Credits APIs
-- `/api/credits/balance` - User credit balance
-- `/api/credits/history` - Credit transaction history
+- `/api/v1/credits/balance` - User credit balance
+- `/api/v1/credits/history` - Credit transaction history
 
 All APIs follow RESTful conventions and include proper authentication, error handling, and TypeScript safety.
 

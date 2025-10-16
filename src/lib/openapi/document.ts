@@ -5,6 +5,7 @@ import { registerAllOpenApiPaths } from "@/modules/openapi/register";
 import { createAppOpenApiRegistry } from "./registry";
 
 const DEFAULT_SERVER = "http://localhost:3000";
+const API_VERSION = "v1";
 
 let documentCache: ReturnType<OpenApiGeneratorV31["generateDocument"]> | null =
     null;
@@ -28,19 +29,21 @@ export function getOpenApiDocument() {
         console.warn("[openapi] 使用默认服务器地址", { error });
     }
 
+    const apiBase = `${serverUrl.replace(/\/$/, "")}/api/${API_VERSION}`;
+
     documentCache = generator.generateDocument({
         openapi: "3.1.0",
         info: {
             title: "Changan-penpen API",
-            version: "1.0.0",
+            version: "1.1.0",
             description:
                 "自动生成的 OpenAPI 文档，结合 Zod schema 同步维护 API 与 Server Action。",
         },
         servers: [
             {
-                url: serverUrl,
+                url: apiBase,
                 description:
-                    "默认应用访问地址，可在 NEXT_PUBLIC_APP_URL 中覆盖",
+                    "默认 API 基础地址，可在 NEXT_PUBLIC_APP_URL 中覆盖",
             },
         ],
         security: [{ BetterAuthSession: [] }],

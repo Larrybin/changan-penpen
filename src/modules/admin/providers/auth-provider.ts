@@ -1,7 +1,7 @@
 // Refine v5 不再需要显式的 AuthBindings 类型导入，按结构提供实现即可。
 
 async function fetchSession() {
-    const response = await fetch("/api/admin/session", {
+    const response = await fetch("/api/v1/admin/session", {
         credentials: "include",
     });
 
@@ -15,7 +15,7 @@ async function fetchSession() {
 export const adminAuthProvider = {
     login: async () => ({ success: true }),
     logout: async () => {
-        await fetch("/api/auth/logout", {
+        await fetch("/api/v1/auth/logout", {
             method: "POST",
             credentials: "include",
         }).catch(() => undefined);

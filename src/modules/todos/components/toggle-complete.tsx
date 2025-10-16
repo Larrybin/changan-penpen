@@ -23,7 +23,13 @@ export function ToggleComplete({ todoId, completed }: ToggleCompleteProps) {
                 });
 
                 if (!result.success) {
-                    throw new Error(result.error || "Failed to update todo");
+                    const message =
+                        typeof result.error === "object" && result.error
+                            ? String(result.error.message ?? "")
+                            : typeof result.error === "string"
+                              ? result.error
+                              : "";
+                    throw new Error(message || "Failed to update todo");
                 }
 
                 // No need to refresh - server action handles revalidation

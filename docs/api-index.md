@@ -2,7 +2,7 @@
 
 > Quick reference for pages, APIs, and auth requirements. Update this file whenever a path or policy changes.
 >
-> ✅ 管理后台新增 Swagger UI：访问 `/admin/api-docs`（需管理员登录）。OpenAPI JSON 位于 `/api/openapi`，同样要求管理员权限。
+> ✅ 管理后台新增 Swagger UI：访问 `/admin/api-docs`（需管理员登录）。OpenAPI JSON 位于 `/api/v1/openapi`，同样要求管理员权限。
 
 ## 1. Page Routes (App Router)
 
@@ -91,96 +91,96 @@ Discovered (scan)
 
 | Path | Method | Description |
 | --- | --- | --- |
-| `/api/auth/[...all]` | `GET/POST` | Better Auth Google OAuth & session management |
-| `/api/admin/session` | `GET` | Admin session check |
+| `/api/v1/auth/[...all]` | `GET/POST` | Better Auth Google OAuth & session management |
+| `/api/v1/admin/session` | `GET` | Admin session check |
 | `middleware.ts` | �?||  `middleware.ts` | �� | Protects routes like  `/dashboard`, `/admin` |
 
 ## 3. Core APIs
 
 Admin APIs
-- Path: `/api/admin/*` (admin only)
+- Path: `/api/v1/admin/*` (admin only)
 
 | Path | Method | Module | Description | Auth |
 | --- | --- | --- | --- | --- |
-| `/api/admin/session` | `GET` | Admin | Admin session check | Admin only |
-| `/api/admin/audit-logs` | `GET` | Admin | List audit logs | Admin only |
-| `/api/admin/site-settings` | `GET/POST` | Admin | Get/update site settings | Admin only |
-| `/api/admin/reports` | `GET` | Admin | Reporting endpoints | Admin only |
-| `/api/admin/usage` | `GET` | Admin | Usage overview for admin | Admin only |
-| `/api/admin/orders` | `GET/POST` | Admin | List/create orders | Admin only |
-| `/api/admin/orders/[id]` | `GET` | Admin | Order by id | Admin only |
-| `/api/admin/products` | `GET/POST` | Admin | List/create products | Admin only |
-| `/api/admin/products/[id]` | `GET` | Admin | Product by id | Admin only |
-| `/api/admin/categories` | `GET/POST` | Admin | Manage categories | Admin only |
-| `/api/admin/coupons` | `GET/POST` | Admin | List/create coupons | Admin only |
-| `/api/admin/coupons/[id]` | `GET` | Admin | Coupon by id | Admin only |
-| `/api/admin/content-pages` | `GET/POST` | Admin | List/create content pages | Admin only |
-| `/api/admin/content-pages/[id]` | `GET` | Admin | Content page by id | Admin only |
-| `/api/admin/tenants` | `GET/POST` | Admin | List/create tenants | Admin only |
-| `/api/admin/tenants/[id]` | `GET` | Admin | Tenant by id | Admin only |
-| `/api/admin/todos` | `GET/POST` | Admin | List/create admin todos | Admin only |
-| `/api/admin/todos/[id]` | `GET` | Admin | Admin todo by id | Admin only |
-| `/api/admin/credits-history` | `GET` | Admin | Credits history | Admin only |
-| `/api/openapi` | `GET` | Docs | Generate OpenAPI 3.1 文档（需管理员登录） | Admin only |
-| `/api/admin/dashboard` | `GET` | Admin | Dashboard metrics | Admin only |
+| `/api/v1/admin/session` | `GET` | Admin | Admin session check | Admin only |
+| `/api/v1/admin/audit-logs` | `GET` | Admin | List audit logs | Admin only |
+| `/api/v1/admin/site-settings` | `GET/POST` | Admin | Get/update site settings | Admin only |
+| `/api/v1/admin/reports` | `GET` | Admin | Reporting endpoints | Admin only |
+| `/api/v1/admin/usage` | `GET` | Admin | Usage overview for admin | Admin only |
+| `/api/v1/admin/orders` | `GET/POST` | Admin | List/create orders | Admin only |
+| `/api/v1/admin/orders/[id]` | `GET` | Admin | Order by id | Admin only |
+| `/api/v1/admin/products` | `GET/POST` | Admin | List/create products | Admin only |
+| `/api/v1/admin/products/[id]` | `GET` | Admin | Product by id | Admin only |
+| `/api/v1/admin/categories` | `GET/POST` | Admin | Manage categories | Admin only |
+| `/api/v1/admin/coupons` | `GET/POST` | Admin | List/create coupons | Admin only |
+| `/api/v1/admin/coupons/[id]` | `GET` | Admin | Coupon by id | Admin only |
+| `/api/v1/admin/content-pages` | `GET/POST` | Admin | List/create content pages | Admin only |
+| `/api/v1/admin/content-pages/[id]` | `GET` | Admin | Content page by id | Admin only |
+| `/api/v1/admin/tenants` | `GET/POST` | Admin | List/create tenants | Admin only |
+| `/api/v1/admin/tenants/[id]` | `GET` | Admin | Tenant by id | Admin only |
+| `/api/v1/admin/todos` | `GET/POST` | Admin | List/create admin todos | Admin only |
+| `/api/v1/admin/todos/[id]` | `GET` | Admin | Admin todo by id | Admin only |
+| `/api/v1/admin/credits-history` | `GET` | Admin | Credits history | Admin only |
+| `/api/v1/openapi` | `GET` | Docs | Generate OpenAPI 3.1 文档（需管理员登录） | Admin only |
+| `/api/v1/admin/dashboard` | `GET` | Admin | Dashboard metrics | Admin only |
 
 Billing / Payments
 
 | Path | Method | Module | Description | Auth |
 | --- | --- | --- | --- | --- |
-| `/api/creem/create-checkout` | `POST` | Billing (`modules/creem`) | Create checkout session | Login |
-| `/api/creem/customer-portal` | `POST` | Billing (`modules/creem`) | Redirect to customer portal | Login |
-| `/api/credits/balance` | `GET` | Billing (`modules/billing`) | Fetch current credit balance (auto refresh monthly credits) | Login |
-| `/api/credits/history` | `GET` | Billing (`modules/billing`) | Paginated credit transactions | Login |
-| `/api/webhooks/creem` | `POST` | Billing (`modules/creem`) | Payment webhook | Signature required |
+| `/api/v1/creem/create-checkout` | `POST` | Billing (`modules/creem`) | Create checkout session | Login |
+| `/api/v1/creem/customer-portal` | `POST` | Billing (`modules/creem`) | Redirect to customer portal | Login |
+| `/api/v1/credits/balance` | `GET` | Billing (`modules/billing`) | Fetch current credit balance (auto refresh monthly credits) | Login |
+| `/api/v1/credits/history` | `GET` | Billing (`modules/billing`) | Paginated credit transactions | Login |
+| `/api/v1/webhooks/creem` | `POST` | Billing (`modules/creem`) | Payment webhook | Signature required |
 
 Usage Tracking
 
 | Path | Method | Module | Description | Auth |
 | --- | --- | --- | --- | --- |
-| `/api/usage/record` | `POST` | Usage | Record user actions | Login |
-| `/api/usage/stats` | `GET` | Usage | Fetch usage stats | Login |
+| `/api/v1/usage/record` | `POST` | Usage | Record user actions | Login |
+| `/api/v1/usage/stats` | `GET` | Usage | Fetch usage stats | Login |
 
 Auth / Health / AI
 
 | Path | Method | Module | Description | Auth |
 | --- | --- | --- | --- | --- |
-| `/api/auth/[...all]` | `GET/POST` | Auth | Better Auth Google OAuth & session | Public/Login |
-| `/api/health` | `GET` | Platform | Health check (fast/strict modes) | Public |
-| `/api/summarize` | `POST` | AI | Workers AI summarization | Login |
+| `/api/v1/auth/[...all]` | `GET/POST` | Auth | Better Auth Google OAuth & session | Public/Login |
+| `/api/v1/health` | `GET` | Platform | Health check (fast/strict modes) | Public |
+| `/api/v1/summarize` | `POST` | AI | Workers AI summarization | Login |
 | `/internal/actions/todos/create` | `POST` | Todos | Server Action（内部调试用） | Login |
 
-> See each `route.ts` and related services for details under `src/app/api/*`.
+> See each `route.ts` and related services for details under `src/app/api/v1/*`.
 
 Appendix: Full API route files (scan)
-- src/app/api/admin/audit-logs/route.ts
-- src/app/api/admin/categories/route.ts
-- src/app/api/admin/content-pages/[id]/route.ts
-- src/app/api/admin/content-pages/route.ts
-- src/app/api/admin/coupons/[id]/route.ts
-- src/app/api/admin/coupons/route.ts
-- src/app/api/admin/credits-history/route.ts
-- src/app/api/admin/dashboard/route.ts
-- src/app/api/admin/orders/[id]/route.ts
-- src/app/api/admin/orders/route.ts
-- src/app/api/admin/products/[id]/route.ts
-- src/app/api/admin/products/route.ts
-- src/app/api/credits/balance/route.ts
-- src/app/api/credits/history/route.ts
-- src/app/api/admin/reports/route.ts
-- src/app/api/admin/session/route.ts
-- src/app/api/admin/site-settings/route.ts
-- src/app/api/admin/tenants/[id]/route.ts
-- src/app/api/admin/tenants/route.ts
-- src/app/api/admin/todos/[id]/route.ts
-- src/app/api/admin/todos/route.ts
-- src/app/api/admin/usage/route.ts
-- src/app/api/auth/[...all]/route.ts
-- src/app/api/creem/create-checkout/route.ts
-- src/app/api/creem/customer-portal/route.ts
-- src/app/api/health/route.ts
-- src/app/api/summarize/route.ts
-- src/app/api/webhooks/creem/route.ts
+- src/app/api/v1/admin/audit-logs/route.ts
+- src/app/api/v1/admin/categories/route.ts
+- src/app/api/v1/admin/content-pages/[id]/route.ts
+- src/app/api/v1/admin/content-pages/route.ts
+- src/app/api/v1/admin/coupons/[id]/route.ts
+- src/app/api/v1/admin/coupons/route.ts
+- src/app/api/v1/admin/credits-history/route.ts
+- src/app/api/v1/admin/dashboard/route.ts
+- src/app/api/v1/admin/orders/[id]/route.ts
+- src/app/api/v1/admin/orders/route.ts
+- src/app/api/v1/admin/products/[id]/route.ts
+- src/app/api/v1/admin/products/route.ts
+- src/app/api/v1/credits/balance/route.ts
+- src/app/api/v1/credits/history/route.ts
+- src/app/api/v1/admin/reports/route.ts
+- src/app/api/v1/admin/session/route.ts
+- src/app/api/v1/admin/site-settings/route.ts
+- src/app/api/v1/admin/tenants/[id]/route.ts
+- src/app/api/v1/admin/tenants/route.ts
+- src/app/api/v1/admin/todos/[id]/route.ts
+- src/app/api/v1/admin/todos/route.ts
+- src/app/api/v1/admin/usage/route.ts
+- src/app/api/v1/auth/[...all]/route.ts
+- src/app/api/v1/creem/create-checkout/route.ts
+- src/app/api/v1/creem/customer-portal/route.ts
+- src/app/api/v1/health/route.ts
+- src/app/api/v1/summarize/route.ts
+- src/app/api/v1/webhooks/creem/route.ts
 
 ## 4. Server Actions (Examples)
 
@@ -213,30 +213,30 @@ Please keep this file, `docs/00-index.md`, and any module READMEs in sync when a
 | Path | Methods | File |
 | --- | --- | --- |
 | /admin/access/[token] | GET | src/app/(admin)/admin/access/[token]/route.ts |
-| /api/admin/audit-logs | GET | src/app/api/admin/audit-logs/route.ts |
-| /api/admin/categories | GET | src/app/api/admin/categories/route.ts |
-| /api/admin/content-pages/[id] | DELETE, GET, PATCH | src/app/api/admin/content-pages/[id]/route.ts |
-| /api/admin/content-pages | GET, POST | src/app/api/admin/content-pages/route.ts |
-| /api/admin/coupons/[id] | DELETE, GET, PATCH | src/app/api/admin/coupons/[id]/route.ts |
-| /api/admin/coupons | GET, POST | src/app/api/admin/coupons/route.ts |
-| /api/admin/credits-history | GET | src/app/api/admin/credits-history/route.ts |
-| /api/admin/dashboard | GET | src/app/api/admin/dashboard/route.ts |
-| /api/admin/orders/[id] | GET | src/app/api/admin/orders/[id]/route.ts |
-| /api/admin/orders | GET | src/app/api/admin/orders/route.ts |
-| /api/admin/products/[id] | DELETE, GET, PATCH | src/app/api/admin/products/[id]/route.ts |
-| /api/admin/products | GET, POST | src/app/api/admin/products/route.ts |
-| /api/admin/reports | GET, POST | src/app/api/admin/reports/route.ts |
-| /api/admin/session | GET | src/app/api/admin/session/route.ts |
-| /api/admin/site-settings | GET, PATCH | src/app/api/admin/site-settings/route.ts |
-| /api/admin/tenants/[id] | GET | src/app/api/admin/tenants/[id]/route.ts |
-| /api/admin/tenants | GET | src/app/api/admin/tenants/route.ts |
-| /api/admin/todos/[id] | DELETE, GET, PATCH | src/app/api/admin/todos/[id]/route.ts |
-| /api/admin/todos | GET, POST | src/app/api/admin/todos/route.ts |
-| /api/admin/usage | GET | src/app/api/admin/usage/route.ts |
-| /api/auth/[...all] | GET, POST | src/app/api/auth/[...all]/route.ts |
-| /api/creem/create-checkout | POST | src/app/api/creem/create-checkout/route.ts |
-| /api/creem/customer-portal | GET | src/app/api/creem/customer-portal/route.ts |
-| /api/health | GET | src/app/api/health/route.ts |
-| /api/summarize | POST | src/app/api/summarize/route.ts |
-| /api/webhooks/creem | POST | src/app/api/webhooks/creem/route.ts |
+| /api/v1/admin/audit-logs | GET | src/app/api/v1/admin/audit-logs/route.ts |
+| /api/v1/admin/categories | GET | src/app/api/v1/admin/categories/route.ts |
+| /api/v1/admin/content-pages/[id] | DELETE, GET, PATCH | src/app/api/v1/admin/content-pages/[id]/route.ts |
+| /api/v1/admin/content-pages | GET, POST | src/app/api/v1/admin/content-pages/route.ts |
+| /api/v1/admin/coupons/[id] | DELETE, GET, PATCH | src/app/api/v1/admin/coupons/[id]/route.ts |
+| /api/v1/admin/coupons | GET, POST | src/app/api/v1/admin/coupons/route.ts |
+| /api/v1/admin/credits-history | GET | src/app/api/v1/admin/credits-history/route.ts |
+| /api/v1/admin/dashboard | GET | src/app/api/v1/admin/dashboard/route.ts |
+| /api/v1/admin/orders/[id] | GET | src/app/api/v1/admin/orders/[id]/route.ts |
+| /api/v1/admin/orders | GET | src/app/api/v1/admin/orders/route.ts |
+| /api/v1/admin/products/[id] | DELETE, GET, PATCH | src/app/api/v1/admin/products/[id]/route.ts |
+| /api/v1/admin/products | GET, POST | src/app/api/v1/admin/products/route.ts |
+| /api/v1/admin/reports | GET, POST | src/app/api/v1/admin/reports/route.ts |
+| /api/v1/admin/session | GET | src/app/api/v1/admin/session/route.ts |
+| /api/v1/admin/site-settings | GET, PATCH | src/app/api/v1/admin/site-settings/route.ts |
+| /api/v1/admin/tenants/[id] | GET | src/app/api/v1/admin/tenants/[id]/route.ts |
+| /api/v1/admin/tenants | GET | src/app/api/v1/admin/tenants/route.ts |
+| /api/v1/admin/todos/[id] | DELETE, GET, PATCH | src/app/api/v1/admin/todos/[id]/route.ts |
+| /api/v1/admin/todos | GET, POST | src/app/api/v1/admin/todos/route.ts |
+| /api/v1/admin/usage | GET | src/app/api/v1/admin/usage/route.ts |
+| /api/v1/auth/[...all] | GET, POST | src/app/api/v1/auth/[...all]/route.ts |
+| /api/v1/creem/create-checkout | POST | src/app/api/v1/creem/create-checkout/route.ts |
+| /api/v1/creem/customer-portal | GET | src/app/api/v1/creem/customer-portal/route.ts |
+| /api/v1/health | GET | src/app/api/v1/health/route.ts |
+| /api/v1/summarize | POST | src/app/api/v1/summarize/route.ts |
+| /api/v1/webhooks/creem | POST | src/app/api/v1/webhooks/creem/route.ts |
 <!-- DOCSYNC:API_INDEX END -->

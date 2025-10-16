@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
+import { createApiErrorResponse } from "@/lib/http-error";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import type { AiBinding } from "@/services/summarizer.service";
 import {
@@ -16,19 +17,11 @@ export async function POST(request: Request) {
         });
 
         if (!session?.user) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Authentication required",
-                    data: null,
-                }),
-                {
-                    status: 401,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                },
-            );
+            return createApiErrorResponse({
+                status: 401,
+                code: "UNAUTHORIZED",
+                message: "Authentication required",
+            });
         }
 
         const { env } = await getCloudflareContext({ async: true });
@@ -47,19 +40,11 @@ export async function POST(request: Request) {
         }
 
         if (!hasAI(env)) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "AI service is not available",
-                    data: null,
-                }),
-                {
-                    status: 500,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                },
-            );
+            return createApiErrorResponse({
+                status: 503,
+                code: "SERVICE_UNAVAILABLE",
+                message: "AI service is not available",
+            });
         }
 
         // parse request body

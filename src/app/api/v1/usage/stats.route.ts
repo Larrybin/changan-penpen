@@ -1,3 +1,5 @@
+import handleApiError from "@/lib/api-error";
+import { createApiErrorResponse } from "@/lib/http-error";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { getUsageDaily } from "@/modules/creem/services/usage.service";
 
@@ -10,13 +12,11 @@ export async function GET(request: Request) {
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user) {
-            return new Response(
-                JSON.stringify({ success: false, error: "Unauthorized" }),
-                {
-                    status: 401,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            return createApiErrorResponse({
+                status: 401,
+                code: "UNAUTHORIZED",
+                message: "Authentication required",
+            });
         }
 
         const url = new URL(request.url);
@@ -38,16 +38,6 @@ export async function GET(request: Request) {
         );
     } catch (error) {
         console.error("[api/usage/stats] error:", error);
-        return new Response(
-            JSON.stringify({
-                success: false,
-                error: "Internal server error",
-                code: "ERR_UNEXPECTED",
-            }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
+        return handleApiError(error);
     }
 }

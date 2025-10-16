@@ -7,7 +7,7 @@ export default function AdminApiDocsPage() {
     return (
         <div className="h-full overflow-auto bg-background">
             <SwaggerUI
-                url="/api/openapi"
+                url="/api/v1/openapi"
                 docExpansion="none"
                 defaultModelsExpandDepth={0}
                 defaultModelRendering="model"

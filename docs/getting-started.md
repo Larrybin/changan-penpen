@@ -49,7 +49,7 @@ pnpm dev:remote  # remote region (requires wrangler login)
 
 ## 5. Production Deploy Overview
 - Push to `main` or manually dispatch the Deploy workflow with `production`
-- CI + 自动健康检查（fast: `/api/health?fast=1`）必须通过；严格模式 `/api/health` 需人工触发并确认
+- CI + 自动健康检查（fast: `/api/v1/health?fast=1`）必须通过；严格模式 `/api/v1/health` 需人工触发并确认
 - Details: `docs/deployment/cloudflare-workers.md`
 
 ## 6. What’s Next

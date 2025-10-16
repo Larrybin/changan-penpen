@@ -16,9 +16,10 @@ src/
 │   │   ├── [id]/page.tsx     # 订单详情
 │   │   └── new/page.tsx      # 新建订单
 │   └── api/
-│       └── orders/
-│           ├── route.ts      # /api/orders（GET 列表、POST 创建）
-│           └── [id]/route.ts # /api/orders/{id}
+│       └── v1/
+│           └── orders/
+│               ├── route.ts      # /api/v1/orders（GET 列表、POST 创建）
+│               └── [id]/route.ts # /api/v1/orders/{id}
 └── db/
     └── schema/
         └── orders.ts         # Drizzle ORM 表定义
@@ -43,7 +44,7 @@ Next.js 15 App Router 会根据目录自动注册页面，创建 `page.tsx` 即�
 2. 运行 `pnpm db:generate` 生成迁移，或编写对应 SQL 脚本后通过 `pnpm db:migrate:local` 应用。
 3. API Route 中调用 Service 层执行业务逻辑。保持请求/响应使用 Zod schema 校验，与自动化 OpenAPI 文档保持一致：
    - 在 schema 上调用 `.openapi({...})` 添加描述/示例。
-   - 在 `src/modules/openapi/registrations` 内注册新路径，确保 `/api/openapi` 能同步输出最新规范。
+   - 在 `src/modules/openapi/registrations` 内注册新路径，确保 `/api/v1/openapi` 能同步输出最新规范。
 4. 若业务需要 Server Action，可将其视为内部 RPC 并在 `registerServerActionPaths` 中登记，便于团队自查。
 
 ### 1.4 服务层与测试
@@ -61,7 +62,7 @@ Next.js 15 App Router 会根据目录自动注册页面，创建 `page.tsx` 即�
 ## 2. 自动化 API 文档工作流
 
 - `@asteasolutions/zod-to-openapi` 结合 `swagger-ui-react` 已在项目中集成。
-- `/api/openapi` 返回最新 OpenAPI 3.1 规范（需管理员会话）。
+- `/api/v1/openapi` 返回最新 OpenAPI 3.1 规范（需管理员会话）。
 - `/admin/api-docs` 提供 Swagger UI，可在线调试受保护接口。
 - 维护步骤：
   1. 在对应 Zod schema 上添加 `.openapi()` 元数据；

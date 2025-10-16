@@ -1,4 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import handleApiError from "@/lib/api-error";
+import { ApiError } from "@/lib/http-error";
 import { applyRateLimit } from "@/lib/rate-limit";
 import type {
     CreemCheckout,
@@ -89,7 +91,10 @@ export async function POST(request: Request) {
 
         if (!env.CREEM_WEBHOOK_SECRET) {
             console.error("[creem webhook] missing CREEM_WEBHOOK_SECRET");
-            return new Response("Missing webhook secret", { status: 500 });
+            throw new ApiError("Missing webhook secret", {
+                status: 500,
+                code: "SERVICE_CONFIGURATION_ERROR",
+            });
         }
         const valid = await verifyCreemWebhookSignature(
             raw,
@@ -97,7 +102,10 @@ export async function POST(request: Request) {
             env.CREEM_WEBHOOK_SECRET,
         );
         if (!valid) {
-            return new Response("Invalid signature", { status: 401 });
+            throw new ApiError("Invalid signature", {
+                status: 401,
+                code: "INVALID_SIGNATURE",
+            });
         }
 
         const parsed = JSON.parse(raw) as unknown;
@@ -135,16 +143,7 @@ export async function POST(request: Request) {
         });
     } catch (error) {
         console.error("[creem webhook] error:", error);
-        return new Response(
-            JSON.stringify({
-                error: "Internal server error",
-                code: "ERR_UNEXPECTED",
-            }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
+        return handleApiError(error);
     }
 }
 

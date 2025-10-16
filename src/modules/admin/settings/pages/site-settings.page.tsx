@@ -82,7 +82,7 @@ export function SiteSettingsPage() {
         async function fetchSettings() {
             setLoading(true);
             try {
-                const response = await fetch("/api/admin/site-settings", {
+                const response = await fetch("/api/v1/admin/site-settings", {
                     credentials: "include",
                 });
                 if (response.ok) {
@@ -187,7 +187,7 @@ export function SiteSettingsPage() {
 
         setSaving(true);
         try {
-            const response = await fetch("/api/admin/site-settings", {
+            const response = await fetch("/api/v1/admin/site-settings", {
                 method: "PATCH",
                 credentials: "include",
                 headers: {

@@ -70,11 +70,11 @@ export default function CreditsSection() {
         setError(null);
         try {
             const [balanceRes, historyRes] = await Promise.all([
-                fetch("/api/credits/balance", {
+                fetch("/api/v1/credits/balance", {
                     method: "GET",
                     headers: { "Content-Type": "application/json" },
                 }),
-                fetch("/api/credits/history?limit=10", {
+                fetch("/api/v1/credits/history?limit=10", {
                     method: "GET",
                     headers: { "Content-Type": "application/json" },
                 }),
@@ -82,13 +82,25 @@ export default function CreditsSection() {
 
             const balanceJson = (await balanceRes.json()) as BalanceResponse;
             if (!balanceRes.ok || !balanceJson.success) {
-                throw new Error(balanceJson.error || "获取余额失败");
+                const errorMessage =
+                    typeof balanceJson.error === "object" && balanceJson.error
+                        ? String(balanceJson.error.message ?? "")
+                        : typeof balanceJson.error === "string"
+                          ? balanceJson.error
+                          : "";
+                throw new Error(errorMessage || "获取余额失败");
             }
             setBalance(balanceJson.data?.credits ?? 0);
 
             const historyJson = (await historyRes.json()) as HistoryResponse;
             if (!historyRes.ok || !historyJson.success) {
-                throw new Error(historyJson.error || "获取交易历史失败");
+                const errorMessage =
+                    typeof historyJson.error === "object" && historyJson.error
+                        ? String(historyJson.error.message ?? "")
+                        : typeof historyJson.error === "string"
+                          ? historyJson.error
+                          : "";
+                throw new Error(errorMessage || "获取交易历史失败");
             }
             setTransactions(historyJson.data?.transactions ?? []);
         } catch (err) {
