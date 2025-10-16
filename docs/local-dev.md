@@ -1,4 +1,4 @@
-﻿# Local Development & Debugging
+# Local Development & Debugging
 
 > Daily workflows for development, debugging, database operations, and common pitfalls.
 
@@ -14,7 +14,7 @@
 | `pnpm deploy:cf` | OpenNext build + `wrangler deploy` | Cloudflare Workers deploy |
 | `pnpm cf-typegen` | Regenerate CF bindings/types | Run after editing `wrangler.toml` |
 | `pnpm typecheck` | CF typegen + `tsc --noEmit` | Ensures types are in sync |
-| `pnpm check:all` | 本地质量门（Biome 写入/校验、cf-typegen、tsc、构建、docs/link） | `CHECK_ENABLE_TESTS=1` 启用单测；`git push` 会自动运行 |
+| `pnpm check:all` | 本地质量门（Biome 写入/校验、cf-typegen、tsc、构建、docs/link） | `CHECK_ENABLE_TESTS=1` 启用单测 |
 | `pnpm translate` | Batch translate content | Requires AI keys in `.dev.vars` |
 | `pnpm db:generate` | Generate migration | Uses drizzle-kit |
 | `pnpm db:generate:named` | Generate named migration | e.g. `add_users_table` |
@@ -77,12 +77,11 @@
 
 Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` and `docs/troubleshooting.md`.
 
-## 9. Push Helper
-- Command: `pnpm push` — runs auto-fix, typegen, typecheck, docs checks (`check:docs`, `check:links`), final lint, then rebase & push.\n- Commit message: fully automated (subject + multi-line bullets) generated from the staged diff, in the style of: `fix: 鈥? add CF env fallbacks, 鈥? and clean headers()/cookies() usage` with per-area bullets (checkout/webhooks/sitemap/R2/headers-cookies/tests/types).
-- Optional dependency for AST-enhanced messages: `@babel/parser` (dev). If not installed, the script falls back to path/regex rules automatically.
-- Install (optional): `pnpm add -D @babel/parser`
-- Note: `scripts/push-fix2.mjs` is a local helper and is ignored by Git. It is not shipped with the repository, and CI/CD does not depend on it.
-- Env toggles:\n  - `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks in emergencies (re-run without skip before merging).\n  - `SHOW_API_SUGGEST=1 pnpm push` — print current page/API suggestions to help update `docs/api-index.md`.\n  - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows.\n  - `PUSH_LOG_DIR=/path` `PUSH_LOG_FILE=/path/file.log` — save a full push log to a custom location.\n  - `PUSH_COMMIT_MSG=\"feat: ...\" pnpm push` — override the auto-commit message when the script commits auto-fixes.\n  - `PUSH_COMMIT_MSG_FILE=commit.txt pnpm push` — provide a file as the commit message (optional; normally not needed).\n  - `PUSH_COMMIT_EDITOR=1 pnpm push` — open editor with optional template `.github/COMMIT_TEMPLATE.txt` (optional; normally not needed).\n  - Encoding/Docs:\n    - 自动执行“文档 ASCII 规范化”（中文全角标点转 ASCII、去零宽字符/不间断空格/全角空白、行尾空白清理、统一换行并确保末尾换行）。\n    - 自动执行“UTF‑8 无 BOM”规范：如发现 BOM 会自动剥离；`STRICT_BOM=1` 时改为失败退出。\n    - 可关闭：`SKIP_DOCS_NORMALIZE=1` 跳过文档规范化；`SKIP_BOM_CHECK=1` 跳过 BOM 检查。\n\n
+## 9. 提交前检查建议
+- 建议依次运行 `pnpm check:all`、`pnpm typecheck`、`pnpm lint`、`pnpm test`，确保关键质量门通过。
+- 根据变更情况手动执行 `pnpm check:docs`、`pnpm check:links`，同步整理文档后再提交。
+- 若团队需要自动化提交流程，可自行编写 Git 钩子或自定义脚本，本仓库默认保留手动控制。
+
 <!-- DOCSYNC:SCRIPTS_TABLE_AUTO START -->
 ### Common Scripts (auto)
 | Script | Command |
@@ -94,7 +93,7 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `cf-typegen` | `pnpm exec wrangler types && pnpm exec wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts` |
 | `cf:secret` | `npx wrangler secret put` |
 | `check:all` | `node scripts/check-all.mjs` |
-| `check:docs` | `node scripts/check-docs.mjs` |
+| `check:docs` | `node scripts/lib/doc-consistency-checker.mjs` |
 | `check:links` | `node scripts/check-links.mjs` |
 | `db:generate` | `drizzle-kit generate` |
 | `db:generate:named` | `drizzle-kit generate --name` |
@@ -114,10 +113,7 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `lint` | `npx biome format --write` |
 | `prebuild` | `pnpm run fix:i18n` |
 | `prebuild:cf` | `node scripts/prebuild-cf.mjs` |
-| `push` | `node -e "const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}" && node scripts/push-fix2.mjs` |
-| `push:rollback` | `node scripts/push-rollback.mjs` |
 | `start` | `next start` |
-| `suggest:api-index` | `node scripts/suggest-api-index.mjs` |
 | `test` | `vitest run` |
 | `test:ci` | `vitest run --reporter=dot` |
 | `translate` | `pnpm exec tsc --project tsconfig.translate.json && node dist/scripts/scripts/translate-locales.js` |
@@ -127,3 +123,5 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
 | `wrangler:dev` | `npx wrangler dev` |
 <!-- DOCSYNC:SCRIPTS_TABLE_AUTO END -->
+
+

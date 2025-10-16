@@ -100,11 +100,8 @@ pnpm run monitor:detect production 1h
 # 基础文档检查
 pnpm run check:docs
 
-# 文档优化和修复
-pnpm run optimize:docs:fix
-
-# 生成文档质量报告
-pnpm run optimize:docs:report
+# 链接校验
+pnpm run check:links
 ```
 
 ## 🎯 推荐的工作流程
