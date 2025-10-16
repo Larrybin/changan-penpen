@@ -258,26 +258,28 @@ const normalizeContentPageInput = (
     publishedAt: input.publishedAt ?? null,
 });
 
-const contentPageCrud = buildCrudService<ContentPageInput, typeof contentPages>({
-    table: contentPages,
-    buildCreateValues: (input, timestamp) =>
-        ({
-            ...normalizeContentPageInput(input),
-            createdAt: timestamp,
-            updatedAt: timestamp,
-        }) satisfies typeof contentPages.$inferInsert,
-    buildUpdateValues: (input, timestamp) =>
-        ({
-            ...normalizeContentPageInput(input),
-            updatedAt: timestamp,
-        }) satisfies Partial<typeof contentPages.$inferInsert>,
-    audit: {
-        targetType: "content_page",
-        create: "create_content_page",
-        update: "update_content_page",
-        delete: "delete_content_page",
+const contentPageCrud = buildCrudService<ContentPageInput, typeof contentPages>(
+    {
+        table: contentPages,
+        buildCreateValues: (input, timestamp) =>
+            ({
+                ...normalizeContentPageInput(input),
+                createdAt: timestamp,
+                updatedAt: timestamp,
+            }) satisfies typeof contentPages.$inferInsert,
+        buildUpdateValues: (input, timestamp) =>
+            ({
+                ...normalizeContentPageInput(input),
+                updatedAt: timestamp,
+            }) satisfies Partial<typeof contentPages.$inferInsert>,
+        audit: {
+            targetType: "content_page",
+            create: "create_content_page",
+            update: "update_content_page",
+            delete: "delete_content_page",
+        },
     },
-});
+);
 
 export const createContentPage = contentPageCrud.create;
 export const updateContentPage = contentPageCrud.update;
