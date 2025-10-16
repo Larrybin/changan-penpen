@@ -37,13 +37,12 @@
    - 完整的 DataTable 集成
    - 筛选和分页功能
 
-#### 1.3 代码优化
-创建了通用的 Hook 和工具函数：
+#### 1.3 代码维护调整
+最初我们尝试为 Admin DataTable 封装统一的分页、搜索 Hook 以及列工厂，但在后续评估中发现维护成本偏高。现已回滚至更直观的实现方式：
 
-- **`usePaginatedData` Hook**: 统一的分页数据管理
-- **`useSearchFilter` Hook**: 搜索筛选逻辑
-- **列工厂函数**: `createColumn`, `createTenantColumns` 等
-- **类型定义**: 完整的 TypeScript 类型支持
+- 页面直接组合 `useList`（或对应服务）与本地状态管理分页、搜索。
+- 列定义保留在各自页面中，便于按业务场景调整。
+- 相关实验性 Hook 与列工厂已在 2024 年统一移除，防止误用。
 
 ### ✅ 阶段 2：统一 Form 组件系统
 
@@ -110,7 +109,7 @@
 
 1. **Toast 系统指南**: `docs/Toast-System-Guide.md`
 2. **Server Action 状态同步指南**: `docs/ServerAction-StateSync-Guide.md`
-3. **DataTable 优化指南**: `docs/DataTable-Optimization-Guide.md`
+3. **DataTable 优化指南（已归档）**: `docs/DataTable-Optimization-Guide.md`
 4. **设计系统文档**: `docs/design-system.md`
 
 ## 技术架构
@@ -137,9 +136,6 @@ src/components/
 ```
 src/hooks/
 ├── use-server-action.ts    # Server Actions 状态管理
-├── data/
-│   ├── usePaginatedData.ts # 分页数据管理
-│   └── useSearchFilter.ts  # 搜索筛选
 └── form/
     └── use-zod-form.ts     # 表单状态管理
 ```
@@ -174,17 +170,32 @@ src/hooks/
 
 ### DataTable 使用
 ```tsx
+import { useMemo, useState } from "react";
+import { useList } from "@refinedev/core";
+import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data/data-table";
-import { createTenantColumns } from "@/utils/data-table";
 
-const columns = createTenantColumns();
+const columns: ColumnDef<TenantSummaryRecord>[] = useMemo(() => [
+  { accessorKey: "email", header: "租户" },
+  { accessorKey: "credits", header: "积分" },
+  // ...其他列
+], []);
+
+const [pageIndex, setPageIndex] = useState(0);
+const [pageSize, setPageSize] = useState(20);
+const { result } = useList<TenantSummaryRecord>({
+  resource: "tenants",
+  pagination: { current: pageIndex + 1, pageSize },
+});
+
 return (
   <DataTable
     columns={columns}
-    data={data}
-    isLoading={isLoading}
-    pagination={pagination}
-    onPaginationChange={setPagination}
+    data={result?.data ?? []}
+    pageIndex={pageIndex}
+    pageSize={pageSize}
+    onPageChange={setPageIndex}
+    onPageSizeChange={setPageSize}
   />
 );
 ```

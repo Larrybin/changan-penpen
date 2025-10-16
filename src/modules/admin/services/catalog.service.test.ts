@@ -149,10 +149,13 @@ afterEach(() => {
 
 describe("Product CRUD helpers", () => {
     it("creates products with defaults and audit log", async () => {
-        const product = await createProduct({
-            slug: "pro-plan",
-            name: "Pro Plan",
-        }, adminEmail);
+        const product = await createProduct(
+            {
+                slug: "pro-plan",
+                name: "Pro Plan",
+            },
+            adminEmail,
+        );
 
         expect(product).toMatchObject({
             id: 1,
@@ -180,10 +183,13 @@ describe("Product CRUD helpers", () => {
     });
 
     it("updates products using shared defaults", async () => {
-        const created = await createProduct({
-            slug: "starter",
-            name: "Starter",
-        }, adminEmail);
+        const created = await createProduct(
+            {
+                slug: "starter",
+                name: "Starter",
+            },
+            adminEmail,
+        );
         recordAdminAuditLogMock.mockClear();
 
         vi.setSystemTime(new Date("2024-01-02T00:00:00.000Z"));
@@ -221,10 +227,13 @@ describe("Product CRUD helpers", () => {
     });
 
     it("deletes products and records audit entry", async () => {
-        const created = await createProduct({
-            slug: "enterprise",
-            name: "Enterprise",
-        }, adminEmail);
+        const created = await createProduct(
+            {
+                slug: "enterprise",
+                name: "Enterprise",
+            },
+            adminEmail,
+        );
         recordAdminAuditLogMock.mockClear();
 
         await deleteProduct(created.id as number, adminEmail);
@@ -241,9 +250,12 @@ describe("Product CRUD helpers", () => {
 
 describe("Coupon CRUD helpers", () => {
     it("creates coupons with defaults and redeemed count", async () => {
-        const coupon = await createCoupon({
-            code: "NEWYEAR",
-        }, adminEmail);
+        const coupon = await createCoupon(
+            {
+                code: "NEWYEAR",
+            },
+            adminEmail,
+        );
 
         expect(coupon).toMatchObject({
             id: 1,
@@ -269,10 +281,13 @@ describe("Coupon CRUD helpers", () => {
     });
 
     it("updates coupons while preserving defaults", async () => {
-        const created = await createCoupon({
-            code: "SAVE20",
-            discountValue: 20,
-        }, adminEmail);
+        const created = await createCoupon(
+            {
+                code: "SAVE20",
+                discountValue: 20,
+            },
+            adminEmail,
+        );
         recordAdminAuditLogMock.mockClear();
 
         vi.setSystemTime(new Date("2024-01-03T00:00:00.000Z"));
@@ -310,9 +325,12 @@ describe("Coupon CRUD helpers", () => {
     });
 
     it("deletes coupons and logs audit", async () => {
-        const created = await createCoupon({
-            code: "DELETE",
-        }, adminEmail);
+        const created = await createCoupon(
+            {
+                code: "DELETE",
+            },
+            adminEmail,
+        );
         recordAdminAuditLogMock.mockClear();
 
         await deleteCoupon(created.id as number, adminEmail);
@@ -329,10 +347,13 @@ describe("Coupon CRUD helpers", () => {
 
 describe("Content page CRUD helpers", () => {
     it("creates content pages with defaults", async () => {
-        const page = await createContentPage({
-            title: "About",
-            slug: "about",
-        }, adminEmail);
+        const page = await createContentPage(
+            {
+                title: "About",
+                slug: "about",
+            },
+            adminEmail,
+        );
 
         expect(page).toMatchObject({
             id: 1,
@@ -359,10 +380,13 @@ describe("Content page CRUD helpers", () => {
     });
 
     it("updates content pages with shared defaults", async () => {
-        const created = await createContentPage({
-            title: "Docs",
-            slug: "docs",
-        }, adminEmail);
+        const created = await createContentPage(
+            {
+                title: "Docs",
+                slug: "docs",
+            },
+            adminEmail,
+        );
         recordAdminAuditLogMock.mockClear();
 
         vi.setSystemTime(new Date("2024-01-04T00:00:00.000Z"));
@@ -400,10 +424,13 @@ describe("Content page CRUD helpers", () => {
     });
 
     it("deletes content pages and records audit", async () => {
-        const created = await createContentPage({
-            title: "Legal",
-            slug: "legal",
-        }, adminEmail);
+        const created = await createContentPage(
+            {
+                title: "Legal",
+                slug: "legal",
+            },
+            adminEmail,
+        );
         recordAdminAuditLogMock.mockClear();
 
         await deleteContentPage(created.id as number, adminEmail);
