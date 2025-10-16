@@ -7,6 +7,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 
@@ -213,6 +214,16 @@ function useSerializedParams(params: unknown) {
     return useMemo(() => JSON.stringify(params ?? {}), [params]);
 }
 
+function useHasHydrated() {
+    const [hasHydrated, setHasHydrated] = useState(false);
+
+    useEffect(() => {
+        setHasHydrated(true);
+    }, []);
+
+    return hasHydrated;
+}
+
 type QueryLike<TData> = {
     data: TData;
     error: Error | null;
@@ -225,19 +236,20 @@ function useQueryLike<TData>(config: {
     data: TData;
     error: Error | null;
     isLoading: boolean;
+    isFetching: boolean;
     refetch: () => Promise<void>;
 }): QueryLike<TData> {
-    const { data, error, isLoading, refetch } = config;
+    const { data, error, isLoading, isFetching, refetch } = config;
 
     return useMemo(
         () => ({
             data,
             error,
             isLoading,
-            isFetching: isLoading,
+            isFetching,
             refetch,
         }),
-        [data, error, isLoading, refetch],
+        [data, error, isFetching, isLoading, refetch],
     );
 }
 
@@ -249,23 +261,44 @@ export function useList<TData = BaseRecord>(params: GetListParams) {
     const { dataProvider } = useRefineContext();
     const [data, setData] = useState<ListResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const _serialized = useSerializedParams(params);
+    const [isLoadingState, setIsLoadingState] = useState<boolean>(true);
+    const [isFetching, setIsFetching] = useState<boolean>(false);
+    const hasFetchedRef = useRef<boolean>(false);
+    const hasHydrated = useHasHydrated();
+    const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+    const paramsKeyRef = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (paramsKeyRef.current === serializedParams) {
+            return;
+        }
+        paramsKeyRef.current = serializedParams;
+        hasFetchedRef.current = false;
+        setIsLoadingState(true);
+        setIsFetching(false);
+        setError(null);
+        setData(undefined);
+    }, [serializedParams]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
         if (!enabled) {
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(!hasFetchedRef.current);
             return;
         }
         if (!dataProvider?.getList) {
             setData({ data: [], total: 0 });
             setError(null);
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(false);
+            hasFetchedRef.current = true;
             return;
         }
-        setIsLoading(true);
+        const hasExistingData = hasFetchedRef.current;
+        setIsFetching(true);
+        setIsLoadingState(!hasExistingData);
         try {
             const response = await dataProvider.getList<TData>(stableParams);
             setData({
@@ -275,11 +308,16 @@ export function useList<TData = BaseRecord>(params: GetListParams) {
                     (Array.isArray(response.data) ? response.data.length : 0),
             });
             setError(null);
+            hasFetchedRef.current = true;
         } catch (err) {
             setError(toError(err));
-            setData({ data: [], total: 0 });
+            if (!hasExistingData) {
+                setData({ data: [], total: 0 });
+            }
+            hasFetchedRef.current = true;
         } finally {
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(false);
         }
     }, [dataProvider, stableParams]);
 
@@ -294,15 +332,16 @@ export function useList<TData = BaseRecord>(params: GetListParams) {
     const query = useQueryLike<ListResponse<TData>>({
         data,
         error,
-        isLoading,
+        isLoading: !hasHydrated || isLoadingState,
+        isFetching,
         refetch,
     });
 
     return {
         data,
         error,
-        isLoading,
-        isFetching: isLoading,
+        isLoading: !hasHydrated || isLoadingState,
+        isFetching,
         refetch,
         query,
         queryResult: query,
@@ -314,32 +353,58 @@ export function useOne<TData = BaseRecord>(params: GetOneParams) {
     const { dataProvider } = useRefineContext();
     const [data, setData] = useState<OneResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const _serialized = useSerializedParams(params);
+    const [isLoadingState, setIsLoadingState] = useState<boolean>(true);
+    const [isFetching, setIsFetching] = useState<boolean>(false);
+    const hasFetchedRef = useRef<boolean>(false);
+    const hasHydrated = useHasHydrated();
+    const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+    const paramsKeyRef = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (paramsKeyRef.current === serializedParams) {
+            return;
+        }
+        paramsKeyRef.current = serializedParams;
+        hasFetchedRef.current = false;
+        setIsLoadingState(true);
+        setIsFetching(false);
+        setError(null);
+        setData(undefined);
+    }, [serializedParams]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
         if (!enabled) {
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(!hasFetchedRef.current);
             return;
         }
         if (!dataProvider?.getOne) {
             setData(undefined);
             setError(null);
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(false);
+            hasFetchedRef.current = true;
             return;
         }
-        setIsLoading(true);
+        const hasExistingData = hasFetchedRef.current;
+        setIsFetching(true);
+        setIsLoadingState(!hasExistingData);
         try {
             const response = await dataProvider.getOne<TData>(stableParams);
             setData(response);
             setError(null);
+            hasFetchedRef.current = true;
         } catch (err) {
             setError(toError(err));
-            setData(undefined);
+            if (!hasExistingData) {
+                setData(undefined);
+            }
+            hasFetchedRef.current = true;
         } finally {
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(false);
         }
     }, [dataProvider, stableParams]);
 
@@ -354,15 +419,16 @@ export function useOne<TData = BaseRecord>(params: GetOneParams) {
     const query = useQueryLike<OneResponse<TData>>({
         data,
         error,
-        isLoading,
+        isLoading: !hasHydrated || isLoadingState,
+        isFetching,
         refetch,
     });
 
     return {
         data,
         error,
-        isLoading,
-        isFetching: isLoading,
+        isLoading: !hasHydrated || isLoadingState,
+        isFetching,
         refetch,
         query,
         queryResult: query,
@@ -374,23 +440,44 @@ export function useCustom<TData = BaseRecord>(params: CustomParams) {
     const { dataProvider } = useRefineContext();
     const [data, setData] = useState<CustomResponse<TData>>();
     const [error, setError] = useState<Error | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const _serialized = useSerializedParams(params);
+    const [isLoadingState, setIsLoadingState] = useState<boolean>(true);
+    const [isFetching, setIsFetching] = useState<boolean>(false);
+    const hasFetchedRef = useRef<boolean>(false);
+    const hasHydrated = useHasHydrated();
+    const serializedParams = useSerializedParams(params);
     const stableParams = useMemo(() => params, [params]);
+    const paramsKeyRef = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (paramsKeyRef.current === serializedParams) {
+            return;
+        }
+        paramsKeyRef.current = serializedParams;
+        hasFetchedRef.current = false;
+        setIsLoadingState(true);
+        setIsFetching(false);
+        setError(null);
+        setData(undefined);
+    }, [serializedParams]);
 
     const execute = useCallback(async () => {
         const enabled = stableParams.queryOptions?.enabled ?? true;
         if (!enabled) {
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(!hasFetchedRef.current);
             return;
         }
         if (!dataProvider?.custom) {
             setData({});
             setError(null);
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(false);
+            hasFetchedRef.current = true;
             return;
         }
-        setIsLoading(true);
+        const hasExistingData = hasFetchedRef.current;
+        setIsFetching(true);
+        setIsLoadingState(!hasExistingData);
         try {
             const response = await dataProvider.custom<TData>(stableParams);
             setData(
@@ -399,11 +486,16 @@ export function useCustom<TData = BaseRecord>(params: CustomParams) {
                     : { data: response as TData },
             );
             setError(null);
+            hasFetchedRef.current = true;
         } catch (err) {
             setError(toError(err));
-            setData({});
+            if (!hasExistingData) {
+                setData({});
+            }
+            hasFetchedRef.current = true;
         } finally {
-            setIsLoading(false);
+            setIsFetching(false);
+            setIsLoadingState(false);
         }
     }, [dataProvider, stableParams]);
 
@@ -418,15 +510,16 @@ export function useCustom<TData = BaseRecord>(params: CustomParams) {
     const query = useQueryLike<CustomResponse<TData>>({
         data,
         error,
-        isLoading,
+        isLoading: !hasHydrated || isLoadingState,
+        isFetching,
         refetch,
     });
 
     return {
         data,
         error,
-        isLoading,
-        isFetching: isLoading,
+        isLoading: !hasHydrated || isLoadingState,
+        isFetching,
         refetch,
         query,
         queryResult: query,
