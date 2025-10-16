@@ -34,6 +34,17 @@ export async function recordUsage(input: UsageRecordInput) {
     const nowIso = now.toISOString();
     const date = nowIso.slice(0, 10); // YYYY-MM-DD
 
+    let newCredits: number | undefined;
+    if (input.consumeCredits && input.consumeCredits > 0) {
+        const balance = await consumeCredits({
+            userId: input.userId,
+            amount: input.consumeCredits,
+            description: `Usage: ${feature}`,
+        });
+
+        newCredits = balance;
+    }
+
     await db.insert(usageEvents).values({
         userId: input.userId,
         feature,
@@ -63,19 +74,10 @@ export async function recordUsage(input: UsageRecordInput) {
             },
         });
 
-    let newCredits: number | undefined;
-    if (input.consumeCredits && input.consumeCredits > 0) {
-        const balance = await consumeCredits({
-            userId: input.userId,
-            amount: input.consumeCredits,
-            description: `Usage: ${feature}`,
-        });
-
-        newCredits = balance;
-
+    if (newCredits !== undefined) {
         await db
             .update(customers)
-            .set({ credits: balance, updatedAt: nowIso })
+            .set({ credits: newCredits, updatedAt: nowIso })
             .where(eq(customers.userId, input.userId));
     }
 
