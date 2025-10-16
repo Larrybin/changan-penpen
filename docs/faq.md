@@ -42,3 +42,4 @@ See [docs/local-dev.md](local-dev.md) for local debugging strategies and [docs/t
 
 ### What should I do if documentation links fail validation?
 Update or add the target documents so that `pnpm run check:links` passes. Reference `docs/docs-maintenance.md` for the docs workflow and validation tooling overview.
+ 
