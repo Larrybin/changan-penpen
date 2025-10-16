@@ -20,5 +20,5 @@
 ## Debugging
 - `wrangler dev --inspect` for edge debugging.
 - Tail logs with `wrangler tail`.
-- Add `/api/health` fast/strict checks during rollout.
+- Add `/api/v1/health` fast/strict checks during rollout.
 

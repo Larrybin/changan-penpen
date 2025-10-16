@@ -1,3 +1,5 @@
+import handleApiError from "@/lib/api-error";
+import { createApiErrorResponse } from "@/lib/http-error";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { recordUsage } from "@/modules/creem/services/usage.service";
 
@@ -14,13 +16,11 @@ export async function POST(request: Request) {
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user) {
-            return new Response(
-                JSON.stringify({ success: false, error: "Unauthorized" }),
-                {
-                    status: 401,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            return createApiErrorResponse({
+                status: 401,
+                code: "UNAUTHORIZED",
+                message: "Authentication required",
+            });
         }
 
         const body = (await request.json()) as Body;
@@ -28,16 +28,17 @@ export async function POST(request: Request) {
         const amount = Number(body.amount ?? 0);
         const unit = (body.unit || "").trim();
         if (!feature || !unit || !Number.isFinite(amount) || amount <= 0) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Invalid feature/unit or amount must be positive",
-                }),
-                {
-                    status: 400,
-                    headers: { "Content-Type": "application/json" },
+            return createApiErrorResponse({
+                status: 400,
+                code: "INVALID_REQUEST",
+                message:
+                    "feature/unit must be provided and amount must be positive",
+                details: {
+                    feature,
+                    unit,
+                    amount,
                 },
-            );
+            });
         }
 
         const result = await recordUsage({
@@ -61,16 +62,6 @@ export async function POST(request: Request) {
         );
     } catch (error) {
         console.error("[api/usage/record] error:", error);
-        return new Response(
-            JSON.stringify({
-                success: false,
-                error: "Internal server error",
-                code: "ERR_UNEXPECTED",
-            }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
+        return handleApiError(error);
     }
 }

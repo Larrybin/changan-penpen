@@ -1,4 +1,6 @@
 ﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
+import handleApiError from "@/lib/api-error";
+import { ApiError } from "@/lib/http-error";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import {
@@ -112,17 +114,10 @@ export async function POST(request: Request) {
         const auth = await getAuthInstance();
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Unauthorized",
-                    data: null,
-                }),
-                {
-                    status: 401,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            throw new ApiError("Authentication required", {
+                status: 401,
+                code: "UNAUTHORIZED",
+            });
         }
 
         const cfContext = await getCloudflareContext({ async: true });
@@ -171,17 +166,10 @@ export async function POST(request: Request) {
 
         // 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
         if (isEnvMissing(cf)) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Missing CREEM_API_URL or CREEM_API_KEY",
-                    data: null,
-                }),
-                {
-                    status: 500,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            throw new ApiError("Missing CREEM_API_URL or CREEM_API_KEY", {
+                status: 503,
+                code: "SERVICE_UNAVAILABLE",
+            });
         }
 
         const normalizedType = (body.productType || "").toLowerCase();
@@ -193,17 +181,14 @@ export async function POST(request: Request) {
         const allowed = allowedProductIds();
 
         if (!productId || !allowed.has(productId)) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Invalid or missing productId/tierId",
-                    data: null,
-                }),
-                {
-                    status: 400,
-                    headers: { "Content-Type": "application/json" },
+            throw new ApiError("Invalid or missing productId/tierId", {
+                status: 400,
+                code: "INVALID_REQUEST",
+                details: {
+                    productId,
+                    tierId: body.tierId ?? null,
                 },
-            );
+            });
         }
 
         const productType: "subscription" | "credits" = isSubscription
@@ -211,17 +196,10 @@ export async function POST(request: Request) {
             : "credits";
         const email = session.user.email;
         if (!email) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "User email required",
-                    data: null,
-                }),
-                {
-                    status: 400,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            throw new ApiError("User email required", {
+                status: 400,
+                code: "INVALID_REQUEST",
+            });
         }
 
         const requestBody: {
@@ -269,37 +247,29 @@ export async function POST(request: Request) {
                 ? "Create checkout failed due to invalid request"
                 : "Create checkout failed";
             const mapped = _mapUpstreamToHttp(status);
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: errorMessage,
-                    data: null,
-                    meta: {
-                        status,
-                        attempts,
-                        contentType: contentType || null,
-                        upstreamBodySnippet: snippet,
-                        isClientError,
-                    },
-                }),
-                {
-                    status: mapped,
-                    headers: { "Content-Type": "application/json" },
+            throw new ApiError(errorMessage, {
+                status: mapped,
+                code: isClientError
+                    ? "UPSTREAM_BAD_REQUEST"
+                    : "UPSTREAM_FAILURE",
+                details: {
+                    status,
+                    attempts,
+                    contentType: contentType || null,
+                    upstreamBodySnippet: snippet,
+                    isClientError,
                 },
-            );
+            });
         }
 
         const checkoutUrl = _ensureCheckoutUrl(data);
         if (!checkoutUrl) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Invalid response from Creem: missing checkout_url",
-                    data: null,
-                }),
+            throw new ApiError(
+                "Invalid response from Creem: missing checkout_url",
                 {
                     status: 502,
-                    headers: { "Content-Type": "application/json" },
+                    code: "UPSTREAM_INVALID_RESPONSE",
+                    details: { data },
                 },
             );
         }
@@ -318,15 +288,8 @@ export async function POST(request: Request) {
             },
         );
     } catch (error) {
-        const message =
-            error instanceof Error ? error.message : "Unknown error";
-        return new Response(
-            JSON.stringify({ success: false, error: message, data: null }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
+        console.error("[api/creem/create-checkout] error", error);
+        return handleApiError(error);
     }
 }
 

@@ -577,7 +577,7 @@ Error: Service unhealthy
 
 ```bash
 # 检查各个服务状态
-curl -f http://localhost:3000/api/health
+curl -f http://localhost:3000/api/v1/health
 ```
 
 #### 方案2: 重启服务

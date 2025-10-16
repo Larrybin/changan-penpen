@@ -1,5 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb, user } from "@/db";
+import handleApiError from "@/lib/api-error";
+import { createApiErrorResponse } from "@/lib/http-error";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { addFreeMonthlyCreditsIfNeeded } from "@/modules/billing/services/credits.service";
 
@@ -9,13 +11,11 @@ export async function GET(request: Request) {
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session?.user) {
-            return new Response(
-                JSON.stringify({ success: false, error: "Unauthorized" }),
-                {
-                    status: 401,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            return createApiErrorResponse({
+                status: 401,
+                code: "UNAUTHORIZED",
+                message: "Authentication required",
+            });
         }
 
         const credits = await addFreeMonthlyCreditsIfNeeded(session.user.id);
@@ -36,12 +36,6 @@ export async function GET(request: Request) {
         );
     } catch (error) {
         console.error("[api/credits/balance] error:", error);
-        return new Response(
-            JSON.stringify({
-                success: false,
-                error: "Internal server error",
-            }),
-            { status: 500, headers: { "Content-Type": "application/json" } },
-        );
+        return handleApiError(error);
     }
 }

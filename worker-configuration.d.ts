@@ -19,6 +19,11 @@ declare namespace Cloudflare {
                 CREEM_SUCCESS_URL: string;
                 CREEM_CANCEL_URL: string;
                 CREEM_LOG_WEBHOOK_SIGNATURE: string;
+                SENTRY_DSN?: string;
+                SENTRY_RELEASE?: string;
+                SENTRY_TRACES_SAMPLE_RATE?: string;
+                SENTRY_PROFILES_SAMPLE_RATE?: string;
+                SENTRY_TUNNEL?: string;
                 HEALTH_ACCESS_TOKEN?: string;
                 ADMIN_FORCE_SECURE_COOKIES?: string;
                 RATE_LIMITER: RateLimit;

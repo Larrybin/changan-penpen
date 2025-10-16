@@ -7,7 +7,7 @@
 - Clear `.open-next` and rebuild: `rm -rf .open-next && pnpm deploy:cf`.
 
 ### Health check returns 503
-- Run `/api/health?fast=1` to isolate external dependencies.
+- Run `/api/v1/health?fast=1` to isolate external dependencies.
 - Check D1 connectivity (see `docs/db-d1.md`) and R2 permissions.
 - Verify external endpoint (`CREEM_API_URL`) and API key.
 
@@ -25,7 +25,7 @@
 ## Diagnostics
 - `pnpm dev:cf` — local Workers environment.
 - `wrangler tail` — live logs.
-- `/api/health` — fast vs strict.
+- `/api/v1/health` — fast vs strict.
 - `drizzle-kit status` — migration status.
 
 ## Escalation

@@ -45,7 +45,7 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 ## Tips
 - Keep minimal variables in CI; prefer Workers secrets
 - Avoid leaking secrets into logs or client env (`NEXT_PUBLIC_*` is public)
-- Validate configuration via `/api/health` strict mode before rollout
+- Validate configuration via `/api/v1/health` strict mode before rollout
 - Normalize encoding: ensure JSON/JSONC/YAML files (e.g., `wrangler.toml`, `.github/workflows/*.yml`) are saved as UTF-8 without BOM. The local push helper auto-strips BOM if found; configure your editor (e.g., VS Code `files.encoding = "utf8"`, `files.eol = "\n"`) and/or `.editorconfig` to prevent BOM from being reintroduced.
 
 <!-- DOCSYNC:ENV_BINDINGS START -->

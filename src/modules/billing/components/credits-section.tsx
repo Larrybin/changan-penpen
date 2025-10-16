@@ -11,13 +11,29 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface BalanceResponse {
-    success: boolean;
-    data?: {
+interface ApiErrorPayload {
+    code: string;
+    message: string;
+    details?: unknown;
+}
+
+interface ApiErrorResponse {
+    success: false;
+    error: ApiErrorPayload;
+    status: number;
+    timestamp: string;
+    traceId: string;
+}
+
+interface BalanceSuccessResponse {
+    success: true;
+    data: {
         credits: number;
     };
-    error?: string;
+    error?: null;
 }
+
+type BalanceResponse = BalanceSuccessResponse | ApiErrorResponse;
 
 interface CreditTransaction {
     id: string;
@@ -30,9 +46,9 @@ interface CreditTransaction {
     createdAt: string | null;
 }
 
-interface HistoryResponse {
-    success: boolean;
-    data?: {
+interface HistorySuccessResponse {
+    success: true;
+    data: {
         transactions: CreditTransaction[];
         pagination: {
             total: number;
@@ -40,8 +56,10 @@ interface HistoryResponse {
             current: number;
         };
     };
-    error?: string;
+    error?: null;
 }
+
+type HistoryResponse = HistorySuccessResponse | ApiErrorResponse;
 
 const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
@@ -58,6 +76,21 @@ function formatDateTime(value: string | null | undefined) {
     return dateTimeFormatter.format(date);
 }
 
+function extractErrorMessage(payload: { error?: unknown } | null | undefined) {
+    if (!payload || !payload.error) return "";
+    const { error } = payload;
+    if (typeof error === "string") return error;
+    if (
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message: unknown }).message === "string"
+    ) {
+        return (error as { message: string }).message;
+    }
+    return "";
+}
+
 export default function CreditsSection() {
     const [isLoading, setIsLoading] = useState(true);
     const [balance, setBalance] = useState<number | null>(null);
@@ -70,11 +103,11 @@ export default function CreditsSection() {
         setError(null);
         try {
             const [balanceRes, historyRes] = await Promise.all([
-                fetch("/api/credits/balance", {
+                fetch("/api/v1/credits/balance", {
                     method: "GET",
                     headers: { "Content-Type": "application/json" },
                 }),
-                fetch("/api/credits/history?limit=10", {
+                fetch("/api/v1/credits/history?limit=10", {
                     method: "GET",
                     headers: { "Content-Type": "application/json" },
                 }),
@@ -82,13 +115,15 @@ export default function CreditsSection() {
 
             const balanceJson = (await balanceRes.json()) as BalanceResponse;
             if (!balanceRes.ok || !balanceJson.success) {
-                throw new Error(balanceJson.error || "获取余额失败");
+                const errorMessage = extractErrorMessage(balanceJson);
+                throw new Error(errorMessage || "获取余额失败");
             }
             setBalance(balanceJson.data?.credits ?? 0);
 
             const historyJson = (await historyRes.json()) as HistoryResponse;
             if (!historyRes.ok || !historyJson.success) {
-                throw new Error(historyJson.error || "获取交易历史失败");
+                const errorMessage = extractErrorMessage(historyJson);
+                throw new Error(errorMessage || "获取交易历史失败");
             }
             setTransactions(historyJson.data?.transactions ?? []);
         } catch (err) {

@@ -11,24 +11,24 @@ describe("openapi document", () => {
     });
 
     it("registers summarize endpoint", () => {
-        const summarize = document.paths?.["/api/summarize"]?.post;
+        const summarize = document.paths?.["/api/v1/summarize"]?.post;
         expect(summarize).toBeDefined();
         expect(summarize?.responses?.["200"]).toBeDefined();
     });
 
     it("registers usage endpoints", () => {
-        expect(document.paths?.["/api/usage/record"]?.post).toBeDefined();
-        expect(document.paths?.["/api/usage/stats"]?.get).toBeDefined();
+        expect(document.paths?.["/api/v1/usage/record"]?.post).toBeDefined();
+        expect(document.paths?.["/api/v1/usage/stats"]?.get).toBeDefined();
     });
 
     it("registers credits endpoints", () => {
-        expect(document.paths?.["/api/credits/balance"]?.get).toBeDefined();
-        expect(document.paths?.["/api/credits/history"]?.get).toBeDefined();
+        expect(document.paths?.["/api/v1/credits/balance"]?.get).toBeDefined();
+        expect(document.paths?.["/api/v1/credits/history"]?.get).toBeDefined();
     });
 
     it("registers admin endpoints", () => {
-        expect(document.paths?.["/api/admin/session"]?.get).toBeDefined();
-        expect(document.paths?.["/api/admin/usage"]?.get).toBeDefined();
+        expect(document.paths?.["/api/v1/admin/session"]?.get).toBeDefined();
+        expect(document.paths?.["/api/v1/admin/usage"]?.get).toBeDefined();
     });
 
     it("marks server action path as internal", () => {

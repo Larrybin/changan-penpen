@@ -44,7 +44,6 @@
         "check:links": "node scripts/check-links.mjs",
         "suggest:api-index": "node scripts/suggest-api-index.mjs",
         "push:rollback": "node scripts/push-rollback.mjs",
-
         "check:docs": "node scripts/lib/doc-consistency-checker.mjs",
         "check:docs:strict": "DOC_STRICT_MODE=1 node scripts/lib/doc-consistency-checker.mjs",
         "check:docs:mcp": "ENABLE_MCP=1 node scripts/lib/doc-consistency-checker.mjs",
@@ -65,6 +64,7 @@
         "@radix-ui/react-select": "^2.2.6",
         "@radix-ui/react-separator": "^1.1.7",
         "@radix-ui/react-slot": "^1.2.3",
+        "@sentry/cloudflare": "^8.32.0",
         "@tanstack/react-query": "^5.62.8",
         "@tanstack/react-table": "^8.21.2",
         "@upstash/ratelimit": "^2.0.6",
@@ -96,6 +96,7 @@
         "@tailwindcss/postcss": "^4",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",
+        "@testing-library/user-event": "^14.6.1",
         "@types/better-sqlite3": "^7.6.13",
         "@types/node": "^24.7.2",
         "@types/react": "^19",

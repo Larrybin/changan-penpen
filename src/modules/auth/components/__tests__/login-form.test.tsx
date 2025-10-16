@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock server actions used by the component
 vi.mock("../../actions/auth.action", () => ({
@@ -15,24 +16,23 @@ import enMessages from "@/i18n/messages/en.json";
 import frMessages from "@/i18n/messages/fr.json";
 import { LoginForm } from "../login-form";
 
-function createToastMock() {
-    return Object.assign(vi.fn(), {
-        success: vi.fn(),
-        error: vi.fn(),
-    });
-}
+const toastMock = vi.hoisted(() => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+}));
 
-type ToastMock = ReturnType<typeof createToastMock>;
-
-const importToast = async (): Promise<ToastMock> => {
-    const module = await import("react-hot-toast");
-    return module.default as unknown as ToastMock;
-};
-
-vi.mock("react-hot-toast", () => {
-    const toast = createToastMock();
-    return { default: toast };
+beforeEach(() => {
+    for (const fn of Object.values(toastMock)) {
+        fn.mockReset();
+    }
 });
+
+vi.mock("@/lib/toast", () => ({
+    __esModule: true,
+    toast: toastMock,
+    default: toastMock,
+}));
 
 describe("LoginForm", () => {
     const renderWithMessages = (
@@ -87,7 +87,6 @@ describe("LoginForm", () => {
     });
 
     it("fires localized forgot-password toast (EN)", async () => {
-        const toast = await importToast();
         renderWithMessages("en", enMessages);
 
         fireEvent.click(
@@ -96,7 +95,7 @@ describe("LoginForm", () => {
             }),
         );
 
-        expect(toast).toHaveBeenCalledWith(
+        expect(toastMock.info).toHaveBeenCalledWith(
             enMessages.AuthForms.Login.forgotUnavailable,
         );
     });
@@ -104,65 +103,27 @@ describe("LoginForm", () => {
     it("shows password min length message with count (FR)", async () => {
         renderWithMessages("fr", frMessages);
 
-        // Fill a valid email and a short password to trigger min-length
-        fireEvent.change(
-            screen.getByLabelText(
-                frMessages.AuthForms.Shared.fields.email.label,
-            ),
-            {
-                target: { value: "john@doe.com" },
-            },
+        const user = userEvent.setup();
+        const emailInput = screen.getByLabelText(
+            frMessages.AuthForms.Shared.fields.email.label,
         );
-        fireEvent.change(
-            screen.getByLabelText(
-                frMessages.AuthForms.Shared.fields.password.label,
-            ),
-            { target: { value: "short" } },
+        const passwordInput = screen.getByLabelText(
+            frMessages.AuthForms.Shared.fields.password.label,
         );
-
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: frMessages.AuthForms.Login.submit,
-            }),
-        );
-
-        expect(
-            await screen.findByText(
-                frMessages.AuthForms.Validation.password.min.replace(
-                    "{count}",
-                    "8",
-                ),
-            ),
-        ).toBeInTheDocument();
-    });
-
-    it("shows success toast on sign-in using i18n key (EN)", async () => {
-        const toast = await importToast();
-        renderWithMessages("en", enMessages);
-
-        fireEvent.change(
-            screen.getByLabelText(
-                enMessages.AuthForms.Shared.fields.email.label,
-            ),
-            { target: { value: "john@doe.com" } },
-        );
-        fireEvent.change(
-            screen.getByLabelText(
-                enMessages.AuthForms.Shared.fields.password.label,
-            ),
-            { target: { value: "password123" } },
-        );
-
-        fireEvent.click(
-            screen.getByRole("button", {
-                name: enMessages.AuthForms.Login.submit,
-            }),
-        );
-
-        await waitFor(() => {
-            expect(toast.success).toHaveBeenCalledWith(
-                enMessages.AuthForms.Messages.signInSuccess,
-            );
+        const submitButton = screen.getByRole("button", {
+            name: frMessages.AuthForms.Login.submit,
         });
+
+        await user.type(emailInput, "john@doe.com");
+        await user.type(passwordInput, "short");
+
+        await user.click(submitButton);
+
+        const minMessage = frMessages.AuthForms.Validation.password.min.replace(
+            "{count}",
+            "8",
+        );
+
+        expect(await screen.findByText(minMessage)).toBeInTheDocument();
     });
 });

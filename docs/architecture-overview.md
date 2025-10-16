@@ -20,7 +20,7 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 - Edge‑first: pages, Server Actions, and APIs run on Workers by default; switch to `runtime = "nodejs"` only when needed.
 - Static assets: OpenNext emits `.open-next/assets` and serves via Worker `ASSETS` binding.
 - API routes: under `src/app/**/route.ts` and module‑owned `*.route.ts`.
-- Health: `/api/health` supports fast/strict modes for deploy checks and alerting.
+- Health: `/api/v1/health` supports fast/strict modes for deploy checks and alerting.
 
 ## Directory Layout (Quick Reference)
 | Path | Description |
@@ -66,13 +66,13 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 ## Dev → Deploy
 1. Local — `pnpm dev` (Node) or `pnpm dev:cf` (OpenNext + Wrangler).
 2. Quality gates — `pnpm lint`, `pnpm test`, `pnpm build`; CI runs them on PRs.
-3. Deploy — push to `main` or run `pnpm deploy:cf` → OpenNext build → `wrangler deploy` → `/api/health` check.
+3. Deploy — push to `main` or run `pnpm deploy:cf` → OpenNext build → `wrangler deploy` → `/api/v1/health` check.
 4. Rollback — `wrangler deploy --rollback` and restore D1 from artifact if needed.
 
 ## Extension Guide
 - New page — add `src/app/<route>/page.tsx` and reuse module components.
 - New domain — create `src/modules/<feature>/{components,services,schemas}`.
-- New API — prefer Server Actions; for REST add `src/app/api/<name>/<action>.route.ts`.
+- New API — prefer Server Actions; for REST add `src/app/api/v1/<name>/<action>.route.ts`.
 - Cron/Workers — update `wrangler.toml`, `docs/opennext.md`, and deployment docs.
 
 ## Compatibility Notes

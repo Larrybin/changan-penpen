@@ -42,7 +42,7 @@ describe("adminDataProvider", () => {
         });
 
         expect(fetchMock).toHaveBeenCalledWith(
-            "/api/admin/todos?page=2&perPage=10&status=open&priority=high&priority=low&sortBy=createdAt&sortOrder=desc",
+            "/api/v1/admin/todos?page=2&perPage=10&status=open&priority=high&priority=low&sortBy=createdAt&sortOrder=desc",
             {
                 method: "GET",
                 credentials: "include",
@@ -104,7 +104,7 @@ describe("adminDataProvider", () => {
             resource: "todos",
             variables: { title: "Task" },
         });
-        expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/admin/todos", {
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/v1/admin/todos", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
@@ -116,7 +116,7 @@ describe("adminDataProvider", () => {
             id: 1,
             variables: { title: "Updated" },
         });
-        expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/admin/todos/1", {
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/admin/todos/1", {
             method: "PATCH",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
@@ -131,7 +131,7 @@ describe("adminDataProvider", () => {
             resource: "todos",
             id: 7,
         });
-        expect(fetchMock).toHaveBeenCalledWith("/api/admin/todos/7", {
+        expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/todos/7", {
             method: "DELETE",
             credentials: "include",
         });
@@ -153,7 +153,7 @@ describe("adminDataProvider", () => {
             meta: { headers: { Authorization: "Bearer token" } },
         });
 
-        expect(fetchMock).toHaveBeenCalledWith("/api/admin/reports", {
+        expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/reports", {
             method: "POST",
             credentials: "include",
             headers: {

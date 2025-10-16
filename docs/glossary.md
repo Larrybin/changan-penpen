@@ -8,5 +8,5 @@
 - R2 — Cloudflare object storage
 - Workers AI — Cloudflare AI inference endpoints
 - Better Auth — Authentication library used in this project
-- Health Check — `/api/health` endpoint used by CI and Ops
+- Health Check — `/api/v1/health` endpoint used by CI and Ops
 

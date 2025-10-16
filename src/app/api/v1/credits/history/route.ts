@@ -1,3 +1,5 @@
+import handleApiError from "@/lib/api-error";
+import { createApiErrorResponse } from "@/lib/http-error";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { getCreditTransactions } from "@/modules/billing/services/credits.service";
 
@@ -7,13 +9,11 @@ export async function GET(request: Request) {
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session?.user) {
-            return new Response(
-                JSON.stringify({ success: false, error: "Unauthorized" }),
-                {
-                    status: 401,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+            return createApiErrorResponse({
+                status: 401,
+                code: "UNAUTHORIZED",
+                message: "Authentication required",
+            });
         }
 
         const url = new URL(request.url);
@@ -35,12 +35,6 @@ export async function GET(request: Request) {
         );
     } catch (error) {
         console.error("[api/credits/history] error:", error);
-        return new Response(
-            JSON.stringify({
-                success: false,
-                error: "Internal server error",
-            }),
-            { status: 500, headers: { "Content-Type": "application/json" } },
-        );
+        return handleApiError(error);
     }
 }

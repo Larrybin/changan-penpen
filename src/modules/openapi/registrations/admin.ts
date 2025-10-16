@@ -77,7 +77,7 @@ const adminCreditHistoryResponseSchema = z
 export function registerAdminPaths(registry: OpenAPIRegistry) {
     registry.registerPath({
         method: "get",
-        path: "/api/admin/session",
+        path: "/api/v1/admin/session",
         tags: [TAG],
         summary: "校验当前登录用户是否具备管理员权限",
         responses: {
@@ -103,7 +103,7 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
 
     registry.registerPath({
         method: "get",
-        path: "/api/admin/usage",
+        path: "/api/v1/admin/usage",
         tags: [TAG],
         summary: "分页查询租户用量概览",
         request: {
@@ -153,7 +153,7 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
 
     registry.registerPath({
         method: "get",
-        path: "/api/admin/credits-history",
+        path: "/api/v1/admin/credits-history",
         tags: [TAG],
         summary: "分页查询所有租户的积分流水",
         request: {

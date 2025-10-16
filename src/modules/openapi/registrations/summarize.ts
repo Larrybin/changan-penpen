@@ -31,7 +31,7 @@ export function registerSummarizePaths(registry: OpenAPIRegistry) {
 
     registry.registerPath({
         method: "post",
-        path: "/api/summarize",
+        path: "/api/v1/summarize",
         tags: [TAG],
         summary: "基于 Workers AI 对长文本进行摘要",
         request: {

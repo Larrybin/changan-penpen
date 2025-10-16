@@ -8,8 +8,8 @@
 ## 重大问题清单
 | 编号 | 等级 | 问题摘要 | 影响模块 |
 | ---- | ---- | -------- | -------- |
-| P0-1 | 高 | 运行时代码直接访问 `process.env`，阻碍去除 `nodejs_compat`，并在 Workers 环境下存在 `ReferenceError` 风险 | `src/lib/seo.ts`、`src/app/(admin)/admin/access/[token]/page.tsx`、`src/app/api/webhooks/creem/route.ts` |
-| P0-2 | 高 | `/api/health` 在失败时回显缺失的机密变量与绑定名称，存在信息泄露风险 | `src/app/api/health/route.ts` |
+| P0-1 | 高 | 运行时代码直接访问 `process.env`，阻碍去除 `nodejs_compat`，并在 Workers 环境下存在 `ReferenceError` 风险 | `src/lib/seo.ts`、`src/app/(admin)/admin/access/[token]/page.tsx`、`src/app/api/v1/webhooks/creem/route.ts` |
+| P0-2 | 高 | `/api/v1/health` 在失败时回显缺失的机密变量与绑定名称，存在信息泄露风险 | `src/app/api/v1/health/route.ts` |
 | P0-3 | 高 | 管理入口放行 Cookie 未开启 HttpOnly，且 `secure` 依赖 `process.env`，存在被脚本窃取与运行时失效隐患 | `src/app/(admin)/admin/access/[token]/page.tsx`、`src/modules/admin/utils/admin-access.ts` |
 | P1-1 | 中 | 多数业务表缺乏唯一约束/索引，D1 在并发或回放场景容易出现重复数据与全表扫描 | `src/modules/admin/schemas/catalog.schema.ts`、`src/modules/creem/schemas/billing.schema.ts` |
 | P1-2 | 中 | R2 上传口虽然提供可选扫描钩子，但默认策略允许通用二进制与 JSON 类型且无内容审计持久化，需补齐落地方案 | `src/lib/r2.ts` |
@@ -18,7 +18,7 @@
 
 ### P0-1：运行时代码直接访问 `process.env`
 - **证据**：`resolveAppUrl` 直接读取 `process.env.NEXT_PUBLIC_APP_URL`，缺乏 Workers 兼容分支，一旦关闭 `nodejs_compat` 即抛出 `ReferenceError`。【F:src/lib/seo.ts†L91-L115】
-- **证据**：管理入口、Webhook 逻辑同样使用 `process.env.NODE_ENV` 进行分支判断。【F:src/app/(admin)/admin/access/[token]/page.tsx†L45-L55】【F:src/app/api/webhooks/creem/route.ts†L61-L70】
+- **证据**：管理入口、Webhook 逻辑同样使用 `process.env.NODE_ENV` 进行分支判断。【F:src/app/(admin)/admin/access/[token]/page.tsx†L45-L55】【F:src/app/api/v1/webhooks/creem/route.ts†L61-L70】
 - **影响**：无法按计划评估/回退 `nodejs_compat`，导致 Worker 冷启动和包体积受限；即便保留兼容层，若 Next.js 构建针对 Edge runtime 去除了 polyfill，也会在运行期崩溃。
 - **修复建议**：
   1. 以 `getCloudflareContext()` 或注入的 `env` 对象读取变量；在前端 bundle 中使用 `process.env.NODE_ENV` 时确保由 bundler 预编译替换。
@@ -26,11 +26,11 @@
   3. 在 `wrangler.toml` 中保留兼容标志直至上述改造完成，并在 PR 模版中提醒检查。
 
 ### P0-2：健康检查泄露机密项名称
-- **证据**：`checkEnvAndBindings` 在返回体中包含 `Missing env: ... | Missing bindings: ...`，任何未授权请求都可枚举出机密变量列表。【F:src/app/api/health/route.ts†L113-L148】
+- **证据**：`checkEnvAndBindings` 在返回体中包含 `Missing env: ... | Missing bindings: ...`，任何未授权请求都可枚举出机密变量列表。【F:src/app/api/v1/health/route.ts†L113-L148】
 - **影响**：攻击者可快速定位缺失的 Secrets/Bucket 绑定，结合社工或爆破增加入侵成功率；也可能暴露是否启用了特定功能（OAuth、R2 公网域等）。
 - **修复建议**：
   1. 对公开模式添加“脱敏/fast-only”开关，默认仅返回布尔状态；详细错误仅在鉴权通过或内网访问时输出。
-  2. 为 `/api/health` 增加访问控制（如需要自定义 Header/Token）。
+  2. 为 `/api/v1/health` 增加访问控制（如需要自定义 Header/Token）。
   3. 增补集成测试验证 fast 模式下不泄露配置名称。
 
 ### P0-3：管理入口 Cookie 可被脚本读写
@@ -58,13 +58,13 @@
   3. 针对 `scanFile` 抛错补充重试/降级策略，并在 CI 中加入模糊测试。
 
 ## 运行时兼容性补充
-- 依赖 `process`/`Buffer` 的模块列表：`src/lib/seo.ts`、`src/app/(admin)/admin/access/[token]/page.tsx`、`src/app/api/webhooks/creem/route.ts`、`src/modules/auth/utils/auth-client.ts` 等。需统一封装 `getRuntimeEnv()`，确保关闭 `nodejs_compat` 仍能访问配置。
+- 依赖 `process`/`Buffer` 的模块列表：`src/lib/seo.ts`、`src/app/(admin)/admin/access/[token]/page.tsx`、`src/app/api/v1/webhooks/creem/route.ts`、`src/modules/auth/utils/auth-client.ts` 等。需统一封装 `getRuntimeEnv()`，确保关闭 `nodejs_compat` 仍能访问配置。
 - 建议在 `package.json` 脚本中新增 `pnpm dev:cf:no-node`（自动注释掉兼容标志）以验证。
 
 ## 测试与 CI 建议
 - **覆盖率提升路线**：建议将阈值提升至 `lines/statements 15%`、`branches/functions 20%`，并在 PR 中引入“改动文件 >= 60%”的增量规则。CI 配置可在 `ci.yml` 的阈值环境变量上逐步递增。
 - **新增测试建议**：
-  1. `/api/health` fast 模式脱敏测试。
+  1. `/api/v1/health` fast 模式脱敏测试。
   2. 管理入口 Cookie 头校验（Vitest + Next Request/Response mock）。
   3. R2 上传 fuzz（伪造 MIME、超限、扫描失败）。
 

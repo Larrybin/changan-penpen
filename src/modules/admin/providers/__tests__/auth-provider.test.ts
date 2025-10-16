@@ -26,7 +26,7 @@ describe("adminAuthProvider", () => {
         );
 
         const result = await adminAuthProvider.logout();
-        expect(fetchMock).toHaveBeenCalledWith("/api/auth/logout", {
+        expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/logout", {
             method: "POST",
             credentials: "include",
         });

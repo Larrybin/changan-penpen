@@ -109,11 +109,16 @@ describe("GET /api/creem/customer-portal", () => {
 
         expect(response.status).toBe(502);
         const payload = await response.json();
-        expect(payload).toEqual({
+        expect(payload).toMatchObject({
             success: false,
-            error: "Invalid response from Creem: missing portal url",
-            data: null,
+            status: 502,
+            error: {
+                code: "UPSTREAM_INVALID_RESPONSE",
+                message: "Invalid response from Creem: missing portal url",
+            },
         });
+        expect(typeof payload.timestamp).toBe("string");
+        expect(typeof payload.traceId).toBe("string");
     });
 
     it("maps upstream 404 error to 400 response", async () => {
@@ -133,13 +138,17 @@ describe("GET /api/creem/customer-portal", () => {
         const payload = await response.json();
         expect(payload).toMatchObject({
             success: false,
-            error: "Failed to get portal link",
-            meta: {
-                status: 404,
-                upstreamBodySnippet: "not found",
+            status: 400,
+            error: {
+                code: "UPSTREAM_FAILURE",
+                message: "Failed to get portal link",
+                details: {
+                    status: 404,
+                    upstreamBodySnippet: "not found",
+                },
             },
-            data: null,
         });
+        expect(typeof payload.traceId).toBe("string");
     });
 
     it("maps upstream 401 errors to 401", async () => {
@@ -152,11 +161,17 @@ describe("GET /api/creem/customer-portal", () => {
         const response = await GET(makeRequest());
 
         expect(response.status).toBe(401);
-        expect(await response.json()).toMatchObject({
+        const payload = await response.json();
+        expect(payload).toMatchObject({
             success: false,
-            error: "Failed to get portal link",
-            meta: { status: 401 },
+            status: 401,
+            error: {
+                code: "UPSTREAM_FAILURE",
+                message: "Failed to get portal link",
+                details: { status: 401 },
+            },
         });
+        expect(typeof payload.traceId).toBe("string");
     });
 
     it("maps upstream 500 errors to 502 and keeps snippet", async () => {
@@ -180,12 +195,18 @@ describe("GET /api/creem/customer-portal", () => {
             const payload = await response.json();
             expect(payload).toMatchObject({
                 success: false,
-                error: "Failed to get portal link",
-                meta: {
-                    status: 503,
-                    upstreamBodySnippet: "Service unavailable for maintenance",
+                status: 502,
+                error: {
+                    code: "UPSTREAM_FAILURE",
+                    message: "Failed to get portal link",
+                    details: {
+                        status: 503,
+                        upstreamBodySnippet:
+                            "Service unavailable for maintenance",
+                    },
                 },
             });
+            expect(typeof payload.traceId).toBe("string");
         } finally {
             vi.useRealTimers();
         }
@@ -216,7 +237,7 @@ describe("GET /api/creem/customer-portal", () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it("returns 500 when CREEM env vars are missing", async () => {
+    it("returns 503 when CREEM env vars are missing", async () => {
         vi.mocked(requireSessionUser).mockResolvedValue("user_env");
         vi.mocked(requireCreemCustomerId).mockResolvedValue("creem_env");
         vi.mocked(getCloudflareContext).mockResolvedValue({
@@ -225,12 +246,18 @@ describe("GET /api/creem/customer-portal", () => {
 
         const response = await GET(makeRequest());
 
-        expect(response.status).toBe(500);
-        expect(await response.json()).toEqual({
+        expect(response.status).toBe(503);
+        const payload = await response.json();
+        expect(payload).toMatchObject({
             success: false,
-            error: "Missing CREEM_API_URL or CREEM_API_KEY",
-            data: null,
+            status: 503,
+            error: {
+                code: "SERVICE_UNAVAILABLE",
+                message: "Missing CREEM_API_URL or CREEM_API_KEY",
+            },
         });
+        expect(typeof payload.timestamp).toBe("string");
+        expect(typeof payload.traceId).toBe("string");
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
@@ -246,11 +273,21 @@ describe("GET /api/creem/customer-portal", () => {
             const response = await responsePromise;
 
             expect(response.status).toBe(502);
-            expect(await response.json()).toMatchObject({
+            const payload = await response.json();
+            expect(payload).toMatchObject({
                 success: false,
-                error: "Failed to get portal link",
-                meta: { status: 0, upstreamBodySnippet: "network down" },
+                status: 502,
+                error: {
+                    code: "UPSTREAM_FAILURE",
+                    message: "Failed to get portal link",
+                    details: {
+                        status: 0,
+                        upstreamBodySnippet: "network down",
+                    },
+                },
             });
+            expect(typeof payload.timestamp).toBe("string");
+            expect(typeof payload.traceId).toBe("string");
         } finally {
             vi.useRealTimers();
         }

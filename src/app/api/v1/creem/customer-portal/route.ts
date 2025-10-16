@@ -1,5 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import handleApiError from "@/lib/api-error";
 import { json } from "@/lib/http";
+import { createApiErrorResponse } from "@/lib/http-error";
 import { requireSessionUser } from "@/modules/auth/utils/guards";
 import { requireCreemCustomerId } from "@/modules/creem/utils/guards";
 
@@ -11,10 +13,10 @@ function requireCreemEnv(
     if (!cf.CREEM_API_URL || !cf.CREEM_API_KEY) {
         return {
             ok: false,
-            response: json(500, {
-                success: false,
-                error: "Missing CREEM_API_URL or CREEM_API_KEY",
-                data: null,
+            response: createApiErrorResponse({
+                status: 503,
+                code: "SERVICE_UNAVAILABLE",
+                message: "Missing CREEM_API_URL or CREEM_API_KEY",
             }),
         };
     }
@@ -97,20 +99,23 @@ export async function GET(request: Request) {
         if (!ok) {
             const snippet = (text || "").slice(0, 300);
             const mapped = _mapUpstreamToHttp(status);
-            return json(mapped, {
-                success: false,
-                error: "Failed to get portal link",
-                meta: { status, upstreamBodySnippet: snippet },
-                data: null,
+            return createApiErrorResponse({
+                status: mapped,
+                code: "UPSTREAM_FAILURE",
+                message: "Failed to get portal link",
+                details: {
+                    status,
+                    upstreamBodySnippet: snippet,
+                },
             });
         }
 
         const url = _ensurePortalUrl(data);
         if (!url) {
-            return json(502, {
-                success: false,
-                error: "Invalid response from Creem: missing portal url",
-                data: null,
+            return createApiErrorResponse({
+                status: 502,
+                code: "UPSTREAM_INVALID_RESPONSE",
+                message: "Invalid response from Creem: missing portal url",
             });
         }
         // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
@@ -126,8 +131,9 @@ export async function GET(request: Request) {
             meta: { raw: jsonBody },
         };
         return json(200, payload);
-    } catch (_error) {
-        return new Response("Internal Server Error", { status: 500 });
+    } catch (error) {
+        console.error("[api/creem/customer-portal] error", error);
+        return handleApiError(error);
     }
 }
 
