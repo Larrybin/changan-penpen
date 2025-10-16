@@ -116,27 +116,35 @@ export function useDataTable<T = Record<string, unknown>>(
         debounceMs: searchOptions?.debounceMs ?? 300,
     });
 
+    const {
+        filters: optionFilters = [],
+        enabled: optionEnabled,
+        ...restDataOptions
+    } = dataOptions;
+    const combinedFilters = [...optionFilters, ...searchFilter.filters];
+    const effectiveEnabled = optionEnabled ?? true;
+
     // 分页数据获取
+    const searchPaginatedData = useSearchPaginatedData<T>({
+        resource,
+        initialPageSize: pageSize,
+        searchFields: searchOptions?.searchFields,
+        ...restDataOptions,
+        filters: combinedFilters,
+        enabled: enableSearch ? effectiveEnabled : false,
+    });
+
+    const regularPaginatedData = usePaginatedData<T>({
+        resource,
+        initialPageSize: pageSize,
+        ...restDataOptions,
+        filters: combinedFilters,
+        enabled: enableSearch ? false : effectiveEnabled,
+    });
+
     const paginatedData = enableSearch
-        ? useSearchPaginatedData<T>({
-              resource,
-              initialPageSize: pageSize,
-              searchFields: searchOptions?.searchFields,
-              ...dataOptions,
-              filters: [
-                  ...(dataOptions.filters ?? []),
-                  ...searchFilter.filters,
-              ],
-          })
-        : usePaginatedData<T>({
-              resource,
-              initialPageSize: pageSize,
-              ...dataOptions,
-              filters: [
-                  ...(dataOptions.filters ?? []),
-                  ...searchFilter.filters,
-              ],
-          });
+        ? searchPaginatedData
+        : regularPaginatedData;
 
     const searchControls =
         enableSearch && hasSearchControls(paginatedData)

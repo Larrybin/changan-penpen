@@ -118,6 +118,14 @@ export function DataTable<TData, TValue>({
     });
 
     const visibleColumns = table.getVisibleLeafColumns();
+    const skeletonRowIds = React.useMemo(
+        () =>
+            Array.from(
+                { length: Math.max(1, skeletonRowCount) },
+                (_, index) => `skeleton-${index}`,
+            ),
+        [skeletonRowCount],
+    );
     const hasRows = table.getRowModel().rows.length > 0;
     const displayEmptyState = !isLoading && !hasRows;
 
@@ -213,10 +221,8 @@ export function DataTable<TData, TValue>({
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            Array.from({
-                                length: Math.max(1, skeletonRowCount),
-                            }).map((_, rowIndex) => (
-                                <TableRow key={`skeleton-${rowIndex}`}>
+                            skeletonRowIds.map((rowId) => (
+                                <TableRow key={rowId}>
                                     {visibleColumns.map((column) => (
                                         <TableCell key={column.id}>
                                             <Skeleton className="h-6 w-full" />

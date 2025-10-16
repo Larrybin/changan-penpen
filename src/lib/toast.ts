@@ -23,25 +23,27 @@
 
 import { toast as sonnerToast } from "sonner";
 
+type ToastOptions = Parameters<typeof sonnerToast.success>[1];
+
 // 创建与 react-hot-toast 兼容的 API
 export const toast = {
-    success: (message: string, options?: any) => {
+    success: (message: string, options?: ToastOptions) => {
         return sonnerToast.success(message, options);
     },
 
-    error: (message: string, options?: any) => {
+    error: (message: string, options?: ToastOptions) => {
         return sonnerToast.error(message, options);
     },
 
-    info: (message: string, options?: any) => {
+    info: (message: string, options?: ToastOptions) => {
         return sonnerToast.info(message, options);
     },
 
-    warning: (message: string, options?: any) => {
+    warning: (message: string, options?: ToastOptions) => {
         return sonnerToast.warning(message, options);
     },
 
-    loading: (message: string, options?: any) => {
+    loading: (message: string, options?: ToastOptions) => {
         return sonnerToast.loading(message, options);
     },
 

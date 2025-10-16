@@ -28,10 +28,10 @@
 import type { FieldPath, FieldValues } from "react-hook-form";
 import {
     Controller,
-    FormProvider,
     type ControllerProps,
     type ControllerRenderProps,
     type FieldError,
+    FormProvider,
     type UseFormReturn,
     useFormContext,
 } from "react-hook-form";
@@ -79,10 +79,12 @@ export function FormLabel({
     className,
     required,
     children,
+    htmlFor,
     ...props
 }: FormLabelProps) {
     return (
         <label
+            htmlFor={htmlFor}
             className={cn(
                 "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
                 className,

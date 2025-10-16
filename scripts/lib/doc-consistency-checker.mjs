@@ -854,9 +854,9 @@ class DocConsistencyChecker {
     extractHeaders(content) {
         const headerRegex = /^(#{1,6})\s+(.+)$/gm;
         const headers = [];
-        let match;
+        let match = headerRegex.exec(content);
 
-        while ((match = headerRegex.exec(content)) !== null) {
+        while (match !== null) {
             const level = match[1].length;
             const text = match[2].trim();
             const anchor = text
@@ -867,6 +867,8 @@ class DocConsistencyChecker {
                 .replace(/^-|-$/g, "");
 
             headers.push({ level, text, anchor });
+
+            match = headerRegex.exec(content);
         }
 
         return headers;
@@ -875,13 +877,15 @@ class DocConsistencyChecker {
     extractTOCLinks(content) {
         const linkRegex = /^\s*[-*+]\s*\[([^\]]+)\]\(([^)]+)\)/gm;
         const links = [];
-        let match;
+        let match = linkRegex.exec(content);
 
-        while ((match = linkRegex.exec(content)) !== null) {
+        while (match !== null) {
             links.push({
                 text: match[1].trim(),
                 target: match[2].trim(),
             });
+
+            match = linkRegex.exec(content);
         }
 
         return links;
@@ -946,9 +950,9 @@ class DocConsistencyChecker {
     async checkCodeFileConsistency(code, _language, filePath) {
         // 检查代码是否引用了实际存在的文件
         const importRegex = /import.*from\s+['"`]([^'"`]+)['"`]/g;
-        let match;
+        let match = importRegex.exec(code);
 
-        while ((match = importRegex.exec(code)) !== null) {
+        while (match !== null) {
             const importPath = match[1];
             if (!importPath.startsWith(".")) continue; // 跳过外部依赖
 
@@ -967,6 +971,8 @@ class DocConsistencyChecker {
                     message: `代码块引用的文件不存在: ${importPath}`,
                 });
             }
+
+            match = importRegex.exec(code);
         }
     }
 

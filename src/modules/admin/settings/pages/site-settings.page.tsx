@@ -8,6 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
+const SETTINGS_SKELETON_SECTION_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `site-settings-section-${index}`,
+);
+const SETTINGS_SKELETON_FIELD_KEYS = Array.from(
+    { length: 2 },
+    (_, index) => `site-settings-field-${index}`,
+);
+
 interface SiteSettingsState {
     siteName: string;
     domain: string;
@@ -502,16 +511,13 @@ function Field({ label, children, id }: FieldProps) {
 function SettingsSkeleton() {
     return (
         <div className="space-y-6 rounded-xl border bg-card p-6 shadow-sm">
-            {Array.from({ length: 4 }).map((_, sectionIndex) => (
-                <div
-                    key={`settings-skeleton-section-${sectionIndex}`}
-                    className="space-y-4"
-                >
+            {SETTINGS_SKELETON_SECTION_KEYS.map((sectionKey) => (
+                <div key={sectionKey} className="space-y-4">
                     <Skeleton className="h-6 w-48" />
                     <div className="grid gap-4 md:grid-cols-2">
-                        {Array.from({ length: 2 }).map((__, fieldIndex) => (
+                        {SETTINGS_SKELETON_FIELD_KEYS.map((fieldKey) => (
                             <Skeleton
-                                key={`settings-skeleton-field-${sectionIndex}-${fieldIndex}`}
+                                key={`${sectionKey}-${fieldKey}`}
                                 className="h-10 w-full"
                             />
                         ))}

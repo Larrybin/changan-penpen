@@ -9,6 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ReportRecord } from "@/modules/admin/types/resource.types";
 
+const REPORTS_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `reports-list-row-${index}`,
+);
+const REPORTS_SKELETON_CELL_KEYS = Array.from(
+    { length: 5 },
+    (_, index) => `reports-list-cell-${index}`,
+);
+
 const REPORT_TYPES = [
     { value: "orders", label: "订单报表" },
     { value: "usage", label: "用量报表" },
@@ -55,7 +64,7 @@ export function ReportsPage() {
     };
 
     const reports = result?.data ?? [];
-    const skeletonRows = Array.from({ length: 6 });
+    const skeletonRows = REPORTS_SKELETON_ROW_KEYS;
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -128,12 +137,12 @@ export function ReportsPage() {
                     </thead>
                     <tbody>
                         {isLoading &&
-                            skeletonRows.map((_, rowIndex) => (
-                                <tr key={`reports-skeleton-${rowIndex}`}>
-                                    {Array.from({ length: 5 }).map(
-                                        (_, cellIndex) => (
+                            skeletonRows.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {REPORTS_SKELETON_CELL_KEYS.map(
+                                        (cellKey) => (
                                             <td
-                                                key={`reports-skeleton-cell-${rowIndex}-${cellIndex}`}
+                                                key={`${rowKey}-${cellKey}`}
                                                 className="px-4 py-3"
                                             >
                                                 <Skeleton className="h-5 w-full" />

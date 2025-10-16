@@ -8,6 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { CouponRecord } from "@/modules/admin/types/resource.types";
 
+const COUPON_LIST_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `coupon-list-row-${index}`,
+);
+const COUPON_LIST_SKELETON_CELL_KEYS = Array.from(
+    { length: 5 },
+    (_, index) => `coupon-list-cell-${index}`,
+);
+
 export function CouponsListPage() {
     const { query, result } = useList<CouponRecord>({
         resource: "coupons",
@@ -15,7 +24,6 @@ export function CouponsListPage() {
     const { mutateAsync: deleteCoupon } = useDelete();
     const isLoading = query.isLoading;
     const coupons = result?.data ?? [];
-    const skeletonRows = Array.from({ length: 6 });
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -43,12 +51,12 @@ export function CouponsListPage() {
                     </thead>
                     <tbody>
                         {isLoading &&
-                            skeletonRows.map((_, rowIndex) => (
-                                <tr key={`coupon-skeleton-${rowIndex}`}>
-                                    {Array.from({ length: 5 }).map(
-                                        (_, cellIndex) => (
+                            COUPON_LIST_SKELETON_ROW_KEYS.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {COUPON_LIST_SKELETON_CELL_KEYS.map(
+                                        (cellKey) => (
                                             <td
-                                                key={`coupon-skeleton-cell-${rowIndex}-${cellIndex}`}
+                                                key={`${rowKey}-${cellKey}`}
                                                 className="px-4 py-3"
                                             >
                                                 <Skeleton className="h-5 w-full" />

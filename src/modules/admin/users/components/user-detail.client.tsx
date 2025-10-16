@@ -97,11 +97,16 @@ const getInitials = (value: string | null | undefined) => {
 };
 
 const DEFAULT_TABLE_SKELETON_ROWS = 4;
+const STATS_SKELETON_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `user-detail-stats-${index}`,
+);
+const TABLE_SKELETON_KEYS = Array.from(
+    { length: DEFAULT_TABLE_SKELETON_ROWS },
+    (_, index) => `user-detail-table-${index}`,
+);
 
 function UserDetailSkeleton() {
-    const statsSkeleton = Array.from({ length: 4 });
-    const tableSkeleton = Array.from({ length: DEFAULT_TABLE_SKELETON_ROWS });
-
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
             <PageHeader
@@ -127,8 +132,8 @@ function UserDetailSkeleton() {
                     </div>
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
-                    {statsSkeleton.map((_, index) => (
-                        <div key={index} className="space-y-2">
+                    {STATS_SKELETON_KEYS.map((key) => (
+                        <div key={key} className="space-y-2">
                             <Skeleton className="h-4 w-24" />
                             <Skeleton className="h-5 w-full" />
                         </div>
@@ -151,9 +156,9 @@ function UserDetailSkeleton() {
                         <div className="space-y-3">
                             <Skeleton className="h-4 w-36" />
                             <div className="space-y-2">
-                                {tableSkeleton.map((_, index) => (
+                                {TABLE_SKELETON_KEYS.map((key) => (
                                     <Skeleton
-                                        key={`credits-${index}`}
+                                        key={`credits-${key}`}
                                         className="h-6 w-full rounded"
                                     />
                                 ))}
@@ -163,9 +168,9 @@ function UserDetailSkeleton() {
                         <div className="space-y-3">
                             <Skeleton className="h-4 w-36" />
                             <div className="space-y-2">
-                                {tableSkeleton.map((_, index) => (
+                                {TABLE_SKELETON_KEYS.map((key) => (
                                     <Skeleton
-                                        key={`transactions-${index}`}
+                                        key={`transactions-${key}`}
                                         className="h-6 w-full rounded"
                                     />
                                 ))}
@@ -180,9 +185,9 @@ function UserDetailSkeleton() {
                         <Skeleton className="mt-2 h-4 w-52" />
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        {tableSkeleton.map((_, index) => (
+                        {TABLE_SKELETON_KEYS.map((key) => (
                             <Skeleton
-                                key={`usage-${index}`}
+                                key={`usage-${key}`}
                                 className="h-6 w-full rounded"
                             />
                         ))}

@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
 import type { Pagination } from "@refinedev/core";
+import { useCallback, useState } from "react";
 
 export interface TablePaginationState {
     pageIndex: number;
