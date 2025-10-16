@@ -16,18 +16,13 @@
 - Lint links and headings during CI (if checker is configured)
 - Ensure UTF-8 and normalized LF line endings
 - Preview Markdown rendering in IDE
-- Local pre-push gate: 任意 `git push` 默认先执行 `pnpm check:all`，失败会阻止推送:
-  - Biome 写入修复 + 最终 `pnpm exec biome check .`
+- 推荐提交/推送前手动执行本地质量门:
+  - `pnpm check:all`（必要时加 `CHECK_ENABLE_TESTS=1` 触发 Vitest）
   - `pnpm run cf-typegen`（仅绑定文件变更时）
   - `pnpm exec tsc --noEmit`
-  - Next.js 构建（Windows 可通过 `SKIP_NEXT_BUILD=1` 跳过）
-  - 可选 Vitest（设置 `CHECK_ENABLE_TESTS=1`）
-  - 文档一致性 `pnpm run check:docs` 与链接校验 `pnpm run check:links`
-  - 可使用 `ALLOW_DIRECT_PUSH=1` / `HUSKY_BYPASS=1` / `SKIP_PRE_PUSH_CHECK_ALL=1` 进行一次性绕过
-- 如需自动提交与备份 tag，可继续使用 `pnpm push`；回滚命令不变:
-  - 查看备份:`pnpm run push:rollback -- --list`
-  - 打印回滚指令:`pnpm run push:rollback`
-  - 直接本地回滚(危险):`ROLLBACK_APPLY=1 pnpm run push:rollback`
+  - `pnpm run check:docs`、`pnpm run check:links`
+  - 视情况补跑 `pnpm lint`、`pnpm test`、`pnpm build`
+- 若团队需要自动化提交/备份，可在仓库外编写自定义脚本或 Git 钩子，本仓库默认不再提供内置 push 助手。
 
 ## Monthly Review (suggested)
 - [ ] Check outdated content or broken links
@@ -40,7 +35,7 @@
   - `rg -n -F ".github/workflows/" README.md` - list workflow references in README
   - `rg -n "\\.route\\.ts$|/api/.*/route\\.ts$|/page\\.tsx$" src` - scan routes/pages
   - `rg -n -F "wrangler.toml" docs` - find env docs cross‑references
-- API index suggestions: `pnpm run suggest:api-index` 打印页面/API 路由候选,便于维护 `docs/api-index.md`.
+- 维护 API 索引时，可参考路由目录 (`src/app/**/page.tsx`、`*.route.ts`) 手动比对 `docs/api-index.md`。
 
 ## Controls (Env Flags)
 - `DOCS_SYNC=0` 跳过文档增量自修复.
