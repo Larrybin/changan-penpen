@@ -1,5 +1,6 @@
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db";
+import { consumeCredits } from "@/modules/billing/services/credits.service";
 import { customers } from "@/modules/creem/schemas/billing.schema";
 import { usageDaily, usageEvents } from "@/modules/creem/schemas/usage.schema";
 
@@ -64,28 +65,21 @@ export async function recordUsage(input: UsageRecordInput) {
 
     let newCredits: number | undefined;
     if (input.consumeCredits && input.consumeCredits > 0) {
-        newCredits = await decrementCredits(input.userId, input.consumeCredits);
+        const balance = await consumeCredits({
+            userId: input.userId,
+            amount: input.consumeCredits,
+            description: `Usage: ${feature}`,
+        });
+
+        newCredits = balance;
+
+        await db
+            .update(customers)
+            .set({ credits: balance, updatedAt: nowIso })
+            .where(eq(customers.userId, input.userId));
     }
 
     return { ok: true as const, date, newCredits };
-}
-
-export async function decrementCredits(userId: string, amount: number) {
-    if (amount <= 0) return undefined;
-    const db = await getDb();
-    const rows = await db
-        .select({ id: customers.id, credits: customers.credits })
-        .from(customers)
-        .where(eq(customers.userId, userId))
-        .limit(1);
-    if (rows.length === 0) throw new Error("Customer not found for user");
-    const now = new Date().toISOString();
-    const left = Math.max(0, (rows[0].credits || 0) - amount);
-    await db
-        .update(customers)
-        .set({ credits: left, updatedAt: now })
-        .where(eq(customers.id, rows[0].id));
-    return left;
 }
 
 export async function getUsageDaily(

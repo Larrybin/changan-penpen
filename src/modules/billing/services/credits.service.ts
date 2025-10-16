@@ -210,6 +210,8 @@ export async function consumeCredits({
         type: CREDIT_TRANSACTION_TYPE.USAGE,
         description,
     });
+
+    return balance - amount;
 }
 
 export async function addFreeMonthlyCreditsIfNeeded(userId: string) {
