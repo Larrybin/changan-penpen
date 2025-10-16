@@ -203,10 +203,10 @@ export function createColumn<T = RecordLike>(
         ...restConfig
     } = config;
 
-    const normalizedKey =
-        typeof accessorKey === "string" ? accessorKey : String(accessorKey);
     const defaultHeader =
-        normalizedKey.charAt(0).toUpperCase() + normalizedKey.slice(1);
+        typeof accessorKey === "string"
+            ? accessorKey.charAt(0).toUpperCase() + accessorKey.slice(1)
+            : String(accessorKey);
 
     const defaultCell = (context: CellContext<T, unknown>) => {
         if (condition && !condition(context.row.original)) {
@@ -221,7 +221,7 @@ export function createColumn<T = RecordLike>(
     };
 
     return {
-        accessorKey: normalizedKey,
+        accessorKey: accessorKey as ColumnDef<T, unknown>["accessorKey"],
         header: header ?? defaultHeader,
         cell: cell ?? defaultCell,
         meta: {
@@ -288,7 +288,7 @@ export const predefinedColumns = {
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
         return {
-            accessorKey: accessor as string,
+            accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) =>
                 formatters.currency(
@@ -307,7 +307,7 @@ export const predefinedColumns = {
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
         return {
-            accessorKey: accessor as string,
+            accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) => formatters.number(row.getValue(accessor)),
             meta: { label },
@@ -322,7 +322,7 @@ export const predefinedColumns = {
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
         return {
-            accessorKey: accessor as string,
+            accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) => (
                 <span className="capitalize">
@@ -369,7 +369,7 @@ export const predefinedColumns = {
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
         return {
-            accessorKey: accessor as string,
+            accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) => {
                 const value = row.getValue(accessor);

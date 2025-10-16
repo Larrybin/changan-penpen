@@ -54,10 +54,10 @@ export function Toast({ className }: ToastProps) {
                         "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
                     cancelButton:
                         "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-                    success: "text-success",
-                    error: "text-destructive",
-                    warning: "text-warning",
-                    info: "text-info",
+                    successIcon: "text-success",
+                    errorIcon: "text-destructive",
+                    warningIcon: "text-warning",
+                    infoIcon: "text-info",
                 },
             }}
         />
@@ -65,7 +65,7 @@ export function Toast({ className }: ToastProps) {
 }
 
 // 类型定义
-export type { ExternalToast, ToastClassnames, ToasterProps } from "sonner";
+export type { ExternalToast, ToastOptions } from "sonner";
 // 导出 sonner 的 toast 方法，方便使用
 export { toast } from "sonner";
 

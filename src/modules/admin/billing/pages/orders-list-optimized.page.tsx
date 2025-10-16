@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import type { CellContext } from "@tanstack/react-table";
 import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,7 @@ export function OrdersListPageOptimized() {
         // 自定义ID列显示
         const idColumn = {
             ...predefinedColumns.id<OrderRecord>("订单"),
-            cell: ({ row }: CellContext<OrderRecord, unknown>) => (
+            cell: ({ row }) => (
                 <div className="font-medium">#{row.getValue("id")}</div>
             ),
         };
@@ -63,12 +62,7 @@ export function OrdersListPageOptimized() {
                     >
                         <Input
                             placeholder="按租户 ID 过滤"
-                            value={
-                                typeof tableData.filterValues.tenantId ===
-                                "string"
-                                    ? tableData.filterValues.tenantId
-                                    : ""
-                            }
+                            value={tableData.filterValues.tenantId || ""}
                             onChange={(event) =>
                                 tableData.setFilter?.(
                                     "tenantId",

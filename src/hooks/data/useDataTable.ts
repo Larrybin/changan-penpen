@@ -53,16 +53,6 @@ export interface UseDataTableResult<T = Record<string, unknown>>
     setSearch?: (search: string) => void;
     clearSearch?: () => void;
 
-    // 过滤器状态
-    filters: CrudFilter[];
-    filterValues: Record<string, unknown>;
-    setFilter?: (field: string, value: unknown) => void;
-    setFilters?: (filters: Record<string, unknown>) => void;
-    clearFilter?: (field: string) => void;
-    clearAllFilters?: () => void;
-    resetFilters?: () => void;
-    hasActiveFilters: boolean;
-
     // 分页操作
     setPageIndex: (page: number) => void;
     setPageSize: (size: number) => void;
@@ -78,12 +68,13 @@ export interface UseDataTableResult<T = Record<string, unknown>>
     isFirstPage: boolean;
     isLastPage: boolean;
 
+    // 其他状态
+    error: Error | null;
+    hasActiveFilters: boolean;
+
     // 显示配置
     itemNameSingular: string;
     itemNamePlural: string;
-
-    // 其他状态
-    error: Error | null;
 }
 
 /**
@@ -189,11 +180,6 @@ export function useDataTable<T = Record<string, unknown>>(
         // 过滤器状态
         filters: searchFilter.filters,
         filterValues: searchFilter.filterValues,
-        setFilter: searchFilter.setFilter,
-        setFilters: searchFilter.setFilters,
-        clearFilter: searchFilter.clearFilter,
-        clearAllFilters: searchFilter.clearAllFilters,
-        resetFilters: searchFilter.reset,
         hasActiveFilters: searchFilter.hasActiveFilters,
 
         // 列定义
@@ -255,7 +241,7 @@ export function useFilteredDataTable<T = Record<string, unknown>>(
         ...dataTableOptions,
         searchOptions: {
             filters: filters.map((filter) => ({
-                field: String(filter.field),
+                field: filter.field,
                 operator: filter.operator,
                 value: filter.value,
             })),

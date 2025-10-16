@@ -7,7 +7,7 @@ export interface SearchFilterConfig {
     field: string;
     operator: CrudFilter["operator"];
     value?: unknown;
-    transform?: (value: any) => unknown;
+    transform?: (value: unknown) => unknown;
 }
 
 export interface UseSearchFilterOptions {

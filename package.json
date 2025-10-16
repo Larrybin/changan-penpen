@@ -32,6 +32,7 @@
         "biome:apply": "pnpm exec biome check . --write --unsafe",
         "typecheck": "pnpm run cf-typegen && pnpm exec tsc --noEmit",
         "check:all": "node scripts/check-all.mjs",
+        "push": "node -e \"const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}\" && node scripts/push-fix2.mjs",
         "test": "vitest run",
         "test:ci": "vitest run --reporter=dot",
         "translate": "pnpm exec tsc --project tsconfig.translate.json && node dist/scripts/scripts/translate-locales.js",
@@ -39,10 +40,18 @@
         "translate:fr": "pnpm run translate -- --target=fr",
         "translate:pt": "pnpm run translate -- --target=pt",
         "fix:i18n": "node scripts/fix-i18n-encoding.mjs",
+        "check:docs:legacy": "node scripts/check-docs.mjs",
         "check:links": "node scripts/check-links.mjs",
+        "suggest:api-index": "node scripts/suggest-api-index.mjs",
+        "push:rollback": "node scripts/push-rollback.mjs",
+
         "check:docs": "node scripts/lib/doc-consistency-checker.mjs",
         "check:docs:strict": "DOC_STRICT_MODE=1 node scripts/lib/doc-consistency-checker.mjs",
-        "check:docs:mcp": "ENABLE_MCP=1 node scripts/lib/doc-consistency-checker.mjs"
+        "check:docs:mcp": "ENABLE_MCP=1 node scripts/lib/doc-consistency-checker.mjs",
+        "optimize:docs": "node scripts/optimize-docs.mjs",
+        "optimize:docs:check": "node scripts/optimize-docs.mjs check",
+        "optimize:docs:fix": "node scripts/optimize-docs.mjs fix",
+        "optimize:docs:report": "node scripts/optimize-docs.mjs report"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.1.0",

@@ -79,14 +79,12 @@ export function AdvancedSearch({
 
     const renderField = (field: SearchField, fieldId: string) => {
         const value = values[field.key];
-        const stringValue =
-            value === null || value === undefined ? "" : String(value);
 
         switch (field.type) {
             case "select":
                 return (
                     <Select
-                        value={stringValue}
+                        value={value || ""}
                         onValueChange={(val) =>
                             handleFieldChange(field.key, val)
                         }
@@ -116,7 +114,7 @@ export function AdvancedSearch({
                     <Input
                         id={fieldId}
                         type="date"
-                        value={stringValue}
+                        value={value || ""}
                         onChange={(e) =>
                             handleFieldChange(field.key, e.target.value)
                         }
@@ -129,7 +127,7 @@ export function AdvancedSearch({
                     <Input
                         id={fieldId}
                         type="number"
-                        value={stringValue}
+                        value={value || ""}
                         onChange={(e) =>
                             handleFieldChange(field.key, e.target.value)
                         }
@@ -141,7 +139,7 @@ export function AdvancedSearch({
                 return (
                     <Input
                         id={fieldId}
-                        value={stringValue}
+                        value={value || ""}
                         onChange={(e) =>
                             handleFieldChange(field.key, e.target.value)
                         }

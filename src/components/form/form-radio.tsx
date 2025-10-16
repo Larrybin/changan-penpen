@@ -4,11 +4,10 @@
 
 "use client";
 
-import type { ComponentProps } from "react";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { FormControl } from "./form";
 
-interface FormRadioProps extends ComponentProps<typeof RadioGroup> {
+interface FormRadioProps extends React.ComponentProps<typeof RadioGroup> {
     error?: boolean;
 }
 

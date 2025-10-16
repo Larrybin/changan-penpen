@@ -22,25 +22,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import {
-    type DefaultValues,
-    type FieldValues,
-    type Path,
-    type Resolver,
-    type UseFormProps,
-    type UseFormReturn,
-    useForm,
-} from "react-hook-form";
+import { type UseFormProps, useForm } from "react-hook-form";
 import type { z } from "zod";
 
-type SchemaFieldValues<TSchema extends z.ZodTypeAny> =
-    z.infer<TSchema> extends FieldValues ? z.infer<TSchema> : never;
-
-export interface UseZodFormOptions<TSchema extends z.ZodTypeAny> {
-    schema: TSchema;
-    defaultValues?: DefaultValues<SchemaFieldValues<TSchema>>;
+export interface UseZodFormOptions<T extends z.ZodType> {
+    schema: T;
+    defaultValues?: z.infer<T>;
     onSubmit?: (
-        values: SchemaFieldValues<TSchema>,
+        values: z.infer<T>,
         event?: React.BaseSyntheticEvent,
     ) => Promise<void> | void;
     mode?: UseFormProps["mode"];
@@ -49,13 +38,9 @@ export interface UseZodFormOptions<TSchema extends z.ZodTypeAny> {
     shouldFocusError?: boolean;
 }
 
-export interface UseZodFormReturn<TSchema extends z.ZodTypeAny> {
+export interface UseZodFormReturn<T extends z.ZodType> {
     // React Hook Form 返回值
-    form: UseFormReturn<
-        SchemaFieldValues<TSchema>,
-        any,
-        SchemaFieldValues<TSchema>
-    >;
+    form: ReturnType<typeof useForm<z.infer<T>>>;
     // 额外的状态和方法
     isSubmitting: boolean;
     error: string | null;
@@ -63,17 +48,12 @@ export interface UseZodFormReturn<TSchema extends z.ZodTypeAny> {
     clearMessages: () => void;
     handleSubmit: (event?: React.BaseSyntheticEvent) => Promise<void>;
     // 便捷方法
-    getFieldError: (
-        field: Path<SchemaFieldValues<TSchema>>,
-    ) => string | undefined;
-    setFieldError: (
-        field: Path<SchemaFieldValues<TSchema>>,
-        message: string,
-    ) => void;
-    clearFieldError: (field: Path<SchemaFieldValues<TSchema>>) => void;
+    getFieldError: (field: keyof z.infer<T>) => string | undefined;
+    setFieldError: (field: keyof z.infer<T>, message: string) => void;
+    clearFieldError: (field: keyof z.infer<T>) => void;
 }
 
-export function useZodForm<TSchema extends z.ZodTypeAny>({
+export function useZodForm<T extends z.ZodType>({
     schema,
     defaultValues,
     onSubmit,
@@ -81,19 +61,14 @@ export function useZodForm<TSchema extends z.ZodTypeAny>({
     reValidateMode = "onChange",
     shouldUnregister = false,
     shouldFocusError = true,
-}: UseZodFormOptions<TSchema>): UseZodFormReturn<TSchema> {
+}: UseZodFormOptions<T>): UseZodFormReturn<T> {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    type TFieldValues = SchemaFieldValues<TSchema>;
 
-    const form = useForm<TFieldValues>({
-        resolver: zodResolver(schema as unknown as any) as unknown as Resolver<
-            TFieldValues,
-            any,
-            TFieldValues
-        >,
-        defaultValues: defaultValues as DefaultValues<TFieldValues> | undefined,
+    const form = useForm<z.infer<T>>({
+        resolver: zodResolver(schema),
+        defaultValues,
         mode,
         reValidateMode,
         shouldUnregister,
@@ -126,19 +101,19 @@ export function useZodForm<TSchema extends z.ZodTypeAny>({
         }
     };
 
-    const getFieldError = (field: Path<TFieldValues>) => {
-        const { error: fieldError } = form.getFieldState(field);
+    const getFieldError = (field: keyof z.infer<T>) => {
+        const fieldError = form.formState.errors[field as string];
         return typeof fieldError?.message === "string"
             ? fieldError.message
             : undefined;
     };
 
-    const setFieldError = (field: Path<TFieldValues>, message: string) => {
-        form.setError(field, { message });
+    const setFieldError = (field: keyof z.infer<T>, message: string) => {
+        form.setError(field as string, { message });
     };
 
-    const clearFieldError = (field: Path<TFieldValues>) => {
-        form.clearErrors(field);
+    const clearFieldError = (field: keyof z.infer<T>) => {
+        form.clearErrors(field as string);
     };
 
     return {
@@ -155,13 +130,13 @@ export function useZodForm<TSchema extends z.ZodTypeAny>({
 }
 
 // 简化版本的 Hook，用于只需要基本功能的场景
-export function useSimpleForm<TSchema extends z.ZodTypeAny>({
+export function useSimpleForm<T extends z.ZodType>({
     schema,
     defaultValues,
     onSubmit,
-}: UseZodFormOptions<TSchema>) {
+}: UseZodFormOptions<T>) {
     const { form, handleSubmit, isSubmitting, error, success, clearMessages } =
-        useZodForm<TSchema>({
+        useZodForm({
             schema,
             defaultValues,
             onSubmit,
