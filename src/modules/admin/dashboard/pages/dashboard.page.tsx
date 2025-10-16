@@ -15,6 +15,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UsageSparkline } from "@/modules/admin/dashboard/components/usage-sparkline";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
+const ORDER_SKELETON_ROW_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `admin-dashboard-orders-row-${index}`,
+);
+const ORDER_SKELETON_CELL_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `admin-dashboard-orders-cell-${index}`,
+);
+const CREDIT_SKELETON_ROW_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `admin-dashboard-credits-row-${index}`,
+);
+const CREDIT_SKELETON_CELL_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `admin-dashboard-credits-cell-${index}`,
+);
+
 interface DashboardMetricsPayload {
     totals: {
         revenueCents: number;
@@ -259,22 +276,22 @@ export function AdminDashboardPage() {
                                 </thead>
                                 <tbody>
                                     {isLoading &&
-                                        Array.from({ length: 4 }).map(
-                                            (_, index) => (
+                                        ORDER_SKELETON_ROW_KEYS.map(
+                                            (rowKey) => (
                                                 <tr
-                                                    key={`orders-skeleton-${index}`}
+                                                    key={rowKey}
                                                     className="border-t"
                                                 >
-                                                    {Array.from({
-                                                        length: 4,
-                                                    }).map((__, cellIndex) => (
-                                                        <td
-                                                            key={`orders-skeleton-cell-${cellIndex}`}
-                                                            className="py-2 pr-4"
-                                                        >
-                                                            <Skeleton className="h-5 w-full" />
-                                                        </td>
-                                                    ))}
+                                                    {ORDER_SKELETON_CELL_KEYS.map(
+                                                        (cellKey) => (
+                                                            <td
+                                                                key={`${rowKey}-${cellKey}`}
+                                                                className="py-2 pr-4"
+                                                            >
+                                                                <Skeleton className="h-5 w-full" />
+                                                            </td>
+                                                        ),
+                                                    )}
                                                 </tr>
                                             ),
                                         )}
@@ -345,22 +362,22 @@ export function AdminDashboardPage() {
                                 </thead>
                                 <tbody>
                                     {isLoading &&
-                                        Array.from({ length: 4 }).map(
-                                            (_, index) => (
+                                        CREDIT_SKELETON_ROW_KEYS.map(
+                                            (rowKey) => (
                                                 <tr
-                                                    key={`credits-skeleton-${index}`}
+                                                    key={rowKey}
                                                     className="border-t"
                                                 >
-                                                    {Array.from({
-                                                        length: 4,
-                                                    }).map((__, cellIndex) => (
-                                                        <td
-                                                            key={`credits-skeleton-cell-${cellIndex}`}
-                                                            className="py-2 pr-4"
-                                                        >
-                                                            <Skeleton className="h-5 w-full" />
-                                                        </td>
-                                                    ))}
+                                                    {CREDIT_SKELETON_CELL_KEYS.map(
+                                                        (cellKey) => (
+                                                            <td
+                                                                key={`${rowKey}-${cellKey}`}
+                                                                className="py-2 pr-4"
+                                                            >
+                                                                <Skeleton className="h-5 w-full" />
+                                                            </td>
+                                                        ),
+                                                    )}
                                                 </tr>
                                             ),
                                         )}

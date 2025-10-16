@@ -41,17 +41,7 @@ export function SignupForm({
     const tValidation = useTranslations("AuthForms.Validation");
     const tMessages = useTranslations("AuthForms.Messages");
 
-    const {
-        form,
-        isSubmitting,
-        error,
-        success,
-        clearMessages,
-        handleSubmit,
-        getFieldError,
-        setFieldError,
-        clearFieldError,
-    } = useZodForm({
+    const { form, isSubmitting, handleSubmit, getFieldError } = useZodForm({
         schema: createSignUpSchema(tValidation),
         defaultValues: {
             username: "",

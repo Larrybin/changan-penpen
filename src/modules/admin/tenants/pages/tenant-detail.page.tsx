@@ -7,6 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
+const TENANT_STAT_SKELETON_KEYS = Array.from(
+    { length: 3 },
+    (_, index) => `tenant-detail-stat-${index}`,
+);
+const TENANT_SECTION_ROW_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `tenant-detail-section-row-${index}`,
+);
+
 interface TenantDetailPageProps {
     id: string;
 }
@@ -64,11 +73,8 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
                 />
 
                 <section className="grid gap-4 sm:grid-cols-3">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                        <div
-                            key={`tenant-stat-skeleton-${index}`}
-                            className="rounded-lg border p-4"
-                        >
+                    {TENANT_STAT_SKELETON_KEYS.map((key) => (
+                        <div key={key} className="rounded-lg border p-4">
                             <Skeleton className="h-3 w-20" />
                             <Skeleton className="mt-3 h-7 w-24" />
                         </div>
@@ -82,14 +88,12 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
                                 <Skeleton className="h-4 w-24" />
                             </div>
                             <div className="p-4">
-                                {Array.from({ length: 4 }).map(
-                                    (_, rowIndex) => (
-                                        <Skeleton
-                                            key={`${title}-skeleton-row-${rowIndex}`}
-                                            className="mb-2 h-5 w-full last:mb-0"
-                                        />
-                                    ),
-                                )}
+                                {TENANT_SECTION_ROW_KEYS.map((rowKey) => (
+                                    <Skeleton
+                                        key={`${title}-${rowKey}`}
+                                        className="mb-2 h-5 w-full last:mb-0"
+                                    />
+                                ))}
                             </div>
                         </div>
                     ))}

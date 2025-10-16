@@ -33,7 +33,9 @@ async function main() {
         console.log(
             `🔍 检测到 ${changedFiles.length} 个变更文件 (来源: ${source})`,
         );
-        changedFiles.forEach((file) => console.log(`  - ${file}`));
+        changedFiles.forEach((file) => {
+            console.log(`  - ${file}`);
+        });
 
         // 2. 分析变更类型
         const changes = classifyChanges(changedFiles);
@@ -309,7 +311,9 @@ function displayReport(report) {
         if (!detail.success && detail.output) {
             // 只显示前几行错误信息
             const lines = detail.output.split("\n").slice(0, 5);
-            lines.forEach((line) => console.log(`     ${line}`));
+            lines.forEach((line) => {
+                console.log(`     ${line}`);
+            });
             if (detail.output.split("\n").length > 5) {
                 console.log("     ...");
             }

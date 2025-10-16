@@ -28,25 +28,39 @@ import { useQueryStates } from "nuqs";
 import { startTransition, useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
 
-// 查询参数解析器
-export const createQueryParsers = <T extends Record<string, any>>(
-    schema: {
-        [K in keyof T]: {
-            defaultValue?: T[K];
-            parse?: (value: string) => T[K];
-            serialize?: (value: T[K]) => string;
-        };
-    },
-) => {
-    const parsers: Record<string, any> = {};
+type QueryParserConfig<TValue> = {
+    defaultValue?: TValue;
+    parse?: (value: string) => TValue;
+    serialize?: (value: TValue) => string;
+};
 
-    for (const [key, config] of Object.entries(schema)) {
+type QueryParserSchema<T extends Record<string, unknown>> = {
+    [K in keyof T]: QueryParserConfig<T[K]>;
+};
+
+type QueryParsers<T extends Record<string, unknown>> = {
+    [K in keyof T]: {
+        defaultValue?: T[K];
+        parse: (value: string) => T[K];
+        serialize: (value: T[K]) => string;
+    };
+};
+
+// 查询参数解析器
+export const createQueryParsers = <T extends Record<string, unknown>>(
+    schema: QueryParserSchema<T>,
+): QueryParsers<T> => {
+    const parsers = {} as QueryParsers<T>;
+
+    (Object.keys(schema) as Array<keyof T>).forEach((key) => {
+        const config = schema[key];
         parsers[key] = {
             defaultValue: config.defaultValue,
-            parse: config.parse || ((value: string) => value),
-            serialize: config.serialize || ((value: any) => String(value)),
+            parse: config.parse ?? ((value: string) => value as T[typeof key]),
+            serialize:
+                config.serialize ?? ((value: T[typeof key]) => String(value)),
         };
-    }
+    });
 
     return parsers;
 };
@@ -113,7 +127,7 @@ interface UseServerActionReturn<TInput, TOutput> {
     clearError: () => void;
 }
 
-export function useServerAction<TInput = any, TOutput = any>({
+export function useServerAction<TInput = unknown, TOutput = unknown>({
     action,
     queryKey,
     initialData = null,
@@ -141,13 +155,13 @@ export function useServerAction<TInput = any, TOutput = any>({
         : queryKey
           ? [queryKey]
           : [];
-    const queryParsers = createQueryParsers(
-        queryKeys.reduce(
+    const queryParsers = createQueryParsers<Record<string, unknown>>(
+        queryKeys.reduce<Record<string, QueryParserConfig<unknown>>>(
             (acc, key) => {
                 acc[key] = { defaultValue: undefined };
                 return acc;
             },
-            {} as Record<string, any>,
+            {},
         ),
     );
 
@@ -219,7 +233,7 @@ export function useServerAction<TInput = any, TOutput = any>({
                     // 重置查询参数
                     if (resetQueryOnSuccess && queryKeys.length > 0) {
                         startTransition(() => {
-                            const resetStates: Record<string, any> = {};
+                            const resetStates: Record<string, null> = {};
                             queryKeys.forEach((key) => {
                                 resetStates[key] = null;
                             });
@@ -306,7 +320,7 @@ export function useServerAction<TInput = any, TOutput = any>({
 }
 
 // 简化版本，用于基本的 Server Action
-export function useSimpleServerAction<TInput = any, TOutput = any>(
+export function useSimpleServerAction<TInput = unknown, TOutput = unknown>(
     action: (input: TInput) => Promise<TOutput>,
     options?: Partial<UseServerActionOptions<TInput, TOutput>>,
 ) {

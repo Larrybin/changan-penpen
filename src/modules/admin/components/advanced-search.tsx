@@ -77,7 +77,7 @@ export function AdvancedSearch({
         onReset();
     }, [onChange, onReset]);
 
-    const renderField = (field: SearchField) => {
+    const renderField = (field: SearchField, fieldId: string) => {
         const value = values[field.key];
 
         switch (field.type) {
@@ -89,7 +89,7 @@ export function AdvancedSearch({
                             handleFieldChange(field.key, val)
                         }
                     >
-                        <SelectTrigger>
+                        <SelectTrigger id={fieldId}>
                             <SelectValue
                                 placeholder={
                                     field.placeholder || `选择${field.label}`
@@ -112,6 +112,7 @@ export function AdvancedSearch({
             case "date":
                 return (
                     <Input
+                        id={fieldId}
                         type="date"
                         value={value || ""}
                         onChange={(e) =>
@@ -124,6 +125,7 @@ export function AdvancedSearch({
             case "number":
                 return (
                     <Input
+                        id={fieldId}
                         type="number"
                         value={value || ""}
                         onChange={(e) =>
@@ -136,6 +138,7 @@ export function AdvancedSearch({
             default:
                 return (
                     <Input
+                        id={fieldId}
                         value={value || ""}
                         onChange={(e) =>
                             handleFieldChange(field.key, e.target.value)
@@ -232,10 +235,16 @@ export function AdvancedSearch({
                             .filter((field) => field.key !== "search")
                             .map((field) => (
                                 <div key={field.key} className="space-y-2">
-                                    <label className="text-sm font-medium">
+                                    <label
+                                        className="text-sm font-medium"
+                                        htmlFor={`advanced-search-${field.key}`}
+                                    >
                                         {field.label}
                                     </label>
-                                    {renderField(field)}
+                                    {renderField(
+                                        field,
+                                        `advanced-search-${field.key}`,
+                                    )}
                                 </div>
                             ))}
                     </div>
@@ -244,4 +253,3 @@ export function AdvancedSearch({
         </div>
     );
 }
-

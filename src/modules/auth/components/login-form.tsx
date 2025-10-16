@@ -43,34 +43,25 @@ export function LoginForm({
     const tValidation = useTranslations("AuthForms.Validation");
     const tMessages = useTranslations("AuthForms.Messages");
 
-    const {
-        form,
-        isSubmitting,
-        error,
-        success,
-        clearMessages,
-        handleSubmit,
-        getFieldError,
-        setFieldError,
-        clearFieldError,
-    } = useZodForm({
-        schema: createSignInSchema(tValidation),
-        defaultValues: {
-            email: "",
-            password: "",
-        },
-        onSubmit: async (values: SignInSchema) => {
-            const { success, messageKey } = await signIn(values);
+    const { form, isSubmitting, error, success, handleSubmit, getFieldError } =
+        useZodForm({
+            schema: createSignInSchema(tValidation),
+            defaultValues: {
+                email: "",
+                password: "",
+            },
+            onSubmit: async (values: SignInSchema) => {
+                const { success, messageKey } = await signIn(values);
 
-            if (success) {
-                toast.success(tMessages(messageKey));
-                router.push(dashboardRoutes.dashboard);
-            } else {
-                // 错误已经在 useZodForm 中处理了
-                throw new Error(tMessages(messageKey));
-            }
-        },
-    });
+                if (success) {
+                    toast.success(tMessages(messageKey));
+                    router.push(dashboardRoutes.dashboard);
+                } else {
+                    // 错误已经在 useZodForm 中处理了
+                    throw new Error(tMessages(messageKey));
+                }
+            },
+        });
 
     const signInWithGoogle = async () => {
         try {

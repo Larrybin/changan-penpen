@@ -8,6 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { UsageAggregateRecord } from "@/modules/admin/types/resource.types";
 
+const SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `usage-skeleton-row-${index}`,
+);
+const SKELETON_CELL_KEYS = Array.from(
+    { length: 5 },
+    (_, index) => `usage-skeleton-cell-${index}`,
+);
+
 export function UsageListPage() {
     const [tenantId, setTenantId] = useState("");
     const [feature, setFeature] = useState("");
@@ -31,7 +40,6 @@ export function UsageListPage() {
     });
     const isLoading = query.isLoading;
     const usage = result?.data ?? [];
-    const skeletonRows = Array.from({ length: 6 });
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -74,18 +82,16 @@ export function UsageListPage() {
                     </thead>
                     <tbody>
                         {isLoading &&
-                            skeletonRows.map((_, rowIndex) => (
-                                <tr key={`usage-skeleton-${rowIndex}`}>
-                                    {Array.from({ length: 5 }).map(
-                                        (_, cellIndex) => (
-                                            <td
-                                                key={`usage-skeleton-cell-${rowIndex}-${cellIndex}`}
-                                                className="px-4 py-3"
-                                            >
-                                                <Skeleton className="h-5 w-full" />
-                                            </td>
-                                        ),
-                                    )}
+                            SKELETON_ROW_KEYS.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {SKELETON_CELL_KEYS.map((cellKey) => (
+                                        <td
+                                            key={`${rowKey}-${cellKey}`}
+                                            className="px-4 py-3"
+                                        >
+                                            <Skeleton className="h-5 w-full" />
+                                        </td>
+                                    ))}
                                 </tr>
                             ))}
                         {!isLoading && usage.length === 0 && (

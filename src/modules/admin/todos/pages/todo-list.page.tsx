@@ -13,6 +13,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminTodoRecord } from "@/modules/admin/types/resource.types";
 
+const TODO_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `todo-list-skeleton-row-${index}`,
+);
+const TODO_SKELETON_CELL_KEYS = Array.from(
+    { length: 7 },
+    (_, index) => `todo-list-skeleton-cell-${index}`,
+);
+
 export default function AdminTodoListPage() {
     const [tenantFilter, setTenantFilter] = useState("");
     const normalizedFilter = tenantFilter.trim();
@@ -65,8 +74,6 @@ export default function AdminTodoListPage() {
             },
         );
     };
-
-    const skeletonRows = Array.from({ length: 6 });
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -135,12 +142,12 @@ export default function AdminTodoListPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {skeletonRows.map((_, index) => (
-                                        <tr key={`todo-skeleton-${index}`}>
-                                            {Array.from({ length: 7 }).map(
-                                                (__, cellIndex) => (
+                                    {TODO_SKELETON_ROW_KEYS.map((rowKey) => (
+                                        <tr key={rowKey}>
+                                            {TODO_SKELETON_CELL_KEYS.map(
+                                                (cellKey) => (
                                                     <td
-                                                        key={`todo-skeleton-cell-${index}-${cellIndex}`}
+                                                        key={`${rowKey}-${cellKey}`}
                                                         className="px-4 py-3"
                                                     >
                                                         <Skeleton className="h-5 w-full" />

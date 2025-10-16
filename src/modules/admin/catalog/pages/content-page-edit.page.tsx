@@ -6,6 +6,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContentPageForm } from "@/modules/admin/catalog/components/content-page-form";
 
+const CONTENT_EDIT_SKELETON_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `content-edit-skeleton-${index}`,
+);
+
 export function ContentPageEditPage() {
     const params = useParams<{ id: string }>();
     const id = Number(params?.id);
@@ -43,11 +48,8 @@ export function ContentPageEditPage() {
                     description="调整页面内容与发布状态。"
                 />
                 <div className="space-y-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                        <Skeleton
-                            key={`content-edit-skeleton-${index}`}
-                            className="h-12 w-full"
-                        />
+                    {CONTENT_EDIT_SKELETON_KEYS.map((key) => (
+                        <Skeleton key={key} className="h-12 w-full" />
                     ))}
                 </div>
             </div>

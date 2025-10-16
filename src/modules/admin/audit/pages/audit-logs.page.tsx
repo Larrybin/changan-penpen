@@ -5,6 +5,15 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AuditLogRecord } from "@/modules/admin/types/resource.types";
 
+const AUDIT_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `audit-log-skeleton-row-${index}`,
+);
+const AUDIT_SKELETON_CELL_KEYS = Array.from(
+    { length: 5 },
+    (_, index) => `audit-log-skeleton-cell-${index}`,
+);
+
 const formatDateTime = (value?: string | null) =>
     typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
@@ -30,7 +39,6 @@ export function AuditLogsPage() {
     });
     const isLoading = query.isLoading;
     const logs = result?.data ?? [];
-    const skeletonRows = Array.from({ length: 6 });
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -51,18 +59,16 @@ export function AuditLogsPage() {
                     </thead>
                     <tbody>
                         {isLoading &&
-                            skeletonRows.map((_, rowIndex) => (
-                                <tr key={`audit-skeleton-${rowIndex}`}>
-                                    {Array.from({ length: 5 }).map(
-                                        (_, cellIndex) => (
-                                            <td
-                                                key={`audit-skeleton-cell-${rowIndex}-${cellIndex}`}
-                                                className="px-4 py-3"
-                                            >
-                                                <Skeleton className="h-5 w-full" />
-                                            </td>
-                                        ),
-                                    )}
+                            AUDIT_SKELETON_ROW_KEYS.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {AUDIT_SKELETON_CELL_KEYS.map((cellKey) => (
+                                        <td
+                                            key={`${rowKey}-${cellKey}`}
+                                            className="px-4 py-3"
+                                        >
+                                            <Skeleton className="h-5 w-full" />
+                                        </td>
+                                    ))}
                                 </tr>
                             ))}
                         {!isLoading && logs.length === 0 && (

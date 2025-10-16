@@ -8,6 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ContentPageRecord } from "@/modules/admin/types/resource.types";
 
+const CONTENT_LIST_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `content-pages-list-row-${index}`,
+);
+const CONTENT_LIST_SKELETON_CELL_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `content-pages-list-cell-${index}`,
+);
+
 const formatDateTime = (value?: string | null) =>
     typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
@@ -18,7 +27,6 @@ export function ContentPagesListPage() {
     const { mutateAsync: deletePage } = useDelete();
     const isLoading = query.isLoading;
     const pages = result?.data ?? [];
-    const skeletonRows = Array.from({ length: 6 });
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -49,12 +57,12 @@ export function ContentPagesListPage() {
                     </thead>
                     <tbody>
                         {isLoading &&
-                            skeletonRows.map((_, rowIndex) => (
-                                <tr key={`content-skeleton-${rowIndex}`}>
-                                    {Array.from({ length: 6 }).map(
-                                        (_, cellIndex) => (
+                            CONTENT_LIST_SKELETON_ROW_KEYS.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {CONTENT_LIST_SKELETON_CELL_KEYS.map(
+                                        (cellKey) => (
                                             <td
-                                                key={`content-skeleton-cell-${rowIndex}-${cellIndex}`}
+                                                key={`${rowKey}-${cellKey}`}
                                                 className="px-4 py-3"
                                             >
                                                 <Skeleton className="h-5 w-full" />

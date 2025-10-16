@@ -6,6 +6,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CouponForm } from "@/modules/admin/catalog/components/coupon-form";
 
+const COUPON_EDIT_SKELETON_KEYS = Array.from(
+    { length: 4 },
+    (_, index) => `coupon-edit-skeleton-${index}`,
+);
+
 export function CouponEditPage() {
     const params = useParams<{ id: string }>();
     const id = Number(params?.id);
@@ -37,11 +42,8 @@ export function CouponEditPage() {
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader title="编辑优惠券" description="更新折扣信息。" />
                 <div className="space-y-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                        <Skeleton
-                            key={`coupon-edit-skeleton-${index}`}
-                            className="h-12 w-full"
-                        />
+                    {COUPON_EDIT_SKELETON_KEYS.map((key) => (
+                        <Skeleton key={key} className="h-12 w-full" />
                     ))}
                 </div>
             </div>

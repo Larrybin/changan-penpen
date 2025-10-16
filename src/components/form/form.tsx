@@ -28,20 +28,22 @@
 import type { FieldPath, FieldValues } from "react-hook-form";
 import {
     Controller,
-    FormProvider,
     type ControllerProps,
     type ControllerRenderProps,
     type FieldError,
+    FormProvider,
     type UseFormReturn,
     useFormContext,
 } from "react-hook-form";
 import { cn } from "@/lib/utils";
 
-type FormComponentProps<T extends FieldValues = FieldValues> =
-    UseFormReturn<T, unknown> & {
-        children?: React.ReactNode;
-        className?: string;
-    };
+type FormComponentProps<T extends FieldValues = FieldValues> = UseFormReturn<
+    T,
+    unknown
+> & {
+    children?: React.ReactNode;
+    className?: string;
+};
 
 export function Form<T extends FieldValues = FieldValues>({
     children,
@@ -77,10 +79,12 @@ export function FormLabel({
     className,
     required,
     children,
+    htmlFor,
     ...props
 }: FormLabelProps) {
     return (
         <label
+            htmlFor={htmlFor}
             className={cn(
                 "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
                 className,
@@ -158,14 +162,6 @@ export function FormMessage({
         </p>
     );
 }
-
-// FormField - 高级表单字段组件
-import {
-    Controller,
-    type ControllerProps,
-    type ControllerRenderProps,
-    type FieldError,
-} from "react-hook-form";
 
 interface FormFieldProps<
     TFieldValues extends FieldValues,
@@ -285,5 +281,3 @@ export function FormSuccess({
 }
 
 export default Form;
-
-

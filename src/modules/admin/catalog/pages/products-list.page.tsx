@@ -8,6 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ProductRecord } from "@/modules/admin/types/resource.types";
 
+const PRODUCT_LIST_SKELETON_ROW_KEYS = Array.from(
+    { length: 6 },
+    (_, index) => `product-list-row-${index}`,
+);
+const PRODUCT_LIST_SKELETON_CELL_KEYS = Array.from(
+    { length: 5 },
+    (_, index) => `product-list-cell-${index}`,
+);
+
 const formatCurrency = (
     amountCents?: number | null,
     currency?: string | null,
@@ -29,7 +38,6 @@ export function ProductsListPage() {
     const { mutateAsync: deleteProduct } = useDelete();
     const isLoading = query.isLoading;
     const products = result?.data ?? [];
-    const skeletonRows = Array.from({ length: 6 });
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -57,12 +65,12 @@ export function ProductsListPage() {
                     </thead>
                     <tbody>
                         {isLoading &&
-                            skeletonRows.map((_, rowIndex) => (
-                                <tr key={`product-skeleton-${rowIndex}`}>
-                                    {Array.from({ length: 5 }).map(
-                                        (_, cellIndex) => (
+                            PRODUCT_LIST_SKELETON_ROW_KEYS.map((rowKey) => (
+                                <tr key={rowKey}>
+                                    {PRODUCT_LIST_SKELETON_CELL_KEYS.map(
+                                        (cellKey) => (
                                             <td
-                                                key={`product-skeleton-cell-${rowIndex}-${cellIndex}`}
+                                                key={`${rowKey}-${cellKey}`}
                                                 className="px-4 py-3"
                                             >
                                                 <Skeleton className="h-5 w-full" />
