@@ -16,11 +16,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-    useCreateServerAction,
-    useServerAction,
-    useUpdateServerAction,
-} from "@/hooks/use-server-action";
+import { useCrudServerAction } from "@/hooks/use-server-action";
 import { toast } from "@/lib/toast";
 
 interface DemoTodo {
@@ -77,7 +73,7 @@ export function ServerActionDemo() {
     const [formData, setFormData] = useState({ title: "", description: "" });
 
     // 使用创建任务的 Server Action
-    const createTodo = useCreateServerAction(createTodoAction, {
+    const createTodo = useCrudServerAction("create", createTodoAction, {
         onSuccess: (data) => {
             setTodos((prev) => [...prev, data]);
             setFormData({ title: "", description: "" });
@@ -87,7 +83,7 @@ export function ServerActionDemo() {
     });
 
     // 使用更新任务的 Server Action
-    const updateTodo = useUpdateServerAction(updateTodoAction, {
+    const updateTodo = useCrudServerAction("update", updateTodoAction, {
         onSuccess: (data) => {
             setTodos((prev) =>
                 prev.map((todo) =>
@@ -100,11 +96,10 @@ export function ServerActionDemo() {
     });
 
     // 使用删除任务的 Server Action
-    const deleteTodo = useServerAction<
+    const deleteTodo = useCrudServerAction<
         { id: number },
         { success: boolean; deletedId: number }
-    >({
-        action: deleteTodoAction,
+    >("delete", deleteTodoAction, {
         onSuccess: (_data, input) => {
             setTodos((prev) => prev.filter((todo) => todo.id !== input.id));
             toast.success("任务删除成功！");
