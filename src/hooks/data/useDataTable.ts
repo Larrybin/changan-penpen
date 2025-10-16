@@ -1,6 +1,6 @@
 "use client";
 
-import type { CrudFilter } from "@refinedev/core";
+import type { CrudFilter, CrudFilters } from "@refinedev/core";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useDataTableConfig } from "@/utils/data-table/data-table-provider";
 import type { DataTableState } from "@/utils/data-table/types";
@@ -44,7 +44,7 @@ export interface UseDataTableOptions<T = Record<string, unknown>> {
  * 数据表格Hook结果
  */
 export interface UseDataTableResult<T = Record<string, unknown>>
-    extends Omit<DataTableState<T>, "search"> {
+    extends Omit<DataTableState<T>, "search" | "filters"> {
     // 列定义
     columns: ColumnDef<T>[];
 
@@ -70,6 +70,15 @@ export interface UseDataTableResult<T = Record<string, unknown>>
 
     // 其他状态
     error: Error | null;
+
+    // 过滤器状态
+    filters: CrudFilter[];
+    filterValues: Record<string, unknown>;
+    setFilter: (field: string, value: unknown) => void;
+    setFilters: (filters: Record<string, unknown>) => void;
+    clearFilter: (field: string) => void;
+    clearAllFilters: () => void;
+    resetFilters: () => void;
     hasActiveFilters: boolean;
 
     // 显示配置
@@ -108,11 +117,14 @@ export function useDataTable<T = Record<string, unknown>>(
     });
 
     const {
-        filters: optionFilters = [],
+        filters: optionFilters = [] as CrudFilters,
         enabled: optionEnabled,
         ...restDataOptions
     } = dataOptions;
-    const combinedFilters = [...optionFilters, ...searchFilter.filters];
+    const combinedFilters: CrudFilters = [
+        ...optionFilters,
+        ...searchFilter.filters,
+    ];
     const effectiveEnabled = optionEnabled ?? true;
 
     // 分页数据获取
@@ -180,6 +192,11 @@ export function useDataTable<T = Record<string, unknown>>(
         // 过滤器状态
         filters: searchFilter.filters,
         filterValues: searchFilter.filterValues,
+        setFilter: searchFilter.setFilter,
+        setFilters: searchFilter.setFilters,
+        clearFilter: searchFilter.clearFilter,
+        clearAllFilters: searchFilter.clearAllFilters,
+        resetFilters: searchFilter.reset,
         hasActiveFilters: searchFilter.hasActiveFilters,
 
         // 列定义
@@ -226,7 +243,7 @@ export function useSimpleDataTable<T = Record<string, unknown>>(
 export interface UseFilteredDataTableOptions<T = Record<string, unknown>>
     extends UseDataTableOptions<T> {
     filters: Array<{
-        field: CrudFilter["field"];
+        field: string;
         operator: CrudFilter["operator"];
         value: CrudFilter["value"];
     }>;

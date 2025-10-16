@@ -34,6 +34,8 @@ export interface Sorter {
     order?: "asc" | "desc";
 }
 
+export type CrudSorting = Sorter[];
+
 export interface QueryOptions {
     enabled?: boolean;
     [key: string]: unknown;

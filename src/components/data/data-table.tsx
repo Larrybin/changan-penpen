@@ -1,7 +1,12 @@
 "use client";
 
 import {
+    type Cell as TableCellType,
+    type Column as TableColumn,
     type ColumnDef,
+    type Header as TableHeaderType,
+    type HeaderGroup as TableHeaderGroupType,
+    type Row as TableRowType,
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
@@ -170,8 +175,8 @@ export function DataTable<TData, TValue>({
                     <DropdownMenuContent align="end" className="max-h-72">
                         {table
                             .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
+                            .filter((column: TableColumn<TData>) => column.getCanHide())
+                            .map((column: TableColumn<TData>) => {
                                 const columnMeta = column.columnDef.meta as
                                     | ColumnLabelMeta
                                     | undefined;
@@ -200,9 +205,11 @@ export function DataTable<TData, TValue>({
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
+                        {table
+                            .getHeaderGroups()
+                            .map((headerGroup: TableHeaderGroupType<TData>) => (
                             <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
+                                {headerGroup.headers.map((header: TableHeaderType<TData>) => (
                                     <TableHead
                                         key={header.id}
                                         className="bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
@@ -223,7 +230,7 @@ export function DataTable<TData, TValue>({
                         {isLoading ? (
                             skeletonRowIds.map((rowId) => (
                                 <TableRow key={rowId}>
-                                    {visibleColumns.map((column) => (
+                                    {visibleColumns.map((column: TableColumn<TData>) => (
                                         <TableCell key={column.id}>
                                             <Skeleton className="h-6 w-full" />
                                         </TableCell>
@@ -240,7 +247,7 @@ export function DataTable<TData, TValue>({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            table.getRowModel().rows.map((row) => {
+                            table.getRowModel().rows.map((row: TableRowType<TData>) => {
                                 const href = getRowHref?.(row.original);
 
                                 return (
@@ -253,7 +260,9 @@ export function DataTable<TData, TValue>({
                                         }
                                         className={href ? "cursor-pointer" : ""}
                                     >
-                                        {row.getVisibleCells().map((cell) => {
+                                        {row
+                                            .getVisibleCells()
+                                            .map((cell: TableCellType<TData>) => {
                                             const columnId = cell.column.id;
                                             const isExcluded =
                                                 excludeClickableColumns.includes(

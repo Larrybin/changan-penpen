@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ export function OrdersListPageOptimized() {
     });
 
     // 使用列工厂创建订单列
-    const columns = useMemo(() => {
+    const columns = useMemo<ColumnDef<OrderRecord, unknown>[]>(() => {
         // 获取标准订单列
         const standardColumns = createOrderColumns<OrderRecord>();
 
@@ -44,7 +45,7 @@ export function OrdersListPageOptimized() {
             cell: ({ row }) => (
                 <div className="font-medium">#{row.getValue("id")}</div>
             ),
-        };
+        } satisfies ColumnDef<OrderRecord, unknown>;
 
         // 替换第一列为自定义ID列
         return [idColumn, ...standardColumns.slice(1)];
@@ -62,9 +63,13 @@ export function OrdersListPageOptimized() {
                     >
                         <Input
                             placeholder="按租户 ID 过滤"
-                            value={tableData.filterValues.tenantId || ""}
+                            value={
+                                typeof tableData.filterValues.tenantId === "string"
+                                    ? tableData.filterValues.tenantId
+                                    : ""
+                            }
                             onChange={(event) =>
-                                tableData.setFilter?.(
+                                tableData.setFilter(
                                     "tenantId",
                                     event.target.value,
                                 )
@@ -77,9 +82,9 @@ export function OrdersListPageOptimized() {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                onClick={() =>
-                                    tableData.setFilter?.("tenantId", "")
-                                }
+                                onClick={() => {
+                                    tableData.clearFilter("tenantId");
+                                }}
                             >
                                 清除
                             </Button>

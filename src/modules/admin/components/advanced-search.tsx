@@ -79,12 +79,14 @@ export function AdvancedSearch({
 
     const renderField = (field: SearchField, fieldId: string) => {
         const value = values[field.key];
+        const stringValue =
+            value === null || value === undefined ? "" : String(value);
 
         switch (field.type) {
             case "select":
                 return (
                     <Select
-                        value={value || ""}
+                        value={stringValue}
                         onValueChange={(val) =>
                             handleFieldChange(field.key, val)
                         }
@@ -114,7 +116,7 @@ export function AdvancedSearch({
                     <Input
                         id={fieldId}
                         type="date"
-                        value={value || ""}
+                        value={stringValue}
                         onChange={(e) =>
                             handleFieldChange(field.key, e.target.value)
                         }
@@ -127,10 +129,16 @@ export function AdvancedSearch({
                     <Input
                         id={fieldId}
                         type="number"
-                        value={value || ""}
-                        onChange={(e) =>
-                            handleFieldChange(field.key, e.target.value)
-                        }
+                        value={stringValue}
+                        onChange={(e) => {
+                            const newValue = e.target.value;
+                            handleFieldChange(
+                                field.key,
+                                newValue === ""
+                                    ? null
+                                    : Number(newValue),
+                            );
+                        }}
                         placeholder={field.placeholder}
                     />
                 );
@@ -139,7 +147,7 @@ export function AdvancedSearch({
                 return (
                     <Input
                         id={fieldId}
-                        value={value || ""}
+                        value={stringValue}
                         onChange={(e) =>
                             handleFieldChange(field.key, e.target.value)
                         }

@@ -1,14 +1,15 @@
 "use client";
 
 import { useList } from "@refinedev/core";
+import type { CrudFilters, CrudSorting } from "@refinedev/core";
 import { useCallback, useMemo, useState } from "react";
 import type { DataTableState } from "@/utils/data-table/types";
 
 export interface UsePaginatedDataOptions<_TRecord = Record<string, unknown>> {
     resource: string;
     initialPageSize?: number;
-    filters?: CrudFilter[];
-    sorters?: Sorter[];
+    filters?: CrudFilters;
+    sorters?: CrudSorting;
     enabled?: boolean;
     suspense?: boolean;
     queryKey?: unknown[];
@@ -42,8 +43,8 @@ export function usePaginatedData<T = Record<string, unknown>>(
     const {
         resource,
         initialPageSize = 20,
-        filters = [],
-        sorters = [],
+        filters = [] as CrudFilters,
+        sorters = [] as CrudSorting,
         enabled = true,
         suspense = false,
         queryKey = [],

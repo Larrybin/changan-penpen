@@ -73,7 +73,7 @@ interface UseServerActionOptions<TInput, TOutput> {
     queryKey?: string | string[];
 
     // 初始状态
-    initialData?: TOutput;
+    initialData?: TOutput | null;
 
     // 成功回调
     onSuccess?: (data: TOutput, input: TInput) => void | Promise<void>;
@@ -322,7 +322,7 @@ export function useServerAction<TInput = unknown, TOutput = unknown>({
 // 简化版本，用于基本的 Server Action
 export function useSimpleServerAction<TInput = unknown, TOutput = unknown>(
     action: (input: TInput) => Promise<TOutput>,
-    options?: Partial<UseServerActionOptions<TInput, TOutput>>,
+    options?: Omit<UseServerActionOptions<TInput, TOutput>, "action">,
 ) {
     return useServerAction({
         action,
@@ -334,9 +334,13 @@ export function useSimpleServerAction<TInput = unknown, TOutput = unknown>(
 // 预设的 Server Action Hooks
 export const useCreateServerAction = <TInput, TOutput>(
     action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<UseServerActionOptions<TInput, TOutput>, "toastMessages">,
+    options?: Omit<
+        UseServerActionOptions<TInput, TOutput>,
+        "toastMessages" | "action"
+    >,
 ) => {
-    return useServerAction(action, {
+    return useServerAction({
+        action,
         toastMessages: {
             success: (_data) => "创建成功",
             error: (error) => `创建失败: ${error.message}`,
@@ -348,9 +352,13 @@ export const useCreateServerAction = <TInput, TOutput>(
 
 export const useUpdateServerAction = <TInput, TOutput>(
     action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<UseServerActionOptions<TInput, TOutput>, "toastMessages">,
+    options?: Omit<
+        UseServerActionOptions<TInput, TOutput>,
+        "toastMessages" | "action"
+    >,
 ) => {
-    return useServerAction(action, {
+    return useServerAction({
+        action,
         toastMessages: {
             success: (_data) => "更新成功",
             error: (error) => `更新失败: ${error.message}`,
@@ -362,9 +370,13 @@ export const useUpdateServerAction = <TInput, TOutput>(
 
 export const useDeleteServerAction = <TInput, TOutput>(
     action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<UseServerActionOptions<TInput, TOutput>, "toastMessages">,
+    options?: Omit<
+        UseServerActionOptions<TInput, TOutput>,
+        "toastMessages" | "action"
+    >,
 ) => {
-    return useServerAction(action, {
+    return useServerAction({
+        action,
         toastMessages: {
             success: (_data) => "删除成功",
             error: (error) => `删除失败: ${error.message}`,

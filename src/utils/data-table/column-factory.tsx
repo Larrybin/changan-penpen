@@ -220,7 +220,7 @@ export function createColumn<T = RecordLike>(
         return renderWithFormat(context, format);
     };
 
-    return {
+    const column = {
         accessorKey: accessorKey as ColumnDef<T, unknown>["accessorKey"],
         header: header ?? defaultHeader,
         cell: cell ?? defaultCell,
@@ -230,7 +230,9 @@ export function createColumn<T = RecordLike>(
         },
         enableSorting: sortable,
         ...restConfig,
-    } as ColumnDef<T, unknown>;
+    } satisfies ColumnDef<T, unknown>;
+
+    return column;
 }
 
 /**
@@ -245,7 +247,7 @@ export const predefinedColumns = {
             cell: ({ row }) => formatters.id(row.getValue("id")),
             meta: { label },
             enableSorting: true,
-        }) as ColumnDef<T, unknown>,
+        } satisfies ColumnDef<T, unknown>),
 
     // 邮箱列
     email: <T = RecordLike>(label = "邮箱"): ColumnDef<T, unknown> =>
@@ -262,7 +264,7 @@ export const predefinedColumns = {
             },
             meta: { label },
             enableSorting: true,
-        }) as ColumnDef<T, unknown>,
+        } satisfies ColumnDef<T, unknown>),
 
     // 租户列
     tenant: <T = RecordLike>(label = "租户"): ColumnDef<T, unknown> =>
@@ -279,7 +281,7 @@ export const predefinedColumns = {
             },
             meta: { label },
             enableSorting: true,
-        }) as ColumnDef<T, unknown>,
+        } satisfies ColumnDef<T, unknown>),
 
     // 金额列
     amount: <T = RecordLike>(
@@ -287,7 +289,7 @@ export const predefinedColumns = {
         label = "金额",
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
-        return {
+        const column = {
             accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) =>
@@ -297,7 +299,8 @@ export const predefinedColumns = {
                 ),
             meta: { label },
             enableSorting: true,
-        } as ColumnDef<T, unknown>;
+        } satisfies ColumnDef<T, unknown>;
+        return column;
     },
 
     // 积分列
@@ -306,13 +309,14 @@ export const predefinedColumns = {
         label = "积分",
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
-        return {
+        const column = {
             accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) => formatters.number(row.getValue(accessor)),
             meta: { label },
             enableSorting: true,
-        } as ColumnDef<T, unknown>;
+        } satisfies ColumnDef<T, unknown>;
+        return column;
     },
 
     // 状态列
@@ -321,7 +325,7 @@ export const predefinedColumns = {
         label = "状态",
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
-        return {
+        const column = {
             accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) => (
@@ -331,7 +335,8 @@ export const predefinedColumns = {
             ),
             meta: { label },
             enableSorting: true,
-        } as ColumnDef<T, unknown>;
+        } satisfies ColumnDef<T, unknown>;
+        return column;
     },
 
     // 创建时间列
@@ -346,7 +351,7 @@ export const predefinedColumns = {
             ),
             meta: { label },
             enableSorting: true,
-        }) as ColumnDef<T, unknown>,
+        } satisfies ColumnDef<T, unknown>),
 
     // 更新时间列
     updatedAt: <T = RecordLike>(label = "更新时间"): ColumnDef<T, unknown> =>
@@ -360,7 +365,7 @@ export const predefinedColumns = {
             ),
             meta: { label },
             enableSorting: true,
-        }) as ColumnDef<T, unknown>,
+        } satisfies ColumnDef<T, unknown>),
 
     // 类型列
     type: <T = RecordLike>(
@@ -368,7 +373,7 @@ export const predefinedColumns = {
         label = "类型",
     ): ColumnDef<T, unknown> => {
         const accessor = String(field);
-        return {
+        const column = {
             accessorKey: accessor as ColumnDef<T, unknown>["accessorKey"],
             header: label,
             cell: ({ row }) => {
@@ -381,7 +386,8 @@ export const predefinedColumns = {
             },
             meta: { label },
             enableSorting: true,
-        } as ColumnDef<T, unknown>;
+        } satisfies ColumnDef<T, unknown>;
+        return column;
     },
 
     // 操作列

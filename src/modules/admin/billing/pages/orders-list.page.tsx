@@ -71,7 +71,7 @@ export function OrdersListPage() {
                 meta: {
                     label: "订单",
                 },
-            },
+            } satisfies ColumnDef<OrderRecord>,
             {
                 accessorKey: "customerEmail",
                 header: "租户",
@@ -86,7 +86,7 @@ export function OrdersListPage() {
                 meta: {
                     label: "租户",
                 },
-            },
+            } satisfies ColumnDef<OrderRecord>,
             {
                 accessorKey: "amountCents",
                 header: "金额",
@@ -98,7 +98,7 @@ export function OrdersListPage() {
                 meta: {
                     label: "金额",
                 },
-            },
+            } satisfies ColumnDef<OrderRecord>,
             {
                 accessorKey: "status",
                 header: "状态",
@@ -110,7 +110,7 @@ export function OrdersListPage() {
                 meta: {
                     label: "状态",
                 },
-            },
+            } satisfies ColumnDef<OrderRecord>,
             {
                 accessorKey: "createdAt",
                 header: "创建时间",
@@ -125,7 +125,7 @@ export function OrdersListPage() {
                 meta: {
                     label: "创建时间",
                 },
-            },
+            } satisfies ColumnDef<OrderRecord>,
         ],
         [],
     );
