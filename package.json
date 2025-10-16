@@ -44,7 +44,7 @@
         "check:links": "node scripts/check-links.mjs",
         "suggest:api-index": "node scripts/suggest-api-index.mjs",
         "push:rollback": "node scripts/push-rollback.mjs",
-        
+
         "check:docs": "node scripts/lib/doc-consistency-checker.mjs",
         "check:docs:strict": "DOC_STRICT_MODE=1 node scripts/lib/doc-consistency-checker.mjs",
         "check:docs:mcp": "ENABLE_MCP=1 node scripts/lib/doc-consistency-checker.mjs",

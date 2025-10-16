@@ -78,7 +78,7 @@ export function ServerActionDemo() {
 
     // 使用创建任务的 Server Action
     const createTodo = useCreateServerAction(createTodoAction, {
-        onSuccess: (data) => {
+        onSuccess: (data: Awaited<ReturnType<typeof createTodoAction>>) => {
             setTodos((prev) => [...prev, data]);
             setFormData({ title: "", description: "" });
             toast.success("任务创建成功！");
@@ -88,7 +88,7 @@ export function ServerActionDemo() {
 
     // 使用更新任务的 Server Action
     const updateTodo = useUpdateServerAction(updateTodoAction, {
-        onSuccess: (data) => {
+        onSuccess: (data: Awaited<ReturnType<typeof updateTodoAction>>) => {
             setTodos((prev) =>
                 prev.map((todo) =>
                     todo.id === data.id ? { ...todo, ...data } : todo,
@@ -100,12 +100,16 @@ export function ServerActionDemo() {
     });
 
     // 使用删除任务的 Server Action
-    const deleteTodo = useServerAction(deleteTodoAction, {
-        onSuccess: (_data, input) => {
+    const deleteTodo = useServerAction({
+        action: deleteTodoAction,
+        onSuccess: (
+            _data: Awaited<ReturnType<typeof deleteTodoAction>>,
+            input: { id: number },
+        ) => {
             setTodos((prev) => prev.filter((todo) => todo.id !== input.id));
             toast.success("任务删除成功！");
         },
-        onError: (error) => {
+        onError: (error: Error) => {
             toast.error(`删除失败: ${error.message}`);
         },
         queryKey: "delete",

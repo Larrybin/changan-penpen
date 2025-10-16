@@ -59,7 +59,7 @@ interface UseServerActionOptions<TInput, TOutput> {
     queryKey?: string | string[];
 
     // 初始状态
-    initialData?: TOutput;
+    initialData?: TOutput | null;
 
     // 成功回调
     onSuccess?: (data: TOutput, input: TInput) => void | Promise<void>;
@@ -133,7 +133,7 @@ export function useServerAction<TInput = any, TOutput = any>({
     const [isPending, setIsPending] = useState(false);
     const [isExecuting, setIsExecuting] = useState(false);
     const [error, setError] = useState<Error | null>(null);
-    const [data, setData] = useState<TOutput | null>(initialData);
+    const [data, setData] = useState<TOutput | null>(initialData ?? null);
 
     // 查询参数状态管理
     const queryKeys = Array.isArray(queryKey)
@@ -154,7 +154,7 @@ export function useServerAction<TInput = any, TOutput = any>({
     const [_queryStates, setQueryStates] = useQueryStates(queryParsers);
 
     const reset = useCallback(() => {
-        setData(initialData);
+        setData(initialData ?? null);
         setError(null);
         setIsPending(false);
         setIsExecuting(false);
@@ -320,12 +320,16 @@ export function useSimpleServerAction<TInput = any, TOutput = any>(
 // 预设的 Server Action Hooks
 export const useCreateServerAction = <TInput, TOutput>(
     action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<UseServerActionOptions<TInput, TOutput>, "toastMessages">,
+    options?: Omit<
+        UseServerActionOptions<TInput, TOutput>,
+        "toastMessages" | "action"
+    >,
 ) => {
-    return useServerAction(action, {
+    return useServerAction({
+        action,
         toastMessages: {
-            success: (_data) => "创建成功",
-            error: (error) => `创建失败: ${error.message}`,
+            success: (_data: TOutput) => "创建成功",
+            error: (error: Error) => `创建失败: ${error.message}`,
             loading: "正在创建...",
         },
         ...options,
@@ -334,12 +338,16 @@ export const useCreateServerAction = <TInput, TOutput>(
 
 export const useUpdateServerAction = <TInput, TOutput>(
     action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<UseServerActionOptions<TInput, TOutput>, "toastMessages">,
+    options?: Omit<
+        UseServerActionOptions<TInput, TOutput>,
+        "toastMessages" | "action"
+    >,
 ) => {
-    return useServerAction(action, {
+    return useServerAction({
+        action,
         toastMessages: {
-            success: (_data) => "更新成功",
-            error: (error) => `更新失败: ${error.message}`,
+            success: (_data: TOutput) => "更新成功",
+            error: (error: Error) => `更新失败: ${error.message}`,
             loading: "正在更新...",
         },
         ...options,
@@ -348,12 +356,16 @@ export const useUpdateServerAction = <TInput, TOutput>(
 
 export const useDeleteServerAction = <TInput, TOutput>(
     action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<UseServerActionOptions<TInput, TOutput>, "toastMessages">,
+    options?: Omit<
+        UseServerActionOptions<TInput, TOutput>,
+        "toastMessages" | "action"
+    >,
 ) => {
-    return useServerAction(action, {
+    return useServerAction({
+        action,
         toastMessages: {
-            success: (_data) => "删除成功",
-            error: (error) => `删除失败: ${error.message}`,
+            success: (_data: TOutput) => "删除成功",
+            error: (error: Error) => `删除失败: ${error.message}`,
             loading: "正在删除...",
         },
         ...options,

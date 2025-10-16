@@ -1,6 +1,6 @@
 "use client";
 
-import { useList } from "@refinedev/core";
+import { useList, type CrudFilter, type Sorter } from "@refinedev/core";
 import { useCallback, useMemo, useState } from "react";
 import type { DataTableState } from "@/utils/data-table/types";
 
