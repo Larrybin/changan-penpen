@@ -4,7 +4,7 @@ import {
     apiErrorSchema,
     authRequiredResponseSchema,
 } from "@/lib/openapi/schemas";
-import { insertTodoSchema } from "@/modules/todos/schemas/todo.schema";
+import { createTodoClientSchema } from "@/modules/todos/schemas/todo.schema";
 
 const TAG = "Internal Actions";
 
@@ -22,7 +22,7 @@ export function registerServerActionPaths(registry: OpenAPIRegistry) {
                 required: true,
                 content: {
                     "multipart/form-data": {
-                        schema: insertTodoSchema,
+                        schema: createTodoClientSchema,
                     },
                 },
             },
