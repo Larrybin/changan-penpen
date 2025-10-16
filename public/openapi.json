@@ -780,7 +780,7 @@
         ],
         "description": "管理员积分流水查询结果。"
       },
-      "InsertTodoInput": {
+      "CreateTodoClientInput": {
         "type": "object",
         "properties": {
           "id": {
@@ -804,11 +804,6 @@
           "categoryId": {
             "type": "number",
             "description": "分类 ID，可选"
-          },
-          "userId": {
-            "type": "string",
-            "minLength": 1,
-            "description": "任务所属用户 ID"
           },
           "status": {
             "type": "string",
@@ -889,10 +884,9 @@
           }
         },
         "required": [
-          "title",
-          "userId"
+          "title"
         ],
-        "description": "Server Action 创建 Todo 时的表单数据结构。"
+        "description": "Server Action 创建 Todo 时客户端提交的表单数据，不包含用户 ID。"
       }
     },
     "parameters": {}
@@ -1400,7 +1394,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/InsertTodoInput"
+                "$ref": "#/components/schemas/CreateTodoClientInput"
               }
             }
           }
