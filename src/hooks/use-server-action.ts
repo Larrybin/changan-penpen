@@ -332,57 +332,59 @@ export function useSimpleServerAction<TInput = unknown, TOutput = unknown>(
 }
 
 // 预设的 Server Action Hooks
-export const useCreateServerAction = <TInput, TOutput>(
-    action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<
-        UseServerActionOptions<TInput, TOutput>,
-        "toastMessages" | "action"
-    >,
-) => {
-    return useServerAction({
-        action,
-        toastMessages: {
-            success: (_data) => "创建成功",
-            error: (error) => `创建失败: ${error.message}`,
-            loading: "正在创建...",
-        },
-        ...options,
-    });
+type CrudActionKind = "create" | "update" | "delete";
+
+const CRUD_TOAST_MESSAGES: Record<
+    CrudActionKind,
+    {
+        success: string | ((data: unknown) => string);
+        error: string | ((error: Error) => string);
+        loading: string;
+    }
+> = {
+    create: {
+        success: "创建成功",
+        error: (error) => `创建失败: ${error.message}`,
+        loading: "正在创建...",
+    },
+    update: {
+        success: "更新成功",
+        error: (error) => `更新失败: ${error.message}`,
+        loading: "正在更新...",
+    },
+    delete: {
+        success: "删除成功",
+        error: (error) => `删除失败: ${error.message}`,
+        loading: "正在删除...",
+    },
 };
 
-export const useUpdateServerAction = <TInput, TOutput>(
-    action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<
-        UseServerActionOptions<TInput, TOutput>,
-        "toastMessages" | "action"
-    >,
-) => {
-    return useServerAction({
-        action,
-        toastMessages: {
-            success: (_data) => "更新成功",
-            error: (error) => `更新失败: ${error.message}`,
-            loading: "正在更新...",
-        },
-        ...options,
-    });
+type CrudServerActionOptions<TInput, TOutput> = Omit<
+    UseServerActionOptions<TInput, TOutput>,
+    "toastMessages" | "action"
+> & {
+    toastMessages?: UseServerActionOptions<TInput, TOutput>["toastMessages"];
 };
 
-export const useDeleteServerAction = <TInput, TOutput>(
+export const useCrudServerAction = <TInput, TOutput>(
+    kind: CrudActionKind,
     action: (input: TInput) => Promise<TOutput>,
-    options?: Omit<
-        UseServerActionOptions<TInput, TOutput>,
-        "toastMessages" | "action"
-    >,
+    options?: CrudServerActionOptions<TInput, TOutput>,
 ) => {
+    const { toastMessages: overrideMessages, ...restOptions } = options ?? {};
+
+    const defaultMessages = CRUD_TOAST_MESSAGES[kind];
+
+    const toastMessages = {
+        success: overrideMessages?.success ?? defaultMessages.success,
+        error: overrideMessages?.error ?? defaultMessages.error,
+        loading: overrideMessages?.loading ?? defaultMessages.loading,
+    } as UseServerActionOptions<TInput, TOutput>["toastMessages"];
+
     return useServerAction({
         action,
-        toastMessages: {
-            success: (_data) => "删除成功",
-            error: (error) => `删除失败: ${error.message}`,
-            loading: "正在删除...",
-        },
-        ...options,
+        toastMessages,
+        ...restOptions,
     });
 };
 

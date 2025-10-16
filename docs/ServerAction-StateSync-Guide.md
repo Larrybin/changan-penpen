@@ -81,38 +81,22 @@ const { execute, isPending, isExecuting, error, data } = useServerAction({
 
 ## 预设 Hooks
 
-### useCreateServerAction
+### useCrudServerAction
 
-专用于创建操作的 Hook，带有预设的 Toast 消息。
+针对创建、更新、删除等常见操作的统一 Hook，通过传入 `kind` 指定场景并提供默认文案。
 
 ```tsx
-import { useCreateServerAction } from "@/hooks/use-server-action";
+import { useCrudServerAction } from "@/hooks/use-server-action";
 
-const createTodo = useCreateServerAction(createTodoAction, {
+const createTodo = useCrudServerAction("create", createTodoAction, {
     onSuccess: (data) => {
         // 自定义成功处理
     }
 });
-```
 
-### useUpdateServerAction
+const updateTodo = useCrudServerAction("update", updateTodoAction);
 
-专用于更新操作的 Hook。
-
-```tsx
-import { useUpdateServerAction } from "@/hooks/use-server-action";
-
-const updateTodo = useUpdateServerAction(updateTodoAction);
-```
-
-### useDeleteServerAction
-
-专用于删除操作的 Hook。
-
-```tsx
-import { useDeleteServerAction } from "@/hooks/use-server-action";
-
-const deleteTodo = useDeleteServerAction(deleteTodoAction);
+const deleteTodo = useCrudServerAction("delete", deleteTodoAction);
 ```
 
 ### useSimpleServerAction

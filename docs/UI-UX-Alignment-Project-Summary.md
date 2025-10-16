@@ -91,9 +91,7 @@
   - 类型安全
 
 **预设 Hooks**:
-- `useCreateServerAction`
-- `useUpdateServerAction`
-- `useDeleteServerAction`
+- `useCrudServerAction`
 - `useSimpleServerAction`
 
 #### 3.3 示例和文档
@@ -216,9 +214,9 @@ return (
 
 ### Server Action 使用
 ```tsx
-import { useCreateServerAction } from "@/hooks/use-server-action";
+import { useCrudServerAction } from "@/hooks/use-server-action";
 
-const createTodo = useCreateServerAction(createTodoAction, {
+const createTodo = useCrudServerAction("create", createTodoAction, {
   onSuccess: (data) => {
     console.log("创建成功:", data);
   }
