@@ -5,6 +5,14 @@
     "environment": "production",
     "last_updated": "2025-10-16"
   },
+  "pagination": {
+    "defaultPageSize": 20,
+    "minPageSize": 1,
+    "maxPageSize": 100
+  },
+  "cache": {
+    "defaultTtlSeconds": 300
+  },
   "database": {
     "host": "${CLOUDFLARE_D1_HOST}",
     "port": 5432,

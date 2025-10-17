@@ -42,6 +42,12 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 - Steps: build → migrate → health checks (`/api/v1/health?fast=1`) → release
 - On failure, the pipeline rolls back and notifies. See `docs/deployment/cloudflare-workers.md`.
 
+## Configuration Management
+- **Central config module**: Runtime settings are defined in `config/environments/*.json` and loaded through `src/config`. `resolveConfigSync()` selects the correct environment using `NEXTJS_ENV`/`NODE_ENV`, merges overrides, and applies numeric environment variables such as `PAGINATION_DEFAULT_PAGE_SIZE` or `CACHE_DEFAULT_TTL_SECONDS`.
+- **Typed access**: `config.pagination` and `config.cache` expose pagination limits and cache TTLs to both API handlers and services (e.g., admin user listings now clamp `perPage` and share a Redis-backed cache window).
+- **Static asset headers**: `pnpm run config:headers` regenerates `public/_headers` from `config.performance.static_assets.cache_headers`. This script runs automatically in `prebuild`/`prebuild:cf` so Cloudflare caching stays in sync with configuration.
+- **Secrets stay external**: Sensitive bindings (Upstash tokens, etc.) continue to come from Cloudflare environment variables; only non-secret defaults live in JSON.
+
 ---
 
 ## Architecture Overview

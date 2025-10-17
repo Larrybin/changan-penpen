@@ -12,6 +12,14 @@ export async function generateMetadata(): Promise<Metadata> {
     });
 }
 
-export default function AdminUsersPage() {
-    return <UsersListPage />;
+interface AdminUsersPageProps {
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AdminUsersPage({
+    searchParams,
+}: AdminUsersPageProps) {
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+    return <UsersListPage searchParams={resolvedSearchParams} />;
 }

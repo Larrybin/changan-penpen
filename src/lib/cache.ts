@@ -101,3 +101,59 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
 
     return { value, hit: false };
 }
+
+export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
+    prefix: string,
+    env?: Env,
+): Promise<void> {
+    if (!prefix) {
+        return;
+    }
+
+    const providedEnv = env;
+    const context = providedEnv
+        ? null
+        : await getCloudflareContext({ async: true }).catch(() => null);
+    const resolvedEnv =
+        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
+    const redis = getRedisClient(resolvedEnv);
+    if (!redis) {
+        return;
+    }
+
+    try {
+        if (typeof redis.scan !== "function") {
+            console.warn(
+                "[cache] redis client lacks scan support; skipping invalidation",
+                { prefix },
+            );
+            return;
+        }
+        const deletions: Promise<unknown>[] = [];
+        let cursor = "0";
+        const pattern = `${prefix}*`;
+
+        do {
+            const [nextCursor, rawKeys]: [string, string[]] = await redis.scan(
+                cursor,
+                {
+                    match: pattern,
+                    count: 100,
+                },
+            );
+            const keys = Array.isArray(rawKeys) ? rawKeys : [];
+            for (const key of keys) {
+                if (typeof key === "string" && key) {
+                    deletions.push(redis.del(key));
+                }
+            }
+            cursor = nextCursor;
+        } while (cursor !== "0");
+
+        if (deletions.length > 0) {
+            await Promise.allSettled(deletions);
+        }
+    } catch (error) {
+        console.warn("[cache] failed to invalidate keys", { prefix, error });
+    }
+}
