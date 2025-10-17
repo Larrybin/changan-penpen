@@ -1,5 +1,5 @@
-import type { CrudFilters } from "@refinedev/core";
 import { describe, expect, it } from "vitest";
+import type { CrudFilters } from "@/lib/crud/types";
 
 import { buildListSearchParams } from "@/lib/query/params";
 

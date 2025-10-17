@@ -1,7 +1,7 @@
 "use client";
 
-import type { NotificationProvider } from "@refinedev/core";
 import { Toaster, toast } from "react-hot-toast";
+import type { NotificationProvider } from "@/lib/crud/types";
 
 export const notificationProvider: NotificationProvider = {
     open: ({ message, description, type, key }) => {

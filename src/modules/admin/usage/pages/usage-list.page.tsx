@@ -1,12 +1,12 @@
 "use client";
 
-import type { CrudFilter } from "@refinedev/core";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { fetchAdminList } from "@/modules/admin/api/resources";
 import type { UsageAggregateRecord } from "@/modules/admin/types/resource.types";

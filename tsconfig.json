@@ -20,7 +20,6 @@
         ],
         "paths": {
             "@/*": ["./src/*"],
-            "@refinedev/core": ["./src/lib/stubs/refine-core"],
             "@standard-schema/utils": ["./stubs/standard-schema-utils"],
             "@tanstack/react-table": ["./types/tanstack-react-table"],
             "@radix-ui/react-dropdown-menu": ["./types/radix-dropdown-menu"],

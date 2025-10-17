@@ -1,4 +1,4 @@
-import type { CrudFilters, CrudSorting } from "@refinedev/core";
+import type { CrudFilters, CrudSorting } from "@/lib/crud/types";
 
 import { buildListSearchParams } from "@/lib/query/params";
 

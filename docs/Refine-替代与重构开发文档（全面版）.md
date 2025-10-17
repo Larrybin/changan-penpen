@@ -182,7 +182,7 @@ Refine 替代将按阶段逐步实施，每阶段在保持功能等价的前提�
     }));
   }
   ```
-  这里 `NavigateTo` 是我们自己封装的一个在 Refine 资源下用于导航的组件，因为 Refine 期待的是 ReactNode 或组件。这个兼容实现可以让我们在 `<Refine resources={toRefineResources(ALL_ADMIN_RESOURCES)}>` 传入，从而 Refine 内部菜单（如果还显示的话）也能看到一致的配置。但最终我们会上线自己的菜单，就可以去掉 Refine 的。
+  这里 `NavigateTo` 是我们自己封装的一个在 Refine 资源下用于导航的组件，因为 Refine 期待的是 ReactNode 或组件。这个兼容实现可以让我们在 `<Refine resources={toRefineResources(ALL_ADMIN_RESOURCES)}>` 传入，从而 Refine 内部菜单（如果还显示的话）也能看到一致的配置。但最终我们会上线自己的菜单，就可以去掉 Refine 的。（截至 2025-10，兼容适配器已在阶段 C 中清理，只保留此段作为历史记录。）
 
 通过以上措施，资源清单和菜单系统将在重构中始终保持单一数据源、多出口：既能供 Refine（过渡期）使用，又驱动新的 UI 渲染。这样菜单结构的一致性得到保障，也为将来增加/修改菜单提供了方便：只需改一处配置即可。经过重构的菜单体系更透明，可测试性也更强——我们可以写测试直接遍历 `ALL_ADMIN_RESOURCES` 验证每个页面的 Title 或 Breadcrumb 是否匹配资源定义，达到站点地图的一致。
 
@@ -270,7 +270,8 @@ Refine 替换本身将减少框架开销，但新的架构性能还需细心打�
   - ✅ 全量页面（列表、详情、表单）已迁移至 React Query 与 `adminApiClient`，并统一接入 `AdminQueryProvider` 的限流与错误提示。
   - ✅ `applyApiErrorToForm` 为表单提供字段错误映射；`adminDataProvider` 仅用于残余兼容路径。
 - **阶段 C – Refine 移除与收尾优化**
-  - ⭕️ *计划中*：移除 `<Refine>` 桩、抬升覆盖率阈值至 80%/60%，并引入 UI/E2E 验证与权限驱动的菜单增强。
+  - ✅ `<Refine>` 桩与路径映射已移除，Admin 壳组件改由自定义 Provider（`AdminQueryProvider` 等）直接托管。
+  - ⭕️ *计划中*：抬升覆盖率阈值至 80%/60%，并引入 UI/E2E 验证与权限驱动的菜单增强。
 
 > 后续版本需在每次阶段性交付后更新此章节，保持路线图与仓库实现对齐。
 

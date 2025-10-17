@@ -1,6 +1,5 @@
 "use client";
 
-import type { CrudFilter } from "@refinedev/core";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
@@ -11,6 +10,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { fetchAdminList } from "@/modules/admin/api/list";
 import adminRoutes from "@/modules/admin/routes/admin.routes";

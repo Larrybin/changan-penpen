@@ -1,12 +1,12 @@
 "use client";
 
-import type { CrudFilter } from "@refinedev/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
+import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
 import {
     createAdminRecord,

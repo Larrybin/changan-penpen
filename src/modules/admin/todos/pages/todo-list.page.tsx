@@ -1,6 +1,5 @@
 "use client";
 
-import type { CrudFilter } from "@refinedev/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -12,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
 import {
     deleteAdminRecord,

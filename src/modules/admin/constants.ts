@@ -1,4 +1,3 @@
-import type { RefineResource } from "@refinedev/core";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 export interface AdminResourceDynamicRoute {
@@ -199,35 +198,6 @@ const adminResourceDefinitions: readonly AdminResourceDefinition[] = [
     },
 ] as const;
 
-function resolveRoutePath(route?: AdminResourceRoute) {
-    if (!route) {
-        return undefined;
-    }
-    if (typeof route === "string") {
-        return route;
-    }
-    return route.path;
-}
-
-export function toRefineResources(
-    resources: readonly AdminResourceDefinition[] = adminResourceDefinitions,
-): RefineResource[] {
-    return resources.map((resource) => ({
-        name: resource.name,
-        list: resource.routes?.list,
-        create: resource.routes?.create,
-        edit: resolveRoutePath(resource.routes?.edit),
-        show: resolveRoutePath(resource.routes?.show),
-        meta: {
-            label: resource.label,
-            icon: resource.icon,
-            group: resource.group,
-            order: resource.order,
-            hide: resource.hide,
-        },
-    }));
-}
-
 export function buildAdminMenuGroups(
     resources: readonly AdminResourceDefinition[] = adminResourceDefinitions,
 ): AdminMenuGroup[] {
@@ -272,4 +242,3 @@ export function buildAdminMenuGroups(
 }
 
 export const adminResources = adminResourceDefinitions;
-export const adminRefineResources = toRefineResources(adminResourceDefinitions);

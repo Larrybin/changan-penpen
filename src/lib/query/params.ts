@@ -3,7 +3,7 @@ import type {
     CrudFilters,
     CrudSorting,
     GetListParams,
-} from "@refinedev/core";
+} from "@/lib/crud/types";
 
 export interface BuildListSearchParamsOptions {
     pagination?: GetListParams["pagination"];

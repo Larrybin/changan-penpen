@@ -5,7 +5,7 @@ import type {
     GetListParams,
     GetOneParams,
     UpdateParams,
-} from "@refinedev/core";
+} from "@/lib/crud/types";
 
 import { buildListSearchParams } from "@/lib/query/params";
 import { adminApiClient } from "@/modules/admin/api/client";
