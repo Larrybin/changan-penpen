@@ -1,150 +1,56 @@
 import type {
     CreateParams,
+    CustomParams,
     DataProvider,
     DeleteOneParams,
-    Filter,
     GetListParams,
     GetOneParams,
     UpdateParams,
-} from "@refinedev/core";
+} from "@/lib/crud/types";
 
-type CustomParams = Parameters<NonNullable<DataProvider["custom"]>>[0];
+import { buildListSearchParams } from "@/lib/query/params";
+import { adminApiClient } from "@/modules/admin/api/client";
+import {
+    deleteAdminRecord,
+    isBodyInit,
+    normalizeAdminResourcePath,
+} from "@/modules/admin/api/resources";
+import type {
+    AdminListPayload,
+    AdminSinglePayload,
+} from "@/modules/admin/api/transformers";
+import {
+    resolveAdminListPayload,
+    resolveAdminSinglePayload,
+} from "@/modules/admin/api/transformers";
 
-const API_BASE = "/api/v1/admin";
-
-async function parseResponse(
-    response: Response,
-): Promise<Record<string, unknown>> {
-    const data = (await response.json().catch(() => ({}))) as Record<
-        string,
-        unknown
-    >;
-
-    if (!response.ok) {
-        const errorMessage = (() => {
-            if (data && typeof data === "object") {
-                if (
-                    typeof (data as { message?: unknown }).message === "string"
-                ) {
-                    return (data as { message?: string }).message;
-                }
-                const nestedError = (data as { error?: unknown }).error;
-                if (
-                    nestedError &&
-                    typeof nestedError === "object" &&
-                    typeof (nestedError as { message?: unknown }).message ===
-                        "string"
-                ) {
-                    return (nestedError as { message: string }).message;
-                }
-                if (typeof nestedError === "string") {
-                    return nestedError;
-                }
-            }
-            return null;
-        })();
-        throw new Error(errorMessage || "Unexpected error");
+function normalizeIdentifier(id: DeleteOneParams["id"]) {
+    if (typeof id === "string" || typeof id === "number") {
+        return id;
     }
-
-    return data;
-}
-
-function buildQuery(params?: GetListParams) {
-    if (!params) return "";
-
-    const searchParams = new URLSearchParams();
-
-    if (params.pagination) {
-        const { current, page, pageSize } = params.pagination;
-        const currentPage = current ?? page;
-        if (current) {
-            searchParams.set("page", `${current}`);
-        } else if (currentPage) {
-            searchParams.set("page", `${currentPage}`);
-        }
-        if (pageSize) {
-            searchParams.set("perPage", `${pageSize}`);
-        }
+    if (typeof id === "object" && id !== null && "toString" in id) {
+        return (id as { toString(): string }).toString();
     }
-
-    if (params.filters) {
-        for (const filter of params.filters) {
-            if (!filter) continue;
-            if (filter.field !== undefined) {
-                if (filter.value !== undefined && filter.value !== null) {
-                    const val = filter.value as unknown;
-                    if (
-                        typeof val === "string" ||
-                        typeof val === "number" ||
-                        typeof val === "boolean"
-                    ) {
-                        searchParams.append(String(filter.field), String(val));
-                    }
-                }
-                continue;
-            }
-            if (
-                (filter.operator === "or" || filter.operator === "and") &&
-                Array.isArray(filter.value)
-            ) {
-                for (const inner of filter.value) {
-                    if (
-                        inner &&
-                        typeof inner === "object" &&
-                        "field" in inner &&
-                        (inner as Filter).field !== undefined
-                    ) {
-                        const innerFilter = inner as Filter;
-                        const v = innerFilter.value as unknown;
-                        if (v !== undefined && v !== null) {
-                            if (
-                                typeof v === "string" ||
-                                typeof v === "number" ||
-                                typeof v === "boolean"
-                            ) {
-                                searchParams.append(
-                                    String(innerFilter.field),
-                                    String(v),
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (params.sorters && params.sorters.length > 0) {
-        const sorter = params.sorters[0];
-        if (sorter.field && sorter.order) {
-            searchParams.set("sortBy", String(sorter.field));
-            searchParams.set("sortOrder", sorter.order);
-        }
-    }
-
-    return searchParams.toString() ? `?${searchParams.toString()}` : "";
+    throw new Error("Invalid identifier supplied to adminDataProvider");
 }
 
 export const adminDataProvider = {
     getList: async <TData = Record<string, unknown>>(params: GetListParams) => {
-        const query = buildQuery(params);
-        const response = await fetch(`${API_BASE}/${params.resource}${query}`, {
-            method: "GET",
-            credentials: "include",
+        const resourcePath = normalizeAdminResourcePath(params.resource);
+        const searchParams = buildListSearchParams({
+            pagination: params.pagination,
+            filters: params.filters,
+            sorters: params.sorters,
         });
-        const payload = await parseResponse(response);
-        const rawData = payload.data;
-        const items = Array.isArray(rawData)
-            ? (rawData as TData[])
-            : ([] as TData[]);
-        let total: number;
-        if (typeof payload.total === "number") {
-            total = payload.total;
-        } else if (Array.isArray(rawData)) {
-            total = rawData.length;
-        } else {
-            total = items.length;
-        }
+
+        const response = await adminApiClient.get<AdminListPayload<TData>>(
+            resourcePath,
+            {
+                searchParams,
+            },
+        );
+        const { items, total } = resolveAdminListPayload<TData>(response.data);
+
         return {
             data: items,
             total,
@@ -154,30 +60,29 @@ export const adminDataProvider = {
         resource,
         id,
     }: GetOneParams) => {
-        const response = await fetch(`${API_BASE}/${resource}/${id}`, {
-            method: "GET",
-            credentials: "include",
-        });
-        const payload = await parseResponse(response);
+        const resourcePath = normalizeAdminResourcePath(resource);
+        const response = await adminApiClient.get<AdminSinglePayload<TData>>(
+            `${resourcePath}/${id}`,
+        );
+        const record = resolveAdminSinglePayload<TData>(response.data);
         return {
-            data: (payload.data ?? null) as TData,
+            data: (record ?? null) as TData,
         };
     },
     create: async <TData = Record<string, unknown>>({
         resource,
         variables,
     }: CreateParams) => {
-        const response = await fetch(`${API_BASE}/${resource}`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
+        const resourcePath = normalizeAdminResourcePath(resource);
+        const response = await adminApiClient.post<AdminSinglePayload<TData>>(
+            resourcePath,
+            {
+                json: variables ?? {},
             },
-            body: JSON.stringify(variables ?? {}),
-        });
-        const payload = await parseResponse(response);
+        );
+        const record = resolveAdminSinglePayload<TData>(response.data);
         return {
-            data: (payload.data ?? null) as TData,
+            data: (record ?? null) as TData,
         };
     },
     update: async <TData = Record<string, unknown>>({
@@ -185,61 +90,52 @@ export const adminDataProvider = {
         id,
         variables,
     }: UpdateParams) => {
-        const response = await fetch(`${API_BASE}/${resource}/${id}`, {
-            method: "PATCH",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
+        const resourcePath = normalizeAdminResourcePath(resource);
+        const response = await adminApiClient.patch<AdminSinglePayload<TData>>(
+            `${resourcePath}/${id}`,
+            {
+                json: variables ?? {},
             },
-            body: JSON.stringify(variables ?? {}),
-        });
-        const payload = await parseResponse(response);
+        );
+        const record = resolveAdminSinglePayload<TData>(response.data);
         return {
-            data: (payload.data ?? null) as TData,
+            data: (record ?? null) as TData,
         };
     },
     deleteOne: async <TData = Record<string, unknown>>({
         resource,
         id,
     }: DeleteOneParams) => {
-        const response = await fetch(`${API_BASE}/${resource}/${id}`, {
-            method: "DELETE",
-            credentials: "include",
-        });
-        await parseResponse(response);
+        await deleteAdminRecord({ resource, id });
+        const identifier = normalizeIdentifier(id);
         return {
-            data: { id } as TData,
+            data: { id: identifier } as TData,
         };
     },
-    custom: async <TData = Record<string, unknown>>({
-        url,
-        method,
-        meta,
-        payload,
-    }: CustomParams): Promise<TData | { data?: TData }> => {
-        const requestUrl = url ? `${API_BASE}${url}` : API_BASE;
-        const extraHeaders = (meta?.headers ?? undefined) as
-            | Record<string, string>
-            | undefined;
-        const headersObj: Record<string, string> = {
-            "Content-Type": "application/json",
+    custom: async <TData = Record<string, unknown>>(params: CustomParams) => {
+        const { url, method, meta, payload } = params;
+        const requestUrl = normalizeAdminResourcePath(url ?? "");
+        const requestOptions: Parameters<typeof adminApiClient.request>[1] = {
+            method: method?.toString().toUpperCase(),
+            headers: meta?.headers as HeadersInit | undefined,
         };
-        if (extraHeaders) Object.assign(headersObj, extraHeaders);
 
-        const response = await fetch(requestUrl, {
-            method: method ?? "GET",
-            credentials: "include",
-            headers: headersObj,
-            body: payload ? JSON.stringify(payload) : undefined,
-        });
-        const parsed = (await parseResponse(response)) as Record<
-            string,
-            unknown
-        >;
-        if (typeof parsed === "object" && "data" in parsed) {
-            return parsed as { data?: TData };
+        if (isBodyInit(payload)) {
+            requestOptions.body = payload;
+        } else if (payload !== undefined) {
+            requestOptions.json = payload;
         }
-        return parsed as TData;
+
+        const response = await adminApiClient.request<TData | { data?: TData }>(
+            requestUrl,
+            requestOptions,
+        );
+
+        const data = response.data;
+        if (data && typeof data === "object" && "data" in data) {
+            return data as { data?: TData };
+        }
+        return data as TData;
     },
-    getApiUrl: () => API_BASE,
+    getApiUrl: () => "/api/v1/admin",
 } satisfies Required<DataProvider>;

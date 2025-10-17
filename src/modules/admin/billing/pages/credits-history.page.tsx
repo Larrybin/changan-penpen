@@ -1,12 +1,18 @@
 "use client";
 
-import { type CrudFilter, useList } from "@refinedev/core";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { CrudFilter } from "@/lib/crud/types";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import type { CreditHistoryEntry } from "@/modules/admin/types/resource.types";
 
 const formatDateTime = (value?: string | null) =>
@@ -31,18 +37,24 @@ export function CreditsHistoryPage() {
         [tenantId],
     );
 
-    const { query, result } = useList<CreditHistoryEntry>({
-        resource: "credits-history",
-        pagination: {
-            current: pageIndex + 1,
-            pageSize: pageSize,
-        },
-        filters,
+    const listQuery = useQuery<FetchAdminListResult<CreditHistoryEntry>>({
+        queryKey: adminQueryKeys.list("credits-history", {
+            pagination: { pageIndex, pageSize },
+            filters,
+        }),
+        queryFn: ({ signal }) =>
+            fetchAdminList<CreditHistoryEntry>({
+                resource: "credits-history",
+                pagination: { pageIndex, pageSize },
+                filters,
+                signal,
+            }),
+        placeholderData: keepPreviousData,
     });
 
-    const isLoading = query.isLoading;
-    const entries = result?.data ?? [];
-    const total = result?.total ?? 0;
+    const isLoading = listQuery.isLoading || listQuery.isFetching;
+    const entries = listQuery.data?.items ?? [];
+    const total = listQuery.data?.total ?? 0;
     const pageCount = Math.ceil(total / pageSize);
 
     // 定义表格列

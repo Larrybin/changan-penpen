@@ -1,4 +1,4 @@
-import type { BaseRecord } from "@refinedev/core";
+import type { BaseRecord } from "@/lib/crud/types";
 
 export type AdminUserRole = "admin" | "user";
 export type AdminUserStatus = "active" | "inactive";

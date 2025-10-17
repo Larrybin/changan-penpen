@@ -1,10 +1,16 @@
 "use client";
 
-import { useDelete, useList } from "@refinedev/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    deleteAdminRecord,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { CouponRecord } from "@/modules/admin/types/resource.types";
 
@@ -18,12 +24,23 @@ const COUPON_LIST_SKELETON_CELL_KEYS = Array.from(
 );
 
 export function CouponsListPage() {
-    const { query, result } = useList<CouponRecord>({
-        resource: "coupons",
+    const queryClient = useQueryClient();
+    const listQuery = useQuery({
+        queryKey: adminQueryKeys.list("coupons"),
+        queryFn: () => fetchAdminList<CouponRecord>({ resource: "coupons" }),
     });
-    const { mutateAsync: deleteCoupon } = useDelete();
-    const isLoading = query.isLoading;
-    const coupons = result?.data ?? [];
+    const deleteMutation = useMutation({
+        mutationFn: (couponId: number | string) =>
+            deleteAdminRecord({ resource: "coupons", id: couponId }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("coupons"),
+            });
+            toast.success("优惠券已删除");
+        },
+    });
+    const isLoading = listQuery.isLoading;
+    const coupons = listQuery.data?.items ?? [];
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -103,11 +120,11 @@ export function CouponsListPage() {
                                     <Button
                                         size="sm"
                                         variant="destructive"
+                                        disabled={deleteMutation.isPending}
                                         onClick={async () => {
-                                            await deleteCoupon({
-                                                resource: "coupons",
-                                                id: coupon.id,
-                                            });
+                                            await deleteMutation.mutateAsync(
+                                                coupon.id,
+                                            );
                                         }}
                                     >
                                         删除

@@ -1,6 +1,6 @@
 "use client";
 
-import { type CrudFilter, useList } from "@refinedev/core";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -8,6 +8,12 @@ import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { CrudFilter } from "@/lib/crud/types";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { TenantSummaryRecord } from "@/modules/admin/types/resource.types";
 
@@ -30,18 +36,24 @@ export function TenantsListPage() {
         [search],
     );
 
-    const { query, result } = useList<TenantSummaryRecord>({
-        resource: "tenants",
-        pagination: {
-            current: pageIndex + 1,
-            pageSize: pageSize,
-        },
-        filters,
+    const listQuery = useQuery<FetchAdminListResult<TenantSummaryRecord>>({
+        queryKey: adminQueryKeys.list("tenants", {
+            pagination: { pageIndex, pageSize },
+            filters,
+        }),
+        queryFn: ({ signal }) =>
+            fetchAdminList<TenantSummaryRecord>({
+                resource: "tenants",
+                pagination: { pageIndex, pageSize },
+                filters,
+                signal,
+            }),
+        placeholderData: keepPreviousData,
     });
 
-    const isLoading = query.isLoading;
-    const tenants = result?.data ?? [];
-    const total = result?.total ?? 0;
+    const isLoading = listQuery.isLoading || listQuery.isFetching;
+    const tenants = listQuery.data?.items ?? [];
+    const total = listQuery.data?.total ?? 0;
     const pageCount = Math.ceil(total / pageSize);
 
     // 定义表格列

@@ -1,15 +1,22 @@
 "use client";
 
-import { type CrudFilter, useDelete, useList } from "@refinedev/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { CrudFilter } from "@/lib/crud/types";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    deleteAdminRecord,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminTodoRecord } from "@/modules/admin/types/resource.types";
 
@@ -34,20 +41,35 @@ export default function AdminTodoListPage() {
               },
           ]
         : [];
-    const { query, result } = useList<AdminTodoRecord>({
-        resource: "todos",
-        pagination: {
-            pageSize: 20,
-        },
-        filters,
-        queryOptions: {},
+    const queryClient = useQueryClient();
+    const listQuery = useQuery({
+        queryKey: adminQueryKeys.list("todos", {
+            pagination: { pageSize: 20 },
+            filters,
+        }),
+        queryFn: ({ signal }) =>
+            fetchAdminList<AdminTodoRecord>({
+                resource: "todos",
+                pagination: { pageSize: 20 },
+                filters,
+                signal,
+            }),
     });
 
-    const { mutate: deleteTodo } = useDelete();
-    const isLoading = query.isLoading;
-    const refetch = query.refetch;
-    const todos = result?.data ?? [];
-    const total = result?.total ?? 0;
+    const deleteMutation = useMutation({
+        mutationFn: (todoId: number) =>
+            deleteAdminRecord({ resource: "todos", id: todoId }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("todos"),
+            });
+            toast.success("Todo 已删除");
+        },
+    });
+
+    const isLoading = listQuery.isLoading || listQuery.isFetching;
+    const todos = listQuery.data?.items ?? [];
+    const total = listQuery.data?.total ?? 0;
 
     const formatter = useMemo(() => {
         return new Intl.DateTimeFormat("zh-CN", {
@@ -62,17 +84,7 @@ export default function AdminTodoListPage() {
         const confirmed = window.confirm("确定要删除该 Todo 吗？");
         if (!confirmed) return;
 
-        deleteTodo(
-            {
-                resource: "todos",
-                id,
-            },
-            {
-                onSuccess: () => {
-                    refetch();
-                },
-            },
-        );
+        deleteMutation.mutate(id);
     };
 
     return (

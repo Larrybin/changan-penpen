@@ -1,14 +1,21 @@
 "use client";
 
-import { useCreate, useNotification, useUpdate } from "@refinedev/core";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    createAdminRecord,
+    updateAdminRecord,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ContentPageInput } from "@/modules/admin/services/catalog.service";
+import { applyApiErrorToForm } from "@/modules/admin/utils/form-errors";
 
 interface ContentPageFormProps {
     id?: number;
@@ -17,9 +24,7 @@ interface ContentPageFormProps {
 
 export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
     const router = useRouter();
-    const { open } = useNotification();
-    const { mutateAsync: createPage } = useCreate();
-    const { mutateAsync: updatePage } = useUpdate();
+    const queryClient = useQueryClient();
 
     const form = useForm<ContentPageInput>({
         defaultValues: {
@@ -52,34 +57,40 @@ export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialData, reset]);
 
-    const handleSubmit = form.handleSubmit(async (values) => {
-        const payload = {
-            ...values,
-            publishedAt: values.publishedAt || null,
-        };
+    const mutation = useMutation({
+        mutationFn: async (values: ContentPageInput) => {
+            const payload = {
+                ...values,
+                publishedAt: values.publishedAt || null,
+            };
 
-        try {
             if (id) {
-                await updatePage({
+                return updateAdminRecord({
                     resource: "content-pages",
                     id,
-                    values: payload,
+                    variables: payload,
                 });
-                open?.({ message: "内容已更新", type: "success" });
-            } else {
-                await createPage({
-                    resource: "content-pages",
-                    values: payload,
-                });
-                open?.({ message: "内容已创建", type: "success" });
             }
-            router.push(adminRoutes.catalog.contentPages);
-        } catch (error) {
-            open?.({
-                message: error instanceof Error ? error.message : "保存失败",
-                type: "error",
+
+            return createAdminRecord({
+                resource: "content-pages",
+                variables: payload,
             });
-        }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("content-pages"),
+            });
+            toast.success(id ? "内容已更新" : "内容已创建");
+            router.push(adminRoutes.catalog.contentPages);
+        },
+        onError: (error) => {
+            applyApiErrorToForm(form, error);
+        },
+    });
+
+    const handleSubmit = form.handleSubmit(async (values) => {
+        await mutation.mutateAsync(values);
     });
 
     return (
@@ -178,7 +189,10 @@ export function ContentPageForm({ id, initialData }: ContentPageFormProps) {
                 >
                     取消
                 </Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
+                <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting || mutation.isPending}
+                >
                     保存
                 </Button>
             </div>

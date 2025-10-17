@@ -1,14 +1,21 @@
 "use client";
 
-import { useCreate, useNotification, useUpdate } from "@refinedev/core";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    createAdminRecord,
+    updateAdminRecord,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { CouponInput } from "@/modules/admin/services/catalog.service";
+import { applyApiErrorToForm } from "@/modules/admin/utils/form-errors";
 
 interface CouponFormProps {
     id?: number;
@@ -17,9 +24,7 @@ interface CouponFormProps {
 
 export function CouponForm({ id, initialData }: CouponFormProps) {
     const router = useRouter();
-    const { open } = useNotification();
-    const { mutateAsync: createCoupon } = useCreate();
-    const { mutateAsync: updateCoupon } = useUpdate();
+    const queryClient = useQueryClient();
 
     const form = useForm<CouponInput>({
         defaultValues: {
@@ -51,34 +56,43 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialData?.code, initialData, form.reset]);
 
-    const handleSubmit = form.handleSubmit(async (values) => {
-        const payload = {
-            ...values,
-            discountValue: Number(values.discountValue ?? 0),
-            maxRedemptions: values.maxRedemptions
-                ? Number(values.maxRedemptions)
-                : null,
-        };
+    const mutation = useMutation({
+        mutationFn: async (values: CouponInput) => {
+            const payload = {
+                ...values,
+                discountValue: Number(values.discountValue ?? 0),
+                maxRedemptions: values.maxRedemptions
+                    ? Number(values.maxRedemptions)
+                    : null,
+            };
 
-        try {
             if (id) {
-                await updateCoupon({
+                return updateAdminRecord({
                     resource: "coupons",
                     id,
-                    values: payload,
+                    variables: payload,
                 });
-                open?.({ message: "优惠券已更新", type: "success" });
-            } else {
-                await createCoupon({ resource: "coupons", values: payload });
-                open?.({ message: "优惠券已创建", type: "success" });
             }
-            router.push(adminRoutes.catalog.coupons);
-        } catch (error) {
-            open?.({
-                message: error instanceof Error ? error.message : "保存失败",
-                type: "error",
+
+            return createAdminRecord({
+                resource: "coupons",
+                variables: payload,
             });
-        }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("coupons"),
+            });
+            toast.success(id ? "优惠券已更新" : "优惠券已创建");
+            router.push(adminRoutes.catalog.coupons);
+        },
+        onError: (error) => {
+            applyApiErrorToForm(form, error);
+        },
+    });
+
+    const handleSubmit = form.handleSubmit(async (values) => {
+        await mutation.mutateAsync(values);
     });
 
     return (
@@ -197,7 +211,10 @@ export function CouponForm({ id, initialData }: CouponFormProps) {
                 >
                     取消
                 </Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
+                <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting || mutation.isPending}
+                >
                     保存
                 </Button>
             </div>

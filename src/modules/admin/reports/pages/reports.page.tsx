@@ -1,12 +1,18 @@
 "use client";
 
-import { useCreate, useList } from "@refinedev/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    createAdminRecord,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import type { ReportRecord } from "@/modules/admin/types/resource.types";
 
 const REPORTS_SKELETON_ROW_KEYS = Array.from(
@@ -44,26 +50,34 @@ const formatDateTime = (value?: string | null) =>
     typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
 export function ReportsPage() {
-    const { query, result } = useList<ReportRecord>({ resource: "reports" });
-    const isLoading = query.isLoading;
-    const refetch = query.refetch;
-    const { mutateAsync: createReport } = useCreate();
+    const queryClient = useQueryClient();
+    const listQuery = useQuery({
+        queryKey: adminQueryKeys.list("reports"),
+        queryFn: () => fetchAdminList<ReportRecord>({ resource: "reports" }),
+    });
+    const createMutation = useMutation({
+        mutationFn: (payload: { type: string; tenantId?: string }) =>
+            createAdminRecord({ resource: "reports", variables: payload }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("reports"),
+            });
+            toast.success("报表生成任务已创建");
+        },
+    });
+    const isLoading = listQuery.isLoading;
     const [form, setForm] = useState({ type: "orders", tenantId: "" });
 
     const handleGenerate = async (event: React.FormEvent) => {
         event.preventDefault();
-        await createReport({
-            resource: "reports",
-            values: {
-                type: form.type,
-                tenantId: form.tenantId || undefined,
-            },
+        await createMutation.mutateAsync({
+            type: form.type,
+            tenantId: form.tenantId || undefined,
         });
         setForm((prev) => ({ ...prev, tenantId: "" }));
-        refetch();
     };
 
-    const reports = result?.data ?? [];
+    const reports = listQuery.data?.items ?? [];
     const skeletonRows = REPORTS_SKELETON_ROW_KEYS;
 
     return (
@@ -120,7 +134,12 @@ export function ReportsPage() {
                                 placeholder="全部租户"
                             />
                         </div>
-                        <Button type="submit">生成报表</Button>
+                        <Button
+                            type="submit"
+                            disabled={createMutation.isPending}
+                        >
+                            生成报表
+                        </Button>
                     </form>
                 }
             />

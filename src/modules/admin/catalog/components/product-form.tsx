@@ -1,14 +1,21 @@
 "use client";
 
-import { useCreate, useNotification, useUpdate } from "@refinedev/core";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    createAdminRecord,
+    updateAdminRecord,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ProductInput } from "@/modules/admin/services/catalog.service";
+import { applyApiErrorToForm } from "@/modules/admin/utils/form-errors";
 
 export interface ProductFormProps {
     id?: number;
@@ -17,9 +24,7 @@ export interface ProductFormProps {
 
 export function ProductForm({ id, initialData }: ProductFormProps) {
     const router = useRouter();
-    const { open } = useNotification();
-    const { mutateAsync: createProduct } = useCreate();
-    const { mutateAsync: updateProduct } = useUpdate();
+    const queryClient = useQueryClient();
 
     const form = useForm<ProductInput>({
         defaultValues: {
@@ -51,37 +56,40 @@ export function ProductForm({ id, initialData }: ProductFormProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialData?.slug, initialData?.name, initialData, form.reset]);
 
-    const handleSubmit = form.handleSubmit(async (values) => {
-        const payload = {
-            ...values,
-            priceCents: Number(values.priceCents ?? 0),
-        };
+    const mutation = useMutation({
+        mutationFn: async (values: ProductInput) => {
+            const payload = {
+                ...values,
+                priceCents: Number(values.priceCents ?? 0),
+            };
 
-        try {
             if (id) {
-                await updateProduct({
+                return updateAdminRecord({
                     resource: "products",
                     id,
-                    values: payload,
-                });
-                open?.({
-                    message: "商品已更新",
-                    type: "success",
-                });
-            } else {
-                await createProduct({ resource: "products", values: payload });
-                open?.({
-                    message: "商品已创建",
-                    type: "success",
+                    variables: payload,
                 });
             }
-            router.push(adminRoutes.catalog.products);
-        } catch (error) {
-            open?.({
-                message: error instanceof Error ? error.message : "保存失败",
-                type: "error",
+
+            return createAdminRecord({
+                resource: "products",
+                variables: payload,
             });
-        }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("products"),
+            });
+            toast.success(id ? "商品已更新" : "商品已创建");
+            router.push(adminRoutes.catalog.products);
+        },
+        onError: (error) => {
+            applyApiErrorToForm(form, error);
+        },
+    });
+
+    const handleSubmit = form.handleSubmit(async (values) => {
+        await mutation.mutateAsync(values);
     });
 
     return (
@@ -194,7 +202,10 @@ export function ProductForm({ id, initialData }: ProductFormProps) {
                 >
                     取消
                 </Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
+                <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting || mutation.isPending}
+                >
                     保存
                 </Button>
             </div>

@@ -9,10 +9,6 @@ const nextConfig: NextConfig = {
         config.resolve = config.resolve || {};
         config.resolve.alias = {
             ...(config.resolve.alias ?? {}),
-            "@refinedev/core": path.resolve(
-                __dirname,
-                "src/lib/stubs/refine-core",
-            ),
             "@standard-schema/utils": path.resolve(
                 __dirname,
                 "stubs/standard-schema-utils",

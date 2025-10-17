@@ -1,9 +1,11 @@
 "use client";
 
-import { useOne } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { fetchAdminRecord } from "@/modules/admin/api/resources";
 import { ProductForm } from "@/modules/admin/catalog/components/product-form";
 
 const PRODUCT_EDIT_SKELETON_KEYS = Array.from(
@@ -17,12 +19,15 @@ export function ProductEditPage() {
     const isValidId = Number.isFinite(id);
     const effectiveId = isValidId ? id : 0;
 
-    const { query, result } = useOne({
-        resource: "products",
-        id: effectiveId,
-        queryOptions: {
-            enabled: isValidId,
-        },
+    const query = useQuery({
+        queryKey: adminQueryKeys.detail("products", effectiveId),
+        queryFn: ({ signal }) =>
+            fetchAdminRecord({
+                resource: "products",
+                id: effectiveId,
+                signal,
+            }),
+        enabled: isValidId,
     });
 
     if (!isValidId) {
@@ -50,7 +55,7 @@ export function ProductEditPage() {
         );
     }
 
-    if (!result?.data) {
+    if (!query.data) {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader title="编辑商品" description="更新商品信息。" />
@@ -64,7 +69,7 @@ export function ProductEditPage() {
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
             <PageHeader title="编辑商品" description="更新商品信息。" />
-            <ProductForm id={id} initialData={result.data} />
+            <ProductForm id={id} initialData={query.data ?? undefined} />
         </div>
     );
 }

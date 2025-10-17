@@ -1,5 +1,3 @@
-import { headers as nextHeaders } from "next/headers";
-
 export interface ApiErrorDetails {
     [key: string]: unknown;
 }
@@ -24,6 +22,7 @@ export interface CreateApiErrorResponseOptions<Details = ApiErrorDetails> {
     headers?: HeadersInit;
     traceId?: string;
     timestamp?: string;
+    requestId?: string;
 }
 
 function generateTraceId() {
@@ -80,18 +79,9 @@ export function createApiErrorResponse<Details = ApiErrorDetails>(
     mergeHeaders(headers, options.headers);
     headers.set("X-Trace-Id", payload.traceId);
 
-    try {
-        const requestHeaders = nextHeaders() as unknown as {
-            get(name: string): string | null;
-        };
-        const requestId =
-            requestHeaders.get?.("cf-ray") ??
-            requestHeaders.get?.("x-request-id");
-        if (requestId && !headers.has("X-Request-Id")) {
-            headers.set("X-Request-Id", requestId);
-        }
-    } catch {
-        // ignore when next/headers is unavailable (non-request contexts)
+    const requestId = options.requestId;
+    if (requestId && !headers.has("X-Request-Id")) {
+        headers.set("X-Request-Id", requestId);
     }
 
     return new Response(JSON.stringify(payload), {

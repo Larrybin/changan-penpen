@@ -1,11 +1,17 @@
 "use client";
 
-import { type CrudFilter, useList } from "@refinedev/core";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { CrudFilter } from "@/lib/crud/types";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import type { UsageAggregateRecord } from "@/modules/admin/types/resource.types";
 
 const SKELETON_ROW_KEYS = Array.from(
@@ -31,15 +37,22 @@ export function UsageListPage() {
         return list;
     }, [tenantId, feature]);
 
-    const { query, result } = useList<UsageAggregateRecord>({
-        resource: "usage",
-        pagination: {
-            pageSize: 20,
-        },
-        filters,
+    const listQuery = useQuery<FetchAdminListResult<UsageAggregateRecord>>({
+        queryKey: adminQueryKeys.list("usage", {
+            pagination: { pageSize: 20 },
+            filters,
+        }),
+        queryFn: ({ signal }) =>
+            fetchAdminList<UsageAggregateRecord>({
+                resource: "usage",
+                pagination: { pageSize: 20 },
+                filters,
+                signal,
+            }),
+        placeholderData: keepPreviousData,
     });
-    const isLoading = query.isLoading;
-    const usage = result?.data ?? [];
+    const isLoading = listQuery.isLoading || listQuery.isFetching;
+    const usage = listQuery.data?.items ?? [];
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">

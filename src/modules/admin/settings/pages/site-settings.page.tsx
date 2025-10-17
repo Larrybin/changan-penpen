@@ -1,12 +1,15 @@
 "use client";
 
-import { useNotification } from "@refinedev/core";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import React, { useEffect, useId, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { adminApiClient } from "@/modules/admin/api/client";
 
 const SETTINGS_SKELETON_SECTION_KEYS = Array.from(
     { length: 4 },
@@ -73,8 +76,6 @@ function setPartialValue<TKey extends keyof SiteSettingsState>(
 export function SiteSettingsPage() {
     const [settings, setSettings] =
         useState<SiteSettingsState>(defaultSettings);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const initialSettingsRef = useRef<SiteSettingsState | null>(null);
     const { open } = useNotification();
     const sitemapWarningShownRef = useRef(false);
@@ -217,7 +218,7 @@ export function SiteSettingsPage() {
         }
 
         if (Object.keys(payload).length === 0) {
-            open?.({ message: "未检测到任何更改", type: "info" });
+            toast("未检测到任何更改");
             return;
         }
 
@@ -225,47 +226,7 @@ export function SiteSettingsPage() {
             payload.enabledLanguages = [...payload.enabledLanguages];
         }
 
-        setSaving(true);
-        try {
-            const response = await fetch("/api/v1/admin/site-settings", {
-                method: "PATCH",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-            if (!response.ok) {
-                throw new Error("保存站点设置失败");
-            }
-            const result = (await response.json()) as {
-                data?: Partial<SiteSettingsState>;
-            };
-            const incoming = result.data ?? {};
-            const merged: SiteSettingsState = {
-                ...defaultSettings,
-                ...(incoming as SiteSettingsState),
-                enabledLanguages: Array.isArray(incoming.enabledLanguages)
-                    ? [...incoming.enabledLanguages]
-                    : [
-                          ...(payload.enabledLanguages ??
-                              settings.enabledLanguages),
-                      ],
-            };
-            setSettings(merged);
-            initialSettingsRef.current = {
-                ...merged,
-                enabledLanguages: [...merged.enabledLanguages],
-            };
-            open?.({ message: "站点设置已保存", type: "success" });
-        } catch (error) {
-            open?.({
-                message: error instanceof Error ? error.message : "保存失败",
-                type: "error",
-            });
-        } finally {
-            setSaving(false);
-        }
+        await saveMutation.mutateAsync(payload);
     };
 
     const handleLanguagesChange = (value: string) => {

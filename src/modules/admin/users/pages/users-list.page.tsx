@@ -1,6 +1,6 @@
 "use client";
 
-import { type CrudFilter, useList } from "@refinedev/core";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -10,6 +10,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { CrudFilter } from "@/lib/crud/types";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/list";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminUserListItem } from "@/modules/admin/users/models";
 
@@ -38,17 +44,23 @@ export function UsersListPage() {
         setPageIndex(0);
     }, []);
 
-    const { query, result } = useList<AdminUserListItem>({
-        resource: "users",
-        pagination: {
-            current: pageIndex + 1,
-            pageSize,
-        },
-        filters,
+    const listQuery = useQuery<FetchAdminListResult<AdminUserListItem>>({
+        queryKey: adminQueryKeys.list("users", {
+            pagination: { pageIndex, pageSize },
+            filters,
+        }),
+        queryFn: ({ signal }) =>
+            fetchAdminList<AdminUserListItem>({
+                resource: "users",
+                pagination: { pageIndex, pageSize },
+                filters,
+                signal,
+            }),
+        placeholderData: keepPreviousData,
     });
 
-    const users = result?.data ?? [];
-    const total = result?.total ?? users.length;
+    const users = listQuery.data?.items ?? [];
+    const total = listQuery.data?.total ?? users.length;
     const rawPageCount = pageSize > 0 ? Math.ceil(total / pageSize) : 0;
     const pageCount = Math.max(rawPageCount, 1);
 
@@ -59,8 +71,8 @@ export function UsersListPage() {
         }
     }, [pageIndex, pageCount]);
 
-    const isError = Boolean(query.error);
-    const isLoading = query.isLoading || query.isFetching;
+    const isError = Boolean(listQuery.error);
+    const isLoading = listQuery.isLoading || listQuery.isFetching;
 
     const columns = useMemo<ColumnDef<AdminUserListItem>[]>(
         () => [
