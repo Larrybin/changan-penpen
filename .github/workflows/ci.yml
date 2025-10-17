@@ -69,6 +69,9 @@ jobs:
       - name: Lint (Biome)
         run: pnpm exec biome check .
 
+      - name: Generate OpenAPI snapshot
+        run: pnpm run openapi:generate
+
       - name: Verify OpenAPI snapshot
         run: pnpm run openapi:check
 
