@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { adminApiClient } from "@/modules/admin/api/client";
 
 const SETTINGS_SKELETON_SECTION_KEYS = Array.from(
     { length: 4 },
@@ -74,8 +76,6 @@ function setPartialValue<TKey extends keyof SiteSettingsState>(
 export function SiteSettingsPage() {
     const [settings, setSettings] =
         useState<SiteSettingsState>(defaultSettings);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const initialSettingsRef = useRef<SiteSettingsState | null>(null);
     const sitemapWarningShownRef = useRef(false);
     const queryClient = useQueryClient();
@@ -106,19 +106,6 @@ export function SiteSettingsPage() {
             return response.data.data ?? null;
         },
     });
-
-    const showSitemapWarning = useCallback(() => {
-        if (sitemapWarningShownRef.current) {
-            return;
-        }
-        sitemapWarningShownRef.current = true;
-        toast(
-            "Enable your XML sitemap: A published sitemap helps search engines discover your marketing pages.",
-            {
-                icon: "⚠️",
-            },
-        );
-    }, []);
 
     useEffect(() => {
         if (!siteSettingsQuery.data) {
