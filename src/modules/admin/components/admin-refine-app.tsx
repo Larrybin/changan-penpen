@@ -8,6 +8,7 @@ import {
     AdminToaster,
     notificationProvider,
 } from "@/modules/admin/providers/notification-provider";
+import { AdminQueryProvider } from "@/modules/admin/providers/query-client";
 import type { AuthUser } from "@/modules/auth/models/user.model";
 import { AdminShell } from "./admin-shell";
 
@@ -28,7 +29,9 @@ export function AdminRefineApp({ children, user }: AdminRefineAppProps) {
             }}
             resources={adminRefineResources}
         >
-            <AdminShell user={user}>{children}</AdminShell>
+            <AdminQueryProvider>
+                <AdminShell user={user}>{children}</AdminShell>
+            </AdminQueryProvider>
             <AdminToaster />
         </Refine>
     );

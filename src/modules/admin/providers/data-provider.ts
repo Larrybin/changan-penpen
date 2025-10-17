@@ -7,30 +7,16 @@ import type {
     UpdateParams,
 } from "@refinedev/core";
 
-import { createApiClient } from "@/lib/api-client";
 import { buildListSearchParams } from "@/lib/query/params";
-
-const adminApiClient = createApiClient({
-    baseUrl: "/api/v1/admin",
-    credentials: "include",
-});
-
-type ListPayload<TData> =
-    | {
-          data?: TData[];
-          total?: number;
-      }
-    | TData[]
-    | null
-    | undefined;
-
-type SinglePayload<TData> =
-    | {
-          data?: TData | null;
-      }
-    | TData
-    | null
-    | undefined;
+import { adminApiClient } from "@/modules/admin/api/client";
+import type {
+    AdminListPayload,
+    AdminSinglePayload,
+} from "@/modules/admin/api/transformers";
+import {
+    resolveAdminListPayload,
+    resolveAdminSinglePayload,
+} from "@/modules/admin/api/transformers";
 
 function normalizeResourcePath(resource: string) {
     if (/^https?:/i.test(resource)) {
@@ -40,30 +26,6 @@ function normalizeResourcePath(resource: string) {
         return resource;
     }
     return resource.startsWith("/") ? resource : `/${resource}`;
-}
-
-function resolveListPayload<TData>(payload: ListPayload<TData>) {
-    if (Array.isArray(payload)) {
-        return { items: payload, total: payload.length };
-    }
-
-    if (payload && typeof payload === "object") {
-        const items = Array.isArray(payload.data)
-            ? (payload.data as TData[])
-            : ([] as TData[]);
-        const total =
-            typeof payload.total === "number" ? payload.total : items.length;
-        return { items, total };
-    }
-
-    return { items: [] as TData[], total: 0 };
-}
-
-function resolveSinglePayload<TData>(payload: SinglePayload<TData>) {
-    if (payload && typeof payload === "object" && "data" in payload) {
-        return (payload as { data?: TData | null }).data ?? null;
-    }
-    return (payload as TData | null | undefined) ?? null;
 }
 
 function normalizeIdentifier(id: DeleteOneParams["id"]) {
@@ -116,13 +78,13 @@ export const adminDataProvider = {
             sorters: params.sorters,
         });
 
-        const response = await adminApiClient.get<ListPayload<TData>>(
+        const response = await adminApiClient.get<AdminListPayload<TData>>(
             resourcePath,
             {
                 searchParams,
             },
         );
-        const { items, total } = resolveListPayload<TData>(response.data);
+        const { items, total } = resolveAdminListPayload<TData>(response.data);
 
         return {
             data: items,
@@ -134,11 +96,11 @@ export const adminDataProvider = {
         id,
     }: GetOneParams) => {
         const resourcePath = normalizeResourcePath(resource);
-        const response = await adminApiClient.get<SinglePayload<TData>>(
+        const response = await adminApiClient.get<AdminSinglePayload<TData>>(
             `${resourcePath}/${id}`,
         );
         return {
-            data: resolveSinglePayload<TData>(response.data) ?? null,
+            data: resolveAdminSinglePayload<TData>(response.data) ?? null,
         };
     },
     create: async <TData = Record<string, unknown>>({
@@ -146,14 +108,14 @@ export const adminDataProvider = {
         variables,
     }: CreateParams) => {
         const resourcePath = normalizeResourcePath(resource);
-        const response = await adminApiClient.post<SinglePayload<TData>>(
+        const response = await adminApiClient.post<AdminSinglePayload<TData>>(
             resourcePath,
             {
                 json: variables ?? {},
             },
         );
         return {
-            data: resolveSinglePayload<TData>(response.data),
+            data: resolveAdminSinglePayload<TData>(response.data),
         };
     },
     update: async <TData = Record<string, unknown>>({
@@ -162,14 +124,14 @@ export const adminDataProvider = {
         variables,
     }: UpdateParams) => {
         const resourcePath = normalizeResourcePath(resource);
-        const response = await adminApiClient.patch<SinglePayload<TData>>(
+        const response = await adminApiClient.patch<AdminSinglePayload<TData>>(
             `${resourcePath}/${id}`,
             {
                 json: variables ?? {},
             },
         );
         return {
-            data: resolveSinglePayload<TData>(response.data),
+            data: resolveAdminSinglePayload<TData>(response.data),
         };
     },
     deleteOne: async <TData = Record<string, unknown>>({
