@@ -34,6 +34,9 @@ export function registerSummarizePaths(registry: OpenAPIRegistry) {
         path: "/api/v1/summarize",
         tags: [TAG],
         summary: "基于 Workers AI 对长文本进行摘要",
+        description:
+            "接受原始文本与可选配置，调用 Workers AI 模型生成摘要并返回 tokens 使用情况。",
+        operationId: "postSummarize",
         request: {
             body: {
                 required: true,

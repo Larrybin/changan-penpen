@@ -4,6 +4,23 @@
 >
 > ✅ 管理后台新增 Swagger UI：访问 `/admin/api-docs`（需管理员登录）。OpenAPI JSON 位于 `/api/v1/openapi`，同样要求管理员权限。
 
+## Supported Versions
+
+| Version | Status | Sunset | Notes |
+| --- | --- | --- | --- |
+| v1 | Active (default) | Planned ≥ 6 months after v2 GA | Backwards-compatible additions allowed; breaking changes require new version |
+
+## Versioning & Deprecation Policy
+
+- See [`docs/api-versioning.md`](./api-versioning.md) for release cadence, compatibility rules, and communication expectations.
+- Deprecation notices must appear in OpenAPI descriptions and in this index at least 90 days before removal.
+- When introducing v2 routes, keep both versions discoverable until the v1 sunset window expires.
+
+## Rate Limit Overview
+
+- Key guardrails are summarised in [`docs/ratelimit-index.md`](./ratelimit-index.md). Update both documents when adding or modifying limits.
+- Cells marked “Not enforced” highlight current gaps; create follow-up issues if the route should be throttled.
+
 ## 1. Page Routes (App Router)
 
 Core
@@ -89,66 +106,66 @@ Discovered (scan)
 
 ## 2. Auth‑Related
 
-| Path | Method | Description |
-| --- | --- | --- |
-| `/api/v1/auth/[...all]` | `GET/POST` | Better Auth Google OAuth & session management |
-| `/api/v1/admin/session` | `GET` | Admin session check |
-| `middleware.ts` | �?||  `middleware.ts` | �� | Protects routes like  `/dashboard`, `/admin` |
+| Path | Method | Description | Rate limit |
+| --- | --- | --- | --- |
+| `/api/v1/auth/[...all]` | `GET/POST` | Better Auth Google OAuth & session management | Sliding 10 req / 60s via Upstash (`auth:flow`) — see [Rate Limit Index](./ratelimit-index.md#auth-flow) |
+| `/api/v1/admin/session` | `GET` | Admin session check | Not enforced (align with admin dashboard thresholds if abuse observed) |
+| `middleware.ts` | — | Protects routes like `/dashboard`, `/admin` | N/A |
 
 ## 3. Core APIs
 
 Admin APIs
 - Path: `/api/v1/admin/*` (admin only)
 
-| Path | Method | Module | Description | Auth |
-| --- | --- | --- | --- | --- |
-| `/api/v1/admin/session` | `GET` | Admin | Admin session check | Admin only |
-| `/api/v1/admin/audit-logs` | `GET` | Admin | List audit logs | Admin only |
-| `/api/v1/admin/site-settings` | `GET/POST` | Admin | Get/update site settings | Admin only |
-| `/api/v1/admin/reports` | `GET` | Admin | Reporting endpoints | Admin only |
-| `/api/v1/admin/usage` | `GET` | Admin | Usage overview for admin | Admin only |
-| `/api/v1/admin/orders` | `GET/POST` | Admin | List/create orders | Admin only |
-| `/api/v1/admin/orders/[id]` | `GET` | Admin | Order by id | Admin only |
-| `/api/v1/admin/products` | `GET/POST` | Admin | List/create products | Admin only |
-| `/api/v1/admin/products/[id]` | `GET` | Admin | Product by id | Admin only |
-| `/api/v1/admin/categories` | `GET/POST` | Admin | Manage categories | Admin only |
-| `/api/v1/admin/coupons` | `GET/POST` | Admin | List/create coupons | Admin only |
-| `/api/v1/admin/coupons/[id]` | `GET` | Admin | Coupon by id | Admin only |
-| `/api/v1/admin/content-pages` | `GET/POST` | Admin | List/create content pages | Admin only |
-| `/api/v1/admin/content-pages/[id]` | `GET` | Admin | Content page by id | Admin only |
-| `/api/v1/admin/tenants` | `GET/POST` | Admin | List/create tenants | Admin only |
-| `/api/v1/admin/tenants/[id]` | `GET` | Admin | Tenant by id | Admin only |
-| `/api/v1/admin/todos` | `GET/POST` | Admin | List/create admin todos | Admin only |
-| `/api/v1/admin/todos/[id]` | `GET` | Admin | Admin todo by id | Admin only |
-| `/api/v1/admin/credits-history` | `GET` | Admin | Credits history | Admin only |
-| `/api/v1/openapi` | `GET` | Docs | Generate OpenAPI 3.1 文档（需管理员登录） | Admin only |
-| `/api/v1/admin/dashboard` | `GET` | Admin | Dashboard metrics | Admin only |
+| Path | Method | Module | Description | Auth | Rate limit |
+| --- | --- | --- | --- | --- | --- |
+| `/api/v1/admin/session` | `GET` | Admin | Admin session check | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/audit-logs` | `GET` | Admin | List audit logs | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/site-settings` | `GET/POST` | Admin | Get/update site settings | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/reports` | `GET` | Admin | Reporting endpoints | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/usage` | `GET` | Admin | Usage overview for admin | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/orders` | `GET/POST` | Admin | List/create orders | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/orders/[id]` | `GET` | Admin | Order by id | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/products` | `GET/POST` | Admin | List/create products | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/products/[id]` | `GET` | Admin | Product by id | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/categories` | `GET/POST` | Admin | Manage categories | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/coupons` | `GET/POST` | Admin | List/create coupons | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/coupons/[id]` | `GET` | Admin | Coupon by id | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/content-pages` | `GET/POST` | Admin | List/create content pages | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/content-pages/[id]` | `GET` | Admin | Content page by id | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/tenants` | `GET/POST` | Admin | List/create tenants | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/tenants/[id]` | `GET` | Admin | Tenant by id | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/todos` | `GET/POST` | Admin | List/create admin todos | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/todos/[id]` | `GET` | Admin | Admin todo by id | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/credits-history` | `GET` | Admin | Credits history | Admin only | Admin console only — throttle TBD |
+| `/api/v1/openapi` | `GET` | Docs | Generate OpenAPI 3.1 文档（需管理员登录） | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/dashboard` | `GET` | Admin | Dashboard metrics | Admin only | Admin console only — throttle TBD |
 
 Billing / Payments
 
-| Path | Method | Module | Description | Auth |
-| --- | --- | --- | --- | --- |
-| `/api/v1/creem/create-checkout` | `POST` | Billing (`modules/creem`) | Create checkout session | Login |
-| `/api/v1/creem/customer-portal` | `POST` | Billing (`modules/creem`) | Redirect to customer portal | Login |
-| `/api/v1/credits/balance` | `GET` | Billing (`modules/billing`) | Fetch current credit balance (auto refresh monthly credits) | Login |
-| `/api/v1/credits/history` | `GET` | Billing (`modules/billing`) | Paginated credit transactions | Login |
-| `/api/v1/webhooks/creem` | `POST` | Billing (`modules/creem`) | Payment webhook | Signature required |
+| Path | Method | Module | Description | Auth | Rate limit |
+| --- | --- | --- | --- | --- | --- |
+| `/api/v1/creem/create-checkout` | `POST` | Billing (`modules/creem`) | Create checkout session | Login | Sliding 3 req / 10s via Upstash (`creem:create-checkout`) |
+| `/api/v1/creem/customer-portal` | `POST` | Billing (`modules/creem`) | Redirect to customer portal | Login | Not enforced (document gap) |
+| `/api/v1/credits/balance` | `GET` | Billing (`modules/billing`) | Fetch current credit balance (auto refresh monthly credits) | Login | Not enforced |
+| `/api/v1/credits/history` | `GET` | Billing (`modules/billing`) | Paginated credit transactions | Login | Not enforced |
+| `/api/v1/webhooks/creem` | `POST` | Billing (`modules/creem`) | Payment webhook | Signature required | Fixed 60 req / 60s (`creem:webhook`) |
 
 Usage Tracking
 
-| Path | Method | Module | Description | Auth |
-| --- | --- | --- | --- | --- |
-| `/api/v1/usage/record` | `POST` | Usage | Record user actions | Login |
-| `/api/v1/usage/stats` | `GET` | Usage | Fetch usage stats | Login |
+| Path | Method | Module | Description | Auth | Rate limit |
+| --- | --- | --- | --- | --- | --- |
+| `/api/v1/usage/record` | `POST` | Usage | Record user actions | Login | Not enforced (consider shared quota) |
+| `/api/v1/usage/stats` | `GET` | Usage | Fetch usage stats | Login | Not enforced |
 
 Auth / Health / AI
 
-| Path | Method | Module | Description | Auth |
-| --- | --- | --- | --- | --- |
-| `/api/v1/auth/[...all]` | `GET/POST` | Auth | Better Auth Google OAuth & session | Public/Login |
-| `/api/v1/health` | `GET` | Platform | Health check (fast/strict modes) | Public |
-| `/api/v1/summarize` | `POST` | AI | Workers AI summarization | Login |
-| `/internal/actions/todos/create` | `POST` | Todos | Server Action（内部调试用） | Login |
+| Path | Method | Module | Description | Auth | Rate limit |
+| --- | --- | --- | --- | --- | --- |
+| `/api/v1/auth/[...all]` | `GET/POST` | Auth | Better Auth Google OAuth & session | Public/Login | Sliding 10 req / 60s (`auth:flow`) |
+| `/api/v1/health` | `GET` | Platform | Health check (fast/strict modes) | Public | Not enforced (token-gated for detail) |
+| `/api/v1/summarize` | `POST` | AI | Workers AI summarization | Login | Not enforced (document gap) |
+| `/internal/actions/todos/create` | `POST` | Todos | Server Action（内部调试用） | Login | Not enforced — dev/testing only |
 
 > See each `route.ts` and related services for details under `src/app/api/v1/*`.
 

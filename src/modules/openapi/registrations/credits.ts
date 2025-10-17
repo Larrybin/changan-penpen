@@ -80,6 +80,9 @@ export function registerCreditsPaths(registry: OpenAPIRegistry) {
         path: "/api/v1/credits/balance",
         tags: [TAG],
         summary: "查询当前积分余额（自动刷新月度赠送）",
+        description:
+            "返回当前用户的积分余额，包含月度赠送额度刷新后的最新结果。",
+        operationId: "getCreditsBalance",
         responses: {
             200: {
                 description: "查询成功",
@@ -114,6 +117,8 @@ export function registerCreditsPaths(registry: OpenAPIRegistry) {
         path: "/api/v1/credits/history",
         tags: [TAG],
         summary: "分页查询积分流水记录",
+        description: "分页返回积分流水明细，可用于账单与对账场景。",
+        operationId: "getCreditsHistory",
         request: {
             query: z
                 .object({

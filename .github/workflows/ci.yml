@@ -69,6 +69,15 @@ jobs:
       - name: Lint (Biome)
         run: pnpm exec biome check .
 
+      - name: Generate OpenAPI snapshot
+        run: pnpm run openapi:generate
+
+      - name: Verify OpenAPI snapshot
+        run: pnpm run openapi:check
+
+      - name: Lint OpenAPI schema (Spectral)
+        run: pnpm run openapi:lint
+
       # Removed docs consistency step to speed up CI and avoid non-critical failures
 
       - name: Link check (local markdown)

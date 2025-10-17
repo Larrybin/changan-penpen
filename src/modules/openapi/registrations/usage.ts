@@ -130,6 +130,9 @@ export function registerUsagePaths(registry: OpenAPIRegistry) {
         path: "/api/v1/usage/record",
         tags: [TAG],
         summary: "记录用户某项功能的用量",
+        description:
+            "将指定功能的消耗写入用量表，可选同时扣减积分；用于后台统计与限额控制。",
+        operationId: "postUsageRecord",
         request: {
             body: {
                 required: true,
@@ -182,6 +185,9 @@ export function registerUsagePaths(registry: OpenAPIRegistry) {
         path: "/api/v1/usage/stats",
         tags: [TAG],
         summary: "按日聚合查询用量统计",
+        description:
+            "按日期聚合返回指定窗口的用量信息，便于仪表盘展示与配额跟踪。",
+        operationId: "getUsageStats",
         request: {
             query: z
                 .object({

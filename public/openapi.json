@@ -2,13 +2,13 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Changan-penpen API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "自动生成的 OpenAPI 文档，结合 Zod schema 同步维护 API 与 Server Action。"
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
-      "description": "默认应用访问地址，可在 NEXT_PUBLIC_APP_URL 中覆盖"
+      "url": "http://localhost:3000/api/v1",
+      "description": "默认 API 基础地址，可在 NEXT_PUBLIC_APP_URL 中覆盖"
     }
   ],
   "security": [
@@ -130,6 +130,30 @@
           "error": null
         }
       },
+      "ApiErrorDetail": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "INVALID_REQUEST",
+            "description": "错误编码"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "example": "参数校验失败",
+            "description": "错误信息"
+          },
+          "details": {
+            "description": "可选的附加调试信息"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
       "AuthRequiredResponse": {
         "type": "object",
         "properties": {
@@ -141,15 +165,41 @@
             "example": false
           },
           "error": {
+            "$ref": "#/components/schemas/ApiErrorDetail"
+          },
+          "status": {
+            "type": "integer",
+            "example": 400
+          },
+          "timestamp": {
             "type": "string",
-            "example": "Unauthorized"
+            "example": "2025-03-05T12:34:56.000Z",
+            "description": "ISO 时间戳"
+          },
+          "traceId": {
+            "type": "string",
+            "example": "8f4c2e7a9b",
+            "description": "用于日志关联的追踪 ID"
           }
         },
         "required": [
           "success",
-          "error"
+          "error",
+          "status",
+          "timestamp",
+          "traceId"
         ],
-        "description": "当请求缺少有效登录会话时返回。"
+        "description": "当请求缺少有效登录会话时返回。",
+        "example": {
+          "success": false,
+          "status": 401,
+          "timestamp": "2025-03-05T12:34:56.000Z",
+          "traceId": "auth-unauthorized",
+          "error": {
+            "code": "UNAUTHORIZED",
+            "message": "Authentication required"
+          }
+        }
       },
       "ApiErrorResponse": {
         "type": "object",
@@ -162,20 +212,44 @@
             "example": false
           },
           "error": {
-            "type": "string",
-            "example": "Internal server error"
+            "$ref": "#/components/schemas/ApiErrorDetail"
           },
-          "code": {
-            "type": "string",
-            "example": "ERR_UNEXPECTED"
+          "status": {
+            "type": "integer",
+            "example": 400
           },
-          "data": {}
+          "timestamp": {
+            "type": "string",
+            "example": "2025-03-05T12:34:56.000Z",
+            "description": "ISO 时间戳"
+          },
+          "traceId": {
+            "type": "string",
+            "example": "8f4c2e7a9b",
+            "description": "用于日志关联的追踪 ID"
+          }
         },
         "required": [
           "success",
-          "error"
+          "error",
+          "status",
+          "timestamp",
+          "traceId"
         ],
-        "description": "通用错误响应封装，包含错误信息与可选错误码。"
+        "description": "标准化的错误响应结构。",
+        "example": {
+          "success": false,
+          "status": 400,
+          "timestamp": "2025-03-05T12:34:56.000Z",
+          "traceId": "8f4c2e7a9b",
+          "error": {
+            "code": "INVALID_REQUEST",
+            "message": "参数校验失败",
+            "details": {
+              "field": "email"
+            }
+          }
+        }
       },
       "SummarizerConfig": {
         "type": "object",
@@ -642,15 +716,49 @@
       "AdminUnauthorizedResponse": {
         "type": "object",
         "properties": {
-          "message": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ],
+            "example": false
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorDetail"
+          },
+          "status": {
+            "type": "integer",
+            "example": 400
+          },
+          "timestamp": {
             "type": "string",
-            "example": "Unauthorized"
+            "example": "2025-03-05T12:34:56.000Z",
+            "description": "ISO 时间戳"
+          },
+          "traceId": {
+            "type": "string",
+            "example": "8f4c2e7a9b",
+            "description": "用于日志关联的追踪 ID"
           }
         },
         "required": [
-          "message"
+          "success",
+          "error",
+          "status",
+          "timestamp",
+          "traceId"
         ],
-        "description": "Admin 接口鉴权失败时的统一响应结构。"
+        "description": "Admin 接口鉴权失败时的统一响应结构。",
+        "example": {
+          "success": false,
+          "status": 401,
+          "timestamp": "2025-03-05T12:34:56.000Z",
+          "traceId": "admin-unauthorized",
+          "error": {
+            "code": "UNAUTHORIZED",
+            "message": "Administrator privileges required"
+          }
+        }
       },
       "AdminUsageRow": {
         "type": "object",
@@ -892,12 +1000,14 @@
     "parameters": {}
   },
   "paths": {
-    "/api/summarize": {
+    "/api/v1/summarize": {
       "post": {
         "tags": [
           "AI"
         ],
         "summary": "基于 Workers AI 对长文本进行摘要",
+        "description": "接受原始文本与可选配置，调用 Workers AI 模型生成摘要并返回 tokens 使用情况。",
+        "operationId": "postSummarize",
         "security": [
           {
             "BetterAuthSession": []
@@ -947,12 +1057,14 @@
         }
       }
     },
-    "/api/usage/record": {
+    "/api/v1/usage/record": {
       "post": {
         "tags": [
           "Usage"
         ],
         "summary": "记录用户某项功能的用量",
+        "description": "将指定功能的消耗写入用量表，可选同时扣减积分；用于后台统计与限额控制。",
+        "operationId": "postUsageRecord",
         "security": [
           {
             "BetterAuthSession": []
@@ -1012,12 +1124,14 @@
         }
       }
     },
-    "/api/usage/stats": {
+    "/api/v1/usage/stats": {
       "get": {
         "tags": [
           "Usage"
         ],
         "summary": "按日聚合查询用量统计",
+        "description": "按日期聚合返回指定窗口的用量信息，便于仪表盘展示与配额跟踪。",
+        "operationId": "getUsageStats",
         "security": [
           {
             "BetterAuthSession": []
@@ -1070,12 +1184,14 @@
         }
       }
     },
-    "/api/credits/balance": {
+    "/api/v1/credits/balance": {
       "get": {
         "tags": [
           "Credits"
         ],
         "summary": "查询当前积分余额（自动刷新月度赠送）",
+        "description": "返回当前用户的积分余额，包含月度赠送额度刷新后的最新结果。",
+        "operationId": "getCreditsBalance",
         "security": [
           {
             "BetterAuthSession": []
@@ -1115,12 +1231,14 @@
         }
       }
     },
-    "/api/credits/history": {
+    "/api/v1/credits/history": {
       "get": {
         "tags": [
           "Credits"
         ],
         "summary": "分页查询积分流水记录",
+        "description": "分页返回积分流水明细，可用于账单与对账场景。",
+        "operationId": "getCreditsHistory",
         "security": [
           {
             "BetterAuthSession": []
@@ -1184,12 +1302,14 @@
         }
       }
     },
-    "/api/admin/session": {
+    "/api/v1/admin/session": {
       "get": {
         "tags": [
           "Admin"
         ],
         "summary": "校验当前登录用户是否具备管理员权限",
+        "description": "返回当前管理员的基础信息，供前端在进入后台前做鉴权与展示。",
+        "operationId": "getAdminSession",
         "security": [
           {
             "BetterAuthSession": []
@@ -1219,12 +1339,14 @@
         }
       }
     },
-    "/api/admin/usage": {
+    "/api/v1/admin/usage": {
       "get": {
         "tags": [
           "Admin"
         ],
         "summary": "分页查询租户用量概览",
+        "description": "查询所有租户的用量聚合数据，可按功能或租户过滤，用于后台报表。",
+        "operationId": "getAdminUsage",
         "security": [
           {
             "BetterAuthSession": []
@@ -1302,12 +1424,14 @@
         }
       }
     },
-    "/api/admin/credits-history": {
+    "/api/v1/admin/credits-history": {
       "get": {
         "tags": [
           "Admin"
         ],
         "summary": "分页查询所有租户的积分流水",
+        "description": "管理员视角分页查看积分流水，用于对账与异常排查。",
+        "operationId": "getAdminCreditsHistory",
         "security": [
           {
             "BetterAuthSession": []
@@ -1383,6 +1507,7 @@
         ],
         "summary": "Server Action：创建 Todo 任务",
         "description": "仅供前端表单通过 Server Action 调用，用于演示型 Todo 功能。",
+        "operationId": "postInternalTodoCreate",
         "x-internal": true,
         "security": [
           {

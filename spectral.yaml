@@ -1,0 +1,15 @@
+extends:
+  - "spectral:oas"
+
+rules:
+  operation-description:
+    description: Require operation descriptions for better discoverability.
+    message: "Operation should include a non-empty description"
+    given: "$..paths[*][get,post,put,patch,delete]"
+    severity: warn
+    then:
+      field: description
+      function: truthy
+  info-contact: off
+  info-license: off
+  operation-operationId: warn

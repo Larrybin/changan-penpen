@@ -80,6 +80,9 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
         path: "/api/v1/admin/session",
         tags: [TAG],
         summary: "校验当前登录用户是否具备管理员权限",
+        description:
+            "返回当前管理员的基础信息，供前端在进入后台前做鉴权与展示。",
+        operationId: "getAdminSession",
         responses: {
             200: {
                 description: "管理员会话有效",
@@ -106,6 +109,9 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
         path: "/api/v1/admin/usage",
         tags: [TAG],
         summary: "分页查询租户用量概览",
+        description:
+            "查询所有租户的用量聚合数据，可按功能或租户过滤，用于后台报表。",
+        operationId: "getAdminUsage",
         request: {
             query: z
                 .object({
@@ -156,6 +162,8 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
         path: "/api/v1/admin/credits-history",
         tags: [TAG],
         summary: "分页查询所有租户的积分流水",
+        description: "管理员视角分页查看积分流水，用于对账与异常排查。",
+        operationId: "getAdminCreditsHistory",
         request: {
             query: z
                 .object({
