@@ -3,7 +3,10 @@ import { toNextJsHandler } from "better-auth/next-js";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 
-async function enforceAuthRateLimit(request: Request, phase: "callback" | "exchange") {
+async function enforceAuthRateLimit(
+    request: Request,
+    phase: "callback" | "exchange",
+) {
     try {
         const rateLimitResult = await applyRateLimit({
             request,

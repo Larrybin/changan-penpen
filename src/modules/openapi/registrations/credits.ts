@@ -117,8 +117,7 @@ export function registerCreditsPaths(registry: OpenAPIRegistry) {
         path: "/api/v1/credits/history",
         tags: [TAG],
         summary: "分页查询积分流水记录",
-        description:
-            "分页返回积分流水明细，可用于账单与对账场景。",
+        description: "分页返回积分流水明细，可用于账单与对账场景。",
         operationId: "getCreditsHistory",
         request: {
             query: z

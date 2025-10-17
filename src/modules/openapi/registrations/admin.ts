@@ -162,8 +162,7 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
         path: "/api/v1/admin/credits-history",
         tags: [TAG],
         summary: "分页查询所有租户的积分流水",
-        description:
-            "管理员视角分页查看积分流水，用于对账与异常排查。",
+        description: "管理员视角分页查看积分流水，用于对账与异常排查。",
         operationId: "getAdminCreditsHistory",
         request: {
             query: z
