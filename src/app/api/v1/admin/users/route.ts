@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { config } from "@/config";
 import { listUsers } from "@/modules/admin/services/user.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 import { parsePaginationParams } from "@/modules/admin/utils/pagination";
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const { page, perPage } = parsePaginationParams(url.searchParams, {
         page: 1,
-        perPage: 20,
+        perPage: config.pagination.defaultPageSize,
     });
 
     const email = url.searchParams.get("email") ?? undefined;

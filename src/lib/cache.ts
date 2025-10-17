@@ -101,3 +101,38 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
 
     return { value, hit: false };
 }
+
+export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
+    prefix: string,
+    env?: Env,
+): Promise<void> {
+    if (!prefix) {
+        return;
+    }
+
+    const providedEnv = env;
+    const context = providedEnv
+        ? null
+        : await getCloudflareContext({ async: true }).catch(() => null);
+    const resolvedEnv =
+        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
+    const redis = getRedisClient(resolvedEnv);
+    if (!redis) {
+        return;
+    }
+
+    try {
+        const iterator = redis.scanIterator({ match: `${prefix}*` });
+        const deletions: Promise<unknown>[] = [];
+
+        for await (const key of iterator) {
+            deletions.push(redis.del(key));
+        }
+
+        if (deletions.length > 0) {
+            await Promise.allSettled(deletions);
+        }
+    } catch (error) {
+        console.warn("[cache] failed to invalidate keys", { prefix, error });
+    }
+}

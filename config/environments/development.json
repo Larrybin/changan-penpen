@@ -5,6 +5,14 @@
     "environment": "development",
     "last_updated": "2025-10-16"
   },
+  "pagination": {
+    "defaultPageSize": 20,
+    "minPageSize": 1,
+    "maxPageSize": 50
+  },
+  "cache": {
+    "defaultTtlSeconds": 15
+  },
   "database": {
     "host": "localhost",
     "port": 5432,

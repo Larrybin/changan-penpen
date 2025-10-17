@@ -4,6 +4,14 @@
     "description": "基础环境配置",
     "last_updated": "2025-10-16"
   },
+  "pagination": {
+    "defaultPageSize": 20,
+    "minPageSize": 1,
+    "maxPageSize": 100
+  },
+  "cache": {
+    "defaultTtlSeconds": 60
+  },
   "database": {
     "type": "postgresql",
     "host": "localhost",
@@ -59,7 +67,8 @@
     },
     "static_assets": {
       "cache_headers": {
-        "max_age": "1d"
+        "max_age": "1d",
+        "immutable": true
       }
     }
   },

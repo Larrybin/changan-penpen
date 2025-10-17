@@ -8,6 +8,8 @@ import {
     usageDaily,
     user,
 } from "@/db";
+import { config } from "@/config";
+import { withApiCache } from "@/lib/cache";
 import type {
     AdminUserDetail,
     AdminUserListItem,
@@ -69,73 +71,92 @@ const resolveStatus = (emailVerified: boolean | null | undefined) =>
 export async function listUsers(
     options: ListUsersOptions = {},
 ): Promise<ListUsersResult> {
-    const db = await getDb();
-    const adminEmails = await getAdminEmailSet();
-    const { page, perPage } = normalizePagination(options, {
-        page: 1,
-        perPage: 20,
-    });
-    const offset = (page - 1) * perPage;
+    const { page, perPage } = normalizePagination(options);
+    const emailFilter = options.email?.trim() || undefined;
+    const nameFilter = options.name?.trim() || undefined;
+    const cacheKey = [
+        "admin-users",
+        `page:${page}`,
+        `perPage:${perPage}`,
+        `email:${emailFilter ?? ""}`,
+        `name:${nameFilter ?? ""}`,
+    ].join("|");
 
-    const filters = [];
+    const compute = async (): Promise<ListUsersResult> => {
+        const db = await getDb();
+        const adminEmails = await getAdminEmailSet();
+        const offset = (page - 1) * perPage;
 
-    if (options.email) {
-        filters.push(like(user.email, `%${options.email}%`));
-    }
+        const filters = [];
 
-    if (options.name) {
-        filters.push(like(user.name, `%${options.name}%`));
-    }
+        if (emailFilter) {
+            filters.push(like(user.email, `%${emailFilter}%`));
+        }
 
-    const whereClause =
-        filters.length === 0
-            ? undefined
-            : filters.length === 1
-              ? filters[0]
-              : or(...filters);
+        if (nameFilter) {
+            filters.push(like(user.name, `%${nameFilter}%`));
+        }
 
-    const listQuery = db
-        .select({
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            emailVerified: user.emailVerified,
-            createdAt: user.createdAt,
-            currentCredits: user.currentCredits,
-        })
-        .from(user)
-        .orderBy(desc(user.createdAt))
-        .limit(perPage)
-        .offset(offset);
+        const whereClause =
+            filters.length === 0
+                ? undefined
+                : filters.length === 1
+                  ? filters[0]
+                  : or(...filters);
 
-    const userRows = whereClause
-        ? await listQuery.where(whereClause)
-        : await listQuery;
+        const listQuery = db
+            .select({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                emailVerified: user.emailVerified,
+                createdAt: user.createdAt,
+                currentCredits: user.currentCredits,
+            })
+            .from(user)
+            .orderBy(desc(user.createdAt))
+            .limit(perPage)
+            .offset(offset);
 
-    const totalQuery = db
-        .select({ count: sql<number>`count(*)` })
-        .from(user)
-        .limit(1);
-    const totalRows = whereClause
-        ? await totalQuery.where(whereClause)
-        : await totalQuery;
-    const total = totalRows[0]?.count ?? 0;
+        const userRows = whereClause
+            ? await listQuery.where(whereClause)
+            : await listQuery;
 
-    const _userIds = userRows.map((row) => row.id);
-    return {
-        data: userRows.map((row) => ({
-            id: row.id,
-            email: row.email,
-            name: row.name,
-            role: resolveRole(row.email, adminEmails),
-            status: resolveStatus(row.emailVerified),
-            createdAt: toNullableString(row.createdAt),
-            credits: row.currentCredits ?? 0,
-        })),
-        total,
-        page,
-        perPage,
+        const totalQuery = db
+            .select({ count: sql<number>`count(*)` })
+            .from(user)
+            .limit(1);
+        const totalRows = whereClause
+            ? await totalQuery.where(whereClause)
+            : await totalQuery;
+        const total = totalRows[0]?.count ?? 0;
+
+        return {
+            data: userRows.map((row) => ({
+                id: row.id,
+                email: row.email,
+                name: row.name,
+                role: resolveRole(row.email, adminEmails),
+                status: resolveStatus(row.emailVerified),
+                createdAt: toNullableString(row.createdAt),
+                credits: row.currentCredits ?? 0,
+            })),
+            total,
+            page,
+            perPage,
+        };
     };
+
+    const ttlSeconds = config.cache.defaultTtlSeconds;
+    if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
+        return compute();
+    }
+
+    const { value } = await withApiCache(
+        { key: cacheKey, ttlSeconds },
+        compute,
+    );
+    return value;
 }
 
 export async function getUserDetail(

@@ -1,3 +1,5 @@
+import { config } from "@/config";
+
 export interface PaginationOptions {
     page?: number;
     perPage?: number;
@@ -10,26 +12,44 @@ export interface PaginationDefaults {
 
 const DEFAULT_PAGINATION: PaginationDefaults = {
     page: 1,
-    perPage: 20,
+    perPage: config.pagination.defaultPageSize,
 };
+
+function clampPerPage(perPage: number): number {
+    const { minPageSize, maxPageSize } = config.pagination;
+    const min = Math.max(1, Math.floor(minPageSize));
+    const max = Math.max(min, Math.floor(maxPageSize));
+    return Math.min(Math.max(perPage, min), max);
+}
+
+function sanitizeDefaults(defaults: PaginationDefaults): PaginationDefaults {
+    const page = Math.max(1, Math.floor(defaults.page ?? DEFAULT_PAGINATION.page));
+    const perPage = clampPerPage(
+        Number.isFinite(defaults.perPage)
+            ? Math.floor(defaults.perPage)
+            : DEFAULT_PAGINATION.perPage,
+    );
+
+    return { page, perPage };
+}
 
 export function normalizePagination(
     options: PaginationOptions,
     defaults: PaginationDefaults = DEFAULT_PAGINATION,
 ): PaginationDefaults {
-    const page =
-        typeof options.page === "number" &&
-        Number.isFinite(options.page) &&
-        !Number.isNaN(options.page)
-            ? options.page
-            : defaults.page;
+    const safeDefaults = sanitizeDefaults(defaults);
 
-    const perPage =
-        typeof options.perPage === "number" &&
-        Number.isFinite(options.perPage) &&
-        !Number.isNaN(options.perPage)
-            ? options.perPage
-            : defaults.perPage;
+    const rawPage =
+        typeof options.page === "number" && Number.isFinite(options.page)
+            ? Math.floor(options.page)
+            : safeDefaults.page;
+    const page = Math.max(1, rawPage);
+
+    const rawPerPage =
+        typeof options.perPage === "number" && Number.isFinite(options.perPage)
+            ? Math.floor(options.perPage)
+            : safeDefaults.perPage;
+    const perPage = clampPerPage(rawPerPage);
 
     return { page, perPage };
 }

@@ -5,6 +5,14 @@
     "environment": "staging",
     "last_updated": "2025-10-16"
   },
+  "pagination": {
+    "defaultPageSize": 20,
+    "minPageSize": 1,
+    "maxPageSize": 75
+  },
+  "cache": {
+    "defaultTtlSeconds": 120
+  },
   "database": {
     "host": "${STAGING_DB_HOST}",
     "port": 5432,
