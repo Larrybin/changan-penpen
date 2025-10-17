@@ -16,6 +16,7 @@ export function registerServerActionPaths(registry: OpenAPIRegistry) {
         summary: "Server Action：创建 Todo 任务",
         description:
             "仅供前端表单通过 Server Action 调用，用于演示型 Todo 功能。",
+        operationId: "postInternalTodoCreate",
         "x-internal": true,
         request: {
             body: {

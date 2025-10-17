@@ -5,7 +5,7 @@
 - CI（`.github/workflows/ci.yml`）
   - 触发：push / pull_request（忽略 main 的纯文档变更），以及 `workflow_call`（被部署复用）
   - Jobs：
-    - `lint-docs`：Biome、文档一致性与链接检查，同时确保 i18n 字段规范化
+    - `lint-docs`：Biome、OpenAPI 快照校验（`pnpm openapi:check`）、Spectral 校验、链接检查，同时确保 i18n 字段规范化
     - `typecheck`：TypeScript `tsc --noEmit`
     - `unit-tests`：Vitest 测试与覆盖率生成/阈值校验，上传 HTML 报告 artifact
     - `build`：复用 `.next/cache` 执行 `pnpm build`

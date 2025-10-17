@@ -25,6 +25,14 @@ function readFile(p) {
     return fs.readFileSync(path.join(repoRoot, p), "utf8");
 }
 
+function fileContains(p, token) {
+    try {
+        return readFile(p).includes(token);
+    } catch {
+        return false;
+    }
+}
+
 function listWorkflows() {
     const dir = path.join(repoRoot, ".github", "workflows");
     if (!fs.existsSync(dir)) return [];
@@ -202,6 +210,40 @@ function main() {
                 "routes/pages/API/middleware changed",
                 errors,
             );
+        }
+
+        if (changedAny(/^src\/modules\/[^/]+\/services\/[^/]+\.ts$/)) {
+            requireDocChange(
+                changed,
+                ["docs/error-code-index.md"],
+                "service layer changed; sync error code index",
+                errors,
+            );
+        }
+
+        const rateLimitDocs = ["docs/api-index.md", "docs/ratelimit-index.md"];
+        const rateLimitedRoutes = [
+            "src/app/api/v1/auth/[...all]/route.ts",
+            "src/app/api/v1/creem/create-checkout/route.ts",
+            "src/app/api/v1/webhooks/creem/route.ts",
+        ];
+        const touchedRateLimitedRoutes = rateLimitedRoutes.filter((file) =>
+            changed.includes(file),
+        );
+        if (touchedRateLimitedRoutes.length > 0) {
+            requireDocChange(
+                changed,
+                rateLimitDocs,
+                "rate-limited route changed; update rate limit documentation",
+                errors,
+            );
+            for (const file of touchedRateLimitedRoutes) {
+                if (!fileContains(file, "applyRateLimit")) {
+                    errors.push(
+                        `Rate limit enforcement missing: ${file} should call applyRateLimit()`,
+                    );
+                }
+            }
         }
 
         // Migrations -> db docs

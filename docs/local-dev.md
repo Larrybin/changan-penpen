@@ -15,6 +15,8 @@
 | `pnpm cf-typegen` | Regenerate CF bindings/types | Run after editing `wrangler.toml` |
 | `pnpm typecheck` | CF typegen + `tsc --noEmit` | Ensures types are in sync |
 | `pnpm check:all` | 本地质量门（Biome 写入/校验、cf-typegen、tsc、构建、docs/link） | `CHECK_ENABLE_TESTS=1` 启用单测 |
+| `pnpm openapi:check` | Verify `public/openapi.json` snapshot | Fails if schema drift is detected |
+| `pnpm openapi:lint` | Spectral lint against `spectral.yaml` | Run after `pnpm openapi:check` or `pnpm openapi:generate` |
 | `pnpm translate` | Batch translate content | Requires AI keys in `.dev.vars` |
 | `pnpm db:generate` | Generate migration | Uses drizzle-kit |
 | `pnpm db:generate:named` | Generate named migration | e.g. `add_users_table` |
@@ -110,6 +112,8 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `dev:cf` | `npx @opennextjs/cloudflare build && wrangler dev` |
 | `dev:remote` | `npx @opennextjs/cloudflare build && wrangler dev --remote` |
 | `fix:i18n` | `node scripts/fix-i18n-encoding.mjs` |
+| `openapi:check` | `pnpm exec tsx scripts/generate-openapi.ts --check` |
+| `openapi:lint` | `pnpm exec spectral lint --fail-severity=warn --ruleset=spectral.yaml public/openapi.json` |
 | `lint` | `npx biome format --write` |
 | `prebuild` | `pnpm run fix:i18n` |
 | `prebuild:cf` | `node scripts/prebuild-cf.mjs` |
