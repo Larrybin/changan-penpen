@@ -47,7 +47,7 @@ const defaultSettings: SiteSettingsState = {
     seoTitle: "",
     seoDescription: "",
     seoOgImage: "",
-    sitemapEnabled: false,
+    sitemapEnabled: true,
     robotsRules: "",
     brandPrimaryColor: "#2563eb",
     brandSecondaryColor: "#0f172a",
@@ -77,88 +77,102 @@ export function SiteSettingsPage() {
     const [settings, setSettings] =
         useState<SiteSettingsState>(defaultSettings);
     const initialSettingsRef = useRef<SiteSettingsState | null>(null);
-
-    const settingsQuery = useQuery<Partial<SiteSettingsState>>({
-        queryKey: [...adminQueryKeys.resource("site-settings"), "detail"],
-        queryFn: async () => {
-            const response = await adminApiClient.get<{
-                data?: Partial<SiteSettingsState>;
-            }>("/site-settings");
-            return response.data.data ?? {};
-        },
-    });
+    const { open } = useNotification();
+    const sitemapWarningShownRef = useRef(false);
 
     useEffect(() => {
-        if (!settingsQuery.isError) {
-            return;
-        }
-        const error = settingsQuery.error;
-        console.error("Failed to fetch site settings", error);
-        toast.error("加载站点设置失败");
-        const fallback: SiteSettingsState = {
-            ...defaultSettings,
-            enabledLanguages: [...defaultSettings.enabledLanguages],
-        };
-        setSettings(fallback);
-        initialSettingsRef.current = {
-            ...fallback,
-            enabledLanguages: [...fallback.enabledLanguages],
-        };
-    }, [settingsQuery.isError, settingsQuery.error]);
-
-    useEffect(() => {
-        if (settingsQuery.status !== "success") {
-            return;
-        }
-        const incoming = settingsQuery.data ?? {};
-        const merged: SiteSettingsState = {
-            ...defaultSettings,
-            ...(incoming as SiteSettingsState),
-            enabledLanguages: Array.isArray(incoming.enabledLanguages)
-                ? [...incoming.enabledLanguages]
-                : [...defaultSettings.enabledLanguages],
-        };
-        setSettings(merged);
-        initialSettingsRef.current = {
-            ...merged,
-            enabledLanguages: [...merged.enabledLanguages],
-        };
-    }, [settingsQuery.status, settingsQuery.data]);
-
-    const loading = settingsQuery.isLoading;
-
-    const saveMutation = useMutation({
-        mutationFn: async (payload: Partial<SiteSettingsState>) => {
-            const response = await adminApiClient.patch<{
-                data?: Partial<SiteSettingsState>;
-            }>("/site-settings", { json: payload });
-            return response.data.data ?? {};
-        },
-        onError: (error) => {
-            if (error instanceof Error) {
-                toast.error(error.message);
-            } else {
-                toast.error("保存失败");
+        async function fetchSettings() {
+            setLoading(true);
+            try {
+                const response = await fetch("/api/v1/admin/site-settings", {
+                    credentials: "include",
+                });
+                if (response.ok) {
+                    const payload = (await response.json()) as {
+                        data?: Partial<SiteSettingsState>;
+                    };
+                    const incoming = payload.data ?? {};
+                    const merged: SiteSettingsState = {
+                        ...defaultSettings,
+                        ...(incoming as SiteSettingsState),
+                        enabledLanguages: Array.isArray(
+                            incoming.enabledLanguages,
+                        )
+                            ? [...incoming.enabledLanguages]
+                            : [...defaultSettings.enabledLanguages],
+                    };
+                    setSettings(merged);
+                    if (
+                        !merged.sitemapEnabled &&
+                        !sitemapWarningShownRef.current &&
+                        open
+                    ) {
+                        open({
+                            type: "warning",
+                            message: "Enable your XML sitemap",
+                            description:
+                                "A published sitemap helps Google and other crawlers discover your marketing pages.",
+                        });
+                        sitemapWarningShownRef.current = true;
+                    }
+                    initialSettingsRef.current = {
+                        ...merged,
+                        enabledLanguages: [...merged.enabledLanguages],
+                    };
+                } else {
+                    const fallback: SiteSettingsState = {
+                        ...defaultSettings,
+                        enabledLanguages: [...defaultSettings.enabledLanguages],
+                    };
+                    setSettings(fallback);
+                    if (
+                        !fallback.sitemapEnabled &&
+                        !sitemapWarningShownRef.current &&
+                        open
+                    ) {
+                        open({
+                            type: "warning",
+                            message: "Enable your XML sitemap",
+                            description:
+                                "A published sitemap helps Google and other crawlers discover your marketing pages.",
+                        });
+                        sitemapWarningShownRef.current = true;
+                    }
+                    initialSettingsRef.current = {
+                        ...fallback,
+                        enabledLanguages: [...fallback.enabledLanguages],
+                    };
+                }
+            } catch (error) {
+                console.error("Failed to fetch site settings", error);
+                const fallback: SiteSettingsState = {
+                    ...defaultSettings,
+                    enabledLanguages: [...defaultSettings.enabledLanguages],
+                };
+                setSettings(fallback);
+                if (
+                    !fallback.sitemapEnabled &&
+                    !sitemapWarningShownRef.current &&
+                    open
+                ) {
+                    open({
+                        type: "warning",
+                        message: "Enable your XML sitemap",
+                        description:
+                            "A published sitemap helps Google and other crawlers discover your marketing pages.",
+                    });
+                    sitemapWarningShownRef.current = true;
+                }
+                initialSettingsRef.current = {
+                    ...fallback,
+                    enabledLanguages: [...fallback.enabledLanguages],
+                };
+            } finally {
+                setLoading(false);
             }
-        },
-        onSuccess: (incoming) => {
-            const merged: SiteSettingsState = {
-                ...defaultSettings,
-                ...(incoming as SiteSettingsState),
-                enabledLanguages: Array.isArray(incoming.enabledLanguages)
-                    ? [...incoming.enabledLanguages]
-                    : [...settings.enabledLanguages],
-            };
-            setSettings(merged);
-            initialSettingsRef.current = {
-                ...merged,
-                enabledLanguages: [...merged.enabledLanguages],
-            };
-            toast.success("站点设置已保存");
-        },
-    });
-
-    const saving = saveMutation.isPending;
+        }
+        fetchSettings();
+    }, [open]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();

@@ -14,7 +14,7 @@ const createSiteSettings = (
     seoTitle: overrides.seoTitle ?? "",
     seoDescription: overrides.seoDescription ?? "",
     seoOgImage: overrides.seoOgImage ?? "",
-    sitemapEnabled: overrides.sitemapEnabled ?? false,
+    sitemapEnabled: overrides.sitemapEnabled ?? true,
     robotsRules: overrides.robotsRules ?? "",
     brandPrimaryColor: overrides.brandPrimaryColor ?? "#2563eb",
     brandSecondaryColor: overrides.brandSecondaryColor ?? "#0f172a",
@@ -87,6 +87,36 @@ describe("seo helpers", () => {
                     envAppUrl: "https://env.example",
                 }),
             ).toBe("https://env.example");
+        });
+
+        it("在生产环境中拒绝本地域名配置", async () => {
+            const module = await import("./seo");
+            const originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = "production";
+            try {
+                expect(() =>
+                    module.resolveAppUrl(
+                        createSiteSettings({ domain: "http://localhost:3000" }),
+                    ),
+                ).toThrow(module.AppUrlResolutionError);
+            } finally {
+                process.env.NODE_ENV = originalEnv;
+            }
+        });
+
+        it("在生产环境中拒绝本地环境变量 URL", async () => {
+            const module = await import("./seo");
+            const originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = "production";
+            try {
+                expect(() =>
+                    module.resolveAppUrl(null, {
+                        envAppUrl: "http://127.0.0.1:3000",
+                    }),
+                ).toThrow(module.AppUrlResolutionError);
+            } finally {
+                process.env.NODE_ENV = originalEnv;
+            }
         });
 
         it("所有候选均无效时抛错", async () => {

@@ -10,9 +10,10 @@
         "home": "Accueil",
         "dashboard": "Tableau de bord",
         "billing": "Facturation",
-        "features": "Fonctionnalités",
-        "why": "Pourquoi nous",
-        "faq": "FAQ"
+        "features": "Fonctionnalités IA",
+        "why": "Pourquoi Banana IA",
+        "faq": "FAQ IA",
+        "trust": "Témoignages"
     },
     "Auth": {
         "login": "Connexion",
@@ -86,7 +87,7 @@
     },
     "Marketing": {
         "header": {
-            "cta": "Passer en mode Banana",
+            "cta": "Lancer l'éditeur photo IA",
             "menuLabel": "Ouvrir le menu de navigation"
         },
         "hero": {
@@ -94,8 +95,8 @@
             "emoji": "🍌",
             "title": "Éditeur photo IA",
             "description": "Transformez, retouchez et améliorez vos images avec de simples invites texte. Ajoutez, supprimez ou restylez n'importe quoi en quelques secondes grâce à l'édition d'images par IA.",
-            "primaryCta": "Essayer gratuitement",
-            "secondaryCta": "Que peut-il faire ?",
+            "primaryCta": "Commencer l'édition photo IA",
+            "secondaryCta": "Explorer les workflows d'images IA",
             "support": {
                 "fast": "⚡ Rapide",
                 "secure": "🔒 Sans inscription",
@@ -129,7 +130,8 @@
                     "title": "Génération de styles polyvalente",
                     "description": "Créez des styles photoréalistes, cartoon, aquarelle ou peinture à l'huile."
                 }
-            ]
+            ],
+            "learnMore": "Consultez nos <billingLink>offres de retouche d'images IA</billingLink> pour tous les détails tarifaires."
         },
         "why": {
             "title": "Pourquoi choisir Banana Generator ?",
@@ -167,12 +169,36 @@
                     "question": "Mes données sont-elles privées et sécurisées ?",
                     "answer": "Nous appliquons une politique axée sur la confidentialité. Vous gardez la propriété de vos images."
                 }
-            ]
+            ],
+            "supportingCopy": "Besoin d'aide ? <contactLink>Contactez notre équipe support IA</contactLink> ou découvrez notre vision sur la <aboutLink>page À propos de Banana Generator</aboutLink>."
+        },
+        "trust": {
+            "title": "Plébiscité par les équipes créatives",
+            "description": "Studios, agences et créateurs indépendants utilisent Banana Generator pour accélérer la retouche photo IA tout en respectant leur identité visuelle.",
+            "items": [
+                {
+                    "quote": "Banana Generator a divisé par deux notre temps de retouche produit tout en conservant nos couleurs de marque.",
+                    "author": "Maya Thompson",
+                    "role": "Directrice photo, Citrus Labs"
+                },
+                {
+                    "quote": "L'éditeur photo IA aide nos designers à itérer rapidement et à rester cohérents sur chaque campagne.",
+                    "author": "Leo Martins",
+                    "role": "Directeur créatif, Pixel & Peel Studio"
+                },
+                {
+                    "quote": "En tant que créatrice solo, j'adore la façon dont l'IA gère la lumière pour que je me concentre sur le récit.",
+                    "author": "Jules Rivera",
+                    "role": "Réalisatrice YouTube"
+                }
+            ],
+            "callout": "Besoin de documents de conformité ? Consultez notre <privacyLink>centre de confidentialité</privacyLink> pour connaître nos pratiques de données IA.",
+            "socialProfiles": []
         },
         "cta": {
             "title": "Prêt à passer en mode Banana ?",
             "description": "Essayez Banana Generator dès maintenant et transformez vos photos en créations d'exception !",
-            "primaryCta": "Essayer Banana Generator gratuitement"
+            "primaryCta": "Démarrer avec l'éditeur photo IA"
         },
         "playground": {
             "title": "Atelier",

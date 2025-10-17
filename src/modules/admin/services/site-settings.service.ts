@@ -35,7 +35,7 @@ const EMPTY_SETTINGS: SiteSettingsPayload = {
     seoTitle: "",
     seoDescription: "",
     seoOgImage: "",
-    sitemapEnabled: false,
+    sitemapEnabled: true,
     robotsRules: "",
     brandPrimaryColor: "#2563eb",
     brandSecondaryColor: "#0f172a",
@@ -104,7 +104,10 @@ function mapRowToPayload(
         seoTitle: row.seoTitle ?? "",
         seoDescription: row.seoDescription ?? "",
         seoOgImage: row.seoOgImage ?? "",
-        sitemapEnabled: Boolean(row.sitemapEnabled),
+        sitemapEnabled:
+            row.sitemapEnabled === null || row.sitemapEnabled === undefined
+                ? true
+                : Boolean(row.sitemapEnabled),
         robotsRules: row.robotsRules ?? "",
         brandPrimaryColor: row.brandPrimaryColor ?? "#2563eb",
         brandSecondaryColor: row.brandSecondaryColor ?? "#0f172a",

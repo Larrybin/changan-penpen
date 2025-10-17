@@ -10,9 +10,10 @@
         "home": "Início",
         "dashboard": "Dashboard",
         "billing": "Cobrança",
-        "features": "Recursos",
-        "why": "Por que nós",
-        "faq": "FAQ"
+        "features": "Recursos de IA",
+        "why": "Por que Banana IA",
+        "faq": "FAQ de IA",
+        "trust": "Depoimentos"
     },
     "Auth": {
         "login": "Entrar",
@@ -86,7 +87,7 @@
     },
     "Marketing": {
         "header": {
-            "cta": "Começar agora",
+            "cta": "Iniciar editor de fotos com IA",
             "menuLabel": "Abrir menu de navegação"
         },
         "hero": {
@@ -94,8 +95,8 @@
             "emoji": "🍌",
             "title": "Editor de fotos com IA",
             "description": "Transforme, edite e aprimore suas imagens com comandos de texto simples. Adicione, remova ou estilize qualquer coisa em segundos usando edição de imagem com IA.",
-            "primaryCta": "Teste grátis",
-            "secondaryCta": "O que ele faz?",
+            "primaryCta": "Começar edição de fotos com IA",
+            "secondaryCta": "Explorar fluxos de trabalho com IA",
             "support": {
                 "fast": "⚡ Rápido",
                 "secure": "🔒 Sem cadastro",
@@ -129,7 +130,8 @@
                     "title": "Geração de estilos versátil",
                     "description": "Crie estilos fotorrealistas, cartoon, aquarela ou pintura a óleo."
                 }
-            ]
+            ],
+            "learnMore": "Veja todos os detalhes em nossos <billingLink>planos de edição de imagens com IA</billingLink>."
         },
         "why": {
             "title": "Por que escolher o Banana Generator?",
@@ -167,12 +169,36 @@
                     "question": "Meus dados são privados e seguros?",
                     "answer": "Seguimos uma política que prioriza privacidade. Você mantém a propriedade das suas imagens."
                 }
-            ]
+            ],
+            "supportingCopy": "Precisa de ajuda? <contactLink>Fale com nossa equipe de suporte em IA</contactLink> ou conheça nossa missão na <aboutLink>página Sobre o Banana Generator</aboutLink>."
+        },
+        "trust": {
+            "title": "Confiado por equipes criativas",
+            "description": "Estúdios, agências e criadores independentes usam o Banana Generator para acelerar a edição de fotos com IA sem perder a identidade da marca.",
+            "items": [
+                {
+                    "quote": "O Banana Generator reduziu pela metade nosso tempo de edição de produtos e manteve todas as cores da marca.",
+                    "author": "Maya Thompson",
+                    "role": "Diretora de fotografia, Citrus Labs"
+                },
+                {
+                    "quote": "O editor de fotos com IA ajuda nosso time de design a iterar rápido e manter consistência em cada campanha.",
+                    "author": "Leo Martins",
+                    "role": "Líder criativo, Pixel & Peel Studio"
+                },
+                {
+                    "quote": "Como criadora solo, adoro como a IA cuida da iluminação para que eu foque na narrativa.",
+                    "author": "Jules Rivera",
+                    "role": "Cineasta no YouTube"
+                }
+            ],
+            "callout": "Precisa de documentos de conformidade? Visite nosso <privacyLink>centro de privacidade</privacyLink> para saber como tratamos dados de IA.",
+            "socialProfiles": []
         },
         "cta": {
             "title": "Pronto para entrar no modo Banana?",
             "description": "Experimente o Banana Generator agora e transforme suas fotos em criações incríveis!",
-            "primaryCta": "Experimentar Banana Generator grátis"
+            "primaryCta": "Começar com o editor de fotos com IA"
         },
         "playground": {
             "title": "Playground",
