@@ -128,9 +128,8 @@
       "include_trace_id": false
     },
     "error_tracking": {
-      "enabled": true,
-      "sentry_dsn": "${STAGING_SENTRY_DSN}",
-      "environment": "staging"
+      "enabled": false,
+      "provider": "none"
     }
   },
   "backup": {

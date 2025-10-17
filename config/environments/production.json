@@ -136,9 +136,8 @@
       "include_trace_id": true
     },
     "error_tracking": {
-      "enabled": true,
-      "sentry_dsn": "${SENTRY_DSN}",
-      "environment": "production"
+      "enabled": false,
+      "provider": "none"
     }
   },
   "backup": {
