@@ -122,12 +122,26 @@ export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
     }
 
     try {
-        const iterator = redis.scanIterator({ match: `${prefix}*` });
         const deletions: Promise<unknown>[] = [];
+        let cursor = "0";
+        const pattern = `${prefix}*`;
 
-        for await (const key of iterator) {
-            deletions.push(redis.del(key));
-        }
+        do {
+            const [nextCursor, rawKeys]: [string, string[]] = await redis.scan(
+                cursor,
+                {
+                    match: pattern,
+                    count: 100,
+                },
+            );
+            const keys = Array.isArray(rawKeys) ? rawKeys : [];
+            for (const key of keys) {
+                if (typeof key === "string" && key) {
+                    deletions.push(redis.del(key));
+                }
+            }
+            cursor = nextCursor;
+        } while (cursor !== "0");
 
         if (deletions.length > 0) {
             await Promise.allSettled(deletions);

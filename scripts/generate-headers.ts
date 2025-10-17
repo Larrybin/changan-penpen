@@ -58,7 +58,8 @@ function resolveCacheHeaders(
     headersConfig: StaticAssetCacheHeadersConfig | undefined,
 ): { maxAge: number; immutable: boolean } {
     const maxAge =
-        parseDurationToSeconds(headersConfig?.max_age) ?? DEFAULT_MAX_AGE_SECONDS;
+        parseDurationToSeconds(headersConfig?.max_age) ??
+        DEFAULT_MAX_AGE_SECONDS;
     const immutable = Boolean(headersConfig?.immutable);
     return { maxAge, immutable };
 }

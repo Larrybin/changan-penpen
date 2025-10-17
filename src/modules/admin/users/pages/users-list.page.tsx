@@ -1,9 +1,8 @@
 import type { JSX } from "react";
-
-import { listUsers } from "@/modules/admin/services/user.service";
 import type { ListUsersOptions } from "@/modules/admin/services/user.service";
-import { parsePaginationParams } from "@/modules/admin/utils/pagination";
+import { listUsers } from "@/modules/admin/services/user.service";
 import { UsersListClient } from "@/modules/admin/users/components/users-list-client";
+import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 
 function toURLSearchParams(
     searchParams?: Record<string, string | string[] | undefined>,

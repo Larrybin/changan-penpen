@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 
-import { config } from "@/config";
 import { generateAdminMetadata } from "@/modules/admin/metadata";
 import { UsersListPage } from "@/modules/admin/users/pages/users-list.page";
-
-const pageRevalidate = Math.max(0, Math.floor(config.cache.defaultTtlSeconds));
-
-export const revalidate = pageRevalidate;
 
 export async function generateMetadata(): Promise<Metadata> {
     return generateAdminMetadata({
@@ -18,11 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 interface AdminUsersPageProps {
-    searchParams?: Record<string, string | string[] | undefined>;
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default function AdminUsersPage({
+export default async function AdminUsersPage({
     searchParams,
 }: AdminUsersPageProps) {
-    return <UsersListPage searchParams={searchParams} />;
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+    return <UsersListPage searchParams={resolvedSearchParams} />;
 }

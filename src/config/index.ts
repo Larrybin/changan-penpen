@@ -8,11 +8,12 @@ import type { Config, EnvironmentName } from "./types";
 
 const BASE_CONFIG = baseConfigJson as Config;
 
-const ENVIRONMENT_OVERRIDES: Partial<Record<EnvironmentName, Partial<Config>>> = {
-    development: developmentConfigJson,
-    production: productionConfigJson,
-    staging: stagingConfigJson,
-};
+const ENVIRONMENT_OVERRIDES: Partial<Record<EnvironmentName, Partial<Config>>> =
+    {
+        development: developmentConfigJson,
+        production: productionConfigJson,
+        staging: stagingConfigJson,
+    };
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -43,23 +44,28 @@ function deepMerge<T extends Record<string, unknown>>(
         return result;
     }
 
+    const output = result as Record<string, unknown>;
+
     for (const [key, value] of Object.entries(override)) {
         if (value === undefined) {
             continue;
         }
 
-        const currentValue = result[key];
+        const currentValue = output[key];
         if (isPlainRecord(currentValue) && isPlainRecord(value)) {
-            result[key] = deepMerge(currentValue, value) as unknown;
+            output[key] = deepMerge(
+                currentValue as Record<string, unknown>,
+                value as Record<string, unknown>,
+            ) as unknown;
             continue;
         }
 
         if (Array.isArray(value)) {
-            result[key] = clone(value) as unknown;
+            output[key] = clone(value) as unknown;
             continue;
         }
 
-        result[key] = value as unknown;
+        output[key] = value as unknown;
     }
 
     return result;
@@ -84,10 +90,7 @@ function coerceNumber(value: unknown): number | undefined {
     return undefined;
 }
 
-function selectEnvValue(
-    env: Record<string, unknown>,
-    keys: string[],
-): unknown {
+function selectEnvValue(env: Record<string, unknown>, keys: string[]): unknown {
     for (const key of keys) {
         if (key in env) {
             const value = env[key];
@@ -111,7 +114,10 @@ function applyRuntimeOverrides(
     if (pagination) {
         const paginationOverrides = {
             defaultPageSize: coerceNumber(
-                selectEnvValue(env, ["PAGINATION_DEFAULT_PAGE_SIZE", "PAGINATION_DEFAULT_PER_PAGE"]),
+                selectEnvValue(env, [
+                    "PAGINATION_DEFAULT_PAGE_SIZE",
+                    "PAGINATION_DEFAULT_PER_PAGE",
+                ]),
             ),
             minPageSize: coerceNumber(
                 selectEnvValue(env, ["PAGINATION_MIN_PAGE_SIZE"]),
@@ -122,7 +128,10 @@ function applyRuntimeOverrides(
         };
 
         if (paginationOverrides.minPageSize !== undefined) {
-            pagination.minPageSize = Math.max(1, paginationOverrides.minPageSize);
+            pagination.minPageSize = Math.max(
+                1,
+                paginationOverrides.minPageSize,
+            );
         }
         if (paginationOverrides.maxPageSize !== undefined) {
             pagination.maxPageSize = Math.max(
@@ -148,7 +157,10 @@ function applyRuntimeOverrides(
     const cache = config.cache;
     if (cache) {
         const ttlOverride = coerceNumber(
-            selectEnvValue(env, ["CACHE_DEFAULT_TTL_SECONDS", "CACHE_DEFAULT_TTL"]),
+            selectEnvValue(env, [
+                "CACHE_DEFAULT_TTL_SECONDS",
+                "CACHE_DEFAULT_TTL",
+            ]),
         );
         if (ttlOverride !== undefined) {
             cache.defaultTtlSeconds = Math.max(0, Math.floor(ttlOverride));
@@ -166,7 +178,6 @@ function parseEnvironmentName(value: string | undefined): EnvironmentName {
             return "staging";
         case "test":
             return "test";
-        case "development":
         default:
             return "development";
     }
@@ -199,8 +210,11 @@ export function resolveConfigSync(envName?: string): Config {
 }
 
 export async function resolveConfig(envName?: string): Promise<Config> {
-    const context = await getCloudflareContext({ async: true }).catch(() => null);
-    const cloudflareEnv = (context?.env as Record<string, unknown> | undefined) ?? undefined;
+    const context = await getCloudflareContext({ async: true }).catch(
+        () => null,
+    );
+    const cloudflareEnv =
+        (context?.env as Record<string, unknown> | undefined) ?? undefined;
     const runtimeEnv = gatherRuntimeEnv(cloudflareEnv);
     const inferredEnvName =
         envName ??

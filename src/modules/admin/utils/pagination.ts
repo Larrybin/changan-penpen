@@ -23,7 +23,10 @@ function clampPerPage(perPage: number): number {
 }
 
 function sanitizeDefaults(defaults: PaginationDefaults): PaginationDefaults {
-    const page = Math.max(1, Math.floor(defaults.page ?? DEFAULT_PAGINATION.page));
+    const page = Math.max(
+        1,
+        Math.floor(defaults.page ?? DEFAULT_PAGINATION.page),
+    );
     const perPage = clampPerPage(
         Number.isFinite(defaults.perPage)
             ? Math.floor(defaults.perPage)

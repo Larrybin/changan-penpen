@@ -7,6 +7,7 @@ const LOCAL_DEV_APP_URL = "http://localhost:3000";
 type ResolveAppUrlOptions = {
     envAppUrl?: string;
     fallbackLocalUrl?: string;
+    allowLocalInProduction?: boolean;
 };
 
 function getGlobalEnvOverride(key: string): string | undefined {
@@ -455,6 +456,36 @@ export function resolveAppUrl(
     settings?: SiteSettingsPayload | null,
     options: ResolveAppUrlOptions = {},
 ): string {
+    const allowLocalInProduction = (() => {
+        if (typeof options.allowLocalInProduction === "boolean") {
+            return options.allowLocalInProduction;
+        }
+        const globalOverride = getGlobalEnvOverride("ALLOW_LOCAL_APP_URL");
+        if (typeof globalOverride === "string" && globalOverride.trim()) {
+            const normalized = globalOverride.trim().toLowerCase();
+            if (normalized === "1" || normalized === "true") {
+                return true;
+            }
+        }
+        const processAllow = (() => {
+            try {
+                return (
+                    globalThis as {
+                        process?: { env?: Record<string, string | undefined> };
+                    }
+                ).process?.env?.ALLOW_LOCAL_APP_URL;
+            } catch {
+                return undefined;
+            }
+        })();
+        if (typeof processAllow === "string" && processAllow.trim()) {
+            const normalized = processAllow.trim().toLowerCase();
+            if (normalized === "1" || normalized === "true") {
+                return true;
+            }
+        }
+        return false;
+    })();
     const isProduction = Boolean(
         (
             globalThis as {
@@ -464,7 +495,11 @@ export function resolveAppUrl(
     );
     const configured = normalizeBaseUrl(settings?.domain ?? "");
     if (configured) {
-        if (isProduction && isLikelyLocalOrigin(configured)) {
+        if (
+            isProduction &&
+            isLikelyLocalOrigin(configured) &&
+            !allowLocalInProduction
+        ) {
             const error = new AppUrlResolutionError(
                 "Configured domain resolves to a local development host. Update site settings with your production domain.",
             );
@@ -477,7 +512,11 @@ export function resolveAppUrl(
         options.envAppUrl ?? getGlobalEnvOverride("NEXT_PUBLIC_APP_URL");
     const fallback = normalizeBaseUrl(envAppUrl ?? "");
     if (fallback) {
-        if (isProduction && isLikelyLocalOrigin(fallback)) {
+        if (
+            isProduction &&
+            isLikelyLocalOrigin(fallback) &&
+            !allowLocalInProduction
+        ) {
             const error = new AppUrlResolutionError(
                 "NEXT_PUBLIC_APP_URL points to a local development host. Provide a production URL for canonical tags.",
             );

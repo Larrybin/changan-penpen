@@ -203,6 +203,15 @@ if (DO_NEXT_BUILD) {
         if (existsSync(".next"))
             rmSync(".next", { recursive: true, force: true });
     } catch {}
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+        process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+        logLine(
+            "NEXT_PUBLIC_APP_URL not provided; defaulting to http://localhost:3000 for build",
+        );
+    }
+    if (!process.env.ALLOW_LOCAL_APP_URL) {
+        process.env.ALLOW_LOCAL_APP_URL = "1";
+    }
     timeStart("next-build");
     try {
         // Use direct binary to avoid npm script-shell on Windows

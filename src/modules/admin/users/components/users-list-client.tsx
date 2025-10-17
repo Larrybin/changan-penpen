@@ -1,8 +1,9 @@
 "use client";
 
-import { type ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import {
     useCallback,
@@ -11,7 +12,6 @@ import {
     useState,
     useTransition,
 } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
@@ -58,9 +58,12 @@ export function UsersListClient({
             }
             const queryString = current.toString();
             startTransition(() => {
-                router.push(queryString ? `${pathname}?${queryString}` : pathname, {
-                    scroll: false,
-                });
+                router.push(
+                    queryString ? `${pathname}?${queryString}` : pathname,
+                    {
+                        scroll: false,
+                    },
+                );
             });
         },
         [pathname, router, searchParams],
@@ -76,7 +79,8 @@ export function UsersListClient({
     );
 
     const safePerPage = Math.max(perPage, 1);
-    const computedPageCount = safePerPage > 0 ? Math.ceil(total / safePerPage) : 0;
+    const computedPageCount =
+        safePerPage > 0 ? Math.ceil(total / safePerPage) : 0;
     const pageCount = Math.max(computedPageCount, 1);
     const maxIndex = Math.max(pageCount - 1, 0);
     const pageIndex = Math.min(Math.max(page - 1, 0), maxIndex);
@@ -111,7 +115,11 @@ export function UsersListClient({
                 meta: { label: "角色" },
                 cell: ({ row }) => (
                     <Badge
-                        variant={row.original.role === "admin" ? "default" : "secondary"}
+                        variant={
+                            row.original.role === "admin"
+                                ? "default"
+                                : "secondary"
+                        }
                     >
                         {row.original.role === "admin" ? "管理员" : "普通用户"}
                     </Badge>
@@ -123,7 +131,11 @@ export function UsersListClient({
                 meta: { label: "状态" },
                 cell: ({ row }) => (
                     <Badge
-                        variant={row.original.status === "active" ? "default" : "outline"}
+                        variant={
+                            row.original.status === "active"
+                                ? "default"
+                                : "outline"
+                        }
                     >
                         {row.original.status === "active" ? "已验证" : "待验证"}
                     </Badge>
@@ -143,7 +155,10 @@ export function UsersListClient({
                 meta: { label: "创建时间" },
                 cell: ({ row }) =>
                     row.original.createdAt
-                        ? format(new Date(row.original.createdAt), "yyyy-MM-dd HH:mm")
+                        ? format(
+                              new Date(row.original.createdAt),
+                              "yyyy-MM-dd HH:mm",
+                          )
                         : "-",
             },
             {
@@ -153,7 +168,9 @@ export function UsersListClient({
                 cell: ({ row }) => (
                     <div className="flex justify-end">
                         <Button asChild size="sm" variant="ghost">
-                            <Link href={adminRoutes.users.show(row.original.id)}>
+                            <Link
+                                href={adminRoutes.users.show(row.original.id)}
+                            >
                                 查看
                             </Link>
                         </Button>
