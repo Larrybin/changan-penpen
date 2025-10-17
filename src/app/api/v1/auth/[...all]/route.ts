@@ -11,7 +11,7 @@ async function enforceAuthRateLimit(
         const rateLimitResult = await applyRateLimit({
             request,
             identifier: "auth:flow",
-            keyParts: [phase],
+            uniqueToken: phase,
             message: "Too many authentication attempts",
             upstash: {
                 strategy: { type: "sliding", requests: 10, window: "60 s" },
