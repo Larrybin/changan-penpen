@@ -103,10 +103,10 @@
     --token-font-family-sans: var(--font-inter);
     --token-font-weight-normal: 400;
     --token-font-weight-bold: 700;
-    --token-text-title: 3rem; /* 48px */
-    --token-leading-title: 3.5rem; /* 56px */
-    --token-text-title-sm: 2rem; /* 32px */
-    --token-leading-title-sm: 2.5rem; /* 40px */
+    --token-text-title: clamp(2rem, 5vw + 1rem, 3rem);
+    --token-leading-title: clamp(2.5rem, 5vw + 1.5rem, 3.5rem);
+    --token-text-title-sm: clamp(1.5rem, 4vw + 0.75rem, 2rem);
+    --token-leading-title-sm: clamp(2rem, 4vw + 1.25rem, 2.5rem);
     --token-text-subtitle: 1.5rem; /* 24px */
     --token-leading-subtitle: 2rem; /* 32px */
 
@@ -296,6 +296,12 @@
         font-size: var(--token-text-title);
         line-height: var(--token-leading-title);
         font-weight: var(--token-font-weight-bold);
+    }
+    @media (max-width: 480px) {
+        .text-title {
+            font-size: clamp(1.75rem, 8vw, 2.25rem);
+            line-height: clamp(2.25rem, 9vw, 2.75rem);
+        }
     }
     .text-title-sm {
         font-size: var(--token-text-title-sm);

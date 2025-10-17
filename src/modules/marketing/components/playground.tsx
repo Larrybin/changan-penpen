@@ -84,32 +84,48 @@ export default function Playground() {
                         />
                     </div>
 
-                    <div>
-                        <p className="text-xs text-yellow-200/80 mb-2">
+                    <fieldset>
+                        <legend className="text-xs text-yellow-200/80 mb-2">
                             {tPlayground("aspectRatioLabel")}
-                        </p>
-                        <div className="flex gap-2">
-                            {["1:1", "4:3", "3:2", "9:16", "16:9"].map((r) => (
-                                <button
-                                    key={r}
-                                    type="button"
-                                    aria-pressed={ratio === r}
-                                    aria-label={`${tPlayground("aspectRatioLabel")} ${r}`}
-                                    onClick={() => setRatio(r as Ratio)}
-                                    className={`px-3 py-1 rounded border text-xs transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300 active:translate-y-px ${
-                                        ratio === r
-                                            ? "border-yellow-400 bg-yellow-400 text-black"
-                                            : "border-yellow-400/30 text-yellow-100/80 hover:border-yellow-400/60"
-                                    }`}
-                                >
-                                    {r}
-                                </button>
-                            ))}
+                        </legend>
+                        <div
+                            className="flex gap-2"
+                            role="radiogroup"
+                            aria-label={tPlayground("aspectRatioLabel")}
+                        >
+                            {["1:1", "4:3", "3:2", "9:16", "16:9"].map((r) => {
+                                const id = `playground-ratio-${r.replace(":", "-")}`;
+                                const isActive = ratio === r;
+                                return (
+                                    <label
+                                        key={r}
+                                        className={`px-3 py-1 rounded border text-xs transition cursor-pointer focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-yellow-300 ${
+                                            isActive
+                                                ? "border-yellow-400 bg-yellow-400 text-black"
+                                                : "border-yellow-400/30 text-yellow-100/80 hover:border-yellow-400/60"
+                                        }`}
+                                        htmlFor={id}
+                                    >
+                                        <input
+                                            id={id}
+                                            type="radio"
+                                            name="aspect-ratio"
+                                            value={r}
+                                            checked={isActive}
+                                            onChange={() =>
+                                                setRatio(r as Ratio)
+                                            }
+                                            className="sr-only"
+                                        />
+                                        <span>{r}</span>
+                                    </label>
+                                );
+                            })}
                         </div>
                         <p className="mt-2 text-[10px] text-yellow-200/60">
                             {tPlayground("humanCheck")}
                         </p>
-                    </div>
+                    </fieldset>
 
                     <div>
                         <Button className="bg-yellow-400 text-black hover:bg-yellow-300">

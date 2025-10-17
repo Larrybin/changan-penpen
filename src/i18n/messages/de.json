@@ -10,9 +10,10 @@
         "home": "Startseite",
         "dashboard": "Dashboard",
         "billing": "Abrechnung",
-        "features": "Funktionen",
-        "why": "Warum wir",
-        "faq": "FAQ"
+        "features": "KI-Funktionen",
+        "why": "Warum Banana KI",
+        "faq": "KI-FAQ",
+        "trust": "Kundenstimmen"
     },
     "Auth": {
         "login": "Anmelden",
@@ -86,7 +87,7 @@
     },
     "Marketing": {
         "header": {
-            "cta": "Jetzt loslegen",
+            "cta": "KI-Fotobearbeitung starten",
             "menuLabel": "Navigationsmenü öffnen"
         },
         "hero": {
@@ -94,8 +95,8 @@
             "emoji": "🍌",
             "title": "KI-Fotobearbeitung",
             "description": "Verwandle, bearbeite und verbessere deine Bilder mit einfachen Textanweisungen. Füge Objekte hinzu, entferne sie oder gestalte alles in Sekunden mit KI neu.",
-            "primaryCta": "Kostenlos testen",
-            "secondaryCta": "Was kann das Tool?",
+            "primaryCta": "Kostenlos mit KI bearbeiten",
+            "secondaryCta": "KI-Bild-Workflows entdecken",
             "support": {
                 "fast": "⚡ Schnell",
                 "secure": "🔒 Keine Anmeldung",
@@ -129,7 +130,8 @@
                     "title": "Vielseitige Stilgenerierung",
                     "description": "Erzeuge fotorealistische, cartoonhafte, Aquarell- oder Ölgemälde-Stile."
                 }
-            ]
+            ],
+            "learnMore": "Alle Preise findest du in unseren <billingLink>KI-Bildbearbeitungs-Tarifen</billingLink>."
         },
         "why": {
             "title": "Warum Banana Generator wählen?",
@@ -167,12 +169,36 @@
                     "question": "Sind meine Daten privat und sicher?",
                     "answer": "Wir verfolgen eine Privacy-First-Strategie. Du behältst das Eigentum an deinen Bildern."
                 }
-            ]
+            ],
+            "supportingCopy": "Du brauchst mehr Infos? <contactLink>Kontaktiere unser KI-Supportteam</contactLink> oder lerne auf der <aboutLink>Über-uns-Seite von Banana Generator</aboutLink> mehr über unsere Mission."
+        },
+        "trust": {
+            "title": "Vertrauenswürdig bei Kreativteams weltweit",
+            "description": "Studios, Agenturen und Creator nutzen Banana Generator, um KI-Fotobearbeitung schneller und markenkonform zu machen.",
+            "items": [
+                {
+                    "quote": "Banana Generator hat unsere Produktbild-Bearbeitung halbiert und die Markenfarben perfekt gehalten.",
+                    "author": "Maya Thompson",
+                    "role": "Leiterin Fotografie, Citrus Labs"
+                },
+                {
+                    "quote": "Der KI-Fotoeditor hilft unserem Designteam, schneller zu iterieren und jede Kampagne konsistent zu halten.",
+                    "author": "Leo Martins",
+                    "role": "Creative Lead, Pixel & Peel Studio"
+                },
+                {
+                    "quote": "Als Solo-Creator liebe ich, wie die KI Lichtstimmungen übernimmt, damit ich mich aufs Storytelling konzentriere.",
+                    "author": "Jules Rivera",
+                    "role": "YouTube-Filmemacher:in"
+                }
+            ],
+            "callout": "Du suchst Compliance-Dokumente? Besuche unser <privacyLink>Privacy Center</privacyLink> für Informationen zur KI-Datennutzung.",
+            "socialProfiles": []
         },
         "cta": {
             "title": "Bereit für den Banana-Modus?",
             "description": "Teste Banana Generator jetzt und verwandle deine Fotos in Spitzenkreationen!",
-            "primaryCta": "Banana Generator kostenlos testen"
+            "primaryCta": "Mit dem KI-Fotoeditor starten"
         },
         "playground": {
             "title": "Playground",

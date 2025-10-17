@@ -44,7 +44,7 @@ const defaultSettings: SiteSettingsState = {
     seoTitle: "",
     seoDescription: "",
     seoOgImage: "",
-    sitemapEnabled: false,
+    sitemapEnabled: true,
     robotsRules: "",
     brandPrimaryColor: "#2563eb",
     brandSecondaryColor: "#0f172a",
@@ -77,6 +77,7 @@ export function SiteSettingsPage() {
     const [saving, setSaving] = useState(false);
     const initialSettingsRef = useRef<SiteSettingsState | null>(null);
     const { open } = useNotification();
+    const sitemapWarningShownRef = useRef(false);
 
     useEffect(() => {
         async function fetchSettings() {
@@ -100,6 +101,19 @@ export function SiteSettingsPage() {
                             : [...defaultSettings.enabledLanguages],
                     };
                     setSettings(merged);
+                    if (
+                        !merged.sitemapEnabled &&
+                        !sitemapWarningShownRef.current &&
+                        open
+                    ) {
+                        open({
+                            type: "warning",
+                            message: "Enable your XML sitemap",
+                            description:
+                                "A published sitemap helps Google and other crawlers discover your marketing pages.",
+                        });
+                        sitemapWarningShownRef.current = true;
+                    }
                     initialSettingsRef.current = {
                         ...merged,
                         enabledLanguages: [...merged.enabledLanguages],
@@ -110,6 +124,19 @@ export function SiteSettingsPage() {
                         enabledLanguages: [...defaultSettings.enabledLanguages],
                     };
                     setSettings(fallback);
+                    if (
+                        !fallback.sitemapEnabled &&
+                        !sitemapWarningShownRef.current &&
+                        open
+                    ) {
+                        open({
+                            type: "warning",
+                            message: "Enable your XML sitemap",
+                            description:
+                                "A published sitemap helps Google and other crawlers discover your marketing pages.",
+                        });
+                        sitemapWarningShownRef.current = true;
+                    }
                     initialSettingsRef.current = {
                         ...fallback,
                         enabledLanguages: [...fallback.enabledLanguages],
@@ -122,6 +149,19 @@ export function SiteSettingsPage() {
                     enabledLanguages: [...defaultSettings.enabledLanguages],
                 };
                 setSettings(fallback);
+                if (
+                    !fallback.sitemapEnabled &&
+                    !sitemapWarningShownRef.current &&
+                    open
+                ) {
+                    open({
+                        type: "warning",
+                        message: "Enable your XML sitemap",
+                        description:
+                            "A published sitemap helps Google and other crawlers discover your marketing pages.",
+                    });
+                    sitemapWarningShownRef.current = true;
+                }
                 initialSettingsRef.current = {
                     ...fallback,
                     enabledLanguages: [...fallback.enabledLanguages],
@@ -131,7 +171,7 @@ export function SiteSettingsPage() {
             }
         }
         fetchSettings();
-    }, []);
+    }, [open]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();

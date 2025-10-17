@@ -19,6 +19,7 @@ export default function PublicHeader() {
     const navigationItems = [
         { href: "#features", label: tNav("features") },
         { href: "#why", label: tNav("why") },
+        { href: "#trust", label: tNav("trust") },
         { href: "#faq", label: tNav("faq") },
     ];
     return (
