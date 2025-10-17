@@ -39,21 +39,19 @@ function deepMerge<T extends Record<string, unknown>>(
     base: T,
     override?: Partial<T>,
 ): T {
-    const result = clone(base);
+    const resultRecord = clone(base) as Record<string, unknown>;
     if (!override) {
-        return result;
+        return resultRecord as T;
     }
-
-    const output = result as Record<string, unknown>;
 
     for (const [key, value] of Object.entries(override)) {
         if (value === undefined) {
             continue;
         }
 
-        const currentValue = output[key];
+        const currentValue = resultRecord[key];
         if (isPlainRecord(currentValue) && isPlainRecord(value)) {
-            output[key] = deepMerge(
+            resultRecord[key] = deepMerge(
                 currentValue as Record<string, unknown>,
                 value as Record<string, unknown>,
             ) as unknown;
@@ -61,14 +59,14 @@ function deepMerge<T extends Record<string, unknown>>(
         }
 
         if (Array.isArray(value)) {
-            output[key] = clone(value) as unknown;
+            resultRecord[key] = clone(value) as unknown;
             continue;
         }
 
-        output[key] = value as unknown;
+        resultRecord[key] = value as unknown;
     }
 
-    return result;
+    return resultRecord as T;
 }
 
 function coerceNumber(value: unknown): number | undefined {

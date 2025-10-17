@@ -122,6 +122,13 @@ export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
     }
 
     try {
+        if (typeof redis.scan !== "function") {
+            console.warn(
+                "[cache] redis client lacks scan support; skipping invalidation",
+                { prefix },
+            );
+            return;
+        }
         const deletions: Promise<unknown>[] = [];
         let cursor = "0";
         const pattern = `${prefix}*`;
