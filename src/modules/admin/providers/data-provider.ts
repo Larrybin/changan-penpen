@@ -9,6 +9,11 @@ import type {
 
 import { buildListSearchParams } from "@/lib/query/params";
 import { adminApiClient } from "@/modules/admin/api/client";
+import {
+    deleteAdminRecord,
+    isBodyInit,
+    normalizeAdminResourcePath,
+} from "@/modules/admin/api/resources";
 import type {
     AdminListPayload,
     AdminSinglePayload,
@@ -17,16 +22,6 @@ import {
     resolveAdminListPayload,
     resolveAdminSinglePayload,
 } from "@/modules/admin/api/transformers";
-
-function normalizeResourcePath(resource: string) {
-    if (/^https?:/i.test(resource)) {
-        return resource;
-    }
-    if (!resource) {
-        return resource;
-    }
-    return resource.startsWith("/") ? resource : `/${resource}`;
-}
 
 function normalizeIdentifier(id: DeleteOneParams["id"]) {
     if (typeof id === "string" || typeof id === "number") {
@@ -38,40 +33,9 @@ function normalizeIdentifier(id: DeleteOneParams["id"]) {
     throw new Error("Invalid identifier supplied to adminDataProvider");
 }
 
-function isBodyInit(value: unknown): value is BodyInit {
-    if (value === null || value === undefined) {
-        return false;
-    }
-    if (typeof value === "string") {
-        return true;
-    }
-    if (typeof Blob !== "undefined" && value instanceof Blob) {
-        return true;
-    }
-    if (typeof FormData !== "undefined" && value instanceof FormData) {
-        return true;
-    }
-    if (
-        typeof URLSearchParams !== "undefined" &&
-        value instanceof URLSearchParams
-    ) {
-        return true;
-    }
-    if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
-        return true;
-    }
-    if (
-        typeof ReadableStream !== "undefined" &&
-        value instanceof ReadableStream
-    ) {
-        return true;
-    }
-    return false;
-}
-
 export const adminDataProvider = {
     getList: async <TData = Record<string, unknown>>(params: GetListParams) => {
-        const resourcePath = normalizeResourcePath(params.resource);
+        const resourcePath = normalizeAdminResourcePath(params.resource);
         const searchParams = buildListSearchParams({
             pagination: params.pagination,
             filters: params.filters,
@@ -95,7 +59,7 @@ export const adminDataProvider = {
         resource,
         id,
     }: GetOneParams) => {
-        const resourcePath = normalizeResourcePath(resource);
+        const resourcePath = normalizeAdminResourcePath(resource);
         const response = await adminApiClient.get<AdminSinglePayload<TData>>(
             `${resourcePath}/${id}`,
         );
@@ -107,7 +71,7 @@ export const adminDataProvider = {
         resource,
         variables,
     }: CreateParams) => {
-        const resourcePath = normalizeResourcePath(resource);
+        const resourcePath = normalizeAdminResourcePath(resource);
         const response = await adminApiClient.post<AdminSinglePayload<TData>>(
             resourcePath,
             {
@@ -123,7 +87,7 @@ export const adminDataProvider = {
         id,
         variables,
     }: UpdateParams) => {
-        const resourcePath = normalizeResourcePath(resource);
+        const resourcePath = normalizeAdminResourcePath(resource);
         const response = await adminApiClient.patch<AdminSinglePayload<TData>>(
             `${resourcePath}/${id}`,
             {
@@ -138,8 +102,7 @@ export const adminDataProvider = {
         resource,
         id,
     }: DeleteOneParams) => {
-        const resourcePath = normalizeResourcePath(resource);
-        await adminApiClient.delete(`${resourcePath}/${id}`);
+        await deleteAdminRecord({ resource, id });
         const identifier = normalizeIdentifier(id);
         return {
             data: { id: identifier } as TData,
@@ -151,7 +114,7 @@ export const adminDataProvider = {
         meta,
         payload,
     }) => {
-        const requestUrl = normalizeResourcePath(url ?? "");
+        const requestUrl = normalizeAdminResourcePath(url ?? "");
         const requestOptions: Parameters<typeof adminApiClient.request>[1] = {
             method: method?.toString().toUpperCase(),
             headers: meta?.headers as HeadersInit | undefined,

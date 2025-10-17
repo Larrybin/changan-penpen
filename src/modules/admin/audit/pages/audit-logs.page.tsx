@@ -1,8 +1,10 @@
 "use client";
 
-import { useList } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { fetchAdminList } from "@/modules/admin/api/resources";
 import type { AuditLogRecord } from "@/modules/admin/types/resource.types";
 
 const AUDIT_SKELETON_ROW_KEYS = Array.from(
@@ -34,11 +36,16 @@ const formatMetadata = (metadata: unknown) => {
 };
 
 export function AuditLogsPage() {
-    const { query, result } = useList<AuditLogRecord>({
-        resource: "audit-logs",
+    const listQuery = useQuery({
+        queryKey: adminQueryKeys.list("audit-logs"),
+        queryFn: ({ signal }) =>
+            fetchAdminList<AuditLogRecord>({
+                resource: "audit-logs",
+                signal,
+            }),
     });
-    const isLoading = query.isLoading;
-    const logs = result?.data ?? [];
+    const isLoading = listQuery.isLoading || listQuery.isFetching;
+    const logs = listQuery.data?.items ?? [];
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">

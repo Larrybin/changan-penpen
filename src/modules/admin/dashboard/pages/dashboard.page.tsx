@@ -1,6 +1,6 @@
 "use client";
 
-import { useCustom } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { adminApiClient } from "@/modules/admin/api/client";
 import { UsageSparkline } from "@/modules/admin/dashboard/components/usage-sparkline";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
@@ -71,16 +73,19 @@ function formatCurrency(cents: number) {
 }
 
 export function AdminDashboardPage() {
-    const { query } = useCustom<DashboardMetricsPayload>({
-        url: "/dashboard",
-        method: "get",
-        queryOptions: {
-            staleTime: 1000 * 60,
+    const query = useQuery({
+        queryKey: [...adminQueryKeys.resource("dashboard"), "metrics"],
+        queryFn: async () => {
+            const response = await adminApiClient.get<{
+                data?: DashboardMetricsPayload;
+            }>("/dashboard");
+            return response.data.data ?? null;
         },
+        staleTime: 1000 * 60,
     });
 
     const isLoading = query.isLoading;
-    const payload = query.data?.data;
+    const payload = query.data;
     const hasTrendData = (payload?.usageTrend?.length ?? 0) > 0;
     const _hasOrderData = (payload?.latestOrders?.length ?? 0) > 0;
     const _hasCreditData = (payload?.recentCredits?.length ?? 0) > 0;

@@ -1,10 +1,12 @@
 "use client";
 
-import { useOne } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { fetchAdminRecord } from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 const TENANT_STAT_SKELETON_KEYS = Array.from(
@@ -46,12 +48,14 @@ type TenantDetail = {
 };
 
 export function TenantDetailPage({ id }: TenantDetailPageProps) {
-    const { query, result } = useOne<TenantDetail>({
-        resource: "tenants",
-        id,
+    const recordQuery = useQuery({
+        queryKey: adminQueryKeys.detail("tenants", id),
+        queryFn: ({ signal }) =>
+            fetchAdminRecord<TenantDetail>({ resource: "tenants", id, signal }),
+        enabled: Boolean(id),
     });
-    const isLoading = query.isLoading;
-    const tenant = result?.data;
+    const isLoading = recordQuery.isLoading;
+    const tenant = recordQuery.data ?? null;
 
     const breadcrumbs = [
         { label: "Admin", href: adminRoutes.dashboard.overview },

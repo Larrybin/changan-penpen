@@ -1,9 +1,11 @@
 "use client";
 
-import { useOne } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { fetchAdminRecord } from "@/modules/admin/api/resources";
 import { CouponForm } from "@/modules/admin/catalog/components/coupon-form";
 
 const COUPON_EDIT_SKELETON_KEYS = Array.from(
@@ -17,12 +19,15 @@ export function CouponEditPage() {
     const isValidId = Number.isFinite(id);
     const effectiveId = isValidId ? id : 0;
 
-    const { query, result } = useOne({
-        resource: "coupons",
-        id: effectiveId,
-        queryOptions: {
-            enabled: isValidId,
-        },
+    const query = useQuery({
+        queryKey: adminQueryKeys.detail("coupons", effectiveId),
+        queryFn: ({ signal }) =>
+            fetchAdminRecord({
+                resource: "coupons",
+                id: effectiveId,
+                signal,
+            }),
+        enabled: isValidId,
     });
 
     if (!isValidId) {
@@ -50,7 +55,7 @@ export function CouponEditPage() {
         );
     }
 
-    if (!result?.data) {
+    if (!query.data) {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader title="编辑优惠券" description="更新折扣信息。" />
@@ -64,7 +69,7 @@ export function CouponEditPage() {
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
             <PageHeader title="编辑优惠券" description="更新折扣信息。" />
-            <CouponForm id={id} initialData={result.data} />
+            <CouponForm id={id} initialData={query.data ?? undefined} />
         </div>
     );
 }

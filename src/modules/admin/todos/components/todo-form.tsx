@@ -25,6 +25,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { applyApiErrorToForm } from "@/modules/admin/utils/form-errors";
 import { TodoPriority, TodoStatus } from "@/modules/todos/models/todo.enum";
 import { insertTodoSchema } from "@/modules/todos/schemas/todo.schema";
 
@@ -45,7 +46,7 @@ export type AdminTodoFormValues = z.infer<typeof formSchema>;
 
 interface AdminTodoFormProps {
     initialValues?: Partial<AdminTodoFormValues>;
-    onSubmit: (values: AdminTodoFormValues) => void;
+    onSubmit: (values: AdminTodoFormValues) => Promise<void> | void;
     loading?: boolean;
     submitLabel?: string;
     categories: Array<{
@@ -133,7 +134,7 @@ export function AdminTodoForm({
                 <Form {...form}>
                     <form
                         className="space-y-6"
-                        onSubmit={form.handleSubmit((values) => {
+                        onSubmit={form.handleSubmit(async (values) => {
                             const payload: AdminTodoFormValues = {
                                 ...values,
                                 categoryId:
@@ -141,7 +142,12 @@ export function AdminTodoForm({
                                         ? Number.parseInt(values.categoryId, 10)
                                         : values.categoryId,
                             };
-                            onSubmit(payload);
+                            try {
+                                await onSubmit(payload);
+                            } catch (error) {
+                                applyApiErrorToForm(form, error);
+                                throw error;
+                            }
                         })}
                     >
                         <div className="grid gap-4 sm:grid-cols-2">

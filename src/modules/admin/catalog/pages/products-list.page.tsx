@@ -1,10 +1,16 @@
 "use client";
 
-import { useDelete, useList } from "@refinedev/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    deleteAdminRecord,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ProductRecord } from "@/modules/admin/types/resource.types";
 
@@ -32,12 +38,23 @@ const formatCurrency = (
 };
 
 export function ProductsListPage() {
-    const { query, result } = useList<ProductRecord>({
-        resource: "products",
+    const queryClient = useQueryClient();
+    const listQuery = useQuery({
+        queryKey: adminQueryKeys.list("products"),
+        queryFn: () => fetchAdminList<ProductRecord>({ resource: "products" }),
     });
-    const { mutateAsync: deleteProduct } = useDelete();
-    const isLoading = query.isLoading;
-    const products = result?.data ?? [];
+    const deleteMutation = useMutation({
+        mutationFn: (productId: number | string) =>
+            deleteAdminRecord({ resource: "products", id: productId }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("products"),
+            });
+            toast.success("商品已删除");
+        },
+    });
+    const isLoading = listQuery.isLoading;
+    const products = listQuery.data?.items ?? [];
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -117,11 +134,11 @@ export function ProductsListPage() {
                                     <Button
                                         size="sm"
                                         variant="destructive"
+                                        disabled={deleteMutation.isPending}
                                         onClick={async () => {
-                                            await deleteProduct({
-                                                resource: "products",
-                                                id: product.id,
-                                            });
+                                            await deleteMutation.mutateAsync(
+                                                product.id,
+                                            );
                                         }}
                                     >
                                         删除

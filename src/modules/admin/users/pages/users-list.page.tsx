@@ -39,7 +39,7 @@ export function UsersListPage() {
 
     useEffect(() => {
         setPageIndex(0);
-    }, [search]);
+    }, []);
 
     const listQuery = useQuery({
         queryKey: adminQueryKeys.list("users", {

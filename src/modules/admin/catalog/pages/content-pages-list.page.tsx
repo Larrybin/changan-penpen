@@ -1,10 +1,16 @@
 "use client";
 
-import { useDelete, useList } from "@refinedev/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    deleteAdminRecord,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ContentPageRecord } from "@/modules/admin/types/resource.types";
 
@@ -21,12 +27,24 @@ const formatDateTime = (value?: string | null) =>
     typeof value === "string" && value.length > 0 ? value.slice(0, 19) : "-";
 
 export function ContentPagesListPage() {
-    const { query, result } = useList<ContentPageRecord>({
-        resource: "content-pages",
+    const queryClient = useQueryClient();
+    const listQuery = useQuery({
+        queryKey: adminQueryKeys.list("content-pages"),
+        queryFn: () =>
+            fetchAdminList<ContentPageRecord>({ resource: "content-pages" }),
     });
-    const { mutateAsync: deletePage } = useDelete();
-    const isLoading = query.isLoading;
-    const pages = result?.data ?? [];
+    const deleteMutation = useMutation({
+        mutationFn: (pageId: number | string) =>
+            deleteAdminRecord({ resource: "content-pages", id: pageId }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("content-pages"),
+            });
+            toast.success("内容已删除");
+        },
+    });
+    const isLoading = listQuery.isLoading;
+    const pages = listQuery.data?.items ?? [];
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -109,11 +127,11 @@ export function ContentPagesListPage() {
                                     <Button
                                         size="sm"
                                         variant="destructive"
+                                        disabled={deleteMutation.isPending}
                                         onClick={async () => {
-                                            await deletePage({
-                                                resource: "content-pages",
-                                                id: page.id,
-                                            });
+                                            await deleteMutation.mutateAsync(
+                                                page.id,
+                                            );
                                         }}
                                     >
                                         删除

@@ -1,17 +1,27 @@
 "use client";
 
-import { type CrudFilter, useCreate, useList } from "@refinedev/core";
+import type { CrudFilter } from "@refinedev/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
+import { adminQueryKeys } from "@/lib/query/keys";
+import {
+    createAdminRecord,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
-import { AdminTodoForm } from "@/modules/admin/todos/components/todo-form";
+import {
+    AdminTodoForm,
+    type AdminTodoFormValues,
+} from "@/modules/admin/todos/components/todo-form";
 
 export default function AdminTodoCreatePage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [tenantId, setTenantId] = useState("");
-    const { mutate } = useCreate();
     const normalizedTenantId = tenantId.trim();
     const categoryFilters: CrudFilter[] = normalizedTenantId
         ? [
@@ -22,33 +32,42 @@ export default function AdminTodoCreatePage() {
               },
           ]
         : [];
-    const { result: categoriesResult } = useList({
-        resource: "categories",
-        pagination: {
-            pageSize: 100,
-        },
-        filters: categoryFilters,
-        queryOptions: {
-            enabled: Boolean(normalizedTenantId),
-        },
+    const categoriesQuery = useQuery({
+        queryKey: adminQueryKeys.list("categories", {
+            pagination: { pageSize: 100 },
+            filters: categoryFilters,
+            meta: normalizedTenantId
+                ? { tenantId: normalizedTenantId }
+                : undefined,
+        }),
+        queryFn: ({ signal }) =>
+            fetchAdminList({
+                resource: "categories",
+                pagination: { pageSize: 100 },
+                filters: categoryFilters,
+                signal,
+            }),
+        enabled: Boolean(normalizedTenantId),
     });
 
-    const categories = categoriesResult?.data ?? [];
+    const categories = categoriesQuery.data?.items ?? [];
+
+    const createMutation = useMutation({
+        mutationFn: (values: AdminTodoFormValues) =>
+            createAdminRecord({ resource: "todos", variables: values }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("todos"),
+            });
+            toast.success("Todo 已创建");
+            router.push(adminRoutes.todos.list);
+        },
+    });
 
     const handleSubmit: ComponentProps<typeof AdminTodoForm>["onSubmit"] = (
         values,
     ) => {
-        mutate(
-            {
-                resource: "todos",
-                values,
-            },
-            {
-                onSuccess: () => {
-                    router.push(adminRoutes.todos.list);
-                },
-            },
-        );
+        return createMutation.mutateAsync(values);
     };
 
     return (
@@ -67,6 +86,7 @@ export default function AdminTodoCreatePage() {
                         name: String(category.name ?? ""),
                     }))}
                 onTenantChange={setTenantId}
+                loading={createMutation.isPending}
             />
         </div>
     );

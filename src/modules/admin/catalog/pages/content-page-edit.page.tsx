@@ -1,9 +1,11 @@
 "use client";
 
-import { useOne } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { fetchAdminRecord } from "@/modules/admin/api/resources";
 import { ContentPageForm } from "@/modules/admin/catalog/components/content-page-form";
 
 const CONTENT_EDIT_SKELETON_KEYS = Array.from(
@@ -17,12 +19,15 @@ export function ContentPageEditPage() {
     const isValidId = Number.isFinite(id);
     const effectiveId = isValidId ? id : 0;
 
-    const { query, result } = useOne({
-        resource: "content-pages",
-        id: effectiveId,
-        queryOptions: {
-            enabled: isValidId,
-        },
+    const query = useQuery({
+        queryKey: adminQueryKeys.detail("content-pages", effectiveId),
+        queryFn: ({ signal }) =>
+            fetchAdminRecord({
+                resource: "content-pages",
+                id: effectiveId,
+                signal,
+            }),
+        enabled: isValidId,
     });
 
     if (!isValidId) {
@@ -56,7 +61,7 @@ export function ContentPageEditPage() {
         );
     }
 
-    if (!result?.data) {
+    if (!query.data) {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader
@@ -76,7 +81,7 @@ export function ContentPageEditPage() {
                 title="编辑内容页"
                 description="调整页面内容与发布状态。"
             />
-            <ContentPageForm id={id} initialData={result.data} />
+            <ContentPageForm id={id} initialData={query.data ?? undefined} />
         </div>
     );
 }

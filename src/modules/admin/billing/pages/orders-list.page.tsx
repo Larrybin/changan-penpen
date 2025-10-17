@@ -1,12 +1,15 @@
 "use client";
 
-import { type CrudFilter, useList } from "@refinedev/core";
+import type { CrudFilter } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { fetchAdminList } from "@/modules/admin/api/resources";
 import type { OrderRecord } from "@/modules/admin/types/resource.types";
 
 const formatCurrency = (
@@ -45,18 +48,24 @@ export function OrdersListPage() {
         [tenantId],
     );
 
-    const { query, result } = useList<OrderRecord>({
-        resource: "orders",
-        pagination: {
-            current: pageIndex + 1,
-            pageSize: pageSize,
-        },
-        filters,
+    const listQuery = useQuery({
+        queryKey: adminQueryKeys.list("orders", {
+            pagination: { pageIndex, pageSize },
+            filters,
+        }),
+        queryFn: ({ signal }) =>
+            fetchAdminList<OrderRecord>({
+                resource: "orders",
+                pagination: { pageIndex, pageSize },
+                filters,
+                signal,
+            }),
+        keepPreviousData: true,
     });
 
-    const isLoading = query.isLoading;
-    const orders = result?.data ?? [];
-    const total = result?.total ?? 0;
+    const isLoading = listQuery.isLoading || listQuery.isFetching;
+    const orders = listQuery.data?.items ?? [];
+    const total = listQuery.data?.total ?? 0;
     const pageCount = Math.ceil(total / pageSize);
 
     // 定义表格列

@@ -1,6 +1,6 @@
 "use client";
 
-import { useOne } from "@refinedev/core";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { adminQueryKeys } from "@/lib/query/keys";
+import { fetchAdminRecord } from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminUserDetail } from "@/modules/admin/users/models";
 
@@ -209,9 +211,14 @@ function UserDetailSkeleton() {
 }
 
 export function UserDetailClient({ userId }: UserDetailClientProps) {
-    const { query } = useOne<AdminUserDetail>({
-        resource: "users",
-        id: userId,
+    const query = useQuery({
+        queryKey: adminQueryKeys.detail("users", userId),
+        queryFn: ({ signal }) =>
+            fetchAdminRecord<AdminUserDetail>({
+                resource: "users",
+                id: userId,
+                signal,
+            }),
     });
 
     if (query.isLoading) {
@@ -239,7 +246,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
         );
     }
 
-    const detail = query.data?.data;
+    const detail = query.data ?? null;
 
     if (!detail) {
         return (
