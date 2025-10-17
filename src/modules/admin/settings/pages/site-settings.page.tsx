@@ -134,10 +134,7 @@ export function SiteSettingsPage() {
             return;
         }
 
-        console.error(
-            "Failed to fetch site settings",
-            siteSettingsQuery.error,
-        );
+        console.error("Failed to fetch site settings", siteSettingsQuery.error);
         toast.error("加载站点设置失败，已使用默认配置。");
 
         if (!initialSettingsRef.current) {
