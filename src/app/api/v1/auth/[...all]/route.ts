@@ -56,33 +56,36 @@ function extractSessionFingerprint(request: Request): string | null {
     return createHash("sha256").update(trimmedValue).digest("hex");
 }
 
-function resolveAuthRateLimitToken(
+function resolveAuthRateLimitKeyParts(
     request: Request,
     phase: "callback" | "exchange",
-): string {
+): string[] {
+    const parts = [AUTH_RATE_LIMIT_IDENTIFIER, phase];
+
     const ip = resolveClientIp(request);
     if (ip) {
-        return `${phase}:ip:${ip}`;
+        parts.push(`ip:${ip}`);
+        return parts;
     }
 
     const session = extractSessionFingerprint(request);
     if (session) {
-        return `${phase}:session:${session}`;
+        parts.push(`session:${session}`);
     }
 
-    return phase;
+    return parts;
 }
 
 async function enforceAuthRateLimit(
     request: Request,
     phase: "callback" | "exchange",
 ) {
-    const uniqueToken = resolveAuthRateLimitToken(request, phase);
+    const keyParts = resolveAuthRateLimitKeyParts(request, phase);
     try {
         const rateLimitResult = await applyRateLimit({
             request,
             identifier: AUTH_RATE_LIMIT_IDENTIFIER,
-            uniqueToken,
+            keyParts,
             message: "Too many authentication attempts",
             upstash: {
                 strategy: { type: "sliding", requests: 10, window: "60 s" },
