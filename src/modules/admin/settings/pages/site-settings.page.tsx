@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,34 @@ export function SiteSettingsPage() {
     const [saving, setSaving] = useState(false);
     const initialSettingsRef = useRef<SiteSettingsState | null>(null);
     const sitemapWarningShownRef = useRef(false);
+    const queryClient = useQueryClient();
+
+    const siteSettingsQuery = useQuery({
+        queryKey: adminQueryKeys.resource("site-settings"),
+        queryFn: async () => {
+            const response = await adminApiClient.get<{
+                data?: Partial<SiteSettingsState>;
+            }>("/site-settings");
+            const incoming = response.data.data ?? {};
+            const merged: SiteSettingsState = {
+                ...defaultSettings,
+                ...(incoming as SiteSettingsState),
+                enabledLanguages: Array.isArray(incoming.enabledLanguages)
+                    ? [...incoming.enabledLanguages]
+                    : [...defaultSettings.enabledLanguages],
+            };
+            return merged;
+        },
+    });
+
+    const saveMutation = useMutation({
+        mutationFn: async (payload: Partial<SiteSettingsState>) => {
+            const response = await adminApiClient.patch<{
+                data?: Partial<SiteSettingsState>;
+            }>("/site-settings", { json: payload });
+            return response.data.data ?? null;
+        },
+    });
 
     const showSitemapWarning = useCallback(() => {
         if (sitemapWarningShownRef.current) {
@@ -92,68 +121,42 @@ export function SiteSettingsPage() {
     }, []);
 
     useEffect(() => {
-        async function fetchSettings() {
-            setLoading(true);
-            try {
-                const response = await fetch("/api/v1/admin/site-settings", {
-                    credentials: "include",
-                });
-                if (response.ok) {
-                    const payload = (await response.json()) as {
-                        data?: Partial<SiteSettingsState>;
-                    };
-                    const incoming = payload.data ?? {};
-                    const merged: SiteSettingsState = {
-                        ...defaultSettings,
-                        ...(incoming as SiteSettingsState),
-                        enabledLanguages: Array.isArray(
-                            incoming.enabledLanguages,
-                        )
-                            ? [...incoming.enabledLanguages]
-                            : [...defaultSettings.enabledLanguages],
-                    };
-                    setSettings(merged);
-                    if (!merged.sitemapEnabled) {
-                        showSitemapWarning();
-                    }
-                    initialSettingsRef.current = {
-                        ...merged,
-                        enabledLanguages: [...merged.enabledLanguages],
-                    };
-                } else {
-                    const fallback: SiteSettingsState = {
-                        ...defaultSettings,
-                        enabledLanguages: [...defaultSettings.enabledLanguages],
-                    };
-                    setSettings(fallback);
-                    if (!fallback.sitemapEnabled) {
-                        showSitemapWarning();
-                    }
-                    initialSettingsRef.current = {
-                        ...fallback,
-                        enabledLanguages: [...fallback.enabledLanguages],
-                    };
-                }
-            } catch (error) {
-                console.error("Failed to fetch site settings", error);
-                const fallback: SiteSettingsState = {
-                    ...defaultSettings,
-                    enabledLanguages: [...defaultSettings.enabledLanguages],
-                };
-                setSettings(fallback);
-                if (!fallback.sitemapEnabled) {
-                    showSitemapWarning();
-                }
-                initialSettingsRef.current = {
-                    ...fallback,
-                    enabledLanguages: [...fallback.enabledLanguages],
-                };
-            } finally {
-                setLoading(false);
-            }
+        if (!siteSettingsQuery.data) {
+            return;
         }
-        fetchSettings();
-    }, [showSitemapWarning]);
+
+        setSettings(siteSettingsQuery.data);
+        initialSettingsRef.current = {
+            ...siteSettingsQuery.data,
+            enabledLanguages: [...siteSettingsQuery.data.enabledLanguages],
+        };
+
+        if (
+            !siteSettingsQuery.data.sitemapEnabled &&
+            !sitemapWarningShownRef.current
+        ) {
+            toast("建议启用 XML Sitemap，以帮助搜索引擎更好地索引你的站点。", {
+                icon: "⚠️",
+            });
+            sitemapWarningShownRef.current = true;
+        }
+    }, [siteSettingsQuery.data]);
+
+    useEffect(() => {
+        if (!siteSettingsQuery.isError) {
+            return;
+        }
+
+        console.error("Failed to fetch site settings", siteSettingsQuery.error);
+        toast.error("加载站点设置失败，已使用默认配置。");
+
+        if (!initialSettingsRef.current) {
+            initialSettingsRef.current = {
+                ...defaultSettings,
+                enabledLanguages: [...defaultSettings.enabledLanguages],
+            };
+        }
+    }, [siteSettingsQuery.error, siteSettingsQuery.isError]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -210,46 +213,37 @@ export function SiteSettingsPage() {
             ];
         }
 
-        setSaving(true);
         try {
-            const response = await fetch("/api/v1/admin/site-settings", {
-                method: "PUT",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(requestPayload),
+            const result = await saveMutation.mutateAsync(payload);
+            const patch = (result ?? payload) as Partial<SiteSettingsState>;
+            setSettings((previous) => {
+                const next: SiteSettingsState = {
+                    ...previous,
+                    ...patch,
+                    enabledLanguages: Array.isArray(patch.enabledLanguages)
+                        ? [...patch.enabledLanguages]
+                        : [...previous.enabledLanguages],
+                };
+                initialSettingsRef.current = {
+                    ...next,
+                    enabledLanguages: [...next.enabledLanguages],
+                };
+                if (!next.sitemapEnabled && !sitemapWarningShownRef.current) {
+                    toast(
+                        "建议启用 XML Sitemap，以帮助搜索引擎更好地索引你的站点。",
+                        { icon: "⚠️" },
+                    );
+                    sitemapWarningShownRef.current = true;
+                }
+                return next;
             });
-
-            if (!response.ok) {
-                const errorPayload = (await response
-                    .json()
-                    .catch(() => null)) as { message?: string } | null;
-                const message = errorPayload?.message ?? "保存站点设置失败";
-                throw new Error(message);
-            }
-
-            const nextSettings: SiteSettingsState = {
-                ...settings,
-                ...requestPayload,
-                enabledLanguages: requestPayload.enabledLanguages ?? [
-                    ...settings.enabledLanguages,
-                ],
-            };
-
-            setSettings(nextSettings);
-            initialSettingsRef.current = {
-                ...nextSettings,
-                enabledLanguages: [...nextSettings.enabledLanguages],
-            };
             toast.success("站点设置已保存");
+            queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.resource("site-settings"),
+            });
         } catch (error) {
             console.error("Failed to save site settings", error);
-            const message =
-                error instanceof Error ? error.message : "保存站点设置失败";
-            toast.error(message);
-        } finally {
-            setSaving(false);
+            toast.error("保存设置失败，请稍后再试。");
         }
     };
 
@@ -261,7 +255,10 @@ export function SiteSettingsPage() {
         setSettings((prev) => ({ ...prev, enabledLanguages: languages }));
     };
 
-    if (loading) {
+    const saving = saveMutation.isPending;
+    const isLoading = siteSettingsQuery.isLoading;
+
+    if (isLoading) {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader
