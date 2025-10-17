@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
-import { fetchAdminList } from "@/modules/admin/api/resources";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { TenantSummaryRecord } from "@/modules/admin/types/resource.types";
 
@@ -33,7 +36,7 @@ export function TenantsListPage() {
         [search],
     );
 
-    const listQuery = useQuery({
+    const listQuery = useQuery<FetchAdminListResult<TenantSummaryRecord>>({
         queryKey: adminQueryKeys.list("tenants", {
             pagination: { pageIndex, pageSize },
             filters,
@@ -45,7 +48,7 @@ export function TenantsListPage() {
                 filters,
                 signal,
             }),
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
     });
 
     const isLoading = listQuery.isLoading || listQuery.isFetching;

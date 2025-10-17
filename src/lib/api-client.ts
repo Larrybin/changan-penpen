@@ -405,7 +405,7 @@ export function createApiClient(config: ApiClientConfig = {}) {
             if (!headers.has("Content-Type")) {
                 headers.set("Content-Type", "application/json");
             }
-        } else if (optionBody !== undefined) {
+        } else if (optionBody !== undefined && optionBody !== null) {
             body = optionBody;
         }
 

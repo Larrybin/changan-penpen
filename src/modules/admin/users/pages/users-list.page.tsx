@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -12,7 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
-import { fetchAdminList } from "@/modules/admin/api/list";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/list";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminUserListItem } from "@/modules/admin/users/models";
 
@@ -41,7 +44,7 @@ export function UsersListPage() {
         setPageIndex(0);
     }, []);
 
-    const listQuery = useQuery({
+    const listQuery = useQuery<FetchAdminListResult<AdminUserListItem>>({
         queryKey: adminQueryKeys.list("users", {
             pagination: { pageIndex, pageSize },
             filters,
@@ -53,7 +56,7 @@ export function UsersListPage() {
                 filters,
                 signal,
             }),
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
     });
 
     const users = listQuery.data?.items ?? [];

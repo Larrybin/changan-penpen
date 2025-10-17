@@ -115,7 +115,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
 
     const handleSubmit: ComponentProps<typeof AdminTodoForm>["onSubmit"] = (
         values,
-    ) => updateMutation.mutateAsync(values);
+    ) => updateMutation.mutateAsync(values).then(() => undefined);
 
     const initialValues: Partial<AdminTodoFormValues> = {
         userId: typeof record.userId === "string" ? record.userId : "",

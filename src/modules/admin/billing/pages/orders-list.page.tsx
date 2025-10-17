@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data/data-table";
@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
-import { fetchAdminList } from "@/modules/admin/api/resources";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import type { OrderRecord } from "@/modules/admin/types/resource.types";
 
 const formatCurrency = (
@@ -48,7 +51,7 @@ export function OrdersListPage() {
         [tenantId],
     );
 
-    const listQuery = useQuery({
+    const listQuery = useQuery<FetchAdminListResult<OrderRecord>>({
         queryKey: adminQueryKeys.list("orders", {
             pagination: { pageIndex, pageSize },
             filters,
@@ -60,7 +63,7 @@ export function OrdersListPage() {
                 filters,
                 signal,
             }),
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
     });
 
     const isLoading = listQuery.isLoading || listQuery.isFetching;

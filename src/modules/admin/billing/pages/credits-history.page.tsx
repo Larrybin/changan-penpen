@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data/data-table";
@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
-import { fetchAdminList } from "@/modules/admin/api/resources";
+import {
+    type FetchAdminListResult,
+    fetchAdminList,
+} from "@/modules/admin/api/resources";
 import type { CreditHistoryEntry } from "@/modules/admin/types/resource.types";
 
 const formatDateTime = (value?: string | null) =>
@@ -34,7 +37,7 @@ export function CreditsHistoryPage() {
         [tenantId],
     );
 
-    const listQuery = useQuery({
+    const listQuery = useQuery<FetchAdminListResult<CreditHistoryEntry>>({
         queryKey: adminQueryKeys.list("credits-history", {
             pagination: { pageIndex, pageSize },
             filters,
@@ -46,7 +49,7 @@ export function CreditsHistoryPage() {
                 filters,
                 signal,
             }),
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
     });
 
     const isLoading = listQuery.isLoading || listQuery.isFetching;

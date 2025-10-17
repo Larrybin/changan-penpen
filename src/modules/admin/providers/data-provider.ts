@@ -1,5 +1,6 @@
 import type {
     CreateParams,
+    CustomParams,
     DataProvider,
     DeleteOneParams,
     GetListParams,
@@ -63,8 +64,9 @@ export const adminDataProvider = {
         const response = await adminApiClient.get<AdminSinglePayload<TData>>(
             `${resourcePath}/${id}`,
         );
+        const record = resolveAdminSinglePayload<TData>(response.data);
         return {
-            data: resolveAdminSinglePayload<TData>(response.data) ?? null,
+            data: (record ?? null) as TData,
         };
     },
     create: async <TData = Record<string, unknown>>({
@@ -78,8 +80,9 @@ export const adminDataProvider = {
                 json: variables ?? {},
             },
         );
+        const record = resolveAdminSinglePayload<TData>(response.data);
         return {
-            data: resolveAdminSinglePayload<TData>(response.data),
+            data: (record ?? null) as TData,
         };
     },
     update: async <TData = Record<string, unknown>>({
@@ -94,8 +97,9 @@ export const adminDataProvider = {
                 json: variables ?? {},
             },
         );
+        const record = resolveAdminSinglePayload<TData>(response.data);
         return {
-            data: resolveAdminSinglePayload<TData>(response.data),
+            data: (record ?? null) as TData,
         };
     },
     deleteOne: async <TData = Record<string, unknown>>({
@@ -108,12 +112,8 @@ export const adminDataProvider = {
             data: { id: identifier } as TData,
         };
     },
-    custom: async <TData = Record<string, unknown>>({
-        url,
-        method,
-        meta,
-        payload,
-    }) => {
+    custom: async <TData = Record<string, unknown>>(params: CustomParams) => {
+        const { url, method, meta, payload } = params;
         const requestUrl = normalizeAdminResourcePath(url ?? "");
         const requestOptions: Parameters<typeof adminApiClient.request>[1] = {
             method: method?.toString().toUpperCase(),

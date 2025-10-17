@@ -67,7 +67,7 @@ export default function AdminTodoCreatePage() {
     const handleSubmit: ComponentProps<typeof AdminTodoForm>["onSubmit"] = (
         values,
     ) => {
-        return createMutation.mutateAsync(values);
+        return createMutation.mutateAsync(values).then(() => undefined);
     };
 
     return (

@@ -78,7 +78,7 @@ export function SiteSettingsPage() {
         useState<SiteSettingsState>(defaultSettings);
     const initialSettingsRef = useRef<SiteSettingsState | null>(null);
 
-    const settingsQuery = useQuery({
+    const settingsQuery = useQuery<Partial<SiteSettingsState>>({
         queryKey: [...adminQueryKeys.resource("site-settings"), "detail"],
         queryFn: async () => {
             const response = await adminApiClient.get<{
@@ -86,20 +86,25 @@ export function SiteSettingsPage() {
             }>("/site-settings");
             return response.data.data ?? {};
         },
-        onError: (error) => {
-            console.error("Failed to fetch site settings", error);
-            toast.error("加载站点设置失败");
-            const fallback: SiteSettingsState = {
-                ...defaultSettings,
-                enabledLanguages: [...defaultSettings.enabledLanguages],
-            };
-            setSettings(fallback);
-            initialSettingsRef.current = {
-                ...fallback,
-                enabledLanguages: [...fallback.enabledLanguages],
-            };
-        },
     });
+
+    useEffect(() => {
+        if (!settingsQuery.isError) {
+            return;
+        }
+        const error = settingsQuery.error;
+        console.error("Failed to fetch site settings", error);
+        toast.error("加载站点设置失败");
+        const fallback: SiteSettingsState = {
+            ...defaultSettings,
+            enabledLanguages: [...defaultSettings.enabledLanguages],
+        };
+        setSettings(fallback);
+        initialSettingsRef.current = {
+            ...fallback,
+            enabledLanguages: [...fallback.enabledLanguages],
+        };
+    }, [settingsQuery.isError, settingsQuery.error]);
 
     useEffect(() => {
         if (settingsQuery.status !== "success") {
