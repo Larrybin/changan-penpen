@@ -428,30 +428,76 @@ function normalizeBaseUrl(candidate: string): string | undefined {
     }
 }
 
+function isLikelyLocalOrigin(origin: string): boolean {
+    try {
+        const url = new URL(origin);
+        const hostname = url.hostname.toLowerCase();
+        if (hostname === "localhost" || hostname === "0.0.0.0") {
+            return true;
+        }
+        if (hostname.endsWith(".local")) {
+            return true;
+        }
+        if (hostname.startsWith("127.")) {
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.warn("Failed to inspect origin for locality", {
+            origin,
+            error,
+        });
+        return false;
+    }
+}
+
 export function resolveAppUrl(
     settings?: SiteSettingsPayload | null,
     options: ResolveAppUrlOptions = {},
 ): string {
+    const isProduction = Boolean(
+        (
+            globalThis as {
+                process?: { env?: Record<string, string | undefined> };
+            }
+        ).process?.env?.NODE_ENV === "production",
+    );
     const configured = normalizeBaseUrl(settings?.domain ?? "");
     if (configured) {
+        if (isProduction && isLikelyLocalOrigin(configured)) {
+            const error = new AppUrlResolutionError(
+                "Configured domain resolves to a local development host. Update site settings with your production domain.",
+            );
+            console.error(error.message, { domain: settings?.domain });
+            throw error;
+        }
         return configured;
     }
     const envAppUrl =
         options.envAppUrl ?? getGlobalEnvOverride("NEXT_PUBLIC_APP_URL");
     const fallback = normalizeBaseUrl(envAppUrl ?? "");
     if (fallback) {
+        if (isProduction && isLikelyLocalOrigin(fallback)) {
+            const error = new AppUrlResolutionError(
+                "NEXT_PUBLIC_APP_URL points to a local development host. Provide a production URL for canonical tags.",
+            );
+            console.error(error.message, { envAppUrl: fallback });
+            throw error;
+        }
         return fallback;
     }
-    const normalizedLocal = normalizeBaseUrl(
-        options.fallbackLocalUrl ?? LOCAL_DEV_APP_URL,
-    );
-    if (normalizedLocal) {
-        console.warn("Falling back to default development URL", {
-            domain: settings?.domain,
-            hasEnvFallback: Boolean(envAppUrl),
-            fallback: normalizedLocal,
-        });
-        return normalizedLocal;
+    if (!isProduction) {
+        const normalizedLocal = normalizeBaseUrl(
+            options.fallbackLocalUrl ?? LOCAL_DEV_APP_URL,
+        );
+        if (normalizedLocal) {
+            console.warn("Falling back to default development URL", {
+                domain: settings?.domain,
+                hasEnvFallback: Boolean(envAppUrl),
+                fallback: normalizedLocal,
+            });
+            return normalizedLocal;
+        }
     }
     const error = new AppUrlResolutionError();
     console.error(error.message, {

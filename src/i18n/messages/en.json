@@ -10,9 +10,10 @@
         "home": "Home",
         "dashboard": "Dashboard",
         "billing": "Billing",
-        "features": "Features",
-        "why": "Why Us",
-        "faq": "FAQ"
+        "features": "AI Features",
+        "why": "Why Banana AI",
+        "faq": "AI FAQ",
+        "trust": "Customer Stories"
     },
     "Auth": {
         "login": "Login",
@@ -86,7 +87,7 @@
     },
     "Marketing": {
         "header": {
-            "cta": "Go Bananas",
+            "cta": "Launch the AI photo editor",
             "menuLabel": "Open navigation menu"
         },
         "hero": {
@@ -94,8 +95,8 @@
             "emoji": "🍌",
             "title": "AI Photo Editor",
             "description": "Transform, edit, and enhance your images with simple text prompts. Add, remove, or restyle anything in seconds using AI image editing.",
-            "primaryCta": "Try it free",
-            "secondaryCta": "What can it do?",
+            "primaryCta": "Start AI photo editing free",
+            "secondaryCta": "Explore AI image workflows",
             "support": {
                 "fast": "⚡ Fast",
                 "secure": "🔒 No sign-up",
@@ -129,7 +130,8 @@
                     "title": "Versatile Style Generation",
                     "description": "Create photorealistic, cartoon, watercolor, or oil painting styles."
                 }
-            ]
+            ],
+            "learnMore": "See detailed pricing on our <billingLink>AI image editing plans</billingLink>."
         },
         "why": {
             "title": "Why Choose Banana Generator?",
@@ -167,12 +169,36 @@
                     "question": "Is my data private and secure?",
                     "answer": "We follow a privacy-first policy. You keep ownership of your images."
                 }
-            ]
+            ],
+            "supportingCopy": "Need more details? <contactLink>Talk with our AI support team</contactLink> or learn about our mission on the <aboutLink>Banana Generator about page</aboutLink>."
+        },
+        "trust": {
+            "title": "Trusted by creative teams everywhere",
+            "description": "Studios, agencies, and indie makers rely on Banana Generator to speed up AI photo editing without losing brand quality.",
+            "items": [
+                {
+                    "quote": "Banana Generator cut our product shot editing time in half while keeping every color on-brand.",
+                    "author": "Maya Thompson",
+                    "role": "Director of Photography, Citrus Labs"
+                },
+                {
+                    "quote": "The AI photo editor helps our designers iterate fast and stay consistent across every campaign.",
+                    "author": "Leo Martins",
+                    "role": "Creative Lead, Pixel & Peel Studio"
+                },
+                {
+                    "quote": "As a solo creator, I love how the AI handles lighting adjustments so I can focus on storytelling.",
+                    "author": "Jules Rivera",
+                    "role": "YouTube Filmmaker"
+                }
+            ],
+            "callout": "Looking for compliance docs? Visit our <privacyLink>privacy center</privacyLink> for AI data practices.",
+            "socialProfiles": []
         },
         "cta": {
             "title": "Ready to Go Bananas?",
             "description": "Try Banana Generator now and turn your photos into top banana creations!",
-            "primaryCta": "Try Banana Generator Free"
+            "primaryCta": "Start editing with the AI photo editor"
         },
         "playground": {
             "title": "Playground",

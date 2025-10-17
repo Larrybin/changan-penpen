@@ -1,77 +1,73 @@
-<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Banana Generator – AI Photo Editor social preview</title>
+  <desc id="desc">Illustration of the Banana Generator AI photo editor with brand colors and key benefits.</desc>
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#1e293b;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#04070d" />
+      <stop offset="55%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#1f2937" />
     </linearGradient>
-    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+    <linearGradient id="banana" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffe066" />
+      <stop offset="100%" stop-color="#facc15" />
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-      <feMerge> 
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <linearGradient id="cta" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#facc15" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="rgba(0,0,0,0.35)" />
     </filter>
-  </defs>
-  
-  <!-- Background -->
-  <rect width="1200" height="600" fill="url(#bg)"/>
-  
-  <!-- Grid Pattern -->
-  <defs>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="1" opacity="0.3"/>
+    <pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#1f2937" opacity="0.35" />
     </pattern>
   </defs>
-  <rect width="1200" height="600" fill="url(#grid)"/>
-  
-  <!-- Main Title -->
-  <text x="600" y="140" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="bold" text-anchor="middle" fill="#f1f5f9">
-    Full-Stack Next.js + Cloudflare
-  </text>
-  
-  <!-- Subtitle -->
-  <text x="600" y="180" font-family="system-ui, -apple-system, sans-serif" font-size="22" text-anchor="middle" fill="#94a3b8">
-    Production-ready template with modern architecture
-  </text>
-  
-  <!-- Features Grid - Row 1 -->
-  <g transform="translate(80, 250)">
-    <text x="120" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">⚡ Server Actions</text>
-    <text x="280" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">☁️ CF Workers</text>
-    <text x="440" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">🗄️ D1 Database</text>
-    <text x="600" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">📦 R2 Storage</text>
-    <text x="760" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">🔐 Better Auth</text>
-    <text x="920" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">🚀 Auto Deploy</text>
+
+  <rect width="1200" height="630" fill="url(#bg-gradient)" />
+  <rect width="1200" height="630" fill="url(#dots)" opacity="0.6" />
+
+  <g transform="translate(120 110)" fill="#fefce8" font-family="'Inter', 'Segoe UI', sans-serif">
+    <text font-size="58" font-weight="700">Banana Generator</text>
+    <text y="70" font-size="28" fill="#fde68a">AI Photo Editor &amp; Image Generator</text>
   </g>
-  
-  <!-- Features Grid - Row 2 -->
-  <g transform="translate(180, 290)">
-    <text x="120" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">🛠️ Drizzle ORM</text>
-    <text x="280" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">🎨 TailwindCSS</text>
-    <text x="440" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">📘 TypeScript</text>
-    <text x="600" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#f1f5f9">⚛️ React 19</text>
+
+  <g transform="translate(120 220)" font-family="'Inter', 'Segoe UI', sans-serif" font-size="22" fill="#e5e7eb">
+    <text y="0">• Natural language edits and background replacement</text>
+    <text y="46">• Consistent characters across every AI render</text>
+    <text y="92">• Privacy-first workflows your clients trust</text>
   </g>
-  
-  <!-- Call to Action -->
-  <g transform="translate(400, 380)">
-    <rect x="0" y="0" width="400" height="80" rx="16" fill="url(#accent)" filter="url(#glow)"/>
-    <text x="200" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" text-anchor="middle" fill="#ffffff">Ready for Production</text>
-    <text x="200" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="16" text-anchor="middle" fill="#fed7aa">Edge computing • Type-safe • Scalable</text>
+
+  <g transform="translate(120 390)">
+    <rect width="420" height="140" rx="26" fill="url(#cta)" filter="url(#shadow)" />
+    <text x="40" y="60" font-family="'Inter', 'Segoe UI', sans-serif" font-size="28" font-weight="600" fill="#0b1120">
+      Launch the AI photo editor
+    </text>
+    <text x="40" y="100" font-family="'Inter', 'Segoe UI', sans-serif" font-size="20" fill="#0b1120">
+      Free, unlimited image edits in the browser
+    </text>
   </g>
-  
-  <!-- Decorative Elements -->
-  <circle cx="100" cy="100" r="3" fill="#f97316" opacity="0.6">
-    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
-  </circle>
-  <circle cx="1100" cy="500" r="4" fill="#06b6d4" opacity="0.5">
-    <animate attributeName="opacity" values="0.5;0.9;0.5" dur="3s" repeatCount="indefinite"/>
-  </circle>
-  <circle cx="1050" cy="150" r="2" fill="#c3f53c" opacity="0.7">
-    <animate attributeName="opacity" values="0.7;1;0.7" dur="2.5s" repeatCount="indefinite"/>
-  </circle>
+
+  <g transform="translate(750 150)">
+    <rect width="320" height="340" rx="34" fill="#0f172a" stroke="#facc15" stroke-width="2" filter="url(#shadow)" />
+    <g transform="translate(36 40)" font-family="'Inter', 'Segoe UI', sans-serif">
+      <rect width="248" height="180" rx="20" fill="#1f2937" />
+      <text x="24" y="64" font-size="20" fill="#facc15" font-weight="600">AI Edit Preview</text>
+      <text x="24" y="104" font-size="16" fill="#cbd5f5">Remove background</text>
+      <text x="24" y="132" font-size="16" fill="#94a3b8">Add cinematic lighting</text>
+      <text x="24" y="160" font-size="16" fill="#94a3b8">Sharpen product details</text>
+      <rect x="0" y="210" width="248" height="44" rx="12" fill="#111827" stroke="#fde68a" stroke-width="2" />
+      <text x="24" y="240" font-size="18" fill="#fde68a">Prompt: “add neon banana glow”</text>
+    </g>
+  </g>
+
+  <g transform="translate(980 420) rotate(-18)">
+    <path d="M0 100 C 40 -40 180 -40 220 100 C 200 150 120 210 60 190" fill="url(#banana)" stroke="#facc15" stroke-width="6" />
+    <path d="M12 92 C 60 20 170 20 206 96" fill="none" stroke="#fde047" stroke-width="10" stroke-linecap="round" />
+    <circle cx="210" cy="110" r="18" fill="#1f2937" />
+  </g>
+
+  <circle cx="160" cy="520" r="6" fill="#facc15" opacity="0.8" />
+  <circle cx="220" cy="560" r="4" fill="#f59e0b" opacity="0.7" />
+  <circle cx="1030" cy="120" r="6" fill="#facc15" opacity="0.6" />
+  <circle cx="1090" cy="90" r="3" fill="#fde68a" opacity="0.7" />
 </svg>

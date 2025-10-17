@@ -39,6 +39,11 @@ export default function MarketingLandingPage({
         question: string;
         answer: string;
     }>;
+    const trustItems = t.raw("trust.items") as Array<{
+        quote: string;
+        author: string;
+        role: string;
+    }>;
     const heroSupport = t.raw("hero.support") as Record<string, string>;
     const heroSupportValues = Object.values(heroSupport);
     const localeKey = (locale as AppLocale) ?? "en";
@@ -71,6 +76,40 @@ export default function MarketingLandingPage({
             },
         },
     };
+    const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqItems.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: {
+                "@type": "Answer",
+                text: item.answer,
+            },
+        })),
+    };
+    const organizationSchema = {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: resolvedSiteName,
+        url: appUrl,
+        logo: structuredDataImage,
+        sameAs: t.raw("trust.socialProfiles") as string[] | undefined,
+    };
+    const websiteSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: resolvedSiteName,
+        url: appUrl,
+        description: t("structuredData.description"),
+        inLanguage: locale,
+    };
+    const structuredDataPayload = [
+        structuredData,
+        faqSchema,
+        organizationSchema,
+        websiteSchema,
+    ];
     return (
         <div
             className="bg-background text-foreground"
@@ -180,6 +219,18 @@ export default function MarketingLandingPage({
                             </Card>
                         ))}
                     </div>
+                    <p className="mt-6 text-sm text-yellow-100/80">
+                        {t.rich("features.learnMore", {
+                            billingLink: (chunks) => (
+                                <Link
+                                    href="/billing"
+                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                >
+                                    {chunks}
+                                </Link>
+                            ),
+                        })}
+                    </p>
                 </section>
 
                 <section
@@ -230,6 +281,70 @@ export default function MarketingLandingPage({
                             </details>
                         ))}
                     </div>
+                    <p className="mt-6 text-sm text-yellow-100/80">
+                        {t.rich("faq.supportingCopy", {
+                            contactLink: (chunks) => (
+                                <Link
+                                    href="/contact"
+                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                >
+                                    {chunks}
+                                </Link>
+                            ),
+                            aboutLink: (chunks) => (
+                                <Link
+                                    href="/about"
+                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                >
+                                    {chunks}
+                                </Link>
+                            ),
+                        })}
+                    </p>
+                </section>
+
+                <section
+                    id="trust"
+                    className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
+                >
+                    <h2 className="text-subtitle font-bold text-center mb-4">
+                        {t("trust.title")}
+                    </h2>
+                    <p className="text-center text-yellow-200/80 max-w-2xl mx-auto mb-8">
+                        {t("trust.description")}
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {trustItems.map((item) => (
+                            <Card
+                                key={`${item.author}-${item.role}`}
+                                className="bg-black/40 border-yellow-400/20 h-full"
+                            >
+                                <CardContent className="p-5 flex flex-col gap-3">
+                                    <p className="text-yellow-50 text-sm leading-relaxed">
+                                        “{item.quote}”
+                                    </p>
+                                    <div className="text-xs text-yellow-200/70">
+                                        <p className="font-semibold">
+                                            {item.author}
+                                        </p>
+                                        <p>{item.role}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                    <p className="mt-8 text-sm text-yellow-100/80 text-center">
+                        {t.rich("trust.callout", {
+                            privacyLink: (chunks) => (
+                                <Link
+                                    href="/privacy"
+                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                >
+                                    {chunks}
+                                </Link>
+                            ),
+                        })}
+                    </p>
                 </section>
 
                 <section className="mx-auto w-full max-w-3xl px-4 py-14 text-center">
@@ -249,7 +364,7 @@ export default function MarketingLandingPage({
 
             <PublicFooter />
             <Script id="marketing-structured-data" type="application/ld+json">
-                {JSON.stringify(structuredData)}
+                {JSON.stringify(structuredDataPayload)}
             </Script>
         </div>
     );
