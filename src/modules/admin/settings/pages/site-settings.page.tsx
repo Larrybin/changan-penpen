@@ -122,9 +122,12 @@ export function SiteSettingsPage() {
             !siteSettingsQuery.data.sitemapEnabled &&
             !sitemapWarningShownRef.current
         ) {
-            toast("建议启用 XML Sitemap，以帮助搜索引擎更好地索引你的站点。", {
-                icon: "⚠️",
-            });
+            toast.message(
+                "建议启用 XML Sitemap，以帮助搜索引擎更好地索引你的站点。",
+                {
+                    icon: "⚠️",
+                },
+            );
             sitemapWarningShownRef.current = true;
         }
     }, [siteSettingsQuery.data]);
@@ -189,7 +192,7 @@ export function SiteSettingsPage() {
         }
 
         if (Object.keys(payload).length === 0) {
-            toast("未检测到任何更改");
+            toast.message("未检测到任何更改");
             return;
         }
 
@@ -216,7 +219,7 @@ export function SiteSettingsPage() {
                     enabledLanguages: [...next.enabledLanguages],
                 };
                 if (!next.sitemapEnabled && !sitemapWarningShownRef.current) {
-                    toast(
+                    toast.message(
                         "建议启用 XML Sitemap，以帮助搜索引擎更好地索引你的站点。",
                         { icon: "⚠️" },
                     );

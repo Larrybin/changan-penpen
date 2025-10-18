@@ -22,7 +22,12 @@ declare module "sonner" {
 
     export const Toaster: React.ComponentType<ToasterProps>;
 
-    export const toast: {
+    export type ToastInvoker = (
+        message: string,
+        options?: ToastOptions,
+    ) => unknown;
+
+    export type ToastAPI = ToastInvoker & {
         success(message: string, options?: ToastOptions): unknown;
         error(message: string, options?: ToastOptions): unknown;
         info(message: string, options?: ToastOptions): unknown;
@@ -32,7 +37,7 @@ declare module "sonner" {
             options?: ToastOptions,
         ): string | number | undefined;
         dismiss(id?: string | number): void;
-        message: (message: string, options?: ToastOptions) => unknown;
+        message: ToastInvoker;
         promise: <T>(
             promise: Promise<T>,
             options?: Record<string, ToastOptions>,
@@ -42,4 +47,6 @@ declare module "sonner" {
             options?: ToastOptions,
         ) => unknown;
     };
+
+    export const toast: ToastAPI;
 }

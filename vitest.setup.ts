@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { toHaveNoViolations } from "jest-axe";
 import type { ComponentProps, PropsWithChildren } from "react";
 import React from "react";
-import { afterEach, vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
 
 afterEach(() => {
     cleanup();

@@ -20,7 +20,7 @@ export const notificationProvider: NotificationProvider = {
                 toast.error(content, { id: toastId });
                 break;
             default:
-                toast(content, { id: toastId });
+                toast.message(content, { id: toastId });
                 break;
         }
     },
