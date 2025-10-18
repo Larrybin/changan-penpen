@@ -22,7 +22,6 @@
             "@/*": ["./src/*"],
             "@standard-schema/utils": ["./stubs/standard-schema-utils"],
             "@tanstack/react-table": ["./types/tanstack-react-table"],
-            "@next/bundle-analyzer": ["./types/next-bundle-analyzer"],
             "@radix-ui/react-dropdown-menu": ["./types/radix-dropdown-menu"],
             "sonner": ["./types/sonner"],
             "nuqs": ["./types/nuqs"],
