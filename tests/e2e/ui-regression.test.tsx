@@ -92,10 +92,16 @@ describe("UI regression flow", () => {
             within(dialog).getByRole("button", { name: /save changes/i }),
         );
 
-        const successToast = await screen.findByRole("status", {
-            name: /plan updated/i,
+        const toastRegion = await screen.findByRole("region", {
+            name: /notifications alt\+t/i,
         });
-        expect(successToast).toHaveTextContent(
+        expect(toastRegion).toHaveAttribute("aria-live", "polite");
+
+        const successToast = await within(toastRegion).findByText(
+            /plan updated/i,
+        );
+        expect(successToast).toBeVisible();
+        expect(toastRegion).toHaveTextContent(
             /customers will see the new pricing/i,
         );
 

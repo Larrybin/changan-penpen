@@ -40,34 +40,32 @@ function AccessibleFormExample() {
     });
 
     return (
-        <NextIntlClientProvider locale="en" messages={messages}>
-            <Form {...form}>
-                <form onSubmit={handleSubmit} noValidate>
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email address</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        type="email"
-                                        placeholder="you@example.com"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormDescription>
-                                    We use this to send account updates.
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+        <Form {...form}>
+            <form onSubmit={handleSubmit} noValidate>
+                <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email address</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                We use this to send account updates.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-                    <button type="submit">Submit</button>
-                </form>
-            </Form>
-        </NextIntlClientProvider>
+                <button type="submit">Submit</button>
+            </form>
+        </Form>
     );
 }
 
@@ -75,7 +73,11 @@ describe("Form", () => {
     it("associates descriptions and errors for screen readers", async () => {
         const user = userEvent.setup();
 
-        const { container } = render(<AccessibleFormExample />);
+        const { container } = render(
+            <NextIntlClientProvider locale="en" messages={messages}>
+                <AccessibleFormExample />
+            </NextIntlClientProvider>,
+        );
 
         const emailInput = screen.getByLabelText(/email address/i);
         const description = screen.getByText(/send account updates/i);
