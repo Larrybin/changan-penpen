@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/lib/toast";
 import { insertCategorySchema } from "@/modules/todos/schemas/category.schema";
 import { createCategory } from "../actions/create-category.action";
 

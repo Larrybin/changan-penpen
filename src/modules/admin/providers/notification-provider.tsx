@@ -1,7 +1,8 @@
 "use client";
 
-import { Toaster, toast } from "react-hot-toast";
+import { Toast } from "@/components/ui/toast";
 import type { NotificationProvider } from "@/lib/crud/types";
+import { toast } from "@/lib/toast";
 
 export const notificationProvider: NotificationProvider = {
     open: ({ message, description, type, key }) => {
@@ -19,7 +20,7 @@ export const notificationProvider: NotificationProvider = {
                 toast.error(content, { id: toastId });
                 break;
             default:
-                toast(content, { id: toastId });
+                toast.message(content, { id: toastId });
                 break;
         }
     },
@@ -29,5 +30,5 @@ export const notificationProvider: NotificationProvider = {
 };
 
 export function AdminToaster() {
-    return <Toaster position="top-right" />;
+    return <Toast />;
 }

@@ -4,9 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
-import { toast } from "react-hot-toast";
 import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
+import { toast } from "@/lib/toast";
 import {
     fetchAdminList,
     fetchAdminRecord,
