@@ -2,9 +2,41 @@
 
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
+
+const MOBILE_MEDIA_QUERY = "(max-width: 640px)";
+
+function useMediaQuery(query: string) {
+    const [matches, setMatches] = React.useState(false);
+
+    React.useEffect(() => {
+        if (typeof window === "undefined" || !window.matchMedia) {
+            return;
+        }
+
+        const mediaQueryList = window.matchMedia(query);
+
+        const updateMatch = () => {
+            setMatches(mediaQueryList.matches);
+        };
+
+        updateMatch();
+
+        if (typeof mediaQueryList.addEventListener === "function") {
+            mediaQueryList.addEventListener("change", updateMatch);
+            return () =>
+                mediaQueryList.removeEventListener("change", updateMatch);
+        }
+
+        mediaQueryList.addListener(updateMatch);
+
+        return () => mediaQueryList.removeListener(updateMatch);
+    }, [query]);
+
+    return matches;
+}
 
 function Select({
     ...props
@@ -50,31 +82,75 @@ function SelectTrigger({
     );
 }
 
+type SelectContentProps = React.ComponentProps<
+    typeof SelectPrimitive.Content
+> & {
+    /**
+     * Automatically switches to a bottom-sheet style layout when the viewport
+     * is narrow. Set to "popover" to always use the floating popper layout or
+     * "sheet" to always force the mobile-friendly variant.
+     */
+    mobileLayout?: "auto" | "popover" | "sheet";
+    /**
+     * Override the maximum height applied to the dropdown viewport. Accepts a
+     * CSS length value or number (treated as pixels).
+     */
+    mobileMaxHeight?: string | number;
+};
+
 function SelectContent({
     className,
     children,
     position = "popper",
+    mobileLayout = "auto",
+    mobileMaxHeight = "min(calc(100vh - 4rem), var(--radix-select-content-available-height))",
+    style,
     ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: SelectContentProps) {
+    const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+    const resolvedLayout =
+        mobileLayout === "auto"
+            ? isMobile
+                ? "sheet"
+                : "popover"
+            : mobileLayout;
+    const resolvedMaxHeight =
+        typeof mobileMaxHeight === "number"
+            ? `${mobileMaxHeight}px`
+            : mobileMaxHeight;
+
     return (
         <SelectPrimitive.Portal>
             <SelectPrimitive.Content
                 data-slot="select-content"
+                data-layout={resolvedLayout}
                 className={cn(
-                    "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md",
-                    position === "popper" &&
+                    "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-x-hidden overflow-y-auto rounded-[var(--token-radius-card)] border shadow-md duration-[var(--token-motion-duration-md)]",
+                    resolvedLayout === "popover" &&
+                        "relative z-[var(--z-dropdown)] min-w-[8rem] origin-[var(--radix-select-content-transform-origin)] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                    resolvedLayout === "popover" &&
+                        position === "popper" &&
                         "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+                    resolvedLayout === "sheet" &&
+                        "fixed inset-x-3 bottom-4 left-1/2 top-auto z-[var(--z-modal)] w-[calc(100%-1.5rem)] translate-x-[-50%] translate-y-0 origin-bottom bg-background shadow-lg data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2",
                     className,
                 )}
                 position={position}
+                style={{
+                    maxHeight: resolvedMaxHeight,
+                    ...(style ?? {}),
+                }}
                 {...props}
             >
                 <SelectScrollUpButton />
                 <SelectPrimitive.Viewport
+                    data-layout={resolvedLayout}
                     className={cn(
                         "p-1",
                         position === "popper" &&
+                            resolvedLayout === "popover" &&
                             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1",
+                        resolvedLayout === "sheet" && "w-full",
                     )}
                 >
                     {children}
