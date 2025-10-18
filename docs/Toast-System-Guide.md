@@ -154,14 +154,6 @@ Toast 使用 Tailwind CSS 类，支持主题变量：
    - `toast.custom()` - 自定义内容
    - 更丰富的配置选项
 
-### 待迁移的文件
-
-以下文件仍在使用 `react-hot-toast`，需要逐步迁移：
-
-- `src/modules/auth/components/__tests__/` (测试文件)
-- `src/modules/admin/providers/notification-provider.tsx`
-- `src/modules/todos/components/add-category.tsx`
-
 ## 性能优化
 
 1. **减少重渲染**: sonner 优化了内部状态管理
@@ -196,10 +188,9 @@ toast.success(message);
 
 ## 未来计划
 
-1. **完成剩余文件迁移**: 清理所有 react-hot-toast 引用
-2. **移除 react-hot-toast 依赖**: 减小包体积
-3. **添加更多通知类型**: 如进度通知、更新通知等
-4. **国际化支持**: 结合 next-intl 实现多语言通知
+1. **追踪新需求**: 评估是否需要更多通知类型（如进度通知、更新通知等）
+2. **国际化支持**: 结合 next-intl 实现多语言通知
+3. **文档演进**: 随依赖升级同步更新使用示例与最佳实践
 
 ---
 

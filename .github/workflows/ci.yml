@@ -28,10 +28,10 @@ env:
   PNPM_VERSION: '10'
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
   # Minimal starting thresholds; raise over time
-  COV_LINES: '3'
-  COV_STATEMENTS: '3'
-  COV_BRANCHES: '10'
-  COV_FUNCTIONS: '10'
+  COV_LINES: '6'
+  COV_STATEMENTS: '6'
+  COV_BRANCHES: '20'
+  COV_FUNCTIONS: '15'
 
 jobs:
   lint-docs:
@@ -115,7 +115,7 @@ jobs:
 
       - name: Test (Vitest with coverage — summary only)
         run: >-
-          pnpm exec vitest run --coverage
+          pnpm test --coverage --
           --coverage.reporter=lcov
           --coverage.reporter=json-summary
           --coverage.reporter=html
@@ -197,6 +197,22 @@ jobs:
               process.exit(1);
             }
           "
+
+  dependencies-ui-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - lint-docs
+      - typecheck
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dependencies')
+    steps:
+      - *checkout
+      - *setup-pnpm
+      - *setup-node
+      - *install
+
+      - name: UI regression & a11y smoke
+        run: pnpm run test:ui-regression
 
   build:
     runs-on: ubuntu-latest

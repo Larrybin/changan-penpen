@@ -22,6 +22,7 @@ import {
     ChevronsRight,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,7 @@ export function DataTable<TData, TValue>({
     excludeClickableColumns = ["actions"],
     className,
 }: DataTableProps<TData, TValue>) {
+    const t = useTranslations("DataTable");
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnVisibility, setColumnVisibility] =
         React.useState<VisibilityState>({});
@@ -138,7 +140,7 @@ export function DataTable<TData, TValue>({
         <div className={cn("space-y-4", className)}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">每页显示</p>
+                    <p className="text-sm font-medium">{t("pageSize.label")}</p>
                     <Select
                         value={`${pageSize}`}
                         onValueChange={(value) => {
@@ -162,13 +164,13 @@ export function DataTable<TData, TValue>({
                         </SelectContent>
                     </Select>
                     <span className="text-sm text-muted-foreground">
-                        {itemNamePlural}
+                        {t("pageSize.itemsLabel", { itemName: itemNamePlural })}
                     </span>
                 </div>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="ml-auto">
-                            列显示
+                            {t("columnVisibility.trigger")}
                             <ChevronDown className="ml-2 size-4" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -249,7 +251,7 @@ export function DataTable<TData, TValue>({
                                     colSpan={visibleColumns.length || 1}
                                     className="h-24 text-center text-sm text-muted-foreground"
                                 >
-                                    {emptyState ?? "暂无数据。"}
+                                    {emptyState ?? t("emptyState.default")}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -334,9 +336,15 @@ export function DataTable<TData, TValue>({
 
             <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    第 {pageIndex + 1} / {Math.max(pageCount, 1)} 页 · 共{" "}
-                    {totalCount}{" "}
-                    {totalCount === 1 ? itemNameSingular : itemNamePlural}
+                    {t("pagination.summary", {
+                        page: pageIndex + 1,
+                        totalPages: Math.max(pageCount, 1),
+                        totalCount,
+                        itemName:
+                            totalCount === 1
+                                ? itemNameSingular
+                                : itemNamePlural,
+                    })}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -347,7 +355,9 @@ export function DataTable<TData, TValue>({
                         onClick={() => onPageChange(0)}
                         disabled={pageIndex <= 0}
                     >
-                        <span className="sr-only">跳到第一页</span>
+                        <span className="sr-only">
+                            {t("pagination.goToFirst")}
+                        </span>
                         <ChevronsLeft className="size-4" />
                     </Button>
                     <Button
@@ -357,7 +367,9 @@ export function DataTable<TData, TValue>({
                         onClick={() => onPageChange(pageIndex - 1)}
                         disabled={pageIndex <= 0}
                     >
-                        <span className="sr-only">上一页</span>
+                        <span className="sr-only">
+                            {t("pagination.goToPrevious")}
+                        </span>
                         <ChevronLeft className="size-4" />
                     </Button>
                     <Button
@@ -367,7 +379,9 @@ export function DataTable<TData, TValue>({
                         onClick={() => onPageChange(pageIndex + 1)}
                         disabled={pageIndex >= pageCount - 1}
                     >
-                        <span className="sr-only">下一页</span>
+                        <span className="sr-only">
+                            {t("pagination.goToNext")}
+                        </span>
                         <ChevronRight className="size-4" />
                     </Button>
                     <Button
@@ -377,7 +391,9 @@ export function DataTable<TData, TValue>({
                         onClick={() => onPageChange(pageCount - 1)}
                         disabled={pageIndex >= pageCount - 1}
                     >
-                        <span className="sr-only">跳到最后一页</span>
+                        <span className="sr-only">
+                            {t("pagination.goToLast")}
+                        </span>
                         <ChevronsRight className="size-4" />
                     </Button>
                 </div>

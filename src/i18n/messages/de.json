@@ -85,6 +85,31 @@
             }
         }
     },
+    "DataTable": {
+        "pageSize": {
+            "label": "Elemente pro Seite",
+            "itemsLabel": "{itemName}"
+        },
+        "columnVisibility": {
+            "trigger": "Spalten"
+        },
+        "emptyState": {
+            "default": "Keine Daten verfügbar."
+        },
+        "pagination": {
+            "summary": "Seite {page} von {totalPages} · {totalCount} {itemName}",
+            "goToFirst": "Zur ersten Seite",
+            "goToPrevious": "Zur vorherigen Seite",
+            "goToNext": "Zur nächsten Seite",
+            "goToLast": "Zur letzten Seite"
+        }
+    },
+    "Forms": {
+        "submission": {
+            "success": "Formular erfolgreich gesendet",
+            "error": "Senden fehlgeschlagen"
+        }
+    },
     "Marketing": {
         "header": {
             "cta": "KI-Fotobearbeitung starten",

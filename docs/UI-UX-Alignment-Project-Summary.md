@@ -103,6 +103,7 @@
 - **代码格式化**: 使用 Biome 进行代码格式检查和修复
 - **类型检查**: TypeScript 类型安全验证
 - **功能测试**: 核心功能验证
+- **可访问性回归**: Dialog/Select/Toast/表单 级联测试（含 axe 审核与整合 e2e 场景）
 
 #### 4.2 文档更新
 创建了完整的文档体系：
@@ -111,6 +112,16 @@
 2. **Server Action 状态同步指南**: `docs/ServerAction-StateSync-Guide.md`
 3. **DataTable 优化指南（已归档）**: `docs/DataTable-Optimization-Guide.md`
 4. **设计系统文档**: `docs/design-system.md`
+
+#### 4.3 待补测试清单
+| 类型 | 场景 | 说明 |
+| --- | --- | --- |
+| 单测 | `src/modules/admin/services/*` 的报表、结算、积分、站点设置 service | 目前仅有 API 层 mock 测试，缺少对差异化数据分支（空态、异常、分页拼装）的断言，建议针对 `reports.service`、`billing.service`、`site-settings.service` 补充纯函数单测。 |
+| 单测 | `src/modules/admin/utils/pagination.ts` 等工具函数 | 仅存在最基础的 happy path 校验，尚未覆盖 cursor/空 filters 的处理逻辑，可结合 table 场景补齐。 |
+| 集成测试 | `app/api/v1/admin/**` REST 路由 | 需串接 `adminApiClient` 与 Radix 封装后的错误分支；建议使用 Vitest `app-router` handler 测试，覆盖授权失败、分页参数和 JSON schema 校验。 |
+| 集成测试 | `modules/creem/services`（billing/usage） | 由于 CI 缺少 `better-sqlite3`，当前用例被跳过，需为 Cloudflare D1 fallback or mock 创建可执行的 service 集成测试。 |
+| E2E | Admin 站点设置（`SiteSettingsPage`） | 现有测试仅覆盖 Todo 创建流，尚未验证站点设置 diff/回滚、暗色模式预览与 Sitemap 警告 toast，可使用 Playwright/轻量 Vitest DOM 组合实现冒烟。 |
+| E2E | 多语言切换与 DataTable 分页 | DataTable 目前有 i18n 字符串，但缺少真实翻页/筛选的端到端验证，建议在 `tests/e2e` 增加列表分页 + 文案切换的断言。 |
 
 ## 技术架构
 
@@ -200,6 +211,8 @@ return (
 );
 ```
 
+> ℹ️ DataTable 内部文案全部接入 `next-intl` 的 `DataTable` 命名空间。新增页面时请同步更新 `src/i18n/messages/*.json` 中对应的 `pageSize`、`columnVisibility`、`emptyState` 与 `pagination` 词条，并根据业务传入本地化后的 `itemNameSingular`/`itemNamePlural`。
+
 ### Form 组件使用
 ```tsx
 import { useZodForm, Form, FormInput, FormSubmit } from "@/components/form";
@@ -271,7 +284,6 @@ toast.error("操作失败");
 ### 2. 功能完善
 - ⚠️ Reports 页面需要迁移到 DataTable
 - ⚠️ 更多 Admin 表单需要迁移到新 Form 系统
-- ⚠️ react-hot-toast 完全移除
 
 ### 3. 测试覆盖
 - ⚠️ 组件集成测试

@@ -85,6 +85,31 @@
             }
         }
     },
+    "DataTable": {
+        "pageSize": {
+            "label": "Rows per page",
+            "itemsLabel": "{itemName}"
+        },
+        "columnVisibility": {
+            "trigger": "Columns"
+        },
+        "emptyState": {
+            "default": "No data available."
+        },
+        "pagination": {
+            "summary": "Page {page} of {totalPages} · {totalCount} {itemName}",
+            "goToFirst": "Go to first page",
+            "goToPrevious": "Go to previous page",
+            "goToNext": "Go to next page",
+            "goToLast": "Go to last page"
+        }
+    },
+    "Forms": {
+        "submission": {
+            "success": "Submission successful",
+            "error": "Submission failed"
+        }
+    },
     "Marketing": {
         "header": {
             "cta": "Launch the AI photo editor",

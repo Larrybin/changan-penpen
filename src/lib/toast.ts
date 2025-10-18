@@ -1,60 +1,21 @@
 /**
- * Toast 封装器 - 迁移辅助工具
+ * Toast 封装器 - 统一通知 API
  *
- * 提供与 react-hot-toast 兼容的 API，方便逐步迁移到 sonner
+ * 通过集中导出 `sonner` 的 `toast` 方法，让原先依赖
+ * `react-hot-toast` 的代码可以逐步迁移，同时保证调用方式保持一致。
  *
  * @example
  * ```tsx
- * // 原来的用法
- * import toast from "react-hot-toast";
- * toast.success("成功");
- * toast.error("错误");
- *
- * // 新的用法 (完全兼容)
  * import { toast } from "@/lib/toast";
+ *
  * toast.success("成功");
  * toast.error("错误");
- *
- * // 或者直接使用 sonner
- * import { toast } from "sonner";
- * toast.success("成功");
+ * toast("信息", { description: "更多内容" });
  * ```
  */
 
 import { toast as sonnerToast } from "sonner";
 
-type ToastOptions = Parameters<typeof sonnerToast.success>[1];
+export const toast = sonnerToast;
 
-// 创建与 react-hot-toast 兼容的 API
-export const toast = {
-    success: (message: string, options?: ToastOptions) => {
-        return sonnerToast.success(message, options);
-    },
-
-    error: (message: string, options?: ToastOptions) => {
-        return sonnerToast.error(message, options);
-    },
-
-    info: (message: string, options?: ToastOptions) => {
-        return sonnerToast.info(message, options);
-    },
-
-    warning: (message: string, options?: ToastOptions) => {
-        return sonnerToast.warning(message, options);
-    },
-
-    loading: (message: string, options?: ToastOptions) => {
-        return sonnerToast.loading(message, options);
-    },
-
-    dismiss: (id?: string | number) => {
-        return sonnerToast.dismiss(id);
-    },
-
-    // sonner 特有的方法
-    message: sonnerToast.message,
-    promise: sonnerToast.promise,
-    custom: sonnerToast.custom,
-};
-
-export default toast;
+export default sonnerToast;

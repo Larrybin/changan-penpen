@@ -23,7 +23,7 @@
 pnpm test                  # one‑off run
 pnpm test -- --watch       # watch mode
 pnpm test -- -u            # update snapshots (if any)
-pnpm test -- --coverage    # coverage (enabled in config where applicable)
+pnpm test --coverage       # coverage（CI 同步使用，产出 lcov/json-summary/html）
 ```
 
 ## 4) Test Layers
@@ -41,6 +41,8 @@ pnpm test -- --coverage    # coverage (enabled in config where applicable)
 - Auth: centralize fake sessions and contexts under `tests/fixtures/`
 - Cloudflare env: mock `@opennextjs/cloudflare` helpers when needed
 - Next APIs: mock `next/navigation` (`redirect`) and `next/headers` (`cookies`) where needed
+- MSW: 组件/集成测试可通过 `msw` + `setupServer` 截获 `/api/v1/admin/**` 请求，返回 `HttpResponse.json(...)`；常见配套辅助函数见 `src/test-utils/render-with-query-client.tsx`。
+- Polyfills: `vitest.setup.ts` 已内置 `matchMedia` 与 `ResizeObserver` stub，便于 Radix Select/Dialog 等在 jsdom 下运行。
 
 ## 6) Coverage
 Coverage is configured in `vitest.config.ts`.
@@ -81,6 +83,7 @@ Notes:
 - Coverage output: text summary in console, full HTML under `coverage/`.
 - We commit `coverage/coverage-summary.json` only (see `.gitignore`), not the full HTML output.
 - If using `better-sqlite3` fixtures locally, remember `pnpm rebuild better-sqlite3` to compile native bindings.
+- 新增的 Admin Todo & Catalog 组件测试示例位于 `src/modules/admin/**/__tests__/`，结合 React Testing Library + `@tanstack/react-query` 客户端包裹（`renderWithQueryClient`）以及 `msw` handler，可作为编写列表/表单集成测试的参考。
 
 ## 7) Roadmap
 - Now: examples exist for auth UI and core service utilities.

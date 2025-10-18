@@ -14,6 +14,32 @@ jobs:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
+      - name: Ensure Dependabot PR checklist
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = context.payload.pull_request?.number;
+            if (!pull_number) {
+              core.info('No pull request number detected; skipping checklist update.');
+              return;
+            }
+
+            const checklist = `## Maintainer QA Checklist\n- [ ] \`pnpm lint && pnpm build\`\n- [ ] \`pnpm run test:ui-regression\`\n- [ ] Manual smoke of Radix wrappers (Select/Dialog/Form/Toast) with screenshots or clips when behavior or styling shifts\n- [ ] Notable API or styling changes captured in \`docs/dependency-upgrade-log.md\`\n`;
+
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
+            const body = pr.body ?? '';
+            if (body.includes('Maintainer QA Checklist')) {
+              core.info('Dependabot PR already contains the checklist.');
+              return;
+            }
+
+            const nextBody = body.trim().length > 0 ? `${body.trim()}\n\n${checklist}` : checklist;
+            await github.rest.pulls.update({ owner, repo, pull_number, body: nextBody });
+            core.info('Checklist appended to Dependabot PR body.');
+
       - name: Fetch Dependabot metadata
         id: meta
         uses: dependabot/fetch-metadata@08eff52bf64351f401fb50d4972fa95b9f2c2d1b

@@ -21,6 +21,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import {
     type FieldValues,
@@ -102,6 +103,7 @@ export function useZodForm<
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const t = useTranslations("Forms");
 
     // zodResolver preserves the schema's input/output types, but the helper's
     // overloads do not accept our narrowed schema constraint. Coerce once so
@@ -139,9 +141,13 @@ export function useZodForm<
                 }
             })(event);
 
-            setSuccess("提交成功");
+            setSuccess(t("submission.success"));
         } catch (err) {
-            const message = err instanceof Error ? err.message : "提交失败";
+            const fallbackMessage = t("submission.error");
+            const message =
+                err instanceof Error && err.message
+                    ? err.message
+                    : fallbackMessage;
             setError(message);
         } finally {
             setIsSubmitting(false);

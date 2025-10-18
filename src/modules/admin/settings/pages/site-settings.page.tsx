@@ -2,13 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useId, useRef, useState } from "react";
-import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { adminQueryKeys } from "@/lib/query/keys";
+import { toast } from "@/lib/toast";
 import { adminApiClient } from "@/modules/admin/api/client";
 
 const SETTINGS_SKELETON_SECTION_KEYS = Array.from(

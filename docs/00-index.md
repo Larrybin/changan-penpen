@@ -41,8 +41,9 @@
 
 ## Maintenance
 1. [docs-maintenance.md](docs-maintenance.md) — Entry points, badges, validation tooling
-2. Code Owners: see `.github/CODEOWNERS`
-3. Ops checklist: tracked in `docs-maintenance.md`
+2. [dependency-upgrade-log.md](dependency-upgrade-log.md) — Record manual validation for dependency bumps
+3. Code Owners: see `.github/CODEOWNERS`
+4. Ops checklist: tracked in `docs-maintenance.md`
 
 ---
 

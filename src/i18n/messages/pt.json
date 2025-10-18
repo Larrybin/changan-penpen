@@ -85,6 +85,31 @@
             }
         }
     },
+    "DataTable": {
+        "pageSize": {
+            "label": "Itens por página",
+            "itemsLabel": "{itemName}"
+        },
+        "columnVisibility": {
+            "trigger": "Colunas"
+        },
+        "emptyState": {
+            "default": "Nenhum dado disponível."
+        },
+        "pagination": {
+            "summary": "Página {page} de {totalPages} · {totalCount} {itemName}",
+            "goToFirst": "Ir para a primeira página",
+            "goToPrevious": "Ir para a página anterior",
+            "goToNext": "Ir para a próxima página",
+            "goToLast": "Ir para a última página"
+        }
+    },
+    "Forms": {
+        "submission": {
+            "success": "Envio concluído",
+            "error": "Falha no envio"
+        }
+    },
     "Marketing": {
         "header": {
             "cta": "Iniciar editor de fotos com IA",

@@ -41,3 +41,11 @@ Thank you for your interest in the project! Please follow these steps to keep co
 ## 8) Reviews
 - Be kind, specific, and actionable. Suggest improvements with examples.
 - Maintainers may request splitting large PRs into smaller ones.
+
+## 9) Dependency Upgrade Checklist
+- Trigger manual verification when Dependabot or humans update key front-end packages (`@radix-ui/*`, `tailwindcss`, `lucide-react`, etc.).
+- Run `pnpm lint && pnpm build` locally (or attach CI logs) before merging to ensure generated CSS and component bundles compile cleanly.
+- Execute `pnpm run test:ui-regression` to cover the shared Radix wrappers (Select/Dialog/Toast) plus the form accessibility harness.
+- Manually smoke Radix-driven surfaces—Select keyboard loop, Dialog open/close, form validation/submit, Toast stacking—and capture screenshots or short clips when behavior or styling shifts.
+- Capture the client bundle diff with `pnpm run analyze:bundle` (attach the `.next/analyze` output or screenshots) when key UI/runtime packages change.
+- Record notable API or styling differences in `docs/dependency-upgrade-log.md` (see template) so future upgrades know what to re-check.

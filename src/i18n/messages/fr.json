@@ -85,6 +85,31 @@
             }
         }
     },
+    "DataTable": {
+        "pageSize": {
+            "label": "Éléments par page",
+            "itemsLabel": "{itemName}"
+        },
+        "columnVisibility": {
+            "trigger": "Colonnes"
+        },
+        "emptyState": {
+            "default": "Aucune donnée disponible."
+        },
+        "pagination": {
+            "summary": "Page {page} sur {totalPages} · {totalCount} {itemName}",
+            "goToFirst": "Aller à la première page",
+            "goToPrevious": "Aller à la page précédente",
+            "goToNext": "Aller à la page suivante",
+            "goToLast": "Aller à la dernière page"
+        }
+    },
+    "Forms": {
+        "submission": {
+            "success": "Envoi réussi",
+            "error": "Échec de l'envoi"
+        }
+    },
     "Marketing": {
         "header": {
             "cta": "Lancer l'éditeur photo IA",

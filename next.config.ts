@@ -1,8 +1,13 @@
 import path from "node:path";
+import createBundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+const withBundleAnalyzer = createBundleAnalyzer({
+    enabled: process.env.ANALYZE === "true",
+    openAnalyzer: false,
+});
 
 const nextConfig: NextConfig = {
     webpack: (config) => {
@@ -20,6 +25,8 @@ const nextConfig: NextConfig = {
     },
 };
 
+const configWithPlugins = withBundleAnalyzer(withNextIntl(nextConfig));
+
 // Only run during `next dev`, not during `next build`
 if (
     process.argv.includes("dev") &&
@@ -32,4 +39,4 @@ if (
     );
 }
 
-export default withNextIntl(nextConfig);
+export default configWithPlugins;

@@ -7,9 +7,9 @@ import {
     QueryClientProvider,
 } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "react-hot-toast";
 import type { ApiErrorDetails as ApiClientErrorDetails } from "@/lib/api-client";
 import { ApiError } from "@/lib/http-error";
+import { toast } from "@/lib/toast";
 
 function extractRetryAfter(details: unknown) {
     const record = details as ApiClientErrorDetails | undefined;
