@@ -47,6 +47,28 @@ We will migrate Admin/User dashboard pages onto these components during Stage 1.
 4. **Responsive**
    - Grid layouts adopt `md:grid-cols-2/3` patterns; avoid hard-coded pixel values.
 
+### Form controls
+
+- **Checkbox** – `src/components/ui/checkbox.tsx`
+  - Built on `@radix-ui/react-checkbox`; default size `16px` with `rounded-[4px]` corners and the shared focus-ring tokens. Keep labels wired via `FormField`/`FormItem` so `aria-describedby` works out of the box.
+  - Visual states follow the token palette: checked state fills with `bg-primary`, invalid state uses the destructive ring helpers, and disabled state applies `opacity-50`.
+  - When placing multiple checkboxes inline, wrap them with `flex gap-[var(--token-spacing-3)]` to preserve breathing room and align indicator + label baselines.
+- **Select** – `src/components/ui/select.tsx`
+  - The popover switches to a mobile-friendly bottom sheet automatically below the `640px` breakpoint. You can override via the new `mobileLayout` prop (`"auto" | "popover" | "sheet"`) if a screen needs a specific presentation.
+  - Long option lists are capped by default using `mobileMaxHeight`; adjust per use case (e.g. `mobileMaxHeight={320}`) while keeping scrollable overflow for accessibility.
+  - Reuse `SelectTrigger` with existing button variants when a chevron is not desired: pass `asChild` from the consumer and slot your own trigger component.
+- **DropdownMenu types** – upstream `@radix-ui/react-dropdown-menu` already ships type definitions, so the legacy shim under `types/` has been removed. If the Radix API changes, prefer updating the package instead of maintaining a local declaration.
+- **RadioGroup** – `src/components/ui/radio-group.tsx`
+  - Now powered by `@radix-ui/react-radio-group` and styled with spacing tokens. `RadioGroupItem` accepts a `label` prop or child content, ensuring consistent indicator sizing and focus rings in both horizontal and vertical layouts.
+- **Switch** – `src/components/ui/switch.tsx`
+  - Wraps `@radix-ui/react-switch` with token-driven track/thumb sizing. Supports theming via CSS variables (`--switch-track-height/width`) while preserving focus rings and disabled state parity with the rest of the form controls.
+- **NavigationMenu** – `src/components/ui/navigation-menu.tsx`
+  - Provides a marketing-style mega menu using `NavigationMenuTrigger`, `NavigationMenuContent`, and a token-styled `NavigationMenuViewport`. Leans on Radix motion states to animate between panels while keeping focus management intact.
+  - Pair `NavigationMenuLink` with `asChild` to slot existing buttons/links; use the exported `NavigationMenuIndicator` for the caret underline when the design calls for it.
+- **Menubar** – `src/components/ui/menubar.tsx`
+  - Covers application menu patterns (command bars, tool menus) with checkbox/radio helpers and shortcut slots. All menu surfaces reuse the shared popover tokens for borders, radius, and focus styling.
+  - Attach the menubar to toolbars or table actions when a persistent navigation pattern is needed; triggers share the same button radius and focus ring tokens so they blend with other controls.
+
 ## 4. Roadmap & Checklist
 
 - [ ] Stage 1 (Design System): port `PageHeader`, `DataTable`, grid spacing, skeleton loaders.

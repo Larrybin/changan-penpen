@@ -9,6 +9,7 @@ import { FormControl } from "./form";
 
 interface FormRadioProps extends React.ComponentProps<typeof RadioGroup> {
     error?: boolean;
+    children?: React.ReactNode;
 }
 
 export function FormRadio({ error, children, ...props }: FormRadioProps) {
