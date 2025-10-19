@@ -29,7 +29,7 @@ export type AdminTextFieldProps<TFieldValues extends FieldValues> =
     BaseFieldProps<TFieldValues> &
         Omit<
             InputHTMLAttributes<HTMLInputElement>,
-            "name" | "defaultValue" | "value"
+            "name" | "defaultValue" | "value" | "form"
         >;
 
 export function AdminTextField<TFieldValues extends FieldValues>({
@@ -68,7 +68,7 @@ export type AdminTextareaFieldProps<TFieldValues extends FieldValues> =
     BaseFieldProps<TFieldValues> &
         Omit<
             TextareaHTMLAttributes<HTMLTextAreaElement>,
-            "name" | "defaultValue" | "value"
+            "name" | "defaultValue" | "value" | "form"
         >;
 
 export function AdminTextareaField<TFieldValues extends FieldValues>({
@@ -112,5 +112,5 @@ export function AdminDateTimeField<TFieldValues extends FieldValues>({
     type = "datetime-local",
     ...props
 }: AdminDateTimeFieldProps<TFieldValues>) {
-    return <AdminTextField {...props} type={type} />;
+    return <AdminTextField<TFieldValues> {...props} type={type} />;
 }

@@ -1,4 +1,5 @@
-import { eq } from "drizzle-orm";
+import { eq, type SQL } from "drizzle-orm";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import { contentPages, coupons, getDb, products } from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
 
@@ -28,7 +29,7 @@ interface CrudConfig<TInput, TTable extends CatalogTable> {
     ) => Partial<InferInsert<TTable>>;
     audit: AuditConfig;
     list?: {
-        defaultOrderBy?: (table: TTable) => unknown[];
+        defaultOrderBy?: (table: TTable) => Array<SQL | AnySQLiteColumn>;
     };
 }
 
