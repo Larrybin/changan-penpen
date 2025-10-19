@@ -17,9 +17,5 @@
         "tests/**/*.ts",
         "tests/**/*.tsx"
     ],
-    "exclude": [
-        "node_modules",
-        "coverage",
-        "dist"
-    ]
+    "exclude": ["node_modules", "coverage", "dist"]
 }

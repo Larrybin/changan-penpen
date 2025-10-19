@@ -28,9 +28,9 @@ describe("POST /api/v1/creem/create-checkout", () => {
     it("returns checkout URL when upstream succeeds", async () => {
         getAuthInstanceMock.mockResolvedValue({
             api: {
-                getSession: vi
-                    .fn()
-                    .mockResolvedValue({ user: { id: "user-1", email: "buyer@example.com" } }),
+                getSession: vi.fn().mockResolvedValue({
+                    user: { id: "user-1", email: "buyer@example.com" },
+                }),
             },
         });
         getCloudflareContextMock.mockResolvedValue({
@@ -44,14 +44,17 @@ describe("POST /api/v1/creem/create-checkout", () => {
         });
         applyRateLimitMock.mockResolvedValue({ ok: true });
 
-        const fetchMock = vi.fn(async () =>
-            new Response(
-                JSON.stringify({ checkout_url: "https://creem.example/pay" }),
-                {
-                    status: 200,
-                    headers: { "Content-Type": "application/json" },
-                },
-            ),
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(
+                    JSON.stringify({
+                        checkout_url: "https://creem.example/pay",
+                    }),
+                    {
+                        status: 200,
+                        headers: { "Content-Type": "application/json" },
+                    },
+                ),
         );
         vi.stubGlobal("fetch", fetchMock);
 
@@ -64,7 +67,10 @@ describe("POST /api/v1/creem/create-checkout", () => {
                     "content-type": "application/json",
                     origin: "https://app.example",
                 },
-                body: JSON.stringify({ tierId: "tier-6-credits", productType: "credits" }),
+                body: JSON.stringify({
+                    tierId: "tier-6-credits",
+                    productType: "credits",
+                }),
             },
         );
 
@@ -89,9 +95,9 @@ describe("POST /api/v1/creem/create-checkout", () => {
     it("fails with SERVICE_UNAVAILABLE when required env vars missing", async () => {
         getAuthInstanceMock.mockResolvedValue({
             api: {
-                getSession: vi
-                    .fn()
-                    .mockResolvedValue({ user: { id: "user-1", email: "buyer@example.com" } }),
+                getSession: vi.fn().mockResolvedValue({
+                    user: { id: "user-1", email: "buyer@example.com" },
+                }),
             },
         });
         getCloudflareContextMock.mockResolvedValue({
@@ -125,9 +131,9 @@ describe("POST /api/v1/creem/create-checkout", () => {
     it("maps upstream 400 errors into ApiError payload", async () => {
         getAuthInstanceMock.mockResolvedValue({
             api: {
-                getSession: vi
-                    .fn()
-                    .mockResolvedValue({ user: { id: "user-1", email: "buyer@example.com" } }),
+                getSession: vi.fn().mockResolvedValue({
+                    user: { id: "user-1", email: "buyer@example.com" },
+                }),
             },
         });
         getCloudflareContextMock.mockResolvedValue({
@@ -141,11 +147,12 @@ describe("POST /api/v1/creem/create-checkout", () => {
         });
         applyRateLimitMock.mockResolvedValue({ ok: true });
 
-        const fetchMock = vi.fn(async () =>
-            new Response("bad request", {
-                status: 400,
-                headers: { "Content-Type": "text/plain" },
-            }),
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("bad request", {
+                    status: 400,
+                    headers: { "Content-Type": "text/plain" },
+                }),
         );
         vi.stubGlobal("fetch", fetchMock);
 
@@ -158,7 +165,10 @@ describe("POST /api/v1/creem/create-checkout", () => {
                     "content-type": "application/json",
                     origin: "https://app.example",
                 },
-                body: JSON.stringify({ tierId: "tier-pro", productType: "subscription" }),
+                body: JSON.stringify({
+                    tierId: "tier-pro",
+                    productType: "subscription",
+                }),
             },
         );
 

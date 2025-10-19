@@ -35,14 +35,17 @@ describe("GET /api/v1/creem/customer-portal", () => {
             },
         });
 
-        const fetchMock = vi.fn(async () =>
-            new Response(
-                JSON.stringify({ portal_url: "https://creem.example/portal" }),
-                {
-                    status: 200,
-                    headers: { "Content-Type": "application/json" },
-                },
-            ),
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(
+                    JSON.stringify({
+                        portal_url: "https://creem.example/portal",
+                    }),
+                    {
+                        status: 200,
+                        headers: { "Content-Type": "application/json" },
+                    },
+                ),
         );
         vi.stubGlobal("fetch", fetchMock);
 
@@ -70,7 +73,10 @@ describe("GET /api/v1/creem/customer-portal", () => {
 
     it("propagates guard response when no customer mapping is found", async () => {
         const notFoundResponse = new Response(
-            JSON.stringify({ success: false, error: { code: "CREEM_CUSTOMER_NOT_FOUND" } }),
+            JSON.stringify({
+                success: false,
+                error: { code: "CREEM_CUSTOMER_NOT_FOUND" },
+            }),
             { status: 404, headers: { "Content-Type": "application/json" } },
         );
         requireSessionUserMock.mockResolvedValue("user-1");
@@ -95,11 +101,12 @@ describe("GET /api/v1/creem/customer-portal", () => {
             },
         });
 
-        const fetchMock = vi.fn(async () =>
-            new Response("Service unavailable", {
-                status: 503,
-                headers: { "Content-Type": "text/plain" },
-            }),
+        const fetchMock = vi.fn(
+            async () =>
+                new Response("Service unavailable", {
+                    status: 503,
+                    headers: { "Content-Type": "text/plain" },
+                }),
         );
         vi.stubGlobal("fetch", fetchMock);
 

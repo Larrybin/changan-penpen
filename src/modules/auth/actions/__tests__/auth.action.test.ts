@@ -13,9 +13,9 @@ vi.mock("@/modules/auth/utils/auth-utils", () => ({
             signInEmail: signInEmailMock,
             signUpEmail: signUpEmailMock,
             signOut: signOutMock,
-            getSession: vi
-                .fn()
-                .mockResolvedValue({ user: { id: "user-1", email: "user@example.com" } }),
+            getSession: vi.fn().mockResolvedValue({
+                user: { id: "user-1", email: "user@example.com" },
+            }),
         },
     })),
 }));
@@ -55,7 +55,9 @@ describe("auth server actions", () => {
         });
 
         it("normalizes thrown errors into AuthResponse", async () => {
-            signInEmailMock.mockRejectedValueOnce(new Error("invalid credentials"));
+            signInEmailMock.mockRejectedValueOnce(
+                new Error("invalid credentials"),
+            );
 
             const result = await signIn({
                 email: "user@example.com",
