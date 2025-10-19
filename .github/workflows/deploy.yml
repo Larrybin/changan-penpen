@@ -413,8 +413,7 @@ jobs:
             if (section) {
               console.log(section);
             }
-          ")
-          )
+            ")
 
           if [ -n "${release_notes}" ]; then
             printf -v summary '%s\n\n#### 发布说明\n%s' "$summary" "$release_notes"
