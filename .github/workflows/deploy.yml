@@ -71,6 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
+    permissions:
+      contents: read
+      deployments: write
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
@@ -262,7 +265,7 @@ jobs:
             # Use parameter expansion to avoid unbound variable under set -u
             local value="${2-}"
             if [ -z "${value:-}" ]; then
-              echo "::warning::Skipping secret $key: not provided"
+              echo "::notice::Skipping secret $key: not provided"
               return 0
             fi
             printf '%s' "$value" | pnpm exec wrangler secret put "$key" --env production --name next-cf-app
@@ -425,8 +428,8 @@ jobs:
           printf 'summary_json=%s\n' "$(printf '%s' "$summary" | jq -Rs .)" >> "$GITHUB_OUTPUT"
 
       - name: 将部署审计写入环境注释
-        if: steps.deployment_audit.outputs.summary_json != ''
-        uses: actions/github-script@v7
+        if: github.ref == 'refs/heads/main' && steps.deployment_audit.outputs.summary_json != ''
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         env:
           SUMMARY_JSON: ${{ steps.deployment_audit.outputs.summary_json }}
           DEPLOYMENT_ID: ${{ github.deployment_id }}
