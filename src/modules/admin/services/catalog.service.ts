@@ -1,4 +1,5 @@
-import { eq } from "drizzle-orm";
+import { eq, type SQL } from "drizzle-orm";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import { contentPages, coupons, getDb, products } from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
 
@@ -27,6 +28,9 @@ interface CrudConfig<TInput, TTable extends CatalogTable> {
         timestamp: string,
     ) => Partial<InferInsert<TTable>>;
     audit: AuditConfig;
+    list?: {
+        defaultOrderBy?: (table: TTable) => Array<SQL | AnySQLiteColumn>;
+    };
 }
 
 function buildCrudService<TInput, TTable extends CatalogTable>({
@@ -34,6 +38,7 @@ function buildCrudService<TInput, TTable extends CatalogTable>({
     buildCreateValues,
     buildUpdateValues,
     audit,
+    list,
 }: CrudConfig<TInput, TTable>) {
     return {
         async create(input: TInput, adminEmail: string) {
@@ -85,23 +90,25 @@ function buildCrudService<TInput, TTable extends CatalogTable>({
                 targetId: `${id}`,
             });
         },
+        async listAll() {
+            const db = await getDb();
+            const orderByExpressions = list?.defaultOrderBy?.(table) ?? [];
+            const query = db.select().from(table);
+            const rows = await (orderByExpressions.length > 0
+                ? query.orderBy(...orderByExpressions)
+                : query);
+            return rows as InferSelect<TTable>[];
+        },
+        async getById(id: number) {
+            const db = await getDb();
+            const rows = await db
+                .select()
+                .from(table)
+                .where(eq(table.id, id))
+                .limit(1);
+            return (rows[0] ?? null) as InferSelect<TTable> | null;
+        },
     };
-}
-
-export async function listProducts() {
-    const db = await getDb();
-    const rows = await db.select().from(products).orderBy(products.createdAt);
-    return rows;
-}
-
-export async function getProductById(id: number) {
-    const db = await getDb();
-    const rows = await db
-        .select()
-        .from(products)
-        .where(eq(products.id, id))
-        .limit(1);
-    return rows[0] ?? null;
 }
 
 export interface ProductInput {
@@ -147,11 +154,16 @@ const productCrud = buildCrudService<ProductInput, typeof products>({
         update: "update_product",
         delete: "delete_product",
     },
+    list: {
+        defaultOrderBy: (table) => [table.createdAt],
+    },
 });
 
 export const createProduct = productCrud.create;
 export const updateProduct = productCrud.update;
 export const deleteProduct = productCrud.delete;
+export const listProducts = productCrud.listAll;
+export const getProductById = productCrud.getById;
 
 export interface CouponInput {
     code: string;
@@ -162,21 +174,6 @@ export interface CouponInput {
     startsAt?: string | null;
     endsAt?: string | null;
     status?: string;
-}
-
-export async function listCoupons() {
-    const db = await getDb();
-    return db.select().from(coupons).orderBy(coupons.createdAt);
-}
-
-export async function getCouponById(id: number) {
-    const db = await getDb();
-    const rows = await db
-        .select()
-        .from(coupons)
-        .where(eq(coupons.id, id))
-        .limit(1);
-    return rows[0] ?? null;
 }
 
 const normalizeCouponInput = (
@@ -215,11 +212,16 @@ const couponCrud = buildCrudService<CouponInput, typeof coupons>({
         update: "update_coupon",
         delete: "delete_coupon",
     },
+    list: {
+        defaultOrderBy: (table) => [table.createdAt],
+    },
 });
 
 export const createCoupon = couponCrud.create;
 export const updateCoupon = couponCrud.update;
 export const deleteCoupon = couponCrud.delete;
+export const listCoupons = couponCrud.listAll;
+export const getCouponById = couponCrud.getById;
 
 export interface ContentPageInput {
     title: string;
@@ -229,21 +231,6 @@ export interface ContentPageInput {
     status?: string;
     content?: string;
     publishedAt?: string | null;
-}
-
-export async function listContentPages() {
-    const db = await getDb();
-    return db.select().from(contentPages).orderBy(contentPages.createdAt);
-}
-
-export async function getContentPageById(id: number) {
-    const db = await getDb();
-    const rows = await db
-        .select()
-        .from(contentPages)
-        .where(eq(contentPages.id, id))
-        .limit(1);
-    return rows[0] ?? null;
 }
 
 const normalizeContentPageInput = (
@@ -278,9 +265,14 @@ const contentPageCrud = buildCrudService<ContentPageInput, typeof contentPages>(
             update: "update_content_page",
             delete: "delete_content_page",
         },
+        list: {
+            defaultOrderBy: (table) => [table.createdAt],
+        },
     },
 );
 
 export const createContentPage = contentPageCrud.create;
 export const updateContentPage = contentPageCrud.update;
 export const deleteContentPage = contentPageCrud.delete;
+export const listContentPages = contentPageCrud.listAll;
+export const getContentPageById = contentPageCrud.getById;

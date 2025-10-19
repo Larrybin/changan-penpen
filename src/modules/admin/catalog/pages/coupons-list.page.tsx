@@ -4,24 +4,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
 import {
     deleteAdminRecord,
     fetchAdminList,
 } from "@/modules/admin/api/resources";
+import {
+    AdminResourceTable,
+    type AdminResourceTableColumn,
+} from "@/modules/admin/components/admin-resource-table";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { CouponRecord } from "@/modules/admin/types/resource.types";
-
-const COUPON_LIST_SKELETON_ROW_KEYS = Array.from(
-    { length: 6 },
-    (_, index) => `coupon-list-row-${index}`,
-);
-const COUPON_LIST_SKELETON_CELL_KEYS = Array.from(
-    { length: 5 },
-    (_, index) => `coupon-list-cell-${index}`,
-);
 
 export function CouponsListPage() {
     const queryClient = useQueryClient();
@@ -41,6 +35,65 @@ export function CouponsListPage() {
     });
     const isLoading = listQuery.isLoading;
     const coupons = listQuery.data?.items ?? [];
+    const columns: AdminResourceTableColumn<CouponRecord>[] = [
+        {
+            id: "code",
+            header: "优惠码",
+            cellClassName: "font-medium",
+            render: (coupon) => coupon.code ?? "-",
+        },
+        {
+            id: "discount",
+            header: "折扣",
+            render: (coupon) =>
+                coupon.discountType === "percentage"
+                    ? `${coupon.discountValue ?? 0}%`
+                    : (coupon.discountValue ?? 0),
+        },
+        {
+            id: "limits",
+            header: "兑换限制",
+            render: (coupon) => (
+                <>
+                    {coupon.maxRedemptions ?? "无限"} / 已使用{" "}
+                    {coupon.redeemedCount ?? 0}
+                </>
+            ),
+        },
+        {
+            id: "status",
+            header: "状态",
+            cellClassName: "capitalize",
+            render: (coupon) => coupon.status ?? "-",
+        },
+        {
+            id: "actions",
+            header: "",
+            headerClassName: "w-0",
+            cellClassName: "text-right space-x-2",
+            render: (coupon) => (
+                <>
+                    <Button asChild size="sm" variant="ghost">
+                        <Link
+                            href={`${adminRoutes.catalog.coupons}/edit/${coupon.id}`}
+                        >
+                            编辑
+                        </Link>
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={deleteMutation.isPending}
+                        onClick={async () => {
+                            await deleteMutation.mutateAsync(coupon.id);
+                        }}
+                    >
+                        删除
+                    </Button>
+                </>
+            ),
+        },
+    ];
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -55,86 +108,13 @@ export function CouponsListPage() {
                     </Button>
                 }
             />
-            <div className="overflow-x-auto rounded-md border">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
-                        <tr>
-                            <th className="px-4 py-3">优惠码</th>
-                            <th className="px-4 py-3">折扣</th>
-                            <th className="px-4 py-3">兑换限制</th>
-                            <th className="px-4 py-3">状态</th>
-                            <th className="px-4 py-3" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {isLoading &&
-                            COUPON_LIST_SKELETON_ROW_KEYS.map((rowKey) => (
-                                <tr key={rowKey}>
-                                    {COUPON_LIST_SKELETON_CELL_KEYS.map(
-                                        (cellKey) => (
-                                            <td
-                                                key={`${rowKey}-${cellKey}`}
-                                                className="px-4 py-3"
-                                            >
-                                                <Skeleton className="h-5 w-full" />
-                                            </td>
-                                        ),
-                                    )}
-                                </tr>
-                            ))}
-                        {!isLoading && coupons.length === 0 && (
-                            <tr>
-                                <td
-                                    colSpan={5}
-                                    className="px-4 py-6 text-center text-muted-foreground"
-                                >
-                                    暂无优惠券。
-                                </td>
-                            </tr>
-                        )}
-                        {coupons.map((coupon) => (
-                            <tr key={coupon.id} className="border-t">
-                                <td className="px-4 py-3 font-medium">
-                                    {coupon.code ?? "-"}
-                                </td>
-                                <td className="px-4 py-3">
-                                    {coupon.discountType === "percentage"
-                                        ? `${coupon.discountValue ?? 0}%`
-                                        : (coupon.discountValue ?? 0)}
-                                </td>
-                                <td className="px-4 py-3">
-                                    {coupon.maxRedemptions ?? "无限"} / 已使用{" "}
-                                    {coupon.redeemedCount ?? 0}
-                                </td>
-                                <td className="px-4 py-3 capitalize">
-                                    {coupon.status ?? "-"}
-                                </td>
-                                <td className="px-4 py-3 text-right space-x-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link
-                                            href={`${adminRoutes.catalog.coupons}/edit/${coupon.id}`}
-                                        >
-                                            编辑
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        disabled={deleteMutation.isPending}
-                                        onClick={async () => {
-                                            await deleteMutation.mutateAsync(
-                                                coupon.id,
-                                            );
-                                        }}
-                                    >
-                                        删除
-                                    </Button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <AdminResourceTable
+                columns={columns}
+                items={coupons}
+                isLoading={isLoading}
+                emptyState="暂无优惠券。"
+                getRowKey={(coupon) => coupon.id}
+            />
         </div>
     );
 }
