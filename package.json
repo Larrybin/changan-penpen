@@ -140,6 +140,9 @@
         "overrides": {
             "@standard-schema/utils": "link:stubs/standard-schema-utils",
             "esbuild": "^0.25.10"
+        },
+        "patchedDependencies": {
+            "refractor@3.6.0": "patches/refractor@3.6.0.patch"
         }
     },
     "prepare": "husky"

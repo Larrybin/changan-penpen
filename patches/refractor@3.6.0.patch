@@ -1,0 +1,13 @@
+diff --git a/package.json b/package.json
+index 65433bb8805929d0835c5bc38d0e75e5d14687a6..cbd9a89fd0d97ba4655c50e6647885a9c76198ec 100644
+--- a/package.json
++++ b/package.json
+@@ -37,7 +37,7 @@
+   "dependencies": {
+     "hastscript": "^6.0.0",
+     "parse-entities": "^2.0.0",
+-    "prismjs": "~1.27.0"
++    "prismjs": "^1.27.0"
+   },
+   "devDependencies": {
+     "@babel/core": "^7.0.0",
