@@ -169,12 +169,12 @@ jobs:
           --coverage.reporter=text
 
       - name: Upload coverage artifact (HTML)
-        if: always() && matrix.node-version == '20'
+        if: always() && matrix.node-version == '20' && hashFiles('coverage/lcov.info') != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: coverage-html
           path: coverage
-          if-no-files-found: warn
+          if-no-files-found: ignore
 
       - name: Check coverage thresholds (JSON summary with fallback)
         if: always()

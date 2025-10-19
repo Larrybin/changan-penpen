@@ -10,7 +10,11 @@ runs:
         if pnpm install --frozen-lockfile; then
           exit 0
         fi
-        echo "::warning::Frozen install failed; attempting pnpm dedupe + reinstall"
+        if git diff --quiet -- pnpm-lock.yaml; then
+          echo "::notice::Transient install error; retrying with dedupe"
+        else
+          echo "::warning::Lockfile mismatch; attempting pnpm dedupe + reinstall"
+        fi
         pnpm dedupe || true
         pnpm install --no-frozen-lockfile
         # Prevent lockfile drift from causing unrelated CI diffs
