@@ -1,11 +1,11 @@
-import type { UseFormReturn } from "react-hook-form";
+import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { describe, expect, it } from "vitest";
 
 import { ApiError } from "@/lib/http-error";
 
 import { applyApiErrorToForm } from "../form-errors";
 
-function createFormStub<FormValues>() {
+function createFormStub<FormValues extends FieldValues>() {
     const errors: Record<string, unknown> = {};
     return {
         form: {

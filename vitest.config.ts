@@ -9,6 +9,10 @@ export default defineConfig({
         environment: "jsdom",
         setupFiles: "./vitest.setup.ts",
         globals: true,
+        typecheck: {
+            checker: "tsc",
+            tsconfig: path.resolve(__dirname, "./tsconfig.test.json"),
+        },
         coverage: {
             enabled: true,
             provider: "v8",
