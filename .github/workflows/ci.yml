@@ -27,11 +27,11 @@ env:
   NODE_VERSION: '20'
   PNPM_VERSION: '10'
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
-  # Minimal starting thresholds; raise over time
-  COV_LINES: '6'
-  COV_STATEMENTS: '6'
+  # Baseline coverage thresholds — keep documentation in sync when raising these
+  COV_LINES: '15'
+  COV_STATEMENTS: '15'
   COV_BRANCHES: '20'
-  COV_FUNCTIONS: '15'
+  COV_FUNCTIONS: '20'
 
 jobs:
   lint-docs:
@@ -94,6 +94,24 @@ jobs:
 
       - name: Type check (tsc)
         run: pnpm exec tsc --noEmit
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+    steps:
+      - *checkout
+      - *setup-pnpm
+      - *setup-node
+
+      - name: Secret scan (gitleaks)
+        run: pnpm dlx gitleaks@8.18.2 detect --source . --no-banner --redact
+
+      - name: Check for duplicate dependencies
+        run: pnpm dedupe --check
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
 
   unit-tests:
     runs-on: ubuntu-latest

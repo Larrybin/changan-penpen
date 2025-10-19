@@ -32,10 +32,10 @@ export default defineConfig({
                 "**/*.d.ts",
             ],
             thresholds: {
-                lines: 3,
-                statements: 3,
-                branches: 10,
-                functions: 10,
+                lines: 15,
+                statements: 15,
+                branches: 20,
+                functions: 20,
             },
         },
         alias: {

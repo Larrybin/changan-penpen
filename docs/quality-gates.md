@@ -16,8 +16,9 @@ Environment toggles:
 - `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows (default is skipped)
 
 ## CI checks
-- CI（`.github/workflows/ci.yml`）：单一 `build-and-test` Job，串行执行 pnpm 安装、i18n 规范化校验、Biome/TypeScript、Docs/Links 检查、Vitest 覆盖率（生成 `coverage-summary.json` 与 HTML artifact）、覆盖率阈值校验，以及最终的 Next.js 构建。
-  - 覆盖率阈值直接读取同一 Job 产出的 `coverage-summary.json`，必要时会从 `coverage-final.json` 回填，当前未触发额外的 SonarCloud 流程。
+- CI（`.github/workflows/ci.yml`）：默认拆分为 `lint-docs`、`typecheck`、`supply-chain`（仅 PR）、`unit-tests` 与 `build`。`lint-docs` Job 负责 i18n 规范化、Biome 及文档检查；`typecheck` Job 运行 `tsc --noEmit`；`unit-tests` Job 生成 Vitest 覆盖率产物并校验阈值，随后 `build` Job 执行 Next.js 构建。
+  - 覆盖率阈值直接读取同一 Job 产出的 `coverage-summary.json`，必要时会从 `coverage-final.json` 回填；当前基准线为 **lines/statements ≥ 15%**, **branches/functions ≥ 20%**，并保持文档与 `COV_*` 环境变量一致。
+  - `supply-chain` Job 针对 PR 执行 `pnpm dlx gitleaks detect`、`pnpm dedupe --check` 与 `pnpm audit --prod --audit-level high`，在进入测试前提前暴露秘密泄漏或依赖树异常。
 
 ## Common commands
 - `pnpm test` — run unit tests and generate coverage
