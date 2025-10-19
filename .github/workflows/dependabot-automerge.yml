@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ensure Dependabot PR checklist
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -47,7 +47,13 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto‑merge (squash) when safe
-        if: contains('version-update:semver-minor,version-update:semver-patch', steps.meta.outputs.update-type)
+        if: |
+          contains(steps.meta.outputs.update-type, 'version-update:semver-patch') ||
+          (
+            contains(steps.meta.outputs.update-type, 'version-update:semver-minor') &&
+            !contains(steps.meta.outputs.dependency-names, 'next') &&
+            !contains(steps.meta.outputs.dependency-names, 'wrangler')
+          )
         uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d
         with:
           merge-method: squash
