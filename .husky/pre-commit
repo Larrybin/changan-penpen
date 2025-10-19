@@ -39,4 +39,8 @@ $STAGED_DOCS
 EOF
 fi
 
+# TDD质量检查
+pnpm run test:tdd-check || exit 1
+
+# 类型检查
 pnpm exec tsc --noEmit || exit 1
