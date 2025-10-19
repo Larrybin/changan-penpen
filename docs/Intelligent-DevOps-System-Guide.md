@@ -827,19 +827,10 @@ class SmartQualitySession {
 }
 ```
 
-#### 2. 更新配置文件
+#### 2. 调整质量门禁
 
-```json
-// quality-gates.config.js
-{
-  "custom_check": {
-    "enabled": true,
-    "rules": {
-      "custom_rule": "error"
-    }
-  }
-}
-```
+- 更新 `docs/quality-gates.md` 中的检查说明，确保新的自定义检查出现在本地与 CI 的流程文档里。
+- 如需临时开关，可结合环境变量执行：`CUSTOM_CHECK=1 pnpm push` 或 `SKIP_CUSTOM_CHECK=1 pnpm push`。
 
 ### 集成新的MCP工具
 
@@ -946,20 +937,11 @@ getDefaultEnvironmentConfig(environment) {
 
 ### 配置参考
 
-#### 质量门禁配置
+#### 质量门禁流程
 
-```javascript
-// quality-gates.config.js
-{
-  "basic": {
-    "checks": {
-      "biome": { "enabled": true },
-      "typescript": { "enabled": true },
-      "tests": { "enabled": false }
-    }
-  }
-}
-```
+- 使用 `pnpm push` 触发本地全量检查（TypeScript、Vitest、覆盖率、文档、链接、Biome）。
+- CI 在 `smart-check` 阶段调用相同脚本，并根据分支策略追加构建/部署验证。
+- 若需调整规则，可修改 `docs/quality-gates.md` 或在命令前设置环境变量（如 `SKIP_DOCS_CHECK=1 pnpm push`）。
 
 #### 环境配置
 

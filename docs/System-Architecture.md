@@ -66,7 +66,7 @@ graph TD
 
 #### 配置管理
 - **环境变量**: ENABLE_MCP, STRICT_MODE, AUTO_COMMIT等
-- **配置文件**: quality-gates.config.js, 环境配置文件
+- **质量门禁流程**: 通过 `pnpm push` 本地自检与 CI 工作流共享的质量闸执行，详见 `docs/quality-gates.md`
 - **动态配置**: 运行时配置调整
 
 ### 2. MCP工具集成层
@@ -266,14 +266,11 @@ graph TD
 
 ## 🔧 配置和扩展
 
-### 质量门禁配置
-```javascript
-quality-gates.config.js
-├── basic (基础门禁)
-├── standard (标准门禁)
-├── strict (严格门禁)
-└── docs (文档门禁)
-```
+### 质量门禁流程
+
+- `pnpm push`：在开发者本地串行执行类型检查、单测（含覆盖率）、文档与链接校验以及 Biome 格式化。
+- CI `smart-check` 作业：拉取分支后复用相同的检查清单，并附加构建与部署前置验证。
+- 可通过环境变量（如 `SKIP_TESTS=1 pnpm push`）或 `docs/quality-gates.md` 中列出的开关临时调整门禁范围。
 
 ### 环境配置结构
 ```

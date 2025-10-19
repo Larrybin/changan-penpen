@@ -4,24 +4,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
 import {
     deleteAdminRecord,
     fetchAdminList,
 } from "@/modules/admin/api/resources";
+import {
+    AdminResourceTable,
+    type AdminResourceTableColumn,
+} from "@/modules/admin/components/admin-resource-table";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { ProductRecord } from "@/modules/admin/types/resource.types";
-
-const PRODUCT_LIST_SKELETON_ROW_KEYS = Array.from(
-    { length: 6 },
-    (_, index) => `product-list-row-${index}`,
-);
-const PRODUCT_LIST_SKELETON_CELL_KEYS = Array.from(
-    { length: 5 },
-    (_, index) => `product-list-cell-${index}`,
-);
 
 const formatCurrency = (
     amountCents?: number | null,
@@ -55,6 +49,58 @@ export function ProductsListPage() {
     });
     const isLoading = listQuery.isLoading;
     const products = listQuery.data?.items ?? [];
+    const columns: AdminResourceTableColumn<ProductRecord>[] = [
+        {
+            id: "name",
+            header: "名称",
+            cellClassName: "font-medium",
+            render: (product) => product.name ?? "-",
+        },
+        {
+            id: "slug",
+            header: "Slug",
+            render: (product) => product.slug ?? "-",
+        },
+        {
+            id: "price",
+            header: "价格",
+            render: (product) =>
+                formatCurrency(product.priceCents, product.currency),
+        },
+        {
+            id: "status",
+            header: "状态",
+            cellClassName: "capitalize",
+            render: (product) => product.status ?? "-",
+        },
+        {
+            id: "actions",
+            header: "",
+            headerClassName: "w-0",
+            cellClassName: "text-right space-x-2",
+            render: (product) => (
+                <>
+                    <Button asChild size="sm" variant="ghost">
+                        <Link
+                            href={`${adminRoutes.catalog.products}/edit/${product.id}`}
+                        >
+                            编辑
+                        </Link>
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={deleteMutation.isPending}
+                        onClick={async () => {
+                            await deleteMutation.mutateAsync(product.id);
+                        }}
+                    >
+                        删除
+                    </Button>
+                </>
+            ),
+        },
+    ];
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -69,86 +115,13 @@ export function ProductsListPage() {
                     </Button>
                 }
             />
-            <div className="overflow-x-auto rounded-md border">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
-                        <tr>
-                            <th className="px-4 py-3">名称</th>
-                            <th className="px-4 py-3">Slug</th>
-                            <th className="px-4 py-3">价格</th>
-                            <th className="px-4 py-3">状态</th>
-                            <th className="px-4 py-3" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {isLoading &&
-                            PRODUCT_LIST_SKELETON_ROW_KEYS.map((rowKey) => (
-                                <tr key={rowKey}>
-                                    {PRODUCT_LIST_SKELETON_CELL_KEYS.map(
-                                        (cellKey) => (
-                                            <td
-                                                key={`${rowKey}-${cellKey}`}
-                                                className="px-4 py-3"
-                                            >
-                                                <Skeleton className="h-5 w-full" />
-                                            </td>
-                                        ),
-                                    )}
-                                </tr>
-                            ))}
-                        {!isLoading && products.length === 0 && (
-                            <tr>
-                                <td
-                                    colSpan={5}
-                                    className="px-4 py-6 text-center text-muted-foreground"
-                                >
-                                    暂无商品，请先创建。
-                                </td>
-                            </tr>
-                        )}
-                        {products.map((product) => (
-                            <tr key={product.id} className="border-t">
-                                <td className="px-4 py-3 font-medium">
-                                    {product.name ?? "-"}
-                                </td>
-                                <td className="px-4 py-3">
-                                    {product.slug ?? "-"}
-                                </td>
-                                <td className="px-4 py-3">
-                                    {formatCurrency(
-                                        product.priceCents,
-                                        product.currency,
-                                    )}
-                                </td>
-                                <td className="px-4 py-3 capitalize">
-                                    {product.status ?? "-"}
-                                </td>
-                                <td className="px-4 py-3 text-right space-x-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link
-                                            href={`${adminRoutes.catalog.products}/edit/${product.id}`}
-                                        >
-                                            编辑
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        disabled={deleteMutation.isPending}
-                                        onClick={async () => {
-                                            await deleteMutation.mutateAsync(
-                                                product.id,
-                                            );
-                                        }}
-                                    >
-                                        删除
-                                    </Button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <AdminResourceTable
+                columns={columns}
+                items={products}
+                isLoading={isLoading}
+                emptyState="暂无商品，请先创建。"
+                getRowKey={(product) => product.id}
+            />
         </div>
     );
 }

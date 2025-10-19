@@ -225,22 +225,8 @@ Lines: 45% (threshold: 70%)
 
 #### 方案1: 调整覆盖率阈值
 
-```javascript
-// quality-gates.config.js
-{
-  "standard": {
-    "checks": {
-      "tests": {
-        "coverage": {
-          "thresholds": {
-            "lines": 50  // 降低阈值
-          }
-        }
-      }
-    }
-  }
-}
-```
+1. 更新 `vitest.config.ts` 中 `coverage.thresholds` 的数值，例如将 `lines` 下调至 `50`。
+2. 在 `docs/quality-gates.md` 标注新的阈值，方便团队同步期望。
 
 #### 方案2: 跳过覆盖率检查
 
