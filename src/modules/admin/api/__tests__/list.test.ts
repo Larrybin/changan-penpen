@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchAdminList } from "../list";
 
 const originalFetch = global.fetch;
-const fetchMock = vi.fn<Parameters<typeof fetch>, ReturnType<typeof fetch>>();
+const fetchMock = vi.fn<typeof fetch>();
 
 describe("fetchAdminList", () => {
     beforeEach(() => {

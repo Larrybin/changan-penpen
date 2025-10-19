@@ -1,0 +1,21 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "types": ["vitest/globals", "@testing-library/jest-dom"]
+    },
+    "include": [
+        "cloudflare-env.d.ts",
+        "next-env.d.ts",
+        "types/**/*.d.ts",
+        "vitest.config.ts",
+        "vitest.setup.ts",
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "src/**/__tests__/**/*.ts",
+        "src/**/__tests__/**/*.tsx",
+        "tests/**/*.ts",
+        "tests/**/*.tsx"
+    ],
+    "exclude": ["node_modules", "coverage", "dist"]
+}

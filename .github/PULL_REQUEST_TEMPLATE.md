@@ -1,5 +1,7 @@
 ## Summary
 
+> ℹ️ 请在提交前通读我们的 [贡献指南](../docs/contributing.md) 与 [代码风格规范](../docs/style-guide.md)，确保 PR 与团队约定保持一致。
+
 - What changed and why?
 - Screenshots/GIFs (for UI), logs for CI/deploy if relevant.
 

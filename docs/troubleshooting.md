@@ -7,7 +7,7 @@
 - Clear `.open-next` and rebuild: `rm -rf .open-next && pnpm deploy:cf`.
 
 ### Health check returns 503
-- Run `/api/v1/health?fast=1` to isolate external dependencies.
+- Run `/api/v1/health`（默认严格模式）验证整体依赖；若需忽略外部服务，可改用 `/api/v1/health?fast=1`。
 - Check D1 connectivity (see `docs/db-d1.md`) and R2 permissions.
 - Verify external endpoint (`CREEM_API_URL`) and API key.
 
