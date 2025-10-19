@@ -13,7 +13,12 @@ export type UsageRecordInput = {
     consumeCredits?: number; // 可选：同时扣减积分
 };
 
-export async function recordUsage(input: UsageRecordInput) {
+type Database = Awaited<ReturnType<typeof getDb>>;
+
+export async function recordUsage(
+    input: UsageRecordInput,
+    dbOverride?: Database,
+) {
     const feature = input.feature?.trim();
     const unit = input.unit?.trim();
 
@@ -29,7 +34,7 @@ export async function recordUsage(input: UsageRecordInput) {
         throw new Error("Usage amount must be a positive number");
     }
 
-    const db = await getDb();
+    const db = dbOverride ?? (await getDb());
     const now = new Date();
     const nowIso = now.toISOString();
     const date = nowIso.slice(0, 10); // YYYY-MM-DD
@@ -88,8 +93,9 @@ export async function getUsageDaily(
     userId: string,
     fromDateInclusive: string,
     toDateInclusive: string,
+    dbOverride?: Database,
 ) {
-    const db = await getDb();
+    const db = dbOverride ?? (await getDb());
     // 简化处理：直接查询区间的聚合表
     const rows = await db
         .select({

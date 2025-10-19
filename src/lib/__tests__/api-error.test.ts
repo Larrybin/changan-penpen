@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod/v4";
 import handleApiError from "../api-error";
 
+type ErrorPayload = {
+    success: boolean;
+    status: number;
+    error: Record<string, unknown>;
+    timestamp: string;
+    traceId: string;
+};
+
 describe("handleApiError", () => {
     it("formats validation errors with field metadata", async () => {
         const error = new z.ZodError([
@@ -14,7 +22,7 @@ describe("handleApiError", () => {
 
         const response = handleApiError(error);
         expect(response.status).toBe(400);
-        const payload = (await response.json()) as Record<string, unknown>;
+        const payload = (await response.json()) as ErrorPayload;
         expect(payload).toMatchObject({
             success: false,
             status: 400,
@@ -33,7 +41,7 @@ describe("handleApiError", () => {
     it("handles syntax errors with a default message", async () => {
         const response = handleApiError(new SyntaxError("Unexpected token"));
         expect(response.status).toBe(400);
-        const payload = await response.json();
+        const payload = (await response.json()) as ErrorPayload;
         expect(payload).toMatchObject({
             success: false,
             status: 400,
@@ -49,7 +57,7 @@ describe("handleApiError", () => {
     it("falls back to generic errors", async () => {
         const response = handleApiError(new Error("Boom"));
         expect(response.status).toBe(500);
-        const payload = await response.json();
+        const payload = (await response.json()) as ErrorPayload;
         expect(payload).toMatchObject({
             success: false,
             status: 500,
@@ -65,7 +73,7 @@ describe("handleApiError", () => {
     it("returns internal server error for unknown types", async () => {
         const response = handleApiError("something unexpected" as unknown);
         expect(response.status).toBe(500);
-        const payload = await response.json();
+        const payload = (await response.json()) as ErrorPayload;
         expect(payload).toMatchObject({
             success: false,
             status: 500,

@@ -39,7 +39,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 
 ### Production Deploy
 - Push to `main` triggers Deploy workflow by default
-- Steps: build → migrate → health checks (`/api/v1/health?fast=1`) → release
+- Steps: build → migrate → health checks (`/api/v1/health`, 自动重试) → release
 - On failure, the pipeline rolls back and notifies. See `docs/deployment/cloudflare-workers.md`.
 
 ## Configuration Management

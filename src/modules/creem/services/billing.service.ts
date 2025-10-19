@@ -11,11 +11,14 @@ import {
     subscriptions,
 } from "@/modules/creem/schemas/billing.schema";
 
+type Database = Awaited<ReturnType<typeof getDb>>;
+
 export async function createOrUpdateCustomer(
     creemCustomer: CreemCustomer,
     userId: string,
+    dbOverride?: Database,
 ) {
-    const db = await getDb();
+    const db = dbOverride ?? (await getDb());
     const now = new Date().toISOString();
 
     const baseValues = {
@@ -85,8 +88,9 @@ export async function createOrUpdateCustomer(
 export async function createOrUpdateSubscription(
     creemSubscription: CreemSubscription,
     customerId: number,
+    dbOverride?: Database,
 ) {
-    const db = await getDb();
+    const db = dbOverride ?? (await getDb());
     const existing = await db
         .select()
         .from(subscriptions)
@@ -138,8 +142,9 @@ export async function addCreditsToCustomer(
     credits: number,
     creemOrderId?: string,
     description?: string,
+    dbOverride?: Database,
 ) {
-    const db = await getDb();
+    const db = dbOverride ?? (await getDb());
     if (creemOrderId) {
         const exists = await db
             .select({ id: creditsHistory.id })
@@ -195,8 +200,11 @@ export async function addCreditsToCustomer(
     return newCredits;
 }
 
-export async function getCustomerIdByUserId(userId: string) {
-    const db = await getDb();
+export async function getCustomerIdByUserId(
+    userId: string,
+    dbOverride?: Database,
+) {
+    const db = dbOverride ?? (await getDb());
     const rows = await db
         .select({ id: customers.id })
         .from(customers)

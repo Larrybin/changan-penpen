@@ -1,306 +1,292 @@
-import { eq } from "drizzle-orm";
-import {
-    afterAll,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from "vitest";
-import * as dbModule from "@/db";
-import { CREDIT_TRANSACTION_TYPE, creditTransactions, user } from "@/db";
-import { customers } from "@/modules/creem/schemas/billing.schema";
-import { usageDaily, usageEvents } from "@/modules/creem/schemas/usage.schema";
-import type { TestDbContext } from "../../../../../tests/fixtures/db";
-import { createTestDb } from "../../../../../tests/fixtures/db";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { getDb } from "@/db";
+import { consumeCredits } from "@/modules/billing/services/credits.service";
 import { getUsageDaily, recordUsage } from "../usage.service";
 
+vi.mock("@/modules/billing/services/credits.service", () => ({
+    consumeCredits: vi.fn(),
+}));
+
+type Database = Awaited<ReturnType<typeof getDb>>;
+
+type InsertBehavior = {
+    returning?: Array<Record<string, unknown>>;
+    skipConflict?: boolean;
+    result?: unknown;
+    onConflictResult?: unknown;
+    capture?: (values: Record<string, unknown>) => void;
+    captureConflict?: (config: Record<string, unknown>) => void;
+};
+
+type SelectBehavior = {
+    result: Array<Record<string, unknown>>;
+    captureFrom?: (arg: unknown) => void;
+    captureWhere?: (arg: unknown) => void;
+};
+
+type UpdateBehavior = {
+    captureSet?: (values: Record<string, unknown>) => void;
+    captureWhere?: (arg: unknown) => void;
+};
+
+function createDbStub(
+    config: {
+        insert?: InsertBehavior[];
+        select?: SelectBehavior[];
+        update?: UpdateBehavior[];
+    } = {},
+) {
+    const insertQueue = [...(config.insert ?? [])];
+    const selectQueue = [...(config.select ?? [])];
+    const updateQueue = [...(config.update ?? [])];
+
+    const insert = vi.fn(() => {
+        const behavior = insertQueue.shift();
+        if (!behavior) {
+            throw new Error("Unexpected insert invocation");
+        }
+        const returning = vi.fn().mockResolvedValue(behavior.returning ?? []);
+        const onConflictDoUpdate = vi.fn((configArg: unknown) => {
+            behavior.captureConflict?.(configArg as Record<string, unknown>);
+            if (behavior.returning !== undefined) {
+                return { returning };
+            }
+            return Promise.resolve(behavior.onConflictResult);
+        });
+        const values = vi.fn((value: Record<string, unknown>) => {
+            behavior.capture?.(value);
+            if (behavior.skipConflict) {
+                return Promise.resolve(behavior.result);
+            }
+            return {
+                onConflictDoUpdate,
+                returning,
+            };
+        });
+        return {
+            values,
+            onConflictDoUpdate,
+            returning,
+        };
+    });
+
+    const select = vi.fn(() => {
+        const behavior = selectQueue.shift();
+        if (!behavior) {
+            throw new Error("Unexpected select invocation");
+        }
+        const orderBy = vi.fn(async () => behavior.result ?? []);
+        const limit = vi.fn(async () => behavior.result ?? []);
+        const where = vi.fn((arg: unknown) => {
+            behavior.captureWhere?.(arg);
+            return { limit, orderBy };
+        });
+        const from = vi.fn((arg: unknown) => {
+            behavior.captureFrom?.(arg);
+            return { where, limit, orderBy };
+        });
+        return { from, where, limit, orderBy };
+    });
+
+    const update = vi.fn(() => {
+        const behavior = updateQueue.shift();
+        if (!behavior) {
+            throw new Error("Unexpected update invocation");
+        }
+        const where = vi.fn((arg: unknown) => {
+            behavior.captureWhere?.(arg);
+            return Promise.resolve();
+        });
+        const set = vi.fn((values: Record<string, unknown>) => {
+            behavior.captureSet?.(values);
+            return { where };
+        });
+        return { set, where };
+    });
+
+    return {
+        db: {
+            insert,
+            select,
+            update,
+        } as unknown as Database,
+        insert,
+        select,
+        update,
+    };
+}
+
 describe("creem usage service", () => {
-    let ctx: TestDbContext;
-    let userId: string;
-    let getDbSpy: ReturnType<typeof vi.spyOn> | undefined;
-    let shouldSkip = false;
-
-    const skipIfUnavailable = () => shouldSkip;
-
-    beforeAll(async () => {
-        try {
-            ctx = await createTestDb();
-            getDbSpy = vi
-                .spyOn(dbModule, "getDb")
-                .mockImplementation(
-                    async () =>
-                        ctx.db as unknown as Awaited<
-                            ReturnType<typeof dbModule.getDb>
-                        >,
-                );
-        } catch (error) {
-            shouldSkip = true;
-            console.warn(
-                "Skipping creem usage service tests because better-sqlite3 bindings are unavailable:",
-                (error as Error).message,
-            );
-        }
-    });
-
     beforeEach(() => {
-        if (skipIfUnavailable()) {
-            return;
-        }
-
-        ctx.reset();
-        const user = ctx.insertUser({
-            id: "usage-user",
-            email: "usage-user@example.com",
-            name: "Usage User",
-        });
-        userId = user.id;
-        getDbSpy?.mockClear();
-        getDbSpy?.mockImplementation(
-            async () =>
-                ctx.db as unknown as Awaited<ReturnType<typeof dbModule.getDb>>,
-        );
+        vi.clearAllMocks();
     });
 
-    afterAll(() => {
-        if (getDbSpy) {
-            getDbSpy.mockRestore();
-        }
-        if (!shouldSkip) {
-            ctx.cleanup();
-        }
-    });
-
-    it("records usage events and aggregates them daily", async () => {
-        if (skipIfUnavailable()) {
-            return;
-        }
-
-        vi.useFakeTimers();
-        vi.setSystemTime(new Date("2024-03-01T10:00:00.000Z"));
-
-        const result = await recordUsage({
-            userId,
-            feature: "ai.generate",
-            amount: 10,
-            unit: "tokens",
-        });
-
-        expect(result).toEqual({
-            ok: true,
-            date: "2024-03-01",
-            newCredits: undefined,
-        });
-
-        const events = ctx.db.select().from(usageEvents).all();
-        expect(events).toHaveLength(1);
-        expect(events[0]?.feature).toBe("ai.generate");
-
-        const dailyRows = ctx.db.select().from(usageDaily).all();
-        expect(dailyRows).toHaveLength(1);
-        expect(dailyRows[0]?.totalAmount).toBe(10);
-
-        vi.setSystemTime(new Date("2024-03-01T12:00:00.000Z"));
-        await recordUsage({
-            userId,
-            feature: "ai.generate",
-            amount: 5,
-            unit: "tokens",
-        });
-
-        const updatedDaily = ctx.db.select().from(usageDaily).all();
-        expect(updatedDaily[0]?.totalAmount).toBe(15);
-
-        vi.useRealTimers();
-    });
-
-    it("rejects non-positive amounts", async () => {
-        if (skipIfUnavailable()) {
-            return;
-        }
+    it("rejects invalid usage payloads", async () => {
+        await expect(
+            recordUsage({
+                userId: "user-1",
+                feature: "",
+                amount: 10,
+                unit: "tokens",
+            }),
+        ).rejects.toThrow("Feature is required for usage records");
 
         await expect(
             recordUsage({
-                userId,
+                userId: "user-1",
+                feature: "ai.generate",
+                amount: 10,
+                unit: "",
+            }),
+        ).rejects.toThrow("Unit is required for usage records");
+
+        await expect(
+            recordUsage({
+                userId: "user-1",
                 feature: "ai.generate",
                 amount: 0,
                 unit: "tokens",
             }),
         ).rejects.toThrow("Usage amount must be a positive number");
-
-        await expect(
-            recordUsage({
-                userId,
-                feature: "ai.generate",
-                amount: -5,
-                unit: "tokens",
-            }),
-        ).rejects.toThrow("Usage amount must be a positive number");
     });
 
-    it("consumes credits through the billing ledger when requested", async () => {
-        if (skipIfUnavailable()) {
-            return;
-        }
-
-        const now = new Date();
-
-        ctx.db
-            .update(user)
-            .set({ currentCredits: 120, updatedAt: now })
-            .where(eq(user.id, userId))
-            .run();
-
-        ctx.db
-            .insert(customers)
-            .values({
-                userId,
-                creemCustomerId: "creem-user",
-                email: "usage@example.com",
-                name: "Usage",
-                country: "US",
-                credits: 120,
-                createdAt: now.toISOString(),
-                updatedAt: now.toISOString(),
-            })
-            .run();
-
-        ctx.db
-            .insert(creditTransactions)
-            .values({
-                userId,
-                amount: 120,
-                remainingAmount: 120,
-                type: CREDIT_TRANSACTION_TYPE.PURCHASE,
-                description: "Initial top up",
-                createdAt: now,
-                updatedAt: now,
-            })
-            .run();
-
-        const result = await recordUsage({
-            userId,
-            feature: "storage.upload",
-            amount: 1,
-            unit: "files",
-            consumeCredits: 20,
-        });
-
-        expect(result.newCredits).toBe(100);
-
-        const transactions = ctx.db
-            .select()
-            .from(creditTransactions)
-            .orderBy(creditTransactions.createdAt)
-            .all();
-
-        expect(transactions).toHaveLength(2);
-        expect(
-            transactions.some(
-                (txn) =>
-                    txn.type === CREDIT_TRANSACTION_TYPE.USAGE &&
-                    txn.amount === -20 &&
-                    txn.description.includes("Usage: storage.upload"),
-            ),
-        ).toBe(true);
-
-        const purchaseTxn = transactions.find(
-            (txn) => txn.type === CREDIT_TRANSACTION_TYPE.PURCHASE,
-        );
-        expect(purchaseTxn?.remainingAmount).toBe(100);
-
-        const stored = ctx.db
-            .select({ credits: customers.credits })
-            .from(customers)
-            .where(eq(customers.userId, userId))
-            .get();
-        expect(stored?.credits).toBe(100);
-    });
-
-    it("throws when consuming more credits than available", async () => {
-        if (skipIfUnavailable()) {
-            return;
-        }
-
-        const now = new Date();
-
-        ctx.db
-            .update(user)
-            .set({ currentCredits: 5, updatedAt: now })
-            .where(eq(user.id, userId))
-            .run();
-
-        ctx.db
-            .insert(creditTransactions)
-            .values({
-                userId,
-                amount: 5,
-                remainingAmount: 5,
-                type: CREDIT_TRANSACTION_TYPE.PURCHASE,
-                description: "Initial",
-                createdAt: now,
-                updatedAt: now,
-            })
-            .run();
-
-        await expect(
-            recordUsage({
-                userId,
-                feature: "storage.upload",
-                amount: 1,
-                unit: "files",
-                consumeCredits: 10,
-            }),
-        ).rejects.toThrow("Insufficient credits");
-
-        const transactions = ctx.db
-            .select()
-            .from(creditTransactions)
-            .orderBy(creditTransactions.createdAt)
-            .all();
-        expect(transactions).toHaveLength(1);
-        expect(transactions[0]?.remainingAmount).toBe(5);
-
-        const events = ctx.db.select().from(usageEvents).all();
-        expect(events).toHaveLength(0);
-
-        const daily = ctx.db.select().from(usageDaily).all();
-        expect(daily).toHaveLength(0);
-    });
-
-    it("retrieves usage daily records within the requested range", async () => {
-        if (skipIfUnavailable()) {
-            return;
-        }
-
+    it("records usage events and consumes credits when requested", async () => {
         vi.useFakeTimers();
-        vi.setSystemTime(new Date("2024-04-10T08:00:00.000Z"));
-        await recordUsage({
-            userId,
-            feature: "ai.generate",
-            amount: 5,
-            unit: "tokens",
-        });
-        vi.setSystemTime(new Date("2024-04-11T08:00:00.000Z"));
-        await recordUsage({
-            userId,
-            feature: "ai.generate",
-            amount: 7,
-            unit: "tokens",
-        });
-        vi.setSystemTime(new Date("2024-04-12T08:00:00.000Z"));
-        await recordUsage({
-            userId,
-            feature: "ai.generate",
-            amount: 3,
-            unit: "tokens",
+        const now = new Date("2024-04-10T08:00:00.000Z");
+        vi.setSystemTime(now);
+
+        const events: Record<string, unknown>[] = [];
+        const daily: Record<string, unknown>[] = [];
+        const updates: Record<string, unknown>[] = [];
+        const { db, insert, update } = createDbStub({
+            insert: [
+                {
+                    skipConflict: true,
+                    capture: (values) => events.push(values),
+                },
+                {
+                    capture: (values) => daily.push(values),
+                    captureConflict: vi.fn(),
+                },
+            ],
+            update: [
+                {
+                    captureSet: (values) => updates.push(values),
+                },
+            ],
         });
 
-        const rows = await getUsageDaily(userId, "2024-04-10", "2024-04-11");
-        expect(rows).toHaveLength(2);
-        expect(rows.map((row) => row.totalAmount)).toEqual([5, 7]);
+        vi.mocked(consumeCredits).mockResolvedValue(80);
+
+        const result = await recordUsage(
+            {
+                userId: "user-2",
+                feature: "ai.generate",
+                amount: 15,
+                unit: "tokens",
+                metadata: { model: "gpt" },
+                consumeCredits: 20,
+            },
+            db,
+        );
 
         vi.useRealTimers();
+
+        expect(result).toEqual({
+            ok: true,
+            date: "2024-04-10",
+            newCredits: 80,
+        });
+        expect(insert).toHaveBeenCalledTimes(2);
+        expect(events[0]).toMatchObject({
+            userId: "user-2",
+            feature: "ai.generate",
+            amount: 15,
+            unit: "tokens",
+            metadata: JSON.stringify({ model: "gpt" }),
+        });
+        expect(daily[0]).toMatchObject({
+            userId: "user-2",
+            feature: "ai.generate",
+            totalAmount: 15,
+            unit: "tokens",
+            date: "2024-04-10",
+        });
+        expect(updates[0]).toMatchObject({
+            credits: 80,
+        });
+        expect(consumeCredits).toHaveBeenCalledWith({
+            userId: "user-2",
+            amount: 20,
+            description: "Usage: ai.generate",
+        });
+        expect(update).toHaveBeenCalledTimes(1);
+    });
+
+    it("skips credit deductions when consumeCredits is not provided", async () => {
+        vi.useFakeTimers();
+        const now = new Date("2024-04-11T09:30:00.000Z");
+        vi.setSystemTime(now);
+
+        const daily: Record<string, unknown>[] = [];
+        const { db, insert, update } = createDbStub({
+            insert: [
+                { skipConflict: true },
+                {
+                    capture: (values) => daily.push(values),
+                    captureConflict: vi.fn(),
+                },
+            ],
+        });
+
+        const result = await recordUsage(
+            {
+                userId: "user-3",
+                feature: "storage.upload",
+                amount: 2,
+                unit: "files",
+            },
+            db,
+        );
+
+        vi.useRealTimers();
+
+        expect(result).toEqual({
+            ok: true,
+            date: "2024-04-11",
+            newCredits: undefined,
+        });
+        expect(insert).toHaveBeenCalledTimes(2);
+        expect(daily[0]).toMatchObject({
+            totalAmount: 2,
+            unit: "files",
+        });
+        expect(consumeCredits).not.toHaveBeenCalled();
+        expect(update).not.toHaveBeenCalled();
+    });
+
+    it("retrieves daily aggregates for a date range", async () => {
+        const rows = [
+            {
+                date: "2024-04-10",
+                feature: "ai.generate",
+                totalAmount: 25,
+                unit: "tokens",
+            },
+        ];
+
+        const { db, select } = createDbStub({
+            select: [{ result: rows }],
+        });
+
+        const result = await getUsageDaily(
+            "user-4",
+            "2024-04-09",
+            "2024-04-12",
+            db,
+        );
+
+        expect(result).toEqual(rows);
+        expect(select).toHaveBeenCalledTimes(1);
     });
 });

@@ -22,6 +22,7 @@
         "connectionId": "larrybin",
         "projectKey": "Larrybin_changan-penpen"
     },
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "terminal.integrated.defaultProfile.windows": "PowerShell",
     "terminal.integrated.profiles.windows": {
         "PowerShell": {

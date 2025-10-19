@@ -6,10 +6,7 @@ import { ApiError } from "@/lib/http-error";
 const ORIGINAL_FETCH = global.fetch;
 
 describe("createApiClient", () => {
-    const fetchMock = vi.fn<
-        Parameters<typeof fetch>,
-        ReturnType<typeof fetch>
-    >();
+    const fetchMock = vi.fn<typeof fetch>();
 
     beforeEach(() => {
         fetchMock.mockReset();
