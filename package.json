@@ -144,7 +144,8 @@
     "pnpm": {
         "overrides": {
             "@standard-schema/utils": "link:stubs/standard-schema-utils",
-            "esbuild": "^0.25.10"
+            "esbuild": "^0.25.10",
+            "prismjs": "^1.30.0"
         },
         "patchedDependencies": {
             "refractor@3.6.0": "patches/refractor@3.6.0.patch"
