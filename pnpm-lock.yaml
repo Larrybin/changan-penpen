@@ -8,6 +8,11 @@ overrides:
   '@standard-schema/utils': link:stubs/standard-schema-utils
   esbuild: ^0.25.10
 
+patchedDependencies:
+  refractor@3.6.0:
+    hash: d6c042b06ea5a4e28a6341da744199f8a0861727ccb476cdbde0c8ae7e8d45b0
+    path: patches/refractor@3.6.0.patch
+
 importers:
 
   .:
@@ -5536,7 +5541,7 @@ packages:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
 
-  refractor@3.6.0(patch_hash=d6c042b06ea5a4e28a6341da744199f8a0861727ccb476cdbde0c8ae7e8d45b0):
+  refractor@3.6.0:
     resolution: {integrity: sha512-MY9W41IOWxxk31o+YvFCNyNzdkc9M20NoZK5vq6jkv4I/uh2zkWcfudj0Q1fovjUQJrNewS9NMzeTtqPf+n5EA==}
 
   regexp.prototype.flags@1.5.4:
@@ -12870,6 +12875,7 @@ snapshots:
       react-is: 18.3.1
 
   printable-characters@1.0.42: {}
+
   prismjs@1.30.0: {}
 
   process@0.11.10: {}
