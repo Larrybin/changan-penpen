@@ -105,7 +105,14 @@ jobs:
       - *setup-node
 
       - name: Secret scan (gitleaks)
-        run: pnpm dlx gitleaks@8.18.2 detect --source . --no-banner --redact
+        env:
+          GITLEAKS_VERSION: '8.18.2'
+        run: |
+          set -euo pipefail
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp
+          /tmp/gitleaks detect --source . --no-banner --redact
 
       - name: Check for duplicate dependencies
         run: pnpm dedupe --check

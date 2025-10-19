@@ -16,7 +16,7 @@ CI 会在 `unit-tests` Job 内生成 `coverage-summary.json` 并即时校验阈�
    - 与 `lint-docs` 共用安装步骤,并行触发 TypeScript `pnpm exec tsc --noEmit`.
 3. `supply-chain` (pull_request only)
    - Checkout + Node/pnpm 安装.
-   - 运行 `pnpm dlx gitleaks detect` 进行秘密扫描 (`--no-banner --redact`).
+   - 从 GitHub Releases 下载固定版本 (`8.18.2`) 的 gitleaks 压缩包并解压执行 `gitleaks detect --source . --no-banner --redact` 进行秘密扫描.
    - `pnpm dedupe --check` 确保锁文件最优.
    - `pnpm audit --prod --audit-level high` 报告高危生产依赖漏洞.
 4. `unit-tests`
