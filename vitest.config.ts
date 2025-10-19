@@ -9,6 +9,10 @@ export default defineConfig({
         environment: "jsdom",
         setupFiles: "./vitest.setup.ts",
         globals: true,
+        typecheck: {
+            checker: "tsc",
+            tsconfig: path.resolve(__dirname, "./tsconfig.test.json"),
+        },
         coverage: {
             enabled: true,
             provider: "v8",
@@ -32,10 +36,10 @@ export default defineConfig({
                 "**/*.d.ts",
             ],
             thresholds: {
-                lines: 3,
-                statements: 3,
-                branches: 10,
-                functions: 10,
+                lines: 15,
+                statements: 15,
+                branches: 20,
+                functions: 20,
             },
         },
         alias: {

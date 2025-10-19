@@ -296,14 +296,53 @@ jobs:
         env:
           HC_SECRET: ${{ secrets.PRODUCTION_HEALTHCHECK_URL }}
           HC_VAR: ${{ vars.PRODUCTION_HEALTHCHECK_URL }}
+          DEPLOY_HEALTH_RETRIES: ${{ vars.DEPLOY_HEALTH_RETRIES }}
+          DEPLOY_HEALTH_RETRY_DELAY: ${{ vars.DEPLOY_HEALTH_RETRY_DELAY }}
+          DEPLOY_HEALTH_TIMEOUT: ${{ vars.DEPLOY_HEALTH_TIMEOUT }}
         run: |
-          url="${HC_SECRET:-${HC_VAR:-${NEXT_PUBLIC_APP_URL%/}/api/health?fast=1}}"
+          set -euo pipefail
+
+          retries="${DEPLOY_HEALTH_RETRIES:-5}"
+          delay="${DEPLOY_HEALTH_RETRY_DELAY:-5}"
+          timeout="${DEPLOY_HEALTH_TIMEOUT:-25}"
+
+          url="${HC_SECRET:-${HC_VAR:-}}"
           if [ -z "$url" ]; then
-            echo "No production health check URL configured. Skipping check."
-            exit 0
+            if [ -z "${NEXT_PUBLIC_APP_URL:-}" ]; then
+              echo "No production health check URL configured and NEXT_PUBLIC_APP_URL unset."
+              exit 1
+            fi
+            url="${NEXT_PUBLIC_APP_URL%/}/api/v1/health"
           fi
-          echo "Checking production health at $url"
-          curl -fsS --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 5 --max-time 20 -w "\nHTTP %{http_code}\n" "$url"
+
+          echo "Checking production health at $url (strict mode)"
+          tmp="$(mktemp)"
+          attempt=1
+          status="000"
+          while [ "$attempt" -le "$retries" ]; do
+            echo "Attempt $attempt of $retries"
+            status=$(curl -sS --connect-timeout 5 --max-time "$timeout" \
+              -o "$tmp" -w "%{http_code}" "$url" || echo "000")
+            if [ "$status" = "200" ]; then
+              break
+            fi
+            cat "$tmp" || true
+            if [ "$attempt" -ge "$retries" ]; then
+              break
+            fi
+            sleep "$delay"
+            attempt=$((attempt + 1))
+          done
+
+          if [ "$status" != "200" ]; then
+            echo "::error::Production health check failed after $retries attempt(s) (last status: $status)"
+            cat "$tmp" || true
+            exit 1
+          fi
+
+          printf '### Production health check\n\n- URL: [%s](%s)\n- Attempts: %s\n- Status: %s\n' \
+            "$url" "$url" "$attempt/$retries" "$status" >> "$GITHUB_STEP_SUMMARY"
+          cat "$tmp"
 
       - name: 生成部署审计摘要
         id: deployment_audit

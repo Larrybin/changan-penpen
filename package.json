@@ -32,6 +32,7 @@
         "biome:check": "pnpm exec biome check .",
         "biome:apply": "pnpm exec biome check . --write --unsafe",
         "typecheck": "pnpm run cf-typegen && pnpm exec tsc --noEmit",
+        "typecheck:tests": "pnpm exec tsc --noEmit --project tsconfig.test.json",
         "check:all": "node scripts/check-all.mjs",
         "push": "node -e \"const fs=require('fs');const p='scripts/push-fix2.mjs';if(!fs.existsSync(p)){const t='scripts/push-fix2.template.mjs';if(fs.existsSync(t)){fs.cpSync(t,p);console.log('[push] restored local helper from template');}else{console.error('[push] missing local helper and template');process.exit(1);}}\" && node scripts/push-fix2.mjs",
         "test": "vitest run",

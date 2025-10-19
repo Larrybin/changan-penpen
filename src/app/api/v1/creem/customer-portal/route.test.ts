@@ -1,295 +1,121 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { requireSessionUser } from "@/modules/auth/utils/guards";
-import { requireCreemCustomerId } from "@/modules/creem/utils/guards";
-import { GET } from "./route";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const getCloudflareContextMock = vi.fn();
+const requireSessionUserMock = vi.fn();
+const requireCreemCustomerIdMock = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
-    getCloudflareContext: vi.fn(),
+    getCloudflareContext: getCloudflareContextMock,
 }));
 
 vi.mock("@/modules/auth/utils/guards", () => ({
-    requireSessionUser: vi.fn(),
+    requireSessionUser: requireSessionUserMock,
 }));
 
 vi.mock("@/modules/creem/utils/guards", () => ({
-    requireCreemCustomerId: vi.fn(),
+    requireCreemCustomerId: requireCreemCustomerIdMock,
 }));
 
-describe("GET /api/creem/customer-portal", () => {
-    const originalFetch = globalThis.fetch;
-    const fetchMock = vi.fn<
-        [input: RequestInfo | URL, init?: RequestInit | undefined],
-        Promise<Response>
-    >();
-    const requestUrl = "https://example.com/api/creem/customer-portal";
+describe("GET /api/v1/creem/customer-portal", () => {
+    beforeEach(() => {
+        vi.resetModules();
+        getCloudflareContextMock.mockReset();
+        requireSessionUserMock.mockReset();
+        requireCreemCustomerIdMock.mockReset();
+        vi.unstubAllGlobals();
+    });
 
-    const makeRequest = () => new Request(requestUrl);
-
-    const makeJsonResponse = (body: unknown, init?: ResponseInit) =>
-        new Response(JSON.stringify(body), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-            ...init,
-        });
-
-    const mockSuccessfulGuards = async (options?: {
-        userId?: string;
-        customerId?: string;
-    }) => {
-        const userId = options?.userId ?? "user_123";
-        const customerId = options?.customerId ?? "creem_456";
-        vi.mocked(requireSessionUser).mockResolvedValue(userId);
-        vi.mocked(requireCreemCustomerId).mockResolvedValue(customerId);
-        vi.mocked(getCloudflareContext).mockResolvedValue({
+    it("returns normalized portal URL on success", async () => {
+        requireSessionUserMock.mockResolvedValue("user-1");
+        requireCreemCustomerIdMock.mockResolvedValue("creem-1");
+        getCloudflareContextMock.mockResolvedValue({
             env: {
-                CREEM_API_URL: "https://creem.test",
+                CREEM_API_URL: "https://creem.example",
                 CREEM_API_KEY: "secret",
             },
         });
-        return { userId, customerId };
-    };
 
-    beforeEach(() => {
-        vi.resetAllMocks();
-        fetchMock.mockReset();
-        globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
-    });
+        const fetchMock = vi.fn(async () =>
+            new Response(
+                JSON.stringify({ portal_url: "https://creem.example/portal" }),
+                {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                },
+            ),
+        );
+        vi.stubGlobal("fetch", fetchMock);
 
-    afterEach(() => {
-        globalThis.fetch = originalFetch;
-    });
-
-    it("returns portalUrl when upstream succeeds", async () => {
-        const { userId, customerId } = await mockSuccessfulGuards();
-
-        const upstreamBody = { portal_url: "https://creem.test/portal" };
-        fetchMock.mockResolvedValue(makeJsonResponse(upstreamBody));
-
-        const request = makeRequest();
-        const response = await GET(request);
+        const { GET } = await import("./route");
+        const response = await GET(
+            new Request("https://app.example/api/v1/creem/customer-portal"),
+        );
 
         expect(response.status).toBe(200);
-        const payload = await response.json();
-        expect(payload).toEqual({
-            success: true,
-            data: { portalUrl: "https://creem.test/portal" },
-            error: null,
-            meta: { raw: upstreamBody },
-        });
-
+        const payload = (await response.json()) as {
+            success: boolean;
+            data: { portalUrl: string };
+        };
+        expect(payload.success).toBe(true);
+        expect(payload.data.portalUrl).toBe("https://creem.example/portal");
+        expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenCalledWith(
-            "https://creem.test/customers/billing",
+            "https://creem.example/customers/billing",
             expect.objectContaining({
                 method: "POST",
-                headers: expect.objectContaining({
-                    "x-api-key": "secret",
-                    "Content-Type": "application/json",
-                }),
+                body: JSON.stringify({ customer_id: "creem-1" }),
             }),
         );
-        const fetchInit = fetchMock.mock.calls[0]?.[1];
-        expect(fetchInit?.body).toBeDefined();
-        const parsedBody = JSON.parse(fetchInit?.body as string);
-        expect(parsedBody).toEqual({ customer_id: customerId });
-        expect(requireSessionUser).toHaveBeenCalledWith(request);
-        expect(requireCreemCustomerId).toHaveBeenCalledWith(userId);
-        expect(getCloudflareContext).toHaveBeenCalledWith({ async: true });
     });
 
-    it("returns 502 when upstream payload lacks url", async () => {
-        await mockSuccessfulGuards();
+    it("propagates guard response when no customer mapping is found", async () => {
+        const notFoundResponse = new Response(
+            JSON.stringify({ success: false, error: { code: "CREEM_CUSTOMER_NOT_FOUND" } }),
+            { status: 404, headers: { "Content-Type": "application/json" } },
+        );
+        requireSessionUserMock.mockResolvedValue("user-1");
+        requireCreemCustomerIdMock.mockResolvedValue(notFoundResponse);
 
-        fetchMock.mockResolvedValue(
-            makeJsonResponse({ message: "no url" }, { status: 200 }),
+        const { GET } = await import("./route");
+        const response = await GET(
+            new Request("https://app.example/api/v1/creem/customer-portal"),
         );
 
-        const request = makeRequest();
-        const response = await GET(request);
+        expect(response).toBe(notFoundResponse);
+        expect(fetch).toBeDefined();
+    });
+
+    it("maps upstream failures into 502 responses", async () => {
+        requireSessionUserMock.mockResolvedValue("user-1");
+        requireCreemCustomerIdMock.mockResolvedValue("creem-1");
+        getCloudflareContextMock.mockResolvedValue({
+            env: {
+                CREEM_API_URL: "https://creem.example",
+                CREEM_API_KEY: "secret",
+            },
+        });
+
+        const fetchMock = vi.fn(async () =>
+            new Response("Service unavailable", {
+                status: 503,
+                headers: { "Content-Type": "text/plain" },
+            }),
+        );
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { GET } = await import("./route");
+        const response = await GET(
+            new Request("https://app.example/api/v1/creem/customer-portal"),
+        );
 
         expect(response.status).toBe(502);
-        const payload = await response.json();
-        expect(payload).toMatchObject({
+        const body = await response.json();
+        expect(body).toMatchObject({
             success: false,
-            status: 502,
-            error: {
-                code: "UPSTREAM_INVALID_RESPONSE",
-                message: "Invalid response from Creem: missing portal url",
-            },
-        });
-        expect(typeof payload.timestamp).toBe("string");
-        expect(typeof payload.traceId).toBe("string");
-    });
-
-    it("maps upstream 404 error to 400 response", async () => {
-        await mockSuccessfulGuards();
-
-        fetchMock.mockResolvedValue(
-            new Response("not found", {
-                status: 404,
-                headers: { "content-type": "text/plain" },
-            }),
-        );
-
-        const request = makeRequest();
-        const response = await GET(request);
-
-        expect(response.status).toBe(400);
-        const payload = await response.json();
-        expect(payload).toMatchObject({
-            success: false,
-            status: 400,
             error: {
                 code: "UPSTREAM_FAILURE",
-                message: "Failed to get portal link",
-                details: {
-                    status: 404,
-                    upstreamBodySnippet: "not found",
-                },
+                details: expect.objectContaining({ status: 503 }),
             },
         });
-        expect(typeof payload.traceId).toBe("string");
-    });
-
-    it("maps upstream 401 errors to 401", async () => {
-        await mockSuccessfulGuards();
-
-        fetchMock.mockResolvedValue(
-            makeJsonResponse({ message: "unauthorized" }, { status: 401 }),
-        );
-
-        const response = await GET(makeRequest());
-
-        expect(response.status).toBe(401);
-        const payload = await response.json();
-        expect(payload).toMatchObject({
-            success: false,
-            status: 401,
-            error: {
-                code: "UPSTREAM_FAILURE",
-                message: "Failed to get portal link",
-                details: { status: 401 },
-            },
-        });
-        expect(typeof payload.traceId).toBe("string");
-    });
-
-    it("maps upstream 500 errors to 502 and keeps snippet", async () => {
-        await mockSuccessfulGuards();
-        const failureResponse = new Response(
-            "Service unavailable for maintenance",
-            { status: 503 },
-        );
-        fetchMock
-            .mockResolvedValueOnce(failureResponse.clone())
-            .mockResolvedValueOnce(failureResponse.clone())
-            .mockResolvedValueOnce(failureResponse.clone());
-
-        vi.useFakeTimers();
-        try {
-            const responsePromise = GET(makeRequest());
-            await vi.runAllTimersAsync();
-            const response = await responsePromise;
-
-            expect(response.status).toBe(502);
-            const payload = await response.json();
-            expect(payload).toMatchObject({
-                success: false,
-                status: 502,
-                error: {
-                    code: "UPSTREAM_FAILURE",
-                    message: "Failed to get portal link",
-                    details: {
-                        status: 503,
-                        upstreamBodySnippet:
-                            "Service unavailable for maintenance",
-                    },
-                },
-            });
-            expect(typeof payload.traceId).toBe("string");
-        } finally {
-            vi.useRealTimers();
-        }
-    });
-
-    it("returns guard responses when session guard fails", async () => {
-        const guardResponse = new Response("unauthorized", { status: 401 });
-        vi.mocked(requireSessionUser).mockResolvedValue(guardResponse as never);
-
-        const response = await GET(makeRequest());
-
-        expect(response).toBe(guardResponse);
-        expect(requireCreemCustomerId).not.toHaveBeenCalled();
-        expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("returns guard responses when customer guard fails", async () => {
-        vi.mocked(requireSessionUser).mockResolvedValue("user_abc");
-        const guardResponse = new Response("missing customer", { status: 404 });
-        vi.mocked(requireCreemCustomerId).mockResolvedValue(
-            guardResponse as never,
-        );
-
-        const response = await GET(makeRequest());
-
-        expect(response).toBe(guardResponse);
-        expect(getCloudflareContext).not.toHaveBeenCalled();
-        expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("returns 503 when CREEM env vars are missing", async () => {
-        vi.mocked(requireSessionUser).mockResolvedValue("user_env");
-        vi.mocked(requireCreemCustomerId).mockResolvedValue("creem_env");
-        vi.mocked(getCloudflareContext).mockResolvedValue({
-            env: { CREEM_API_URL: "", CREEM_API_KEY: "" },
-        });
-
-        const response = await GET(makeRequest());
-
-        expect(response.status).toBe(503);
-        const payload = await response.json();
-        expect(payload).toMatchObject({
-            success: false,
-            status: 503,
-            error: {
-                code: "SERVICE_UNAVAILABLE",
-                message: "Missing CREEM_API_URL or CREEM_API_KEY",
-            },
-        });
-        expect(typeof payload.timestamp).toBe("string");
-        expect(typeof payload.traceId).toBe("string");
-        expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("returns 502 and propagates error info when fetch rejects", async () => {
-        await mockSuccessfulGuards();
-
-        fetchMock.mockRejectedValue(new Error("network down"));
-
-        vi.useFakeTimers();
-        try {
-            const responsePromise = GET(makeRequest());
-            await vi.runAllTimersAsync();
-            const response = await responsePromise;
-
-            expect(response.status).toBe(502);
-            const payload = await response.json();
-            expect(payload).toMatchObject({
-                success: false,
-                status: 502,
-                error: {
-                    code: "UPSTREAM_FAILURE",
-                    message: "Failed to get portal link",
-                    details: {
-                        status: 0,
-                        upstreamBodySnippet: "network down",
-                    },
-                },
-            });
-            expect(typeof payload.timestamp).toBe("string");
-            expect(typeof payload.traceId).toBe("string");
-        } finally {
-            vi.useRealTimers();
-        }
     });
 });

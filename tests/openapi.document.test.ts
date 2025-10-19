@@ -33,8 +33,9 @@ describe("openapi document", () => {
 
     it("marks server action path as internal", () => {
         const internal = document.paths?.["/internal/actions/todos/create"]?.post;
-        const isInternal =
-            internal?.extensions?.["x-internal"] ?? (internal as Record<string, unknown>)?.["x-internal"];
-        expect(isInternal).toBe(true);
+        const asRecord = internal as Record<string, unknown> | undefined;
+        const fromExtensions = (asRecord?.extensions as Record<string, unknown> | undefined)?.["x-internal"];
+        const direct = asRecord?.["x-internal"];
+        expect(fromExtensions ?? direct).toBe(true);
     });
 });

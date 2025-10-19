@@ -24,7 +24,11 @@ pnpm test                  # one‑off run
 pnpm test -- --watch       # watch mode
 pnpm test -- -u            # update snapshots (if any)
 pnpm test --coverage       # coverage（CI 同步使用，产出 lcov/json-summary/html）
+pnpm run typecheck:tests   # TypeScript diagnostics for *.test.ts(x) via tsconfig.test.json
+vitest typecheck           # Alternate entry (uses the same tsconfig under the hood)
 ```
+
+> VS Code / Volta users：`tsconfig.test.json` 会被自动侦测；若需常驻诊断，可在 VS Code 启用 `typescript.tsserver.experimental.enableProjectDiagnostics`（仓库已默认开启）。
 
 ## 4) Test Layers
 | Type | Scope | Guidance |
@@ -51,7 +55,7 @@ Coverage is configured in `vitest.config.ts`.
 coverage: {
   enabled: true,
   provider: "v8",
-  reporter: ["text", "html", "json-summary"],
+  reporter: ["text", "html", "json", "json-summary", "lcov"],
   reportsDirectory: "coverage",
   all: true,
   include: [
@@ -71,10 +75,10 @@ coverage: {
     "**/*.d.ts",
   ],
   thresholds: {
-    lines: 3,
-    statements: 3,
-    branches: 10,
-    functions: 10,
+    lines: 15,
+    statements: 15,
+    branches: 20,
+    functions: 20,
   },
 }
 ```

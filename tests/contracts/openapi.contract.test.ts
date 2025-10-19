@@ -14,7 +14,7 @@ describe("openapi contracts", () => {
         if (!ref) return schema;
         const segments = ref.split("/");
         const name = segments[segments.length - 1];
-        return components[name];
+        return components[name] as SchemaObject | undefined;
     }
 
     it("describes summarize response envelope", () => {
