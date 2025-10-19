@@ -438,14 +438,38 @@ jobs:
               return;
             }
 
-            const deploymentId = process.env.DEPLOYMENT_ID;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            let deploymentId = process.env.DEPLOYMENT_ID;
             if (!deploymentId) {
-              core.warning('未能获取 deployment_id，无法写入环境注释。');
+              const { data: deploymentsBySha } = await github.rest.repos.listDeployments({
+                owner,
+                repo,
+                sha: context.sha,
+                environment: 'production',
+                per_page: 1,
+              });
+
+              deploymentId = deploymentsBySha?.[0]?.id ? String(deploymentsBySha[0].id) : '';
+
+              if (!deploymentId) {
+                const { data: deployments } = await github.rest.repos.listDeployments({
+                  owner,
+                  repo,
+                  environment: 'production',
+                  per_page: 1,
+                });
+
+                deploymentId = deployments?.[0]?.id ? String(deployments[0].id) : '';
+              }
+            }
+
+            if (!deploymentId) {
+              core.warning('未找到有效的 deployment_id，无法写入环境注释。');
               return;
             }
 
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
             const logUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
             const compact = summary.replace(/\s+/g, ' ').trim();
             const description = compact.length > 140 ? `${compact.slice(0, 137)}...` : compact;
