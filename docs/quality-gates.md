@@ -18,6 +18,7 @@ Environment toggles:
 
 ## CI checks
 - CI（`.github/workflows/ci.yml`）：默认拆分为 `lint-docs`、`typecheck`、`supply-chain`（仅 PR）、`unit-tests` 与 `build`。`lint-docs` Job 负责 i18n 规范化、Biome 及文档检查；`typecheck` Job 运行 `tsc --noEmit`（测试代码通过 `tsconfig.test.json` 单独类型检查）；`unit-tests` Job 生成 Vitest 覆盖率产物并校验阈值，随后 `build` Job 执行 Next.js 构建并触发 SonarCloud 扫描。
+  - `lint-docs`、`typecheck` 与 `unit-tests` 在 Node 20 与 Node 22 的矩阵环境中运行，pnpm 缓存会依据 Node 版本隔离，提前暴露跨版本兼容性问题。
   - 覆盖率阈值直接读取同一 Job 产出的 `coverage-summary.json`，必要时会从 `coverage-final.json` 回填；当前基准线为 **lines/statements ≥ 15%**, **branches/functions ≥ 20%**，并保持文档与 `COV_*` 环境变量一致。
   - `supply-chain` Job 针对 PR 从 GitHub Releases 下载固定版本的 gitleaks 并执行 `detect`，同时运行 `pnpm dedupe --check` 与 `pnpm audit --prod --audit-level high`，在进入测试前提前暴露秘密泄漏或依赖树异常。
   - `build.yml` 复用 CI 产出的 `coverage/lcov.info`，在固定版本 (`eb211723266fe8e83102bac7361f0a05c3ac1d1b`) 的 SonarCloud Action 中完成静态质量分析。
