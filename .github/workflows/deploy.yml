@@ -390,31 +390,31 @@ jobs:
             "${range}" \
             "${commits}"
 
-            release_notes=$(node <<'NODE'
-            const fs = require('fs');
-            const path = require('path');
-            const changelogPath = path.join(process.cwd(), 'CHANGELOG.md');
+          release_notes=$(node <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const changelogPath = path.join(process.cwd(), 'CHANGELOG.md');
 
-            if (!fs.existsSync(changelogPath)) {
-              process.exit(0);
-            }
+if (!fs.existsSync(changelogPath)) {
+  process.exit(0);
+}
 
-            const content = fs.readFileSync(changelogPath, 'utf8');
-            const lines = content.split(/\r?\n/);
-            const start = lines.findIndex((line) => line.startsWith('## '));
-            if (start === -1) {
-              process.exit(0);
-            }
-            let end = start + 1;
-            while (end < lines.length && !lines[end].startsWith('## ')) {
-              end += 1;
-            }
-            const section = lines.slice(start, end).join('\n').trim();
-            if (section) {
-              console.log(section);
-            }
-            NODE
-            )
+const content = fs.readFileSync(changelogPath, 'utf8');
+const lines = content.split(/\r?\n/);
+const start = lines.findIndex((line) => line.startsWith('## '));
+if (start === -1) {
+  process.exit(0);
+}
+let end = start + 1;
+while (end < lines.length && !lines[end].startsWith('## ')) {
+  end += 1;
+}
+const section = lines.slice(start, end).join('\n').trim();
+if (section) {
+  console.log(section);
+}
+NODE
+          )
 
           if [ -n "${release_notes}" ]; then
             printf -v summary '%s\n\n#### 发布说明\n%s' "$summary" "$release_notes"
