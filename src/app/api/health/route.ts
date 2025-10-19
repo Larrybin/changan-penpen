@@ -1,1 +1,1 @@
-export { runtime, GET } from "../v1/health/route";
+export { GET, runtime } from "../v1/health/route";

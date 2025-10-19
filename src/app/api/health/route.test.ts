@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import * as alias from "./route";
 import * as v1 from "../v1/health/route";
+import * as alias from "./route";
 
 describe("/api/health alias", () => {
     it("re-exports runtime", () => {
