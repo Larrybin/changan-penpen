@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Quality gate for raw `git push`: run `pnpm check:all` automatically unless
 # the caller already went through the pnpm push helper or explicitly bypasses.
 set -eu

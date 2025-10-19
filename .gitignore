@@ -75,5 +75,3 @@ cloudflare-workers-nextjs-saas-template-main/
 .claude/
 nul
 
-.gemini/
-gha-creds-*.json
