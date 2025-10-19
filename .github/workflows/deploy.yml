@@ -443,7 +443,7 @@ jobs:
 
             let deploymentId = process.env.DEPLOYMENT_ID;
             if (!deploymentId) {
-              const { data: deployments } = await github.rest.repos.listDeployments({
+              const { data: deploymentsBySha } = await github.rest.repos.listDeployments({
                 owner,
                 repo,
                 sha: context.sha,
@@ -451,7 +451,18 @@ jobs:
                 per_page: 1,
               });
 
-              deploymentId = deployments?.[0]?.id ? String(deployments[0].id) : '';
+              deploymentId = deploymentsBySha?.[0]?.id ? String(deploymentsBySha[0].id) : '';
+
+              if (!deploymentId) {
+                const { data: deployments } = await github.rest.repos.listDeployments({
+                  owner,
+                  repo,
+                  environment: 'production',
+                  per_page: 1,
+                });
+
+                deploymentId = deployments?.[0]?.id ? String(deployments[0].id) : '';
+              }
             }
 
             if (!deploymentId) {
