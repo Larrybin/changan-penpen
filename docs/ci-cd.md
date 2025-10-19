@@ -32,7 +32,7 @@
 - 仍建议保留文档自检（链接、约定）以保证文档质量
 
 ## 质量门（质量闸）
-- 本地质量闸详见：`docs/quality-gates.md`（`pnpm push`：类型检查、单测与覆盖率、文档与链接检查、Biome 最终检查、可选 Next 构建）
+- 本地质量闸详见：`docs/quality-gates.md`（推荐顺序：`pnpm cf-typegen`→`pnpm exec biome check . --write --unsafe`→`pnpm typecheck`→`pnpm run typecheck:tests`→`pnpm test --coverage`；文档校验：Windows 直接运行 `node scripts/lib/doc-consistency-checker.mjs`，POSIX 可用 `pnpm check:docs`；链接校验：`pnpm check:links`）
 - 部署工作流会复用 CI 质量门作为前置条件
 - 关键 UI 依赖升级后，请执行 `pnpm run analyze:bundle` 并记录 `.next/analyze` 的体积变化，防止客户端包意外膨胀
 

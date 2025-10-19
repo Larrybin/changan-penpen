@@ -74,3 +74,6 @@ cloudflare-workers-nextjs-saas-template-main/
 # Local agent tooling artifacts
 .claude/
 nul
+
+.gemini/
+gha-creds-*.json
