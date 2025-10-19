@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Format staged files and run typecheck before committing
 
 # Ensure pnpm exists (Windows/git-bash friendly)

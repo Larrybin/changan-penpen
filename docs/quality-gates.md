@@ -1,20 +1,18 @@
 # Local & CI Quality Gates
 
-## Local push self-check (`pnpm push`)
-Execution order:
+## Local self-check (manual)
+Recommended order:
 1. Cloudflare type generation (`pnpm cf-typegen`)
-2. Biome auto-fix (`biome check . --write --unsafe`)
-3. TypeScript type check (`tsc --noEmit`)
-4. Test type check (`tsconfig.test.json` via `pnpm run typecheck:tests`)
-5. Unit tests with coverage (Vitest)
-6. Docs consistency and link checks (`check:docs`, `check:links`)
-7. Final Biome check (read-only)
-8. Auto-generate commit message, rebase, push
+2. Biome auto-fix (`pnpm exec biome check . --write --unsafe`)
+3. TypeScript type check (`pnpm exec tsc --noEmit`)
+4. Test type check (`pnpm run typecheck:tests`)
+5. Unit tests with coverage (`pnpm test --coverage`)
+6. Docs consistency and link checks (Windows: `node scripts/lib/doc-consistency-checker.mjs`; POSIX shells: `pnpm check:docs`; links: `pnpm check:links`)
+7. Final Biome check (read-only) (`pnpm exec biome check .`)
 
-Environment toggles:
-- `SKIP_TESTS=1 pnpm push` — skip unit tests (emergency only; revert before merging)
-- `SKIP_DOCS_CHECK=1 pnpm push` — skip docs checks (emergency only)
-- `FORCE_NEXT_BUILD=1 pnpm push` — force Next.js build on Windows (default is skipped)
+Tips:
+- On Windows PowerShell, prefer running the doc checker directly via Node as shown above.
+- You may skip coverage locally for speed; CI enforces thresholds.
 
 ## CI checks
 - CI（`.github/workflows/ci.yml`）：默认拆分为 `lint-docs`、`typecheck`、`supply-chain`（仅 PR）、`unit-tests` 与 `build`。`lint-docs` Job 负责 i18n 规范化、Biome 及文档检查；`typecheck` Job 运行 `tsc --noEmit`（测试代码通过 `tsconfig.test.json` 单独类型检查）；`unit-tests` Job 生成 Vitest 覆盖率产物并校验阈值，随后 `build` Job 执行 Next.js 构建并触发 SonarCloud 扫描。
@@ -25,5 +23,4 @@ Environment toggles:
 
 ## Common commands
 - `pnpm test` — run unit tests and generate coverage
-- `pnpm push` — run the full local quality gate, then push (recommended)
-
+- `pnpm check:all` — run an aggregated local gate (docs/link checks still recommended separately)

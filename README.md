@@ -2,7 +2,7 @@
 
 # Full-Stack Next.js + Cloudflare Template
 
-[![CI](https://github.com/ifindev/fullstack-next-cloudflare/actions/workflows/ci.yml/badge.svg)](https://github.com/ifindev/fullstack-next-cloudflare/actions/workflows/ci.yml) [![Deploy](https://github.com/ifindev/fullstack-next-cloudflare/actions/workflows/deploy.yml/badge.svg)](https://github.com/ifindev/fullstack-next-cloudflare/actions/workflows/deploy.yml) ![Docs](https://img.shields.io/badge/docs-up_to_date-1E90FF)
+[![CI](https://github.com/Larrybin/changan-penpen/actions/workflows/ci.yml/badge.svg)](https://github.com/Larrybin/changan-penpen/actions/workflows/ci.yml) [![Deploy](https://github.com/Larrybin/changan-penpen/actions/workflows/deploy.yml/badge.svg)](https://github.com/Larrybin/changan-penpen/actions/workflows/deploy.yml) ![Docs](https://img.shields.io/badge/docs-up_to_date-1E90FF)
 
 Production-ready template for building full-stack applications on Next.js 15 + Cloudflare Workers. It includes D1, R2, Workers AI, authentication, CI/CD, automated health checks, and an opinionated architecture so teams can scale from MVP to enterprise with edge-first performance.
 
@@ -156,14 +156,14 @@ MIT © 2025 Muhammad Arifin
 #### Common Scripts Snapshot
 | Script | Command |
 | --- | --- |
-| `dev` | `next dev` |
-| `dev:cf` | `npx @opennextjs/cloudflare build && wrangler dev` |
-| `build` | `next build` |
-| `start` | `next start` |
+| `dev` | `pnpm exec next dev` |
+| `dev:cf` | `cross-env-shell "npx @opennextjs/cloudflare build && wrangler dev"` |
+| `build` | `pnpm exec next build` |
+| `start` | `pnpm exec next start` |
 | `check:all` | `node scripts/check-all.mjs` |
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
-| `lint` | `npx biome format --write` |
-| `test` | `vitest run` |
+| `lint` | `pnpm exec biome check . --write --unsafe` |
+| `test` | `pnpm exec vitest run` |
 | `deploy:cf` | `npx @opennextjs/cloudflare deploy` |
 
 #### Workflows (top)
