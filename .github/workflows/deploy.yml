@@ -474,17 +474,27 @@ jobs:
             const compact = summary.replace(/\s+/g, ' ').trim();
             const description = compact.length > 140 ? `${compact.slice(0, 137)}...` : compact;
 
-            await github.rest.repos.createDeploymentStatus({
-              owner,
-              repo,
-              deployment_id: Number(deploymentId),
-              state: 'success',
-              description,
-              log_url: logUrl,
-              environment: 'production',
-              environment_url: `${logUrl}#summary`,
-              auto_inactive: false
-            });
+            try {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: Number(deploymentId),
+                state: 'success',
+                description,
+                log_url: logUrl,
+                environment: 'production',
+                environment_url: `${logUrl}#summary`,
+                auto_inactive: false
+              });
+            } catch (error) {
+              const status = error?.status ?? error?.response?.status;
+              const message = error?.message || error?.response?.data?.message;
+              if (status === 403) {
+                core.warning(`缺少写入部署状态的权限，跳过环境注释。(${message || '403 Forbidden'})`);
+                return;
+              }
+              throw error;
+            }
 
       - name: Post-deployment verification
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
