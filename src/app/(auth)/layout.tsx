@@ -1,4 +1,10 @@
+import nextDynamic from "next/dynamic";
+
 import AuthLayout from "@/modules/auth/auth.layout";
+
+const Toast = nextDynamic(() => import("@/components/ui/toast"), {
+    ssr: false,
+});
 
 export const dynamic = "force-dynamic";
 
@@ -7,5 +13,10 @@ export default async function Layout({
 }: {
     children: React.ReactNode;
 }) {
-    return <AuthLayout>{children}</AuthLayout>;
+    return (
+        <>
+            <AuthLayout>{children}</AuthLayout>
+            <Toast />
+        </>
+    );
 }
