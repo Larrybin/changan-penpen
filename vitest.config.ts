@@ -10,32 +10,23 @@ export default defineConfig({
         setupFiles: ["./vitest.setup.ts"],
         globals: true,
         // 性能优化配置
-        testTimeout: 10000,           // 单个测试10秒超时
-        hookTimeout: 10000,           // 钩子10秒超时
-        pool: 'threads',              // 线程池提升并行性能
+        testTimeout: 10000, // 单个测试10秒超时
+        hookTimeout: 10000, // 钩子10秒超时
+        pool: "threads", // 线程池提升并行性能
         poolOptions: {
             threads: {
-                maxThreads: 4,        // 最大4个并行线程
-                minThreads: 1,        // 最小1个线程
+                maxThreads: 4, // 最大4个并行线程
+                minThreads: 1, // 最小1个线程
             },
         },
         // 测试文件匹配模式优化
         include: [
-            '**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-            '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            "**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
+            "**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
         ],
-        exclude: [
-            'node_modules/**',
-            'dist/**',
-            'coverage/**',
-            '.next/**',
-        ],
+        exclude: ["node_modules/**", "dist/**", "coverage/**", ".next/**"],
         // 监视模式忽略配置
-        watchExclude: [
-            'node_modules/**',
-            'dist/**',
-            'coverage/**',
-        ],
+        watchExclude: ["node_modules/**", "dist/**", "coverage/**"],
         typecheck: {
             checker: "tsc",
             tsconfig: path.resolve(__dirname, "./tsconfig.test.json"),

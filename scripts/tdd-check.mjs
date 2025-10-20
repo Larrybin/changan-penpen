@@ -5,9 +5,9 @@
  * 验证新开发是否遵循TDD原则
  */
 
-import { readFileSync, existsSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -55,10 +55,6 @@ function error(message) {
     log(`❌ ${message}`, "red");
 }
 
-function info(message) {
-    log(`ℹ️  ${message}`, "blue");
-}
-
 // 工具函数
 function findTestFile(sourceFile) {
     const testFile = sourceFile
@@ -78,7 +74,11 @@ function hasTestFile(sourceFile) {
 }
 
 function extractCoverageFromCoverageFile() {
-    const coverageFile = join(CONFIG.projectRoot, "coverage", "coverage-summary.json");
+    const coverageFile = join(
+        CONFIG.projectRoot,
+        "coverage",
+        "coverage-summary.json",
+    );
 
     if (!existsSync(coverageFile)) {
         return null;
@@ -97,10 +97,6 @@ function extractCoverageFromCoverageFile() {
 function checkNewFilesHaveTests() {
     log("\n🔍 检查新文件是否有对应的测试文件", "cyan");
 
-    // 这里应该与git集成，获取新文件列表
-    // 为了演示，我们检查src目录下所有文件
-    const srcPath = join(CONFIG.projectRoot, CONFIG.srcDir);
-
     // 简化的文件查找（实际项目中应该使用git status）
     const sourceFiles = [
         "src/modules/auth/components/signup-form.tsx",
@@ -109,9 +105,9 @@ function checkNewFilesHaveTests() {
     ];
 
     let newFilesWithoutTests = 0;
-    let totalNewFiles = sourceFiles.length;
+    const totalNewFiles = sourceFiles.length;
 
-    sourceFiles.forEach(file => {
+    sourceFiles.forEach((file) => {
         const fullPath = join(CONFIG.projectRoot, file);
         if (existsSync(fullPath) && !hasTestFile(file)) {
             error(`缺少测试文件: ${file} -> ${findTestFile(file)}`);
@@ -121,10 +117,13 @@ function checkNewFilesHaveTests() {
         }
     });
 
-    const compliance = ((totalNewFiles - newFilesWithoutTests) / totalNewFiles) * 100;
+    const compliance =
+        ((totalNewFiles - newFilesWithoutTests) / totalNewFiles) * 100;
 
-    log(`\n📊 新文件测试覆盖率: ${compliance.toFixed(1)}% (${totalNewFiles - newFilesWithoutTests}/${totalNewFiles})`,
-         compliance >= 100 ? "green" : "yellow");
+    log(
+        `\n📊 新文件测试覆盖率: ${compliance.toFixed(1)}% (${totalNewFiles - newFilesWithoutTests}/${totalNewFiles})`,
+        compliance >= 100 ? "green" : "yellow",
+    );
 
     if (compliance < 100) {
         warning("新文件必须100%有对应的测试文件");
@@ -147,7 +146,7 @@ function checkTDDPrinciples() {
     let tddCompliance = 0;
     let totalTests = 0;
 
-    testFiles.forEach(testFile => {
+    testFiles.forEach((testFile) => {
         const fullPath = join(CONFIG.projectRoot, testFile);
 
         if (existsSync(fullPath)) {
@@ -159,7 +158,11 @@ function checkTDDPrinciples() {
                 let maxScore = 0;
 
                 // 检查是否有describe块
-                if (content.includes("describe(") || content.includes("describe('"))) {
+                const hasDescribeBlock =
+                    content.includes("describe(") ||
+                    content.includes("describe('");
+
+                if (hasDescribeBlock) {
                     fileScore += 1;
                 }
                 maxScore++;
@@ -172,7 +175,10 @@ function checkTDDPrinciples() {
                 maxScore++;
 
                 // 检查是否有用户行为导向测试
-                if (content.includes("getByRole") || content.includes("getByLabelText")) {
+                if (
+                    content.includes("getByRole") ||
+                    content.includes("getByLabelText")
+                ) {
                     fileScore += 1;
                 }
                 maxScore++;
@@ -194,11 +200,14 @@ function checkTDDPrinciples() {
                 totalTests++;
 
                 if (fileCompliance >= 80) {
-                    success(`TDD原则遵循良好: ${testFile} (${fileCompliance.toFixed(1)}%)`);
+                    success(
+                        `TDD原则遵循良好: ${testFile} (${fileCompliance.toFixed(1)}%)`,
+                    );
                 } else {
-                    warning(`TDD原则需要改进: ${testFile} (${fileCompliance.toFixed(1)}%)`);
+                    warning(
+                        `TDD原则需要改进: ${testFile} (${fileCompliance.toFixed(1)}%)`,
+                    );
                 }
-
             } catch (error) {
                 error(`读取测试文件失败: ${testFile} - ${error.message}`);
             }
@@ -207,8 +216,10 @@ function checkTDDPrinciples() {
 
     if (totalTests > 0) {
         const averageCompliance = tddCompliance / totalTests;
-        log(`\n📊 TDD原则平均遵循度: ${averageCompliance.toFixed(1)}%`,
-             averageCompliance >= 80 ? "green" : "yellow");
+        log(
+            `\n📊 TDD原则平均遵循度: ${averageCompliance.toFixed(1)}%`,
+            averageCompliance >= 80 ? "green" : "yellow",
+        );
 
         if (averageCompliance < 80) {
             warning("测试文件需要更好地遵循TDD原则");
@@ -263,26 +274,25 @@ function checkCoverageThresholds() {
 function checkNamingConventions() {
     log("\n📝 检查测试文件命名规范", "cyan");
 
-    const testDir = join(CONFIG.projectRoot, CONFIG.testDir);
-
     // 检查测试文件命名
     const namingIssues = [];
 
     // 这里应该扫描实际的测试文件
     // 为了演示，我们检查一些已知的问题
-    const knownTestFiles = [
-        "button.test.tsx",
-        "auth.test.ts",
-        "api.test.ts",
-    ];
+    const knownTestFiles = ["button.test.tsx", "auth.test.ts", "api.test.ts"];
 
-    knownTestFiles.forEach(file => {
+    knownTestFiles.forEach((file) => {
         // 检查是否在正确的目录中
-        const expectedLocation = file.includes("component") ?
-            "components/" : file.includes("api") ? "api/" : "";
+        const expectedLocation = file.includes("component")
+            ? "components/"
+            : file.includes("api")
+              ? "api/"
+              : "";
 
         if (expectedLocation && !file.includes(expectedLocation)) {
-            namingIssues.push(`测试文件位置不正确: ${file} 应该在 ${expectedLocation} 目录中`);
+            namingIssues.push(
+                `测试文件位置不正确: ${file} 应该在 ${expectedLocation} 目录中`,
+            );
         }
     });
 
@@ -290,7 +300,9 @@ function checkNamingConventions() {
         success("测试文件命名规范符合要求");
         return true;
     } else {
-        namingIssues.forEach(issue => error(issue));
+        namingIssues.forEach((issue) => {
+            error(issue);
+        });
         warning("测试文件命名需要规范化");
         return false;
     }
@@ -299,7 +311,7 @@ function checkNamingConventions() {
 // 主函数
 function main() {
     log("🚀 TDD质量检查开始", "magenta");
-    log("=" * 50, "cyan");
+    log("=".repeat(50), "cyan");
 
     const results = [
         checkNewFilesHaveTests(),
@@ -308,7 +320,7 @@ function main() {
         checkNamingConventions(),
     ];
 
-    log("\n" + "=" * 50, "cyan");
+    log(`\n${"=".repeat(50)}`, "cyan");
     log("📋 检查结果汇总", "magenta");
 
     const passedChecks = results.filter(Boolean).length;
@@ -326,7 +338,7 @@ function main() {
 }
 
 // 如果直接运行此脚本
-if (import.meta.url === import.meta.url) {
+if (process.argv[1] === __filename) {
     main();
 }
 

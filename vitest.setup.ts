@@ -1,11 +1,11 @@
-import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
 import { toHaveNoViolations } from "jest-axe";
+import { HttpResponse, http } from "msw";
+import { setupServer } from "msw/node";
 import type { ComponentProps, PropsWithChildren } from "react";
 import React from "react";
-import { afterEach, expect, vi, beforeAll, afterAll } from "vitest";
-import { setupServer } from "msw/node";
-import { http, HttpResponse } from "msw";
+import { afterAll, afterEach, beforeAll, expect, vi } from "vitest";
 
 // 测试覆盖率提升配置
 // 支持API mocking和更完善的测试环境
@@ -95,13 +95,16 @@ export const server = setupServer(
 
     // 认证相关API mock
     http.post("/api/auth/signin", async ({ request }) => {
-        const body = await request.json() as any;
+        const body = (await request.json()) as {
+            email?: string;
+            password?: string;
+        };
 
         // 基本验证
         if (!body.email || !body.password) {
             return HttpResponse.json(
                 { error: "Missing email or password" },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
@@ -145,14 +148,15 @@ export const server = setupServer(
 
         let filteredUsers = mockUsers;
         if (search) {
-            filteredUsers = mockUsers.filter(user =>
-                user.name.toLowerCase().includes(search.toLowerCase()) ||
-                user.email.toLowerCase().includes(search.toLowerCase())
+            filteredUsers = mockUsers.filter(
+                (user) =>
+                    user.name.toLowerCase().includes(search.toLowerCase()) ||
+                    user.email.toLowerCase().includes(search.toLowerCase()),
             );
         }
 
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
         const startIndex = (pageNum - 1) * limitNum;
         const endIndex = startIndex + limitNum;
 
@@ -187,12 +191,14 @@ export const server = setupServer(
 
     // 通用错误处理
     http.all("*", ({ request }) => {
-        console.warn(`MSW: Unhandled ${request.method} request to ${request.url}`);
+        console.warn(
+            `MSW: Unhandled ${request.method} request to ${request.url}`,
+        );
         return HttpResponse.json(
             { error: "API endpoint not found" },
-            { status: 404 }
+            { status: 404 },
         );
-    })
+    }),
 );
 
 // 在所有测试开始前启动服务器
