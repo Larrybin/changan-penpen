@@ -149,7 +149,23 @@
         },
         "patchedDependencies": {
             "refractor@3.6.0": "patches/refractor@3.6.0.patch"
-        }
+        },
+        "allowedBuildScripts": [
+            "@tailwindcss/oxide",
+            "@tailwindcss/oxide-*",
+            "@tree-sitter-grammars/*",
+            "tree-sitter",
+            "tree-sitter-*",
+            "better-sqlite3",
+            "@better-sqlite3/*",
+            "esbuild",
+            "@esbuild/*",
+            "sharp",
+            "@img/sharp-*",
+            "@img/sharp-libvips-*",
+            "workerd",
+            "@cloudflare/workerd-*"
+        ]
     },
     "prepare": "husky"
 }
