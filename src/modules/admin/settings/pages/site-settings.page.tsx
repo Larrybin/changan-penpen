@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { type AppLocale, getSupportedAppLocales } from "@/i18n/config";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
 import { adminApiClient } from "@/modules/admin/api/client";
@@ -28,6 +29,9 @@ interface SiteSettingsState {
     seoTitle: string;
     seoDescription: string;
     seoOgImage: string;
+    seoTitleLocalized: Partial<Record<AppLocale, string>>;
+    seoDescriptionLocalized: Partial<Record<AppLocale, string>>;
+    seoOgImageLocalized: Partial<Record<AppLocale, string>>;
     sitemapEnabled: boolean;
     robotsRules: string;
     brandPrimaryColor: string;
@@ -35,8 +39,8 @@ interface SiteSettingsState {
     brandFontFamily: string;
     headHtml: string;
     footerHtml: string;
-    defaultLanguage: string;
-    enabledLanguages: string[];
+    defaultLanguage: AppLocale;
+    enabledLanguages: AppLocale[];
 }
 
 const defaultSettings: SiteSettingsState = {
@@ -47,6 +51,9 @@ const defaultSettings: SiteSettingsState = {
     seoTitle: "",
     seoDescription: "",
     seoOgImage: "",
+    seoTitleLocalized: {},
+    seoDescriptionLocalized: {},
+    seoOgImageLocalized: {},
     sitemapEnabled: true,
     robotsRules: "",
     brandPrimaryColor: "#2563eb",
@@ -54,8 +61,17 @@ const defaultSettings: SiteSettingsState = {
     brandFontFamily: "Inter",
     headHtml: "",
     footerHtml: "",
-    defaultLanguage: "zh-CN",
-    enabledLanguages: ["zh-CN"],
+    defaultLanguage: "en",
+    enabledLanguages: ["en"],
+};
+
+const SUPPORTED_LANGUAGES = getSupportedAppLocales();
+
+const LANGUAGE_LABELS: Record<AppLocale, string> = {
+    en: "English",
+    de: "Deutsch",
+    fr: "Français",
+    pt: "Português (Brasil)",
 };
 
 function arraysShallowEqual<T>(left: T[], right: T[]) {
@@ -63,6 +79,36 @@ function arraysShallowEqual<T>(left: T[], right: T[]) {
         return false;
     }
     return left.every((value, index) => value === right[index]);
+}
+
+function localizedMapsEqual(
+    left: Partial<Record<AppLocale, string>>,
+    right: Partial<Record<AppLocale, string>>,
+) {
+    const keys = new Set([
+        ...Object.keys(left ?? {}),
+        ...Object.keys(right ?? {}),
+    ]);
+    for (const key of keys) {
+        if (
+            (left as Record<string, string>)[key] !==
+            (right as Record<string, string>)[key]
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function cloneLocalizedMap(
+    map: Partial<Record<AppLocale, string>>,
+): Partial<Record<AppLocale, string>> {
+    return Object.fromEntries(
+        Object.entries(map ?? {}).map(([locale, value]) => [
+            locale,
+            value ?? "",
+        ]),
+    ) as Partial<Record<AppLocale, string>>;
 }
 
 function setPartialValue<TKey extends keyof SiteSettingsState>(
@@ -87,12 +133,29 @@ export function SiteSettingsPage() {
                 data?: Partial<SiteSettingsState>;
             }>("/site-settings");
             const incoming = response.data.data ?? {};
+            const candidateDefault = incoming.defaultLanguage;
+            const defaultLanguage = SUPPORTED_LANGUAGES.includes(
+                candidateDefault as AppLocale,
+            )
+                ? (candidateDefault as AppLocale)
+                : defaultSettings.defaultLanguage;
             const merged: SiteSettingsState = {
                 ...defaultSettings,
                 ...(incoming as SiteSettingsState),
+                defaultLanguage,
                 enabledLanguages: Array.isArray(incoming.enabledLanguages)
                     ? [...incoming.enabledLanguages]
                     : [...defaultSettings.enabledLanguages],
+                seoTitleLocalized: cloneLocalizedMap(
+                    (incoming as SiteSettingsState).seoTitleLocalized ?? {},
+                ),
+                seoDescriptionLocalized: cloneLocalizedMap(
+                    (incoming as SiteSettingsState).seoDescriptionLocalized ??
+                        {},
+                ),
+                seoOgImageLocalized: cloneLocalizedMap(
+                    (incoming as SiteSettingsState).seoOgImageLocalized ?? {},
+                ),
             };
             return merged;
         },
@@ -112,10 +175,31 @@ export function SiteSettingsPage() {
             return;
         }
 
-        setSettings(siteSettingsQuery.data);
+        setSettings({
+            ...siteSettingsQuery.data,
+            enabledLanguages: [...siteSettingsQuery.data.enabledLanguages],
+            seoTitleLocalized: cloneLocalizedMap(
+                siteSettingsQuery.data.seoTitleLocalized,
+            ),
+            seoDescriptionLocalized: cloneLocalizedMap(
+                siteSettingsQuery.data.seoDescriptionLocalized,
+            ),
+            seoOgImageLocalized: cloneLocalizedMap(
+                siteSettingsQuery.data.seoOgImageLocalized,
+            ),
+        });
         initialSettingsRef.current = {
             ...siteSettingsQuery.data,
             enabledLanguages: [...siteSettingsQuery.data.enabledLanguages],
+            seoTitleLocalized: cloneLocalizedMap(
+                siteSettingsQuery.data.seoTitleLocalized,
+            ),
+            seoDescriptionLocalized: cloneLocalizedMap(
+                siteSettingsQuery.data.seoDescriptionLocalized,
+            ),
+            seoOgImageLocalized: cloneLocalizedMap(
+                siteSettingsQuery.data.seoOgImageLocalized,
+            ),
         };
 
         if (
@@ -144,12 +228,26 @@ export function SiteSettingsPage() {
             initialSettingsRef.current = {
                 ...defaultSettings,
                 enabledLanguages: [...defaultSettings.enabledLanguages],
+                seoTitleLocalized: cloneLocalizedMap(
+                    defaultSettings.seoTitleLocalized,
+                ),
+                seoDescriptionLocalized: cloneLocalizedMap(
+                    defaultSettings.seoDescriptionLocalized,
+                ),
+                seoOgImageLocalized: cloneLocalizedMap(
+                    defaultSettings.seoOgImageLocalized,
+                ),
             };
         }
     }, [siteSettingsQuery.error, siteSettingsQuery.isError]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+
+        if (!settings.enabledLanguages.includes(settings.defaultLanguage)) {
+            toast.error("默认语言必须包含在启用语言列表中");
+            return;
+        }
 
         const base = initialSettingsRef.current;
         let payload: Partial<SiteSettingsState>;
@@ -175,6 +273,29 @@ export function SiteSettingsPage() {
                     continue;
                 }
 
+                if (
+                    key === "seoTitleLocalized" ||
+                    key === "seoDescriptionLocalized" ||
+                    key === "seoOgImageLocalized"
+                ) {
+                    const nextMap = nextValue as Partial<
+                        Record<AppLocale, string>
+                    >;
+                    const prevMap = prevValue as Partial<
+                        Record<AppLocale, string>
+                    >;
+                    if (!localizedMapsEqual(nextMap, prevMap)) {
+                        setPartialValue(
+                            diff,
+                            key,
+                            cloneLocalizedMap(
+                                nextMap,
+                            ) as SiteSettingsState[typeof key],
+                        );
+                    }
+                    continue;
+                }
+
                 if (nextValue !== prevValue) {
                     setPartialValue(
                         diff,
@@ -188,6 +309,15 @@ export function SiteSettingsPage() {
             payload = {
                 ...settings,
                 enabledLanguages: [...settings.enabledLanguages],
+                seoTitleLocalized: cloneLocalizedMap(
+                    settings.seoTitleLocalized,
+                ),
+                seoDescriptionLocalized: cloneLocalizedMap(
+                    settings.seoDescriptionLocalized,
+                ),
+                seoOgImageLocalized: cloneLocalizedMap(
+                    settings.seoOgImageLocalized,
+                ),
             };
         }
 
@@ -202,6 +332,21 @@ export function SiteSettingsPage() {
                 ...requestPayload.enabledLanguages,
             ];
         }
+        if (requestPayload.seoTitleLocalized) {
+            requestPayload.seoTitleLocalized = cloneLocalizedMap(
+                requestPayload.seoTitleLocalized,
+            );
+        }
+        if (requestPayload.seoDescriptionLocalized) {
+            requestPayload.seoDescriptionLocalized = cloneLocalizedMap(
+                requestPayload.seoDescriptionLocalized,
+            );
+        }
+        if (requestPayload.seoOgImageLocalized) {
+            requestPayload.seoOgImageLocalized = cloneLocalizedMap(
+                requestPayload.seoOgImageLocalized,
+            );
+        }
 
         try {
             const result = await saveMutation.mutateAsync(payload);
@@ -213,10 +358,35 @@ export function SiteSettingsPage() {
                     enabledLanguages: Array.isArray(patch.enabledLanguages)
                         ? [...patch.enabledLanguages]
                         : [...previous.enabledLanguages],
+                    defaultLanguage:
+                        patch.defaultLanguage &&
+                        SUPPORTED_LANGUAGES.includes(
+                            patch.defaultLanguage as AppLocale,
+                        )
+                            ? (patch.defaultLanguage as AppLocale)
+                            : previous.defaultLanguage,
+                    seoTitleLocalized: patch.seoTitleLocalized
+                        ? cloneLocalizedMap(patch.seoTitleLocalized)
+                        : cloneLocalizedMap(previous.seoTitleLocalized),
+                    seoDescriptionLocalized: patch.seoDescriptionLocalized
+                        ? cloneLocalizedMap(patch.seoDescriptionLocalized)
+                        : cloneLocalizedMap(previous.seoDescriptionLocalized),
+                    seoOgImageLocalized: patch.seoOgImageLocalized
+                        ? cloneLocalizedMap(patch.seoOgImageLocalized)
+                        : cloneLocalizedMap(previous.seoOgImageLocalized),
                 };
                 initialSettingsRef.current = {
                     ...next,
                     enabledLanguages: [...next.enabledLanguages],
+                    seoTitleLocalized: cloneLocalizedMap(
+                        next.seoTitleLocalized,
+                    ),
+                    seoDescriptionLocalized: cloneLocalizedMap(
+                        next.seoDescriptionLocalized,
+                    ),
+                    seoOgImageLocalized: cloneLocalizedMap(
+                        next.seoOgImageLocalized,
+                    ),
                 };
                 if (!next.sitemapEnabled && !sitemapWarningShownRef.current) {
                     toast.message(
@@ -237,16 +407,64 @@ export function SiteSettingsPage() {
         }
     };
 
-    const handleLanguagesChange = (value: string) => {
-        const languages = value
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean);
-        setSettings((prev) => ({ ...prev, enabledLanguages: languages }));
+    const toggleLanguage = (locale: AppLocale) => {
+        setSettings((prev) => {
+            const exists = prev.enabledLanguages.includes(locale);
+            const nextLanguages = exists
+                ? prev.enabledLanguages.filter((item) => item !== locale)
+                : [...prev.enabledLanguages, locale];
+            return { ...prev, enabledLanguages: nextLanguages };
+        });
+    };
+
+    const handleDefaultLanguageChange = (locale: string) => {
+        if (!SUPPORTED_LANGUAGES.includes(locale as AppLocale)) {
+            return;
+        }
+        const normalized = locale as AppLocale;
+        setSettings((prev) => {
+            const nextLanguages = prev.enabledLanguages.includes(normalized)
+                ? prev.enabledLanguages
+                : [...prev.enabledLanguages, normalized];
+            return {
+                ...prev,
+                defaultLanguage: normalized,
+                enabledLanguages: nextLanguages,
+            };
+        });
+    };
+
+    const updateLocalizedSeo = (
+        locale: AppLocale,
+        field:
+            | "seoTitleLocalized"
+            | "seoDescriptionLocalized"
+            | "seoOgImageLocalized",
+        value: string,
+    ) => {
+        setSettings((prev) => {
+            const currentMap = prev[field] as Partial<
+                Record<AppLocale, string>
+            >;
+            const nextMap = cloneLocalizedMap(currentMap);
+            const trimmed = value.trim();
+            if (!trimmed) {
+                delete nextMap[locale];
+            } else {
+                nextMap[locale] = trimmed;
+            }
+            return {
+                ...prev,
+                [field]: nextMap,
+            } as SiteSettingsState;
+        });
     };
 
     const saving = saveMutation.isPending;
     const isLoading = siteSettingsQuery.isLoading;
+    const defaultLanguageConflict = !settings.enabledLanguages.includes(
+        settings.defaultLanguage,
+    );
 
     if (isLoading) {
         return (
@@ -370,6 +588,82 @@ export function SiteSettingsPage() {
                             placeholder={`User-agent: *\nAllow: /`}
                         />
                     </Field>
+                    <div className="space-y-4 rounded-lg border border-input p-4">
+                        <div>
+                            <h3 className="text-base font-semibold">
+                                多语言 SEO
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                为不同语言提供专属标题、描述与分享图像。
+                            </p>
+                        </div>
+                        <div className="space-y-6">
+                            {settings.enabledLanguages.map((locale) => {
+                                const label = LANGUAGE_LABELS[locale] ?? locale;
+                                return (
+                                    <div key={locale} className="space-y-3">
+                                        <div className="text-sm font-semibold text-muted-foreground">
+                                            {label}
+                                        </div>
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <Field label="标题">
+                                                <Input
+                                                    value={
+                                                        settings
+                                                            .seoTitleLocalized[
+                                                            locale
+                                                        ] ?? ""
+                                                    }
+                                                    onChange={(event) =>
+                                                        updateLocalizedSeo(
+                                                            locale,
+                                                            "seoTitleLocalized",
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                />
+                                            </Field>
+                                            <Field label="OG 图像 URL">
+                                                <Input
+                                                    value={
+                                                        settings
+                                                            .seoOgImageLocalized[
+                                                            locale
+                                                        ] ?? ""
+                                                    }
+                                                    onChange={(event) =>
+                                                        updateLocalizedSeo(
+                                                            locale,
+                                                            "seoOgImageLocalized",
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                />
+                                            </Field>
+                                        </div>
+                                        <Field label="Meta 描述">
+                                            <Textarea
+                                                rows={3}
+                                                value={
+                                                    settings
+                                                        .seoDescriptionLocalized[
+                                                        locale
+                                                    ] ?? ""
+                                                }
+                                                onChange={(event) =>
+                                                    updateLocalizedSeo(
+                                                        locale,
+                                                        "seoDescriptionLocalized",
+                                                        event.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                     <div className="grid gap-2">
                         <label
                             className="text-sm font-medium"
@@ -461,24 +755,58 @@ export function SiteSettingsPage() {
                     <h2 className="text-lg font-semibold">国际化</h2>
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="默认语言">
-                            <Input
+                            <select
+                                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 value={settings.defaultLanguage}
                                 onChange={(event) =>
-                                    setSettings((prev) => ({
-                                        ...prev,
-                                        defaultLanguage: event.target.value,
-                                    }))
+                                    handleDefaultLanguageChange(
+                                        event.target.value,
+                                    )
                                 }
-                            />
+                            >
+                                {SUPPORTED_LANGUAGES.map((locale) => (
+                                    <option key={locale} value={locale}>
+                                        {LANGUAGE_LABELS[locale] ?? locale}
+                                    </option>
+                                ))}
+                            </select>
                         </Field>
-                        <Field label="可用语言（逗号分隔）">
-                            <Input
-                                value={settings.enabledLanguages.join(",")}
-                                onChange={(event) =>
-                                    handleLanguagesChange(event.target.value)
-                                }
-                            />
-                        </Field>
+                        <div className="grid gap-2">
+                            <span className="text-sm font-medium">
+                                启用语言
+                            </span>
+                            <div className="flex flex-wrap gap-3 rounded-md border border-input p-3">
+                                {SUPPORTED_LANGUAGES.map((locale) => {
+                                    const checked =
+                                        settings.enabledLanguages.includes(
+                                            locale,
+                                        );
+                                    return (
+                                        <label
+                                            key={locale}
+                                            className="flex items-center gap-2 text-sm"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={() =>
+                                                    toggleLanguage(locale)
+                                                }
+                                            />
+                                            <span>
+                                                {LANGUAGE_LABELS[locale] ??
+                                                    locale}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                            {defaultLanguageConflict ? (
+                                <p className="text-sm text-red-500">
+                                    默认语言必须包含在启用语言列表中。
+                                </p>
+                            ) : null}
+                        </div>
                     </div>
                 </section>
 

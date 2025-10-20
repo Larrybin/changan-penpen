@@ -1,5 +1,5 @@
 ﻿import type { AppLocale } from "@/i18n/config";
-import { defaultLocale, locales } from "@/i18n/config";
+import { getDefaultLocale, getLocales } from "@/i18n/config";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
 const LOCAL_DEV_APP_URL = "http://localhost:3000";
@@ -572,7 +572,8 @@ export function ensureAbsoluteUrl(value: string, baseUrl: string): string {
 export function getActiveAppLocales(
     settings?: SiteSettingsPayload | null,
 ): AppLocale[] {
-    const configuredLocales = new Set<string>(locales as readonly string[]);
+    const supportedLocales = getLocales();
+    const configuredLocales = new Set<string>(supportedLocales);
     const enabled = settings?.enabledLanguages ?? [];
     const filtered = enabled.filter((locale): locale is AppLocale =>
         configuredLocales.has(locale),
@@ -580,7 +581,7 @@ export function getActiveAppLocales(
     if (filtered.length) {
         return Array.from(new Set(filtered));
     }
-    return [...locales];
+    return [...supportedLocales];
 }
 
 function isAllowedAttribute(tag: AllowedHeadTag, attribute: string): boolean {
@@ -801,6 +802,7 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
 
 export function buildLocalizedPath(locale: AppLocale, path: string): string {
     const normalized = path.startsWith("/") ? path : `/${path}`;
+    const defaultLocale = getDefaultLocale();
     if (normalized === "/") {
         return locale === defaultLocale ? "/" : `/${locale}`;
     }

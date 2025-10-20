@@ -9,6 +9,9 @@ export const siteSettings = sqliteTable("site_settings", {
     seoTitle: text("seo_title"),
     seoDescription: text("seo_description"),
     seoOgImage: text("seo_og_image"),
+    seoTitleLocalized: text("seo_title_localized"),
+    seoDescriptionLocalized: text("seo_description_localized"),
+    seoOgImageLocalized: text("seo_og_image_localized"),
     sitemapEnabled: integer("sitemap_enabled", { mode: "boolean" })
         .notNull()
         .default(false),

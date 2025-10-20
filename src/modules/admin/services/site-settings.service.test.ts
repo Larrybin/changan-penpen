@@ -14,6 +14,9 @@ const { dbState } = vi.hoisted(() => ({
             seoTitle: string;
             seoDescription: string;
             seoOgImage: string;
+            seoTitleLocalized: string | null;
+            seoDescriptionLocalized: string | null;
+            seoOgImageLocalized: string | null;
             sitemapEnabled: number;
             robotsRules: string;
             brandPrimaryColor: string;
@@ -87,6 +90,9 @@ vi.mock("@/db", () => ({
                     seoTitle: "",
                     seoDescription: "",
                     seoOgImage: "",
+                    seoTitleLocalized: "{}",
+                    seoDescriptionLocalized: "{}",
+                    seoOgImageLocalized: "{}",
                     sitemapEnabled: 0,
                     robotsRules: "",
                     brandPrimaryColor: "#2563eb",
@@ -129,6 +135,9 @@ describe("updateSiteSettings", () => {
             seoTitle: "Base Title",
             seoDescription: "Base Description",
             seoOgImage: "og.png",
+            seoTitleLocalized: "{}",
+            seoDescriptionLocalized: "{}",
+            seoOgImageLocalized: "{}",
             sitemapEnabled: 1,
             robotsRules: "",
             brandPrimaryColor: "#2563eb",
@@ -193,5 +202,26 @@ describe("updateSiteSettings", () => {
                 enabledLanguages: ["fr"],
             }),
         );
+    });
+
+    it("合并多语言 SEO 字段并同步默认语言值", async () => {
+        if (dbState.row) {
+            dbState.row.seoTitleLocalized = JSON.stringify({
+                en: "Base Title",
+            });
+        }
+
+        const result = await updateSiteSettings(
+            {
+                defaultLanguage: "fr",
+                seoTitleLocalized: { fr: "Titre personnalisé" },
+            },
+            "admin@example.com",
+        );
+
+        expect(result.defaultLanguage).toBe("fr");
+        expect(result.seoTitleLocalized.fr).toBe("Titre personnalisé");
+        expect(result.seoTitle).toBe("Titre personnalisé");
+        expect(dbState.row?.seoTitleLocalized).toContain('"fr"');
     });
 });

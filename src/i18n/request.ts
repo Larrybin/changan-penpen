@@ -1,9 +1,11 @@
 import { getRequestConfig } from "next-intl/server";
 
 import type { AppLocale } from "./config";
-import { defaultLocale, locales } from "./config";
+import { getDefaultLocale, getLocales } from "./config";
 
 export default getRequestConfig(async ({ locale, requestLocale }) => {
+    const locales = getLocales();
+    const defaultLocale = getDefaultLocale();
     const isAppLocale = (value: string): value is AppLocale =>
         (locales as readonly AppLocale[]).includes(value as AppLocale);
 
