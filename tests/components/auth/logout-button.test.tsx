@@ -53,10 +53,10 @@ vi.mock("@/modules/auth/auth.route", () => ({
 }));
 
 // Mock toast
-const mockToast = {
+const mockToast = vi.hoisted(() => ({
     success: vi.fn(),
     error: vi.fn(),
-};
+}));
 
 vi.mock("@/lib/toast", () => ({
     __esModule: true,

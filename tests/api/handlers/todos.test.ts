@@ -53,8 +53,12 @@ describe("Todos API", () => {
                     );
                 }
 
-                const page = Number(req.url.searchParams.get("page") || "1");
-                const perPage = Number(req.url.searchParams.get("perPage") || "20");
+                const rawPage = Number(req.url.searchParams.get("page") ?? "1");
+                const rawPerPage = Number(req.url.searchParams.get("perPage") ?? "20");
+                const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+                const perPage = Number.isFinite(rawPerPage)
+                    ? Math.min(Math.max(Math.floor(rawPerPage), 1), 100)
+                    : 20;
                 const tenantId = req.url.searchParams.get("tenantId");
 
                 // 模拟分页逻辑
@@ -95,14 +99,14 @@ describe("Todos API", () => {
                 if (!body.userId) {
                     return res(
                         ctx.status(400),
-                        ctx.json({ message: "userId is required" })
+                        ctx.json({ error: "userId is required", message: "userId is required" })
                     );
                 }
 
                 if (!body.title || body.title.trim().length === 0) {
                     return res(
                         ctx.status(400),
-                        ctx.json({ message: "Title is required" })
+                        ctx.json({ error: "Title is required", message: "Title is required" })
                     );
                 }
 
@@ -134,13 +138,22 @@ describe("Todos API", () => {
                     );
                 }
 
-                const todoId = Number(req.params.id);
+                const todoIdParam = req.params.id as string;
+                const todoId = Number(todoIdParam);
+
+                if (!Number.isInteger(todoId)) {
+                    return res(
+                        ctx.status(400),
+                        ctx.json({ error: "Invalid todo id", message: "Invalid todo id" })
+                    );
+                }
+
                 const todo = mockTodos.find(t => t.id === todoId);
 
                 if (!todo) {
                     return res(
                         ctx.status(404),
-                        ctx.json({ message: "Todo not found" })
+                        ctx.json({ error: "Todo not found", message: "Todo not found" })
                     );
                 }
 
@@ -166,7 +179,7 @@ describe("Todos API", () => {
                 if (todoIndex === -1) {
                     return res(
                         ctx.status(404),
-                        ctx.json({ message: "Todo not found" })
+                        ctx.json({ error: "Todo not found", message: "Todo not found" })
                     );
                 }
 
@@ -199,7 +212,7 @@ describe("Todos API", () => {
                 if (todoIndex === -1) {
                     return res(
                         ctx.status(404),
-                        ctx.json({ message: "Todo not found" })
+                        ctx.json({ error: "Todo not found", message: "Todo not found" })
                     );
                 }
 
@@ -262,7 +275,7 @@ describe("Todos API", () => {
                 if (!body.title || body.title.trim().length === 0) {
                     return res(
                         ctx.status(400),
-                        ctx.json({ message: "Title is required" })
+                        ctx.json({ error: "Title is required", message: "Title is required" })
                     );
                 }
 
@@ -318,7 +331,7 @@ describe("Todos API", () => {
                 if (!body.name || body.name.trim().length === 0) {
                     return res(
                         ctx.status(400),
-                        ctx.json({ message: "Category name is required" })
+                        ctx.json({ error: "Category name is required", message: "Category name is required" })
                     );
                 }
 

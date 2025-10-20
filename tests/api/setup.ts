@@ -20,6 +20,12 @@ export const AUTH_HEADERS = {
     Authorization: "Bearer test-token",
 };
 
+export const ADMIN_HEADERS = {
+    ...AUTH_HEADERS,
+    Authorization: "Bearer admin-token",
+    "X-User-Role": "admin",
+};
+
 // API测试工具函数
 export const apiRequest = async (
     endpoint: string,
@@ -45,8 +51,24 @@ export const authenticatedApiRequest = async (
     options: RequestInit = {}
 ) => {
     return apiRequest(endpoint, {
-        headers: AUTH_HEADERS,
         ...options,
+        headers: {
+            ...AUTH_HEADERS,
+            ...(options.headers ?? {}),
+        },
+    });
+};
+
+export const adminApiRequest = async (
+    endpoint: string,
+    options: RequestInit = {}
+) => {
+    return apiRequest(endpoint, {
+        ...options,
+        headers: {
+            ...ADMIN_HEADERS,
+            ...(options.headers ?? {}),
+        },
     });
 };
 
