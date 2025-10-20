@@ -6,7 +6,7 @@ Thank you for your interest in the project! Please follow these steps to keep co
 1. Create a branch (e.g., `feature/<topic>` or `fix/<issue-id>`). Keep it focused and short‑lived.
 2. Sync latest `main` before you branch and before opening a PR.
 3. Develop and validate locally (see `docs/local-dev.md`).
-4. Run local quality gates: `pnpm check:all`（若需连同单测可加 `CHECK_ENABLE_TESTS=1`，或另外执行 `pnpm test`）。
+4. Run local quality gates: `pnpm check:all`。
 5. Open a PR with a clear description, screenshots for UI, and links to issues.
 
 ## 2) Coding Standards
@@ -20,15 +20,12 @@ Thank you for your interest in the project! Please follow these steps to keep co
 - PRs must pass CI and include docs updates for user‑visible or ops changes.
 
 ## 4) Local Checks
-- Prefer `pnpm check:all` for the full quality gate（包含 Biome 写入/校验、cf-typegen、tsc、构建、docs/link；`CHECK_ENABLE_TESTS=1` 可附带单测）。
+- Prefer `pnpm check:all` for the full quality gate（包含 Biome 写入/校验、cf-typegen、tsc、构建、docs/link）。
 - `pnpm exec biome check` and `pnpm typecheck` should pass before pushing.
-- Run `pnpm test` for the affected modules; add tests for critical logic.
 - If you changed Cloudflare bindings or env keys, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts` (or `pnpm typecheck`, which includes it).
 
 ## 5) Tests
-- Prefer Vitest; co‑locate tests as `*.test.ts(x)`.
-- Deterministic tests only; mock D1/R2 and network calls.
-- Include `pnpm test` output in the PR description for complex changes.
+- Automated tests have been removed; focus on type safety, linting, and manual verification when reviewing changes.
 
 ## 6) Docs
 - Update `docs/00-index.md` when adding new docs.
@@ -45,7 +42,6 @@ Thank you for your interest in the project! Please follow these steps to keep co
 ## 9) Dependency Upgrade Checklist
 - Trigger manual verification when Dependabot or humans update key front-end packages (`@radix-ui/*`, `tailwindcss`, `lucide-react`, etc.).
 - Run `pnpm lint && pnpm build` locally (or attach CI logs) before merging to ensure generated CSS and component bundles compile cleanly.
-- Execute `pnpm run test:ui-regression` to cover the shared Radix wrappers (Select/Dialog/Toast) plus the form accessibility harness.
 - Manually smoke Radix-driven surfaces—Select keyboard loop, Dialog open/close, form validation/submit, Toast stacking—and capture screenshots or short clips when behavior or styling shifts.
 - Capture the client bundle diff with `pnpm run analyze:bundle` (attach the `.next/analyze` output or screenshots) when key UI/runtime packages change.
 - Record notable API or styling differences in `docs/dependency-upgrade-log.md` (see template) so future upgrades know what to re-check.

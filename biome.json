@@ -14,7 +14,6 @@
             "*.json",
             "*.jsonc",
             "*.md",
-            "vitest.*",
             "tsconfig*.json",
             "package.json",
             "wrangler.toml",

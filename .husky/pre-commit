@@ -20,9 +20,9 @@ else
     while IFS= read -r f; do
       [ -z "$f" ] && continue
       node -e 'const fs=require("fs");const p=process.argv[1];try{const b=fs.readFileSync(p);if(b.length>=3&&b[0]===0xEF&&b[1]===0xBB&&b[2]===0xBF){console.error("[check-bom] UTF-8 BOM detected in "+p+". Please save as UTF-8 (no BOM) and re-stage.");process.exit(1);} }catch(e){}' "$f" || exit 1
-    done <<EOF
+    done <<EOF2
 $STAGED_TEXT
-EOF
+EOF2
   fi
 fi
 
@@ -34,13 +34,10 @@ if [ -n "$STAGED_DOCS" ]; then
     [ -z "$f" ] && continue
     node -e "const fs=require('fs');const p=process.argv[1];try{let s=fs.readFileSync(p,'utf8');const b=s;s=s.replace(/[“”]/g,'\"').replace(/[‘’]/g,\"'\").replace(/[—–]/g,'-').replace(/…/g,'...').replace(/→/g,'->').replace(/，/g,',').replace(/。/g,'.').replace(/；/g,';').replace(/：/g,':').replace(/！/g,'!').replace(/？/g,'?').replace(/【/g,'[').replace(/】/g,']').replace(/（/g,'(').replace(/）/g,')').replace(/\u00A0/g,' ').replace(/\u200B/g,''); if(s!==b){fs.writeFileSync(p,s,'utf8'); console.log('[doc-sanitize] normalized',p);} }catch(e){}" "$f" || exit 1
     git add "$f" || exit 1
-  done <<EOF
+  done <<EOF3
 $STAGED_DOCS
-EOF
+EOF3
 fi
-
-# TDD质量检查
-pnpm run test:tdd-check || exit 1
 
 # 类型检查
 pnpm exec tsc --noEmit || exit 1

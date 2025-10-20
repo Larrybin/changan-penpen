@@ -68,17 +68,6 @@ updates:
           - "@tailwindcss/postcss"
           - "postcss"
 
-      testing:
-        applies-to: version-updates
-        update-types:
-          - "minor"
-          - "patch"
-        patterns:
-          - "vitest"
-          - "@vitest/*"
-          - "jsdom"
-          - "@testing-library/*"
-
       types:
         applies-to: version-updates
         update-types:

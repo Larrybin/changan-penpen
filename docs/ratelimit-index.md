@@ -16,4 +16,4 @@ Canonical overview of rate limits applied across public APIs. Use this sheet to 
 1. Reuse `applyRateLimit` from `src/lib/rate-limit.ts`.
 2. Provide a unique `identifier` and `prefix` for each endpoint so analytics and Redis keys remain isolated.
 3. Document the new entry in this file and update [`docs/api-index.md`](./api-index.md).
-4. Add regression tests where appropriate (for example, Vitest unit tests that assert `applyRateLimit` is called).
+4. Capture manual verification steps（e.g. exercise the endpoint against the limit and confirm Worker logs / Upstash metrics）并记录在发布说明中。

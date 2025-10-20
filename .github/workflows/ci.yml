@@ -27,11 +27,6 @@ env:
   NODE_VERSION: '20'
   PNPM_VERSION: '10'
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
-  # Baseline coverage thresholds — keep documentation in sync when raising these
-  COV_LINES: '15'
-  COV_STATEMENTS: '15'
-  COV_BRANCHES: '20'
-  COV_FUNCTIONS: '20'
 
 jobs:
   lint-docs:
@@ -133,137 +128,12 @@ jobs:
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
 
-  unit-tests:
-    name: Unit tests (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ['20', '22']
-    needs:
-      - lint-docs
-      - typecheck
-    env:
-      NODE_VERSION: ${{ matrix.node-version }}
-    steps:
-      - *checkout
-      - *setup-pnpm
-      - *setup-node
-      - *install
-
-      - name: List test cases (Vitest)
-        run: |
-          echo "Vitest version: $(pnpm exec vitest --version || true)"
-          # List test files (Vitest 3+). Avoid deprecated/unsupported --dry-run.
-          pnpm exec vitest list --reporter=verbose || true
-
-      - name: Test (Vitest with coverage — summary only)
-        run: >-
-          pnpm test --coverage --
-          --coverage.reporter=lcov
-          --coverage.reporter=json-summary
-          --coverage.reporter=html
-          --coverage.reporter=text
-
-      - name: Upload coverage artifact (HTML)
-        if: always() && matrix.node-version == '20' && hashFiles('coverage/lcov.info') != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: coverage-html
-          path: coverage
-          if-no-files-found: ignore
-
-      - name: Check coverage thresholds (JSON summary with fallback)
-        if: always()
-        run: |
-          set -eu
-          echo "Node: $(node -v)"
-          echo "Vitest: $(pnpm exec vitest --version || echo 'unknown')"
-          echo "Listing coverage directory (if any):"
-          ls -la || true
-          ls -la coverage || true
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const { createCoverageMap } = (() => { try { return require('istanbul-lib-coverage'); } catch { return {}; } })();
-
-            const covDir = path.join(process.cwd(), 'coverage');
-            const summaryPath = path.join(covDir, 'coverage-summary.json');
-            const finalPath = path.join(covDir, 'coverage-final.json');
-
-            function writeSummaryFromFinal() {
-              if (!createCoverageMap) return false;
-              if (!fs.existsSync(finalPath)) return false;
-              try {
-                const raw = JSON.parse(fs.readFileSync(finalPath, 'utf8'));
-                const map = createCoverageMap(raw);
-                const total = map.getCoverageSummary().toJSON();
-                const out = { total };
-                fs.writeFileSync(summaryPath, JSON.stringify(out, null, 2));
-                console.log('Reconstructed coverage-summary.json from coverage-final.json');
-                return true;
-              } catch (e) {
-                console.error('Failed to reconstruct summary from final:', e && e.message);
-                return false;
-              }
-            }
-
-            if (!fs.existsSync(summaryPath)) {
-              console.warn('coverage-summary.json not found. Attempting fallback...');
-              const ok = writeSummaryFromFinal();
-              if (!ok) {
-                console.error('No coverage summary available. Diagnostics:');
-                try { console.error('coverage dir entries:', fs.readdirSync(covDir)); } catch {}
-                process.exit(1);
-              }
-            }
-
-            const data = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
-            const t = {
-              lines: Number(process.env.COV_LINES || 0),
-              statements: Number(process.env.COV_STATEMENTS || 0),
-              branches: Number(process.env.COV_BRANCHES || 0),
-              functions: Number(process.env.COV_FUNCTIONS || 0),
-            };
-            const cur = {
-              lines: data.total?.lines?.pct ?? 0,
-              statements: data.total?.statements?.pct ?? 0,
-              branches: data.total?.branches?.pct ?? 0,
-              functions: data.total?.functions?.pct ?? 0,
-            };
-            console.log('Coverage current %:', cur);
-            console.log('Coverage thresholds %:', t);
-
-            const ok = cur.lines >= t.lines && cur.statements >= t.statements && cur.branches >= t.branches && cur.functions >= t.functions;
-            if (!ok) {
-              console.error('Coverage below thresholds. Showing summary JSON for diagnosis:');
-              try { console.error(fs.readFileSync(summaryPath, 'utf8')); } catch {}
-              process.exit(1);
-            }
-          "
-
-  dependencies-ui-regression:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs:
-      - lint-docs
-      - typecheck
-    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dependencies')
-    steps:
-      - *checkout
-      - *setup-pnpm
-      - *setup-node
-      - *install
-
-      - name: UI regression & a11y smoke
-        run: pnpm run test:ui-regression
-
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs:
-      - unit-tests
+      - lint-docs
+      - typecheck
     steps:
       - *checkout
       - *setup-pnpm

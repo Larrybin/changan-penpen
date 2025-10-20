@@ -21,7 +21,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 ## Highlights
 - Edge-native: OpenNext build, deploy to Cloudflare Workers (100+ PoPs)
 - Data & storage: Cloudflare D1 + R2 via Drizzle ORM
-- CI/CD suite: Biome, TypeScript checks, Vitest tests
+- CI/CD suite: Biome, TypeScript checks, manual QA checklist
 - Auto-merge guardrails: Dependabot auto-merge with local `pnpm check:all` gate
 - Health checks: `/api/v1/health` with fast/strict modes
 - Observability: Workers Analytics 与结构化日志
@@ -34,7 +34,7 @@ For production: trigger the GitHub Actions "Deploy" workflow or run `pnpm deploy
 ### Local Development
 - `pnpm dev`: Node runtime with fast HMR
 - `pnpm dev:cf`: OpenNext + Wrangler (simulated Workers)
-- `pnpm lint` / `pnpm test`: quality gates before commit
+- `pnpm lint` / `pnpm typecheck`: quality gates before commit
 - Details in `docs/local-dev.md`
 
 ### Production Deploy
@@ -103,7 +103,6 @@ All APIs follow RESTful conventions and include proper authentication, error han
 | Getting Started | `docs/getting-started.md` |
 | Local Dev | `docs/local-dev.md` |
 | Env & Secrets | `docs/env-and-secrets.md` |
-| Testing | `docs/testing.md` |
 | Deployment | `docs/deployment/cloudflare-workers.md` |
 | CI/CD | `docs/ci-cd.md` |
 | Health & Observability | `docs/health-and-observability.md` |
@@ -113,17 +112,8 @@ All APIs follow RESTful conventions and include proper authentication, error han
 
 ---
 
-## Testing
-- Run: `pnpm test` (one-off) or `pnpm test -- --watch`
-- Stack: Vitest 3 + jsdom + Testing Library (`@testing-library/react`, `@testing-library/jest-dom`)
-- Config: `vitest.config.ts`, `vitest.setup.ts` (with `globals: true` and `@ -> src` alias)
-- Example tests: see `src/modules/**/__tests__/`
-- CI: `.github/workflows/ci.yml` includes a "Test (Vitest)" step
-
----
-
 ## Automation & DevOps
-- `.github/workflows/ci.yml`: Biome, TypeScript, Vitest
+- `.github/workflows/ci.yml`: Biome, TypeScript
 - `.github/workflows/deploy.yml`: production deploy incl. D1 migrations and health checks
 
 See `docs/ci-cd.md` and `docs/workflows/*.md` for details.
@@ -139,7 +129,7 @@ See `docs/ci-cd.md` and `docs/workflows/*.md` for details.
 
 ## Contributing
 - TypeScript-first, PascalCase components, Biome formatting
-- Contribution flow, PR template, and test requirements: `docs/contributing.md`
+- Contribution flow, PR template, and quality gates: `docs/contributing.md`
 - If you change Cloudflare bindings or workflows, update related docs and note it in the PR description
 
 ---
@@ -150,8 +140,8 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_AUTOMATION START -->
 ### Automation & DevOps (auto)
-- Local workflow: run `pnpm check:all`, `pnpm typecheck`, `pnpm lint`, `pnpm test` before推送,确保质量门槛达标.
-- 详情参见 docs/local-dev.md,docs/ci-cd.md,docs/docs-maintenance.md.
+- Local workflow: run `pnpm check:all`（或手动执行 `pnpm biome:check && pnpm typecheck && pnpm build`）before 推送，确保质量门槛达标。
+- 详情参见 docs/local-dev.md、docs/ci-cd.md、docs/docs-maintenance.md。
 
 #### Common Scripts Snapshot
 | Script | Command |
@@ -163,7 +153,6 @@ MIT © 2025 Muhammad Arifin
 | `check:all` | `node scripts/check-all.mjs` |
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
 | `lint` | `pnpm exec biome check . --write --unsafe` |
-| `test` | `pnpm exec vitest run` |
 | `deploy:cf` | `npx @opennextjs/cloudflare deploy` |
 
 #### Workflows (top)
@@ -193,6 +182,6 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_QUALITY_GATES START -->
 ### Quality Gates (auto)
-- 建议本地先执行 `pnpm check:all`,`pnpm lint`,`pnpm typecheck`,`pnpm test`,再进行提交或推送.
+- 建议本地先执行 `pnpm check:all`,`pnpm lint`,`pnpm typecheck`,再进行提交或推送.
 - 门槛与策略详见 docs/quality-gates.md(覆盖率,fail-fast,跳过开关等).
 <!-- DOCSYNC:README_QUALITY_GATES END -->

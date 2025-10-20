@@ -27,7 +27,7 @@ jobs:
               return;
             }
 
-            const checklist = `## Maintainer QA Checklist\n- [ ] \`pnpm lint && pnpm build\`\n- [ ] \`pnpm run test:ui-regression\`\n- [ ] Manual smoke of Radix wrappers (Select/Dialog/Form/Toast) with screenshots or clips when behavior or styling shifts\n- [ ] Notable API or styling changes captured in \`docs/dependency-upgrade-log.md\`\n`;
+            const checklist = `## Maintainer QA Checklist\n- [ ] \`pnpm biome:check && pnpm typecheck && pnpm build\`（如需静态资源域名，提前设置 \`NEXT_PUBLIC_APP_URL\` 等环境变量）\n- [ ] Manual smoke of Radix wrappers (Select/Dialog/Form/Toast) with screenshots or clips when behavior or styling shifts\n- [ ] Notable API or styling changes captured in \`docs/dependency-upgrade-log.md\`\n`;
 
             const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
             const body = pr.body ?? '';

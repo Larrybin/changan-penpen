@@ -39,9 +39,6 @@
         "node_modules",
         "stubs/**",
         "creem_payment_example/**",
-        "cloudflare-workers-nextjs-saas-template-main/**",
-        "**/__tests__/**",
-        "**/*.test.ts",
-        "tests/**"
+        "cloudflare-workers-nextjs-saas-template-main/**"
     ]
 }

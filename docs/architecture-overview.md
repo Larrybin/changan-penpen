@@ -65,7 +65,7 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 
 ## Dev → Deploy
 1. Local — `pnpm dev` (Node) or `pnpm dev:cf` (OpenNext + Wrangler).
-2. Quality gates — `pnpm lint`, `pnpm test`, `pnpm build`; CI runs them on PRs.
+2. Quality gates — `pnpm lint`, `pnpm typecheck`, `pnpm build`; CI runs them on PRs.
 3. Deploy — push to `main` or run `pnpm deploy:cf` → OpenNext build → `wrangler deploy` → `/api/v1/health` check.
 4. Rollback — `wrangler deploy --rollback` and restore D1 from artifact if needed.
 

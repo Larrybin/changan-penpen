@@ -15,6 +15,5 @@
 - Keep `docs/00-index.md` in sync when adding new docs
 
 ## Testing
-- Prefer Vitest; colocate as `*.test.ts(x)` next to units
-- Deterministic tests; mock D1/R2 and network calls
+- Automated tests have been removed from this project; focus on keeping type safety and linting clean.
 

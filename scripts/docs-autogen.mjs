@@ -269,7 +269,6 @@ function renderReadmeAutomation() {
         "check:all",
         "typecheck",
         "lint",
-        "test",
         "deploy:cf",
     ];
     const names = Object.keys(scripts || {});
@@ -277,7 +276,7 @@ function renderReadmeAutomation() {
     const lines = [];
     lines.push("### Automation & DevOps (auto)");
     lines.push(
-        "- Local push integrates docs sync/autogen, lint/typecheck/tests, optional Next build, and rebase & push.",
+        "- Local push integrates docs sync/autogen, lint/typecheck/build, optional Next build, and rebase & push.",
     );
     lines.push(
         "- No extra commits: changes are amended into the last commit. Set `ALLOW_FORCE_PUSH=1` to handle non-fast-forward push after amend.",
@@ -438,31 +437,6 @@ function renderReadmeQuality() {
                             lines.push(`  ${l}`);
                     }
                 }
-            }
-        }
-    } catch {}
-    // Extract Vitest thresholds from vitest.config.ts
-    try {
-        const vt = path.join(root, "vitest.config.ts");
-        if (exists(vt)) {
-            const s = readUtf8(vt);
-            const parseNum = (key) => {
-                const r = new RegExp(`${key}s*:s*(\n|\r\n)?s*(d+)`);
-                const m = s.match(r);
-                return m ? Number(m[2]) : null;
-            };
-            const L = parseNum("lines");
-            const S = parseNum("statements");
-            const B = parseNum("branches");
-            const F = parseNum("functions");
-            const any = [L, S, B, F].some((x) => typeof x === "number");
-            if (any) {
-                lines.push("\n- Coverage thresholds (Vitest):");
-                lines.push("  | Lines | Statements | Branches | Functions |");
-                lines.push("  | --- | --- | --- | --- |");
-                lines.push(
-                    `  | ${L ?? "-"} | ${S ?? "-"} | ${B ?? "-"} | ${F ?? "-"} |`,
-                );
             }
         }
     } catch {}

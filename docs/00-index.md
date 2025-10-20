@@ -9,8 +9,7 @@
 1. [architecture-overview.md](architecture-overview.md) — App Router structure, module responsibilities, data flow
 2. [getting-started.md](getting-started.md) — 5‑minute quick start (local & production)
 3. [local-dev.md](local-dev.md) — Local development and debugging tips
-4. [testing.md](testing.md) — Test strategy, Vitest plan, mocking guidelines
-5. [extending.md](extending.md) — 模块扩展与多平台部署操作指引
+4. [extending.md](extending.md) — 模块扩展与多平台部署操作指引
 
 ## UI & Experience
 1. [design-system.md](design-system.md) — Theme tokens, shared layout components, refactor roadmap
@@ -35,7 +34,7 @@
 4. [upstash-ratelimit.md](upstash-ratelimit.md) — Upstash integration for Workers edge throttling
 
 ## Collaboration & Release
-1. [contributing.md](contributing.md) — Contribution flow, PR template, test requirements
+1. [contributing.md](contributing.md) — Contribution flow, PR template, review checklist
 2. [release.md](release.md) — Release steps, freeze policy, rollback and audit trail
 3. [faq.md](faq.md), [glossary.md](glossary.md) — FAQs and glossary
 

@@ -10,7 +10,7 @@
 ## Steps (high level)
 1. Checkout and set up PNPM cache
 2. `pnpm install --frozen-lockfile`
-3. 复用 `ci.yml` 质量门(Biome/tsc/Vitest/构建)
+3. 复用 `ci.yml` 质量门（Biome/tsc/构建）
 4. OpenNext build + `wrangler deploy`
 5. Health checks:
    - Workflow 自动循环重试 `GET /api/v1/health`(严格模式)直至响应 200,并把结果写入 Step Summary(默认重试 5 次,5 秒间隔,可由仓库变量调节)

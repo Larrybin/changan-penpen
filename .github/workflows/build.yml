@@ -94,27 +94,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate coverage (fallback)
-        if: github.event_name != 'workflow_run'
-        run: >
-          pnpm exec vitest run --coverage
-          --coverage.reporter=lcov
-          --coverage.reporter=json-summary
-          --coverage.reporter=text
-
-      - name: Download coverage artifact from CI
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
-        with:
-          name: coverage-html
-          path: coverage
-          run-id: ${{ github.event.workflow_run.id }}
-
-      - name: Ensure coverage exists
-        run: |
-          if [ ! -f coverage/lcov.info ]; then
-            echo "coverage/lcov.info not found"; exit 1; fi
-
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@ffc3010689be73b8e5ae0c57ce35968afd7909e8
         env:

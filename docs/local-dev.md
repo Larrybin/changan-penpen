@@ -8,13 +8,17 @@
 - Env vars: `.dev.vars` for local; use `wrangler secret put` in Workers mode if missing
 - Request replay: `wrangler dev --persist` to keep D1 state under `.wrangler/state`
 - AI/R2: ensure `CLOUDFLARE_R2_URL`, `GEMINI_API_KEY`, etc., are set or features will degrade
-- Shell encoding: prefer PowerShell 7 and set UTF-8 in profile to avoid garbled output:
-  - `[Console]::InputEncoding  = [System.Text.Encoding]::UTF8`
-  - `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`
-  - `$OutputEncoding = [System.Text.UTF8Encoding]::new($false)`
-
-## 3. Database (D1)
-- Generate migration: `pnpm db:generate:named "add_users_table"`
+## 8. Daily Quality Gate
+1. `pnpm check:all`
+2. Update docs, DB, or config changes and link them in the PR. Windows: run `node scripts/lib/doc-consistency-checker.mjs`; POSIX shells: `pnpm check:docs`.
+3. 使用 `gh run watch` 关注 CI & 部署状态
+
+## 9. 提交前检查建议
+- 建议依次运行 `pnpm check:all`、`pnpm typecheck`、`pnpm lint`，确保关键质量门通过。
+| `start` | `next start` |
+| `translate:pt` | `pnpm run translate -- --target=pt` |
+| `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
+
 - Apply:
   ```bash
   pnpm db:migrate:local    # local SQLite
