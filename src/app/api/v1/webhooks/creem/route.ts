@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
+import { getRedisClient } from "@/lib/cache";
 import { ApiError } from "@/lib/http-error";
 import { applyRateLimit } from "@/lib/rate-limit";
 import type {
@@ -14,7 +15,10 @@ import {
     createOrUpdateSubscription,
     getCustomerIdByUserId,
 } from "@/modules/creem/services/billing.service";
-import { verifyCreemWebhookSignature } from "@/modules/creem/utils/verify-signature";
+import {
+    createRedisReplayProtectionStore,
+    verifyCreemWebhookSignature,
+} from "@/modules/creem/utils/verify-signature";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
@@ -96,10 +100,24 @@ export async function POST(request: Request) {
                 code: "SERVICE_CONFIGURATION_ERROR",
             });
         }
+        const redis = getRedisClient({
+            UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
+            UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
+        });
+        const replayStore = redis
+            ? createRedisReplayProtectionStore({
+                  set: (key, value, options) =>
+                      redis.set(`creem:webhook:replay:${key}`, value, options),
+              })
+            : undefined;
         const valid = await verifyCreemWebhookSignature(
             raw,
             signature,
             env.CREEM_WEBHOOK_SECRET,
+            {
+                replayStore,
+                toleranceSeconds: 5 * 60,
+            },
         );
         if (!valid) {
             throw new ApiError("Invalid signature", {

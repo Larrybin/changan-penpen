@@ -1,66 +1,7 @@
-/** biome-ignore-all lint/style/noNonNullAssertion: <we will make sure it's not null> */
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
-import { getDb } from "@/db";
+import { getAuth } from "@/lib/auth";
 import type { AuthUser } from "@/modules/auth/models/user.model";
 
-/**
- * Cached auth instance singleton so we don't create a new instance every time
- */
-let cachedAuth: ReturnType<typeof betterAuth> | null = null;
-
-/**
- * Create auth instance dynamically to avoid top-level async issues
- */
-async function getAuth() {
-    if (cachedAuth) {
-        return cachedAuth;
-    }
-
-    const { env } = await getCloudflareContext({ async: true });
-    const db = await getDb();
-
-    const googleClientId = env.GOOGLE_CLIENT_ID?.trim();
-    const googleClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
-    const googleConfigured = Boolean(googleClientId && googleClientSecret);
-
-    if (googleClientId && !googleClientSecret) {
-        console.warn(
-            "GOOGLE_CLIENT_SECRET is missing; Google OAuth provider will be disabled.",
-        );
-    } else if (googleClientSecret && !googleClientId) {
-        console.warn(
-            "GOOGLE_CLIENT_ID is missing; Google OAuth provider will be disabled.",
-        );
-    }
-
-    const socialProviders = googleConfigured
-        ? {
-              google: {
-                  enabled: true,
-                  clientId: googleClientId!,
-                  clientSecret: googleClientSecret!,
-              },
-          }
-        : undefined;
-
-    cachedAuth = betterAuth({
-        secret: env.BETTER_AUTH_SECRET,
-        database: drizzleAdapter(db, {
-            provider: "sqlite",
-        }),
-        emailAndPassword: {
-            enabled: true,
-        },
-        socialProviders,
-        plugins: [nextCookies()],
-    });
-
-    return cachedAuth;
-}
 /**
  * Get the current authenticated user from the session
  * Returns null if no user is authenticated
@@ -80,7 +21,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
             id: session.user.id,
             name: session.user.name,
             email: session.user.email,
-        };
+        } satisfies AuthUser;
     } catch (error) {
         console.error("Error getting current user:", error);
         return null;

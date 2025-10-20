@@ -13,21 +13,50 @@ interface WithCacheOptions<Env extends CacheEnv> {
     waitUntil?: (promise: Promise<unknown>) => void;
 }
 
-const redisClients = new Map<string, Redis>();
+const redisClients = new Map<string, { client: Redis; lastUsed: number }>();
+const CLIENT_TTL_MS = 15 * 60 * 1000;
+const MAX_CLIENTS = 4;
+const CACHE_INDEX_KEY = "@cache:index";
 
-function getRedisClient(env: CacheEnv | undefined): Redis | null {
+function cleanupRedisClients(now: number) {
+    for (const [key, record] of redisClients) {
+        if (now - record.lastUsed > CLIENT_TTL_MS) {
+            redisClients.delete(key);
+        }
+    }
+
+    if (redisClients.size <= MAX_CLIENTS) {
+        return;
+    }
+
+    const entries = Array.from(redisClients.entries()).sort(
+        (a, b) => a[1].lastUsed - b[1].lastUsed,
+    );
+    while (entries.length > MAX_CLIENTS) {
+        const [key] = entries.shift() ?? [];
+        if (key) {
+            redisClients.delete(key);
+        }
+    }
+}
+
+export function getRedisClient(env: CacheEnv | undefined): Redis | null {
     const url = env?.UPSTASH_REDIS_REST_URL;
     const token = env?.UPSTASH_REDIS_REST_TOKEN;
     if (!url || !token) {
         return null;
     }
     const cacheKey = `${url}::${token}`;
-    let client = redisClients.get(cacheKey);
-    if (client) {
-        return client;
+    const now = Date.now();
+    cleanupRedisClients(now);
+    const existing = redisClients.get(cacheKey);
+    if (existing) {
+        existing.lastUsed = now;
+        return existing.client;
     }
-    client = new Redis({ url, token });
-    redisClients.set(cacheKey, client);
+    const client = new Redis({ url, token });
+    redisClients.set(cacheKey, { client, lastUsed: now });
+    cleanupRedisClients(now);
     return client;
 }
 
@@ -49,6 +78,22 @@ function safeParse<T>(value: string | null): T | null {
     } catch (error) {
         console.warn("[cache] failed to parse value", { error });
         return null;
+    }
+}
+
+async function indexCacheKey(redis: Redis, key: string) {
+    try {
+        await redis.sadd(CACHE_INDEX_KEY, key);
+    } catch (error) {
+        console.warn("[cache] failed to index key", { key, error });
+    }
+}
+
+async function removeIndexedKey(redis: Redis, key: string) {
+    try {
+        await redis.srem(CACHE_INDEX_KEY, key);
+    } catch (error) {
+        console.warn("[cache] failed to clean index", { key, error });
     }
 }
 
@@ -87,9 +132,15 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     const value = await compute();
     const serialized = safeStringify(value);
     if (serialized !== null) {
-        const persist = redis.set(key, serialized, { ex: ttlSeconds });
+        const persist = redis
+            .set(key, serialized, { ex: ttlSeconds })
+            .then(async (result) => {
+                if (result === "OK") {
+                    await indexCacheKey(redis, key);
+                }
+            });
         const asyncWaiter =
-            waitUntil ?? context?.ctx?.waitUntil?.bind(context.ctx);
+            waitUntil ?? context?.ctx?.waitUntil?.bind(context?.ctx ?? {});
         if (asyncWaiter) {
             asyncWaiter(persist);
         } else {
@@ -123,12 +174,21 @@ export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
 
     try {
         if (typeof redis.scan !== "function") {
-            console.warn(
-                "[cache] redis client lacks scan support; skipping invalidation",
-                { prefix },
+            const members = await redis.smembers<string[]>(CACHE_INDEX_KEY);
+            const keys = Array.isArray(members) ? members : [];
+            const targets = keys.filter((key) => key.startsWith(prefix));
+            if (targets.length === 0) {
+                return;
+            }
+            await Promise.allSettled(
+                targets.map(async (key) => {
+                    await redis.del(key);
+                    await removeIndexedKey(redis, key);
+                }),
             );
             return;
         }
+
         const deletions: Promise<unknown>[] = [];
         let cursor = "0";
         const pattern = `${prefix}*`;
@@ -144,7 +204,17 @@ export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
             const keys = Array.isArray(rawKeys) ? rawKeys : [];
             for (const key of keys) {
                 if (typeof key === "string" && key) {
-                    deletions.push(redis.del(key));
+                    deletions.push(
+                        redis
+                            .del(key)
+                            .then(() => removeIndexedKey(redis, key))
+                            .catch((error) =>
+                                console.warn("[cache] failed to delete key", {
+                                    key,
+                                    error,
+                                }),
+                            ),
+                    );
                 }
             }
             cursor = nextCursor;
