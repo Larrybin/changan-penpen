@@ -119,7 +119,7 @@
         "@changesets/cli": "^2.27.9",
         "@types/better-sqlite3": "^7.6.13",
         "@types/jest-axe": "^3.5.9",
-        "@types/node": "^24.7.2",
+        "@types/node": "^24.8.1",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "@types/swagger-ui-react": "^5.18.0",
