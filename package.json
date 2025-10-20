@@ -150,7 +150,13 @@
         },
         "patchedDependencies": {
             "refractor@3.6.0": "patches/refractor@3.6.0.patch"
-        }
+        },
+        "allowedBuildScripts": [
+            "sharp",
+            "@img/sharp-*",
+            "workerd",
+            "@cloudflare/workerd-*"
+        ]
     },
     "prepare": "husky"
 }
