@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { config as loadEnv } from "dotenv";
-import { defaultLocale, locales } from "../src/i18n/config";
+import { type AppLocale, defaultLocale, locales } from "../src/i18n/config";
 import {
     createTranslationServiceFromEnv,
     NEEDS_REVIEW_MARKERS,
@@ -35,7 +35,9 @@ const parseArgs = (): CliOptions => {
     const args = process.argv.slice(2);
     const options: CliOptions = {
         source: defaultLocale,
-        targets: locales.filter((locale) => locale !== defaultLocale),
+        targets: locales.filter(
+            (locale: AppLocale) => locale !== defaultLocale,
+        ),
         dryRun: false,
     };
 

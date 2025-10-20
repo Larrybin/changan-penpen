@@ -2,13 +2,51 @@ import { type NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 
 import { getAuth } from "./src/lib/auth";
-import { defaultLocale, locales } from "./src/i18n/config";
+import {
+    getLocales,
+    getRuntimeI18nConfig,
+    localePrefix,
+    setRuntimeI18nConfig,
+} from "./src/i18n/config";
+import { getSiteSettingsPayload } from "./src/modules/admin/services/site-settings.service";
 
-const handleI18nRouting = createMiddleware({
-    locales: Array.from(locales),
-    defaultLocale,
-    localePrefix: "as-needed",
-});
+let cachedI18nKey: string | null = null;
+let cachedI18nMiddleware:
+    | ReturnType<typeof createMiddleware>
+    | null = null;
+
+async function handleI18nRouting(request: NextRequest) {
+    try {
+        const settings = await getSiteSettingsPayload();
+        setRuntimeI18nConfig({
+            locales: settings.enabledLanguages,
+            defaultLocale: settings.defaultLanguage,
+        });
+        const config = getRuntimeI18nConfig();
+        const key = `${config.defaultLocale}|${config.locales.join(",")}`;
+        if (!cachedI18nMiddleware || cachedI18nKey !== key) {
+            cachedI18nMiddleware = createMiddleware({
+                locales: [...config.locales],
+                defaultLocale: config.defaultLocale,
+                localePrefix,
+            });
+            cachedI18nKey = key;
+        }
+        return cachedI18nMiddleware(request);
+    } catch (error) {
+        console.warn("Falling back to default i18n middleware", { error });
+        if (!cachedI18nMiddleware) {
+            const fallbackConfig = getRuntimeI18nConfig();
+            cachedI18nMiddleware = createMiddleware({
+                locales: [...fallbackConfig.locales],
+                defaultLocale: fallbackConfig.defaultLocale,
+                localePrefix,
+            });
+            cachedI18nKey = `${fallbackConfig.defaultLocale}|${fallbackConfig.locales.join(",")}`;
+        }
+        return cachedI18nMiddleware(request);
+    }
+}
 
 const CURRENT_API_VERSION = "v1";
 const CSP = [
@@ -87,11 +125,12 @@ export async function middleware(request: NextRequest) {
         });
     }
 
-    let response = handleI18nRouting(request);
+    let response = await handleI18nRouting(request);
+    const runtimeLocales = getLocales();
 
     const segments = pathname.split("/").filter(Boolean);
     const maybeLocale = segments[0];
-    const normalized = locales.includes(maybeLocale as any)
+    const normalized = runtimeLocales.includes(maybeLocale as any)
         ? "/" + segments.slice(1).join("/")
         : pathname;
 

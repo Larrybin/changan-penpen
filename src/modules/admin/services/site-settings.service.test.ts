@@ -14,6 +14,9 @@ const { dbState } = vi.hoisted(() => ({
             seoTitle: string;
             seoDescription: string;
             seoOgImage: string;
+            seoTitleLocalized: string | null;
+            seoDescriptionLocalized: string | null;
+            seoOgImageLocalized: string | null;
             sitemapEnabled: number;
             robotsRules: string;
             brandPrimaryColor: string;
@@ -87,6 +90,9 @@ vi.mock("@/db", () => ({
                     seoTitle: "",
                     seoDescription: "",
                     seoOgImage: "",
+                    seoTitleLocalized: "{}",
+                    seoDescriptionLocalized: "{}",
+                    seoOgImageLocalized: "{}",
                     sitemapEnabled: 0,
                     robotsRules: "",
                     brandPrimaryColor: "#2563eb",
@@ -129,6 +135,9 @@ describe("updateSiteSettings", () => {
             seoTitle: "Base Title",
             seoDescription: "Base Description",
             seoOgImage: "og.png",
+            seoTitleLocalized: "{}",
+            seoDescriptionLocalized: "{}",
+            seoOgImageLocalized: "{}",
             sitemapEnabled: 1,
             robotsRules: "",
             brandPrimaryColor: "#2563eb",

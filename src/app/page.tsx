@@ -18,9 +18,14 @@ export default async function HomePage() {
     const appUrl = resolveAppUrl(settings, {
         envAppUrl,
     });
-    const ogImageSource = settings.seoOgImage?.trim().length
-        ? settings.seoOgImage.trim()
-        : "/og-image.svg";
+    const defaultLocale = settings.defaultLanguage;
+    const localizedOgImage =
+        settings.seoOgImageLocalized?.[defaultLocale]?.trim() ?? "";
+    const ogImageSource = localizedOgImage.length
+        ? localizedOgImage
+        : settings.seoOgImage?.trim().length
+          ? settings.seoOgImage.trim()
+          : "/og-image.svg";
     const structuredDataImage = ensureAbsoluteUrl(ogImageSource, appUrl);
     const siteName = settings.siteName?.trim().length
         ? settings.siteName.trim()

@@ -1,29 +1,40 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 import type { AppLocale } from "../i18n/config";
-import { defaultLocale, locales } from "../i18n/config";
+import { getDefaultLocale, getLocales } from "../i18n/config";
 
 const createSiteSettings = (
     overrides: Partial<SiteSettingsPayload> = {},
-): SiteSettingsPayload => ({
-    id: overrides.id,
-    siteName: overrides.siteName ?? "",
-    domain: overrides.domain ?? "",
-    logoUrl: overrides.logoUrl ?? "",
-    faviconUrl: overrides.faviconUrl ?? "",
-    seoTitle: overrides.seoTitle ?? "",
-    seoDescription: overrides.seoDescription ?? "",
-    seoOgImage: overrides.seoOgImage ?? "",
-    sitemapEnabled: overrides.sitemapEnabled ?? true,
-    robotsRules: overrides.robotsRules ?? "",
-    brandPrimaryColor: overrides.brandPrimaryColor ?? "#2563eb",
-    brandSecondaryColor: overrides.brandSecondaryColor ?? "#0f172a",
-    brandFontFamily: overrides.brandFontFamily ?? "Inter",
-    headHtml: overrides.headHtml ?? "",
-    footerHtml: overrides.footerHtml ?? "",
-    defaultLanguage: overrides.defaultLanguage ?? defaultLocale,
-    enabledLanguages: overrides.enabledLanguages ?? [defaultLocale],
-});
+): SiteSettingsPayload => {
+    const baseDefaultLocale = getDefaultLocale() as AppLocale;
+    const fallbackLanguages = [baseDefaultLocale] as AppLocale[];
+    return {
+        id: overrides.id,
+        siteName: overrides.siteName ?? "",
+        domain: overrides.domain ?? "",
+        logoUrl: overrides.logoUrl ?? "",
+        faviconUrl: overrides.faviconUrl ?? "",
+        seoTitle: overrides.seoTitle ?? "",
+        seoDescription: overrides.seoDescription ?? "",
+        seoOgImage: overrides.seoOgImage ?? "",
+        seoTitleLocalized: overrides.seoTitleLocalized ?? {},
+        seoDescriptionLocalized: overrides.seoDescriptionLocalized ?? {},
+        seoOgImageLocalized: overrides.seoOgImageLocalized ?? {},
+        sitemapEnabled: overrides.sitemapEnabled ?? true,
+        robotsRules: overrides.robotsRules ?? "",
+        brandPrimaryColor: overrides.brandPrimaryColor ?? "#2563eb",
+        brandSecondaryColor: overrides.brandSecondaryColor ?? "#0f172a",
+        brandFontFamily: overrides.brandFontFamily ?? "Inter",
+        headHtml: overrides.headHtml ?? "",
+        footerHtml: overrides.footerHtml ?? "",
+        defaultLanguage: overrides.defaultLanguage ?? baseDefaultLocale,
+        enabledLanguages:
+            overrides.enabledLanguages ?? (fallbackLanguages as AppLocale[]),
+    };
+};
+
+const locales = getLocales();
+const defaultLocale = getDefaultLocale();
 describe("seo helpers", () => {
     afterEach(() => {
         vi.restoreAllMocks();
