@@ -1,10 +1,15 @@
 import nextDynamic from "next/dynamic";
-
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
+import type { AppLocale } from "@/i18n/config";
+import { omitMessages } from "@/lib/intl";
 import DashboardLayout from "@/modules/dashboard/dashboard.layout";
 
 const Toast = nextDynamic(() => import("@/components/ui/toast"), {
     ssr: false,
 });
+
+const DASHBOARD_OMIT_NAMESPACES = ["Marketing"] as const;
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +18,15 @@ export default async function Layout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const locale = (await getLocale()) as AppLocale;
+    const allMessages = await getMessages({ locale });
+    const messages = omitMessages(allMessages, DASHBOARD_OMIT_NAMESPACES);
+
     return (
         <>
-            <DashboardLayout>{children}</DashboardLayout>
+            <NextIntlClientProvider locale={locale} messages={messages}>
+                <DashboardLayout>{children}</DashboardLayout>
+            </NextIntlClientProvider>
             <Toast />
         </>
     );
