@@ -9,12 +9,14 @@ import { rest } from "msw";
 import { apiRequest, authenticatedApiRequest, expectSuccessResponse, expectErrorResponse } from "../setup";
 
 describe("Creem支付API", () => {
+    const MOCK_PAYMENT_SECRET = "pi_test_1234567890_secret_test123"; // gitleaks:allow mock stripe client secret
+
     const mockPaymentIntent = {
         id: "pi_test_1234567890",
         amount: 9999, // 99.99 USD in cents
         currency: "usd",
         status: "requires_payment_method",
-        client_secret: "pi_test_1234567890_secret_test123",
+        client_secret: MOCK_PAYMENT_SECRET,
         created: Math.floor(Date.now() / 1000),
     };
 

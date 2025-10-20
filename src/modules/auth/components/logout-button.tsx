@@ -29,7 +29,7 @@ export default function LogoutButton() {
     };
 
     return (
-        <Button variant="ghost" onClick={handleLogout}>
+        <Button type="button" variant="ghost" onClick={handleLogout}>
             {tAuth("logout")} <LogOut className="size-4" />
         </Button>
     );
