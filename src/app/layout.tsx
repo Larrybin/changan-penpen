@@ -4,10 +4,11 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
 import { InjectedHtml } from "@/components/seo/custom-html";
-import { Toast } from "@/components/ui/toast";
 import type { AppLocale } from "@/i18n/config";
 import { sanitizeCustomHtml } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
+
+const SHARED_NAMESPACES = ["Common", "Nav", "Auth", "AuthForms"] as const;
 
 export default async function RootLayout({
     children,
@@ -16,7 +17,7 @@ export default async function RootLayout({
 }>) {
     const locale = (await getLocale()) as AppLocale;
     const [messages, metadataContext] = await Promise.all([
-        getMessages(),
+        getMessages({ locale, namespaces: SHARED_NAMESPACES }),
         getMetadataContext(locale),
     ]);
     const headNodes = sanitizeCustomHtml(metadataContext.settings.headHtml);
@@ -33,10 +34,9 @@ export default async function RootLayout({
                 >
                     Skip to main content
                 </a>
-                <NextIntlClientProvider messages={messages}>
+                <NextIntlClientProvider locale={locale} messages={messages}>
                     <main id="main-content">{children}</main>
                 </NextIntlClientProvider>
-                <Toast />
                 <InjectedHtml nodes={footerNodes} />
             </body>
         </html>

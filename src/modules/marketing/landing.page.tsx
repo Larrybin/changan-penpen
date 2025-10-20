@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Script from "next/script";
 import { useLocale, useTranslations } from "next-intl";
@@ -7,9 +8,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { AppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
-import Playground from "./components/playground";
 import PublicFooter from "./components/public-footer";
 import PublicHeader from "./components/public-header";
+
+const Playground = dynamic(() => import("./components/playground"), {
+    loading: () => (
+        <div
+            className="bg-muted/10 border border-dashed border-border/60 rounded-xl h-[28rem] w-full flex flex-col items-center justify-center text-center"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="text-sm font-medium text-muted-foreground">
+                Loading interactive demo…
+            </span>
+            <span className="text-xs text-muted-foreground mt-2">
+                Preparing the playground experience
+            </span>
+        </div>
+    ),
+    ssr: false,
+});
 
 type MarketingLandingPageProps = {
     appUrl: string;
