@@ -65,11 +65,12 @@ export function AdminResourceForm<TFieldValues extends FieldValues>({
     });
 
     useEffect(() => {
-        if (initialValues) {
-            form.reset({ ...defaultValues, ...initialValues });
+        if (!initialValues) {
+            return;
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialValues, defaultValues, form.reset]);
+
+        form.reset(computedDefaults);
+    }, [computedDefaults, form, initialValues]);
 
     const mutation = useMutation({
         mutationFn: async (values: TFieldValues) => {
