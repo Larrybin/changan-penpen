@@ -1,5 +1,5 @@
-import AuthLayout from "@/modules/auth/auth.layout";
 import Toast from "@/components/ui/toast";
+import AuthLayout from "@/modules/auth/auth.layout";
 
 export const dynamic = "force-dynamic";
 
