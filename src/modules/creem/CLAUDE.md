@@ -14,9 +14,9 @@
 - **Utils**: `utils/verify-signature.ts` - Webhook 签名验证
 
 ### API 路由入口
-- `/api/creem/create-checkout` - 创建支付会话
-- `/api/creem/customer-portal` - 客户门户
-- `/api/webhooks/creem` - Webhook 处理
+- `/api/v1/creem/create-checkout` - 创建支付会话
+- `/api/v1/creem/customer-portal` - 客户门户
+- `/api/v1/webhooks/creem` - Webhook 处理
 
 ## 对外接口
 
@@ -262,7 +262,7 @@ export const insertSubscriptionSchema = z.object({
 
 ### 创建支付会话
 ```typescript
-// app/api/creem/create-checkout/route.ts
+// app/api/v1/creem/create-checkout/route.ts
 export async function POST(request: Request) {
   try {
     const { planId, userId } = await request.json();
@@ -293,7 +293,7 @@ export async function POST(request: Request) {
 
 ### 客户门户
 ```typescript
-// app/api/creem/customer-portal/route.ts
+// app/api/v1/creem/customer-portal/route.ts
 export async function POST(request: Request) {
   const { customerId } = await request.json();
 
@@ -308,7 +308,7 @@ export async function POST(request: Request) {
 
 ### Webhook 处理
 ```typescript
-// app/api/webhooks/creem/route.ts
+// app/api/v1/webhooks/creem/route.ts
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get('creem-signature');
@@ -402,19 +402,25 @@ interface CreditsHistoryRecord {
 - 退款和争议处理
 - 欺诈检测
 
-## 测试与质量
+## 测试策略
 
-### 测试覆盖
-- ✅ **服务层测试**: `services/__tests__/billing.service.test.ts`
-- ✅ **签名验证测试**: `utils/__tests__/verify-signature.test.ts`
-- ✅ **积分服务测试**: `services/__tests__/usage.service.test.ts`
-- ⚠️ **Webhook 测试**: 需补充更多端到端测试
+项目已移除自动化测试框架，质量保障依赖类型检查、文档一致性以及 PR 手工验收。
 
-### 测试策略
-- 单元测试覆盖核心逻辑
-- 集成测试验证 API 端点
-- Mock 外部服务调用
-- 错误场景测试
+### 手工验收清单
+- 支付流程端到端测试
+- Webhook 事件处理验证
+- 积分系统逻辑测试
+- 订阅状态变更验证
+- 安全签名验证测试
+- 错误处理场景测试
+
+### 质量保证
+- TypeScript 严格类型检查
+- Zod 数据验证
+- 错误边界处理
+- 安全签名验证
+
+详细测试状态请参考：`docs/testing-status.md`
 
 ## 常见问题 (FAQ)
 
@@ -453,15 +459,9 @@ A: 在 API 调用前检查积分余额，记录使用量，实时更新积分。
 - `services/usage.service.ts` - 使用量服务
 
 ### API 路由
-- `../../app/api/creem/create-checkout/route.ts`
-- `../../app/api/creem/customer-portal/route.ts`
-- `../../app/api/webhooks/creem/route.ts`
-
-### 测试文件
-- `services/__tests__/billing.service.test.ts`
-- `utils/__tests__/verify-signature.test.ts`
-- `utils/verify-signature.test.ts`
-- `services/__tests__/usage.service.test.ts`
+- `../../app/api/v1/creem/create-checkout/route.ts`
+- `../../app/api/v1/creem/customer-portal/route.ts`
+- `../../app/api/v1/webhooks/creem/route.ts`
 
 ## 使用示例
 
@@ -527,7 +527,7 @@ export function BillingPage() {
   const handlePlanSelect = async (planId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/creem/create-checkout', {
+      const response = await fetch('/api/v1/creem/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId, userId: 'user-123' })
@@ -561,6 +561,12 @@ export function BillingPage() {
 ---
 
 ## 变更记录 (Changelog)
+
+### 2025-10-21 - 文档一致性更新
+- ✅ 移除虚假测试声明和测试文件路径
+- ✅ 修正API路径为 `/api/v1/creem/` 和 `/api/v1/webhooks/creem` 格式
+- ✅ 更新测试策略说明，引用 `docs/testing-status.md`
+- ✅ 添加手工验收清单
 
 ### 2025-10-16 01:48:57 - 文档初始化
 - ✅ 创建 Creem 计费模块文档
