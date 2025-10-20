@@ -154,31 +154,24 @@ export default function MarketingLandingPage({
                             <p className="text-yellow-200/80 leading-relaxed mb-6">
                                 {t("hero.description")}
                             </p>
-                            <div className="flex gap-3">
+                            <div className="flex flex-col gap-3 xs:flex-row xs:gap-3">
                                 <Link href="/signup">
-                                    <Button>{t("hero.primaryCta")}</Button>
+                                    <Button className="w-full xs:w-auto">
+                                        {t("hero.primaryCta")}
+                                    </Button>
                                 </Link>
                                 <Link href="#playground">
                                     <Button
                                         variant="outline"
-                                        className="border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+                                        className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] xs:w-auto"
                                     >
                                         {t("hero.secondaryCta")}
                                     </Button>
                                 </Link>
                             </div>
-                            <div className="mt-3 text-xs text-yellow-200/70">
-                                {heroSupportValues.map((item, index) => (
-                                    <span
-                                        key={item}
-                                        className={
-                                            index < heroSupportValues.length - 1
-                                                ? "mr-3"
-                                                : ""
-                                        }
-                                    >
-                                        {item}
-                                    </span>
+                            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-yellow-200/70">
+                                {heroSupportValues.map((item) => (
+                                    <span key={item}>{item}</span>
                                 ))}
                             </div>
                         </div>
