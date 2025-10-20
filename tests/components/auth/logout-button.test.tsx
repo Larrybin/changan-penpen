@@ -7,21 +7,49 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 
 import { type AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/modules/auth/actions/auth.action";
 import authRoutes from "@/modules/auth/auth.route";
 
-import { LogoutButton } from "@/modules/auth/components/logout-button";
-import { customRender, setupUserEvent } from "../setup";
+import LogoutButton from "@/modules/auth/components/logout-button";
+import { setupUserEvent } from "../setup";
 
 // Mock国际化消息
-const mockMessages: Record<string, AbstractIntlMessages> = {
-    "Auth.logout": "Logout",
-    "AuthForms.Messages.signOutSuccess": "Signed out successfully",
-    "AuthForms.Messages.signOutError": "Failed to sign out",
-    "AuthForms.Messages.unknownError": "An unknown error occurred",
+const mockMessages = {
+    Auth: {
+        logout: "Logout",
+    },
+    AuthForms: {
+        Messages: {
+            signOutSuccess: "Signed out successfully",
+            signOutError: "Failed to sign out",
+            unknownError: "An unknown error occurred",
+        },
+    },
+} satisfies AbstractIntlMessages;
+
+type ProviderOverrides = Partial<ComponentProps<typeof NextIntlClientProvider>>;
+
+const renderLogoutButton = (
+    messages: AbstractIntlMessages = mockMessages,
+    locale = "en",
+    providerOverrides: ProviderOverrides = {},
+) => {
+    const { messages: overrideMessages, locale: overrideLocale, ...restOverrides } =
+        providerOverrides;
+
+    return render(
+        <NextIntlClientProvider
+            locale={overrideLocale ?? locale}
+            messages={(overrideMessages as AbstractIntlMessages | undefined) ?? messages}
+            {...restOverrides}
+        >
+            <LogoutButton />
+        </NextIntlClientProvider>,
+    );
 };
 
 // Mock Next.js router
@@ -78,11 +106,7 @@ describe("LogoutButton组件", () => {
 
     describe("基础渲染测试", () => {
         it("应该正确渲染登出按钮", () => {
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             // 验证按钮文本
             const logoutButton = screen.getByRole("button", { name: /logout/i });
@@ -94,22 +118,14 @@ describe("LogoutButton组件", () => {
         });
 
         it("应该有正确的按钮样式", () => {
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
-            expect(logoutButton).toHaveClass("btn-ghost"); // shadcn/ui的ghost variant
+            expect(logoutButton.className).toContain("hover:bg-accent");
         });
 
         it("应该有正确的可访问性属性", () => {
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
             expect(logoutButton).toBeEnabled();
@@ -124,13 +140,7 @@ describe("LogoutButton组件", () => {
                 messageKey: "signOutSuccess",
             });
 
-            vi.mocked(signOut).mockImplementation(mockSignOut);
-
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
             await user.click(logoutButton);
@@ -141,7 +151,9 @@ describe("LogoutButton组件", () => {
             });
 
             // 验证成功toast
-            expect(mockToast.success).toHaveBeenCalledWith("Signed out successfully");
+            await waitFor(() => {
+                expect(mockToast.success).toHaveBeenCalledWith("Signed out successfully");
+            });
 
             // 验证导航
             expect(mockPush).toHaveBeenCalledWith("/login");
@@ -154,13 +166,7 @@ describe("LogoutButton组件", () => {
                 messageKey: "signOutError",
             });
 
-            vi.mocked(signOut).mockImplementation(mockSignOut);
-
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
             await user.click(logoutButton);
@@ -171,7 +177,9 @@ describe("LogoutButton组件", () => {
             });
 
             // 验证错误toast
-            expect(mockToast.error).toHaveBeenCalledWith("Failed to sign out");
+            await waitFor(() => {
+                expect(mockToast.error).toHaveBeenCalledWith("Failed to sign out");
+            });
 
             // 验证没有导航
             expect(mockPush).not.toHaveBeenCalled();
@@ -183,13 +191,7 @@ describe("LogoutButton组件", () => {
                 new Error("Network error")
             );
 
-            vi.mocked(signOut).mockImplementation(mockSignOut);
-
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
             await user.click(logoutButton);
@@ -200,7 +202,9 @@ describe("LogoutButton组件", () => {
             });
 
             // 验证错误toast
-            expect(mockToast.error).toHaveBeenCalledWith("An unknown error occurred");
+            await waitFor(() => {
+                expect(mockToast.error).toHaveBeenCalledWith("An unknown error occurred");
+            });
 
             // 验证没有导航
             expect(mockPush).not.toHaveBeenCalled();
@@ -214,11 +218,7 @@ describe("LogoutButton组件", () => {
 
             vi.mocked(signOut).mockImplementation(mockSignOut);
 
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
 
@@ -236,13 +236,7 @@ describe("LogoutButton组件", () => {
                 messageKey: "signOutSuccess",
             });
 
-            vi.mocked(signOut).mockImplementation(mockSignOut);
-
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
             logoutButton.focus();
@@ -259,20 +253,23 @@ describe("LogoutButton组件", () => {
 
     describe("边界条件测试", () => {
         it("应该处理空的国际化消息", async () => {
-            const emptyMessages: Record<string, AbstractIntlMessages> = {};
+            const emptyMessages: AbstractIntlMessages = {
+                Auth: {},
+                AuthForms: {
+                    Messages: {},
+                },
+            };
 
             const mockSignOut = vi.mocked(signOut).mockResolvedValue({
                 success: true,
                 messageKey: "signOutSuccess",
             });
 
-            vi.mocked(signOut).mockImplementation(mockSignOut);
-
-            render(
-                <NextIntlClientProvider locale="en" messages={emptyMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton(emptyMessages, "en", {
+                onError: () => {},
+                getMessageFallback: ({ namespace, key }) =>
+                    [namespace, key].filter(Boolean).join("."),
+            });
 
             const logoutButton = screen.getByRole("button");
             await user.click(logoutButton);
@@ -289,18 +286,12 @@ describe("LogoutButton组件", () => {
                 messageKey: "signOutSuccess",
             });
 
-            vi.mocked(signOut).mockImplementation(mockSignOut);
-
             // Mock router抛出异常
             vi.mocked(mockPush).mockImplementation(() => {
                 throw new Error("Router not available");
             });
 
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
 
@@ -316,11 +307,7 @@ describe("LogoutButton组件", () => {
 
             vi.mocked(signOut).mockImplementation(mockSignOut);
 
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
 
@@ -338,11 +325,7 @@ describe("LogoutButton组件", () => {
 
     describe("可访问性测试", () => {
         it("应该支持屏幕阅读器", () => {
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
 
@@ -355,29 +338,16 @@ describe("LogoutButton组件", () => {
         });
 
         it("应该有正确的焦点管理", async () => {
-            render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton();
+
+            await user.tab();
 
             const logoutButton = screen.getByRole("button", { name: /logout/i });
-
-            // 验证可以获得焦点
-            logoutButton.focus();
-            expect(logoutButton).toHaveFocus();
-
-            // 验证可以通过Tab键导航
-            await user.tab();
             expect(logoutButton).toHaveFocus();
         });
 
         it("应该有足够的颜色对比度", () => {
-            const { container } = render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            const { container } = renderLogoutButton();
 
             // 验证重要元素有适当的对比度
             const logoutButton = screen.getByRole("button", { name: /logout/i });
@@ -392,11 +362,7 @@ describe("LogoutButton组件", () => {
         it("应该在合理时间内渲染", () => {
             const startTime = performance.now();
 
-            const { container } = render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            const { container } = renderLogoutButton();
 
             const endTime = performance.now();
             const renderTime = endTime - startTime;
@@ -406,11 +372,7 @@ describe("LogoutButton组件", () => {
         });
 
         it("应该不会内存泄漏", () => {
-            const { unmount } = render(
-                <NextIntlClientProvider locale="en" messages={mockMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            const { unmount } = renderLogoutButton();
 
             // 验证组件可以正常卸载
             expect(() => unmount()).not.toThrow();
@@ -419,18 +381,20 @@ describe("LogoutButton组件", () => {
 
     describe("国际化测试", () => {
         it("应该支持不同的语言环境", () => {
-            const chineseMessages: Record<string, AbstractIntlMessages> = {
-                "Auth.logout": "登出",
-                "AuthForms.Messages.signOutSuccess": "登出成功",
-                "AuthForms.Messages.signOutError": "登出失败",
-                "AuthForms.Messages.unknownError": "发生未知错误",
-            };
+            const chineseMessages = {
+                Auth: {
+                    logout: "登出",
+                },
+                AuthForms: {
+                    Messages: {
+                        signOutSuccess: "登出成功",
+                        signOutError: "登出失败",
+                        unknownError: "发生未知错误",
+                    },
+                },
+            } satisfies AbstractIntlMessages;
 
-            render(
-                <NextIntlClientProvider locale="zh" messages={chineseMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton(chineseMessages, "zh");
 
             // 验证中文文本
             const logoutButton = screen.getByRole("button", { name: /登出/i });
@@ -438,16 +402,20 @@ describe("LogoutButton组件", () => {
         });
 
         it("应该处理缺失的翻译", () => {
-            const incompleteMessages: Record<string, AbstractIntlMessages> = {
-                "Auth.logout": "Logout",
-                // 缺少其他翻译
-            };
+            const incompleteMessages = {
+                Auth: {
+                    logout: "Logout",
+                },
+                AuthForms: {
+                    Messages: {},
+                },
+            } satisfies AbstractIntlMessages;
 
-            render(
-                <NextIntlClientProvider locale="en" messages={incompleteMessages}>
-                    <LogoutButton />
-                </NextIntlClientProvider>
-            );
+            renderLogoutButton(incompleteMessages, "en", {
+                onError: () => {},
+                getMessageFallback: ({ namespace, key }) =>
+                    [namespace, key].filter(Boolean).join("."),
+            });
 
             // 验证即使翻译不完整，组件仍然可以渲染
             const logoutButton = screen.getByRole("button", { name: /logout/i });
