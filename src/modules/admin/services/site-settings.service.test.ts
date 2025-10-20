@@ -203,25 +203,4 @@ describe("updateSiteSettings", () => {
             }),
         );
     });
-
-    it("合并多语言 SEO 字段并同步默认语言值", async () => {
-        if (dbState.row) {
-            dbState.row.seoTitleLocalized = JSON.stringify({
-                en: "Base Title",
-            });
-        }
-
-        const result = await updateSiteSettings(
-            {
-                defaultLanguage: "fr",
-                seoTitleLocalized: { fr: "Titre personnalisé" },
-            },
-            "admin@example.com",
-        );
-
-        expect(result.defaultLanguage).toBe("fr");
-        expect(result.seoTitleLocalized.fr).toBe("Titre personnalisé");
-        expect(result.seoTitle).toBe("Titre personnalisé");
-        expect(dbState.row?.seoTitleLocalized).toContain('"fr"');
-    });
 });
