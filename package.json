@@ -152,6 +152,14 @@
             "refractor@3.6.0": "patches/refractor@3.6.0.patch"
         },
         "allowedBuildScripts": [
+            "@tailwindcss/oxide",
+            "@tree-sitter-grammars/tree-sitter-yaml",
+            "tree-sitter",
+            "tree-sitter-json",
+            "better-sqlite3",
+            "esbuild",
+            "sharp",
+            "workerd"
             "sharp",
             "@img/sharp-*",
             "workerd",
