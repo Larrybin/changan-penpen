@@ -20,7 +20,7 @@
 - Restore D1 snapshots if schema/data changed.
 
 ## Checklist
-- [ ] CI green (lint/test/build)
+- [ ] CI green (lint/typecheck/build)
 - [ ] Migrations reviewed and applied
 - [ ] Health checks green（自动 fast；严格模式如执行需确认）
 - [ ] Docs updated for user‑visible changes

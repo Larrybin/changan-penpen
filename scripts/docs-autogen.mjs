@@ -269,7 +269,6 @@ function renderReadmeAutomation() {
         "check:all",
         "typecheck",
         "lint",
-        "test",
         "deploy:cf",
     ];
     const names = Object.keys(scripts || {});
@@ -277,7 +276,7 @@ function renderReadmeAutomation() {
     const lines = [];
     lines.push("### Automation & DevOps (auto)");
     lines.push(
-        "- Local push integrates docs sync/autogen, lint/typecheck/tests, optional Next build, and rebase & push.",
+        "- Local push integrates docs sync/autogen, lint/typecheck/build, optional Next build, and rebase & push.",
     );
     lines.push(
         "- No extra commits: changes are amended into the last commit. Set `ALLOW_FORCE_PUSH=1` to handle non-fast-forward push after amend.",

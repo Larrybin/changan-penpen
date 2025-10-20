@@ -17,7 +17,7 @@
 - Ensure UTF-8 and normalized LF line endings
 - Preview Markdown rendering in IDE
 - 推荐提交/推送前手动执行本地质量门:
-  - `pnpm check:all`（必要时加 `CHECK_ENABLE_TESTS=1` 触发 Vitest）
+  - `pnpm check:all`（必要时用 `SKIP_NEXT_BUILD=1` 加速，仅在确认无需构建时使用）
   - `pnpm run cf-typegen`（仅绑定文件变更时）
   - `pnpm exec tsc --noEmit`
   - `pnpm run check:docs`、`pnpm run check:links`

@@ -24,7 +24,7 @@
 
 ## Branch Protection
 - Require PR reviews and green CI for `main`.
-- Enforce status checks (lint/tests/build) and signed commits if your org mandates it.
+- Enforce status checks (lint/typecheck/build) and signed commits if your org mandates it.
 
 ## Randomness (CSPRNG)
 

@@ -23,7 +23,7 @@
 - **Authentication**: Reuse helpers from `src/lib/auth`. Avoid duplicating session logic.
 - **Event tracking**: Emit events through `src/lib/analytics` to keep dashboards consistent.
 - **Background jobs**: Prefer durable background actions in Workers. Add new queues to `workflow/` docs.
-- **Permissions**: Extend `src/modules/authz` policies and add tests covering least-privilege cases.
+- **Permissions**: Extend `src/modules/authz` policies and document manual least-privilege checks after deployment.
 
 ## Cross-Platform Deployment Checklist
 | Target | Required Steps |
@@ -33,7 +33,7 @@
 | **Edge Preview** | Use `pnpm dev:cf` locally, capture metrics in Workers Analytics, and document known limitations in `troubleshooting.md`. |
 
 ## Quality Gates
-- Ensure `pnpm lint` and `pnpm typecheck` pass before opening a PR.
+- Ensure `pnpm biome:check` and `pnpm typecheck` pass before opening a PR (run `pnpm build` when routes or config change).
 - Update `docs/00-index.md` and any related runbooks to keep navigation accurate.
 
 ## Rollout & Post-Deployment

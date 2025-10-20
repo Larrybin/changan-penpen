@@ -23,7 +23,7 @@ This document complements `docs/deployment/cloudflare-workers.md` and `docs/work
 - Restore D1 snapshot when schema/data changed
 
 ## Checklist
-- [ ] CI passed (lint/test/build)
+- [ ] CI passed (lint/typecheck/build)
 - [ ] Migrations reviewed
 - [ ] 健康检查通过（自动严格模式；若手动跑 fast=1 亦请确认）
 - [ ] Observability dashboards clean

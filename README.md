@@ -129,7 +129,7 @@ See `docs/ci-cd.md` and `docs/workflows/*.md` for details.
 
 ## Contributing
 - TypeScript-first, PascalCase components, Biome formatting
-- Contribution flow, PR template, and test requirements: `docs/contributing.md`
+- Contribution flow, PR template, and quality gates: `docs/contributing.md`
 - If you change Cloudflare bindings or workflows, update related docs and note it in the PR description
 
 ---
@@ -140,8 +140,8 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_AUTOMATION START -->
 ### Automation & DevOps (auto)
-- Local workflow: run `pnpm check:all`, `pnpm typecheck`, `pnpm lint` before推送,确保质量门槛达标.
-- 详情参见 docs/local-dev.md,docs/ci-cd.md,docs/docs-maintenance.md.
+- Local workflow: run `pnpm check:all`（或手动执行 `pnpm biome:check && pnpm typecheck && pnpm build`）before 推送，确保质量门槛达标。
+- 详情参见 docs/local-dev.md、docs/ci-cd.md、docs/docs-maintenance.md。
 
 #### Common Scripts Snapshot
 | Script | Command |
