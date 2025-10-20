@@ -4,7 +4,39 @@ import { defineConfig } from "vitest/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const aliases = [
+    {
+        find: /^msw\/node$/, // ensure more specific match resolves before the generic "msw" alias
+        replacement: path.resolve(__dirname, "./vitest.stubs/msw-node.ts"),
+    },
+    {
+        find: /^msw\/browser$/,
+        replacement: path.resolve(
+            __dirname,
+            "./node_modules/msw/lib/browser/index.js",
+        ),
+    },
+    {
+        find: /^msw$/,
+        replacement: path.resolve(__dirname, "./vitest.stubs/msw.ts"),
+    },
+    {
+        find: "@",
+        replacement: path.resolve(__dirname, "./src"),
+    },
+    {
+        find: "server-only",
+        replacement: path.resolve(
+            __dirname,
+            "./vitest.stubs/server-only.ts",
+        ),
+    },
+];
+
 export default defineConfig({
+    resolve: {
+        alias: aliases,
+    },
     test: {
         environment: "jsdom",
         setupFiles: ["./vitest.setup.ts"],
@@ -69,14 +101,7 @@ export default defineConfig({
                 lines: [50, 80],
             },
         },
-        alias: {
-            "@": path.resolve(__dirname, "./src"),
-            // Stub Next.js-only module so Vite/Vitest can transform files that import it
-            "server-only": path.resolve(
-                __dirname,
-                "./vitest.stubs/server-only.ts",
-            ),
-        },
+        alias: aliases,
     },
     css: {
         // Avoid loading project PostCSS/Tailwind pipeline during unit tests
