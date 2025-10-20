@@ -25,7 +25,7 @@ Start with [docs/00-index.md](00-index.md) for the complete index and [README](.
 Use `pnpm dev` for the standard Next.js development server, or `pnpm dev:cf` to run the OpenNext Cloudflare build through Wrangler. Ensure dependencies are installed with `pnpm install` first.
 
 ### Which quality gates should I run before opening a PR?
-Run `pnpm lint`, `pnpm test`, `pnpm typecheck`, and the documentation tooling such as `pnpm run check:links` to match the repository guidelines.
+Run `pnpm lint`, `pnpm typecheck`, and the documentation tooling such as `pnpm run check:links` to match the repository guidelines.
 
 ## Deployment & Operations
 

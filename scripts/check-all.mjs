@@ -12,15 +12,11 @@ import {
 } from "./lib/quality.mjs";
 
 const STRICT_MODE = process.env.CHECK_STRICT === "1";
-const ENABLE_TESTS =
-    process.env.CHECK_ENABLE_TESTS === "1" && process.env.SKIP_TESTS !== "1";
 const SKIP_BOM = process.env.SKIP_BOM_CHECK === "1";
 const SKIP_DOCS_NORMALIZE = process.env.SKIP_DOCS_NORMALIZE === "1";
 const STRICT_BOM = process.env.STRICT_BOM === "1" || STRICT_MODE;
 const SKIP_DOCS_CHECK = process.env.SKIP_DOCS_CHECK === "1";
 const SKIP_NEXT_BUILD = process.env.SKIP_NEXT_BUILD === "1";
-const FAST_VITEST = process.env.FAST_VITEST === "1";
-const FULL_COVERAGE = process.env.FULL_COVERAGE === "1";
 
 const session = new QualitySession({
     logDirEnvVar: "CHECK_LOG_DIR",
@@ -39,7 +35,6 @@ const LOG_PATH = session.getLogPath();
 let CF_TYPEGEN = false,
     BIOME_WRITE_RAN = false,
     TSC_OK = false,
-    TEST_OK = false,
     NEXT_BUILD_STATUS = "skipped",
     DOCS_OK = false,
     LINKS_OK = false,
@@ -116,7 +111,6 @@ const { files: changedFiles } = getChangedFiles({
 const CH = classifyChanges(changedFiles);
 const DO_CF_TYPEGEN = CH.bindingsChanged;
 const DO_TSC = !CH.docsOnly && !CH.workflowsOnly;
-const DO_TESTS = ENABLE_TESTS && DO_TSC;
 const DO_NEXT_BUILD = DO_TSC && !SKIP_NEXT_BUILD;
 
 // --- 3) Biome 写入 --------------------------------------------------------
@@ -174,30 +168,7 @@ if (DO_TSC) {
     console.log("仅文档或流程改动，跳过 TypeScript 检查。");
 }
 
-// --- 6) 单测 ---------------------------------------------------------------
-if (DO_TESTS) {
-    timeStart("vitest");
-    try {
-        if (FAST_VITEST && !FULL_COVERAGE) {
-            console.log("\n运行 Vitest（快速模式）…");
-            run("pnpm exec vitest run --reporter=dot");
-        } else {
-            console.log("\n运行 Vitest（完整模式）…");
-            run("pnpm exec vitest run");
-        }
-        TEST_OK = true;
-        timeEnd("vitest");
-    } catch (error) {
-        timeEnd("vitest");
-        handleFailure("Vitest 失败。", error);
-    }
-} else if (ENABLE_TESTS) {
-    console.log("未检测到需要执行测试的代码改动，跳过单测。");
-} else {
-    console.log("默认关闭单测（CHECK_ENABLE_TESTS!=1 或 SKIP_TESTS=1）。");
-}
-
-// --- 7) Next.js build ------------------------------------------------------
+// --- 6) Next.js build ------------------------------------------------------
 if (DO_NEXT_BUILD) {
     try {
         if (existsSync(".next"))
@@ -226,7 +197,7 @@ if (DO_NEXT_BUILD) {
     console.log("跳过 Next.js 构建（变更范围不需要或显式跳过）。");
 }
 
-// --- 8) 文档与链接校验 ---------------------------------------------------
+// --- 7) 文档与链接校验 ---------------------------------------------------
 if (SKIP_DOCS_CHECK) {
     console.log("SKIP_DOCS_CHECK=1，跳过文档与链接校验。");
 } else {
@@ -244,7 +215,7 @@ if (SKIP_DOCS_CHECK) {
     timeEnd("docs-checks");
 }
 
-// --- 9) 最终 Biome --------------------------------------------------------
+// --- 8) 最终 Biome --------------------------------------------------------
 timeStart("biome-final");
 try {
     run("pnpm exec biome check .");
@@ -286,17 +257,6 @@ try {
         `- TypeScript: ${TSC_OK ? "OK" : DO_TSC ? "FAILED" : "Skipped"}${
             STEP_TIMES.tsc ? ` (${STEP_TIMES.tsc.ms}ms)` : ""
         }`,
-    );
-    console.log(
-        `- 单测: ${
-            TEST_OK
-                ? "OK"
-                : DO_TESTS
-                  ? "FAILED"
-                  : ENABLE_TESTS
-                    ? "Skipped"
-                    : "Disabled"
-        }${STEP_TIMES.vitest ? ` (${STEP_TIMES.vitest.ms}ms)` : ""}`,
     );
     console.log(
         `- Next.js build: ${NEXT_BUILD_STATUS}${

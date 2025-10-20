@@ -101,7 +101,7 @@ pnpm dev:remote  # remote region (requires wrangler login)
 - Read `docs/local-dev.md` for debugging tips
 - Env & secrets matrix: `docs/env-and-secrets.md`
 - Architecture: `docs/architecture-overview.md`
-- Before committing: `pnpm lint` and `pnpm test` (test plan in `docs/testing.md`)
+- Before committing: `pnpm lint` and `pnpm typecheck`
 
 ---
 

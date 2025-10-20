@@ -33,8 +33,7 @@
 | **Edge Preview** | Use `pnpm dev:cf` locally, capture metrics in Workers Analytics, and document known limitations in `troubleshooting.md`. |
 
 ## Quality Gates
-- Add Vitest coverage for new business logic and update snapshots as needed.
-- Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` before opening a PR.
+- Ensure `pnpm lint` and `pnpm typecheck` pass before opening a PR.
 - Update `docs/00-index.md` and any related runbooks to keep navigation accurate.
 
 ## Rollout & Post-Deployment

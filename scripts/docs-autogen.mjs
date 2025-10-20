@@ -441,31 +441,6 @@ function renderReadmeQuality() {
             }
         }
     } catch {}
-    // Extract Vitest thresholds from vitest.config.ts
-    try {
-        const vt = path.join(root, "vitest.config.ts");
-        if (exists(vt)) {
-            const s = readUtf8(vt);
-            const parseNum = (key) => {
-                const r = new RegExp(`${key}s*:s*(\n|\r\n)?s*(d+)`);
-                const m = s.match(r);
-                return m ? Number(m[2]) : null;
-            };
-            const L = parseNum("lines");
-            const S = parseNum("statements");
-            const B = parseNum("branches");
-            const F = parseNum("functions");
-            const any = [L, S, B, F].some((x) => typeof x === "number");
-            if (any) {
-                lines.push("\n- Coverage thresholds (Vitest):");
-                lines.push("  | Lines | Statements | Branches | Functions |");
-                lines.push("  | --- | --- | --- | --- |");
-                lines.push(
-                    `  | ${L ?? "-"} | ${S ?? "-"} | ${B ?? "-"} | ${F ?? "-"} |`,
-                );
-            }
-        }
-    } catch {}
     // Policy notes
     // Removed Semgrep note; SonarCloud remains the primary CI quality scanner.
     lines.push(

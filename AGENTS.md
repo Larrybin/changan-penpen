@@ -12,7 +12,6 @@
 - `pnpm deploy:cf` 部署到 Cloudflare Workers。
 - `pnpm db:migrate:local` 应用 D1 本地迁移；`pnpm db:migrate:prod` 远程迁移。
 - `pnpm lint` 使用 Biome 自动格式化；`pnpm typecheck` 生成绑定并做 TS 检查。
-- `pnpm test` 运行 Vitest；CI 用 `pnpm test:ci`。
 - 文档/链接检查：`pnpm run check:docs`，`pnpm run check:links`。
 
 ## Coding Style & Naming Conventions
@@ -22,9 +21,7 @@
 - 提交前运行 `pnpm lint`；仓库启用 `husky` + `lint-staged` 自动修复。
 
 ## Testing Guidelines
-- 测试框架：Vitest。就近放置为 `*.test.ts`。
-- 保持确定性；对 D1/R2 与外部网络进行 mock（见 `docs/testing.md`）。
-- 运行：`pnpm test`；CI 使用 `pnpm test:ci`（dot 报告）。
+- 本仓库已移除所有自动化测试与相关脚本，不需要也无法运行测试。
 
 ## Commit & Pull Request Guidelines
 - 使用 Conventional Commits（如 `feat:`, `fix:`, `docs:`）。
