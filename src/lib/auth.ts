@@ -5,27 +5,16 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { getDb } from "@/db";
 
-let authInstance: ReturnType<typeof betterAuth> | null = null;
+type BetterAuthInstance = ReturnType<typeof betterAuth>;
 
-const createAuth = async () => {
-    if (authInstance) {
-        return authInstance;
-    }
+let authInstance: BetterAuthInstance | null = null;
 
+async function buildAuthInstance(): Promise<BetterAuthInstance> {
     const { env } = await getCloudflareContext({ async: true });
     const db = await getDb();
     const googleClientId = env.GOOGLE_CLIENT_ID?.trim();
     const googleClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
     const googleConfigured = Boolean(googleClientId && googleClientSecret);
-    const socialProviders = googleConfigured
-        ? {
-              google: {
-                  enabled: true,
-                  clientId: googleClientId!,
-                  clientSecret: googleClientSecret!,
-              },
-          }
-        : undefined;
 
     if (googleClientId && !googleClientSecret) {
         console.warn(
@@ -37,7 +26,17 @@ const createAuth = async () => {
         );
     }
 
-    authInstance = betterAuth({
+    const socialProviders = googleConfigured
+        ? {
+              google: {
+                  enabled: true,
+                  clientId: googleClientId!,
+                  clientSecret: googleClientSecret!,
+              },
+          }
+        : undefined;
+
+    return betterAuth({
         secret: env.BETTER_AUTH_SECRET,
         database: drizzleAdapter(db, {
             provider: "sqlite",
@@ -48,10 +47,17 @@ const createAuth = async () => {
         socialProviders,
         plugins: [nextCookies()],
     });
+}
 
+export async function getAuth({
+    fresh = false,
+} = {}): Promise<BetterAuthInstance> {
+    if (!authInstance || fresh) {
+        authInstance = await buildAuthInstance();
+    }
     return authInstance;
-};
+}
 
-export const getAuth = async () => {
-    return await createAuth();
-};
+export function __resetAuthInstanceForTests() {
+    authInstance = null;
+}

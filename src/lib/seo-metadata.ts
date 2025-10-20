@@ -103,6 +103,23 @@ function ensureLeadingSlash(path: string): string {
     return path.startsWith("/") ? path : `/${path}`;
 }
 
+function resolveLocalizedSetting(
+    locale: AppLocale,
+    localized: Partial<Record<AppLocale, string>>,
+    fallback: string,
+    defaultLocale: AppLocale,
+): string {
+    const preferred = localized?.[locale]?.trim();
+    if (preferred) {
+        return preferred;
+    }
+    const defaultValue = localized?.[defaultLocale]?.trim();
+    if (defaultValue) {
+        return defaultValue;
+    }
+    return fallback;
+}
+
 export async function getMetadataContext(
     locale: AppLocale,
 ): Promise<MetadataContext> {
@@ -123,10 +140,17 @@ export async function getMetadataContext(
         metadataBase = undefined;
     }
 
-    const shareImageSource = settings.seoOgImage?.trim().length
-        ? settings.seoOgImage.trim()
-        : "/og-image.svg";
-    const shareImage = ensureAbsoluteUrl(shareImageSource, appUrl);
+    const defaultLocale = settings.defaultLanguage;
+    const shareImageSource = resolveLocalizedSetting(
+        locale,
+        settings.seoOgImageLocalized,
+        settings.seoOgImage?.trim() ?? "",
+        defaultLocale,
+    );
+    const shareImage = ensureAbsoluteUrl(
+        shareImageSource?.length ? shareImageSource : "/og-image.svg",
+        appUrl,
+    );
     const activeLocales = getActiveAppLocales(settings);
 
     return {
@@ -165,11 +189,24 @@ export function createMetadata(
         },
         {} as Record<string, string>,
     );
-    const fallbackTitle = context.settings.seoTitle?.trim().length
-        ? context.settings.seoTitle.trim()
+    const defaultLocale = context.settings.defaultLanguage;
+    const localizedTitle = resolveLocalizedSetting(
+        context.locale,
+        context.settings.seoTitleLocalized,
+        context.settings.seoTitle ?? "",
+        defaultLocale,
+    );
+    const fallbackTitle = localizedTitle?.trim().length
+        ? localizedTitle.trim()
         : context.messages.title;
-    const fallbackDescription = context.settings.seoDescription?.trim().length
-        ? context.settings.seoDescription.trim()
+    const localizedDescription = resolveLocalizedSetting(
+        context.locale,
+        context.settings.seoDescriptionLocalized,
+        context.settings.seoDescription ?? "",
+        defaultLocale,
+    );
+    const fallbackDescription = localizedDescription?.trim().length
+        ? localizedDescription.trim()
         : context.messages.description;
     const title = options.title?.trim().length
         ? options.title.trim()
@@ -253,7 +290,10 @@ export function createMetadata(
         keywords,
         alternates: {
             canonical,
-            languages,
+            languages: {
+                ...languages,
+                "x-default": buildLocalizedPath(defaultLocale, canonicalPath),
+            },
         },
         openGraph,
         twitter,

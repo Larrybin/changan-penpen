@@ -36,6 +36,13 @@
             "when": 1760518003421,
             "tag": "0006_add-credit-transactions",
             "breakpoints": true
+        },
+        {
+            "idx": 7,
+            "version": "10",
+            "when": 1762000000000,
+            "tag": "0007_multilingual_seo_fields",
+            "breakpoints": true
         }
     ]
 }

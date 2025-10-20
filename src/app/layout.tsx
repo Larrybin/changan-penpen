@@ -4,10 +4,12 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
 import { InjectedHtml } from "@/components/seo/custom-html";
-import { Toast } from "@/components/ui/toast";
 import type { AppLocale } from "@/i18n/config";
+import { pickMessages } from "@/lib/intl";
 import { sanitizeCustomHtml } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
+
+const SHARED_NAMESPACES = ["Common", "Nav", "Auth", "AuthForms"] as const;
 
 export default async function RootLayout({
     children,
@@ -15,10 +17,11 @@ export default async function RootLayout({
     children: React.ReactNode;
 }>) {
     const locale = (await getLocale()) as AppLocale;
-    const [messages, metadataContext] = await Promise.all([
-        getMessages(),
+    const [allMessages, metadataContext] = await Promise.all([
+        getMessages({ locale }),
         getMetadataContext(locale),
     ]);
+    const messages = pickMessages(allMessages, SHARED_NAMESPACES);
     const headNodes = sanitizeCustomHtml(metadataContext.settings.headHtml);
     const footerNodes = sanitizeCustomHtml(metadataContext.settings.footerHtml);
     return (
@@ -33,10 +36,9 @@ export default async function RootLayout({
                 >
                     Skip to main content
                 </a>
-                <NextIntlClientProvider messages={messages}>
+                <NextIntlClientProvider locale={locale} messages={messages}>
                     <main id="main-content">{children}</main>
                 </NextIntlClientProvider>
-                <Toast />
                 <InjectedHtml nodes={footerNodes} />
             </body>
         </html>

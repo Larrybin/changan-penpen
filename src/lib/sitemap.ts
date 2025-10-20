@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
+import type { AppLocale } from "@/i18n/config";
 
 export type SitemapEntryConfig = {
     path: string;
     priority?: number;
     changeFrequency?: MetadataRoute.Sitemap[number]["changeFrequency"];
     lastModified?: Date;
+    localizedPaths?: Partial<Record<AppLocale, string>>;
 };
 
 type Loader = () => Promise<SitemapEntryConfig[]>;

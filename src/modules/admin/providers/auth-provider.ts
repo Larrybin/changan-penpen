@@ -13,7 +13,45 @@ async function fetchSession() {
 }
 
 export const adminAuthProvider = {
-    login: async () => ({ success: true }),
+    login: async (params?: {
+        email?: string;
+        password?: string;
+        entryToken?: string;
+        redirectTo?: string;
+    }) => {
+        try {
+            const response = await fetch("/api/v1/admin/login", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(params ?? {}),
+            });
+
+            const payload = (await response.json().catch(() => ({}))) as {
+                success?: boolean;
+                message?: string;
+                redirectTo?: string;
+            };
+
+            if (!response.ok || payload.success !== true) {
+                return {
+                    success: false,
+                    error: payload.message ?? "Unable to login",
+                } as const;
+            }
+
+            return {
+                success: true,
+                redirectTo: payload.redirectTo,
+            } as const;
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Unable to login";
+            return { success: false, error: message } as const;
+        }
+    },
     logout: async () => {
         await fetch("/api/v1/auth/logout", {
             method: "POST",
