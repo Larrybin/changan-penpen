@@ -5,6 +5,7 @@ import { getLocale, getMessages } from "next-intl/server";
 
 import { InjectedHtml } from "@/components/seo/custom-html";
 import type { AppLocale } from "@/i18n/config";
+import { pickMessages } from "@/lib/intl";
 import { sanitizeCustomHtml } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
@@ -16,10 +17,11 @@ export default async function RootLayout({
     children: React.ReactNode;
 }>) {
     const locale = (await getLocale()) as AppLocale;
-    const [messages, metadataContext] = await Promise.all([
-        getMessages({ locale, namespaces: SHARED_NAMESPACES }),
+    const [allMessages, metadataContext] = await Promise.all([
+        getMessages({ locale }),
         getMetadataContext(locale),
     ]);
+    const messages = pickMessages(allMessages, SHARED_NAMESPACES);
     const headNodes = sanitizeCustomHtml(metadataContext.settings.headHtml);
     const footerNodes = sanitizeCustomHtml(metadataContext.settings.footerHtml);
     return (
