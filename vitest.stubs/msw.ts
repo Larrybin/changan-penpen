@@ -6,14 +6,19 @@ import * as core from "../node_modules/msw/lib/core/index.mjs";
 
 export * from "../node_modules/msw/lib/core/index.mjs";
 
-const parseRequestBody = async (request: Request) => {
+type LegacyStrictRequest = core.StrictRequest<core.DefaultBodyType>;
+
+const isStringArray = (value: unknown): value is readonly string[] =>
+    Array.isArray(value);
+
+const parseRequestBody = async (request: Request | LegacyStrictRequest) => {
     const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
 
     if (!contentType) {
         return undefined;
     }
 
-    const cloned = request.clone();
+    const cloned = request.clone() as Request;
 
     try {
         if (contentType.includes("application/json")) {
@@ -97,16 +102,27 @@ const createLegacyResponseFactory = (state: {
 };
 
 const createLegacyRequest = async (
-    request: Request,
-    params: Record<string, string | undefined>,
+    request: LegacyStrictRequest,
+    params: Record<string, string | readonly string[] | undefined>,
 ) => {
     const url = new URL(request.url);
+    const normalizedParams: Record<string, string | undefined> = {};
+
+    for (const [key, value] of Object.entries(params)) {
+        if (isStringArray(value)) {
+            normalizedParams[key] = value[value.length - 1];
+        } else if (typeof value === "string") {
+            normalizedParams[key] = value;
+        } else {
+            normalizedParams[key] = undefined;
+        }
+    }
 
     return {
         url,
         method: request.method,
         headers: request.headers,
-        params,
+        params: normalizedParams,
         body: await parseRequestBody(request),
     };
 };

@@ -26,10 +26,7 @@ const aliases = [
     },
     {
         find: "server-only",
-        replacement: path.resolve(
-            __dirname,
-            "./vitest.stubs/server-only.ts",
-        ),
+        replacement: path.resolve(__dirname, "./vitest.stubs/server-only.ts"),
     },
 ];
 
