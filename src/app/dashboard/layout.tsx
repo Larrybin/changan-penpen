@@ -1,9 +1,9 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import Toast from "@/components/ui/toast";
 import type { AppLocale } from "@/i18n/config";
 import { omitMessages } from "@/lib/intl";
 import DashboardLayout from "@/modules/dashboard/dashboard.layout";
-import Toast from "@/components/ui/toast";
 
 const DASHBOARD_OMIT_NAMESPACES = ["Marketing"] as const;
 

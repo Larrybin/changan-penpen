@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { AppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
+import Playground from "./components/playground-loader";
 import PublicFooter from "./components/public-footer";
 import PublicHeader from "./components/public-header";
-import Playground from "./components/playground-loader";
 
 type MarketingLandingPageProps = {
     appUrl: string;
