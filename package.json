@@ -153,15 +153,19 @@
         },
         "allowedBuildScripts": [
             "@tailwindcss/oxide",
+            "@tailwindcss/oxide-*",
+            "@tree-sitter-grammars/*",
             "@tree-sitter-grammars/tree-sitter-yaml",
-            "tree-sitter",
             "tree-sitter-json",
+            "tree-sitter",
+            "tree-sitter-*",
             "better-sqlite3",
+            "@better-sqlite3/*",
             "esbuild",
-            "sharp",
-            "workerd"
+            "@esbuild/*",
             "sharp",
             "@img/sharp-*",
+            "@img/sharp-libvips-*",
             "workerd",
             "@cloudflare/workerd-*"
         ]
