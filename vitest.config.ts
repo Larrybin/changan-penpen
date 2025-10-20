@@ -30,8 +30,27 @@ const aliases = [
     },
 ];
 
-const isTruthy = (value: string | undefined) =>
-    value === "true" || value === "1";
+const isTruthy = (value: string | undefined) => {
+    if (value == null) {
+        return false;
+    }
+
+    const normalized = value.trim().toLowerCase();
+
+    if (!normalized) {
+        return false;
+    }
+
+    if (["false", "0", "off", "no"].includes(normalized)) {
+        return false;
+    }
+
+    if (["true", "1", "on", "yes"].includes(normalized)) {
+        return true;
+    }
+
+    return Boolean(normalized);
+};
 
 const coverageEnabled =
     isTruthy(process.env.CI) || isTruthy(process.env.VITEST_COVERAGE);
