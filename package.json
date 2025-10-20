@@ -110,13 +110,14 @@
     "devDependencies": {
         "@babel/parser": "^7.28.4",
         "@biomejs/biome": "2.2.6",
+        "@changesets/cli": "^2.27.9",
         "@next/bundle-analyzer": "^15.5.6",
+        "@simplewebauthn/browser": "^13.2.2",
         "@stoplight/spectral-cli": "^6.15.0",
         "@tailwindcss/postcss": "^4",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",
         "@testing-library/user-event": "^14.6.1",
-        "@changesets/cli": "^2.27.9",
         "@types/better-sqlite3": "^7.6.13",
         "@types/jest-axe": "^3.5.9",
         "@types/node": "^24.8.1",
@@ -159,6 +160,10 @@
             "esbuild",
             "sharp",
             "workerd"
+            "sharp",
+            "@img/sharp-*",
+            "workerd",
+            "@cloudflare/workerd-*"
         ]
     },
     "prepare": "husky"

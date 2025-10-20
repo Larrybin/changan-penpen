@@ -133,7 +133,6 @@ export function AdminTodoForm({
                                 await onSubmit(payload);
                             } catch (error) {
                                 applyApiErrorToForm(form, error);
-                                throw error;
                             }
                         })}
                     >
