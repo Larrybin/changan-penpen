@@ -1,10 +1,5 @@
-import nextDynamic from "next/dynamic";
-
 import AuthLayout from "@/modules/auth/auth.layout";
-
-const Toast = nextDynamic(() => import("@/components/ui/toast"), {
-    ssr: false,
-});
+import Toast from "@/components/ui/toast";
 
 export const dynamic = "force-dynamic";
 
