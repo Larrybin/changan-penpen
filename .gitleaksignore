@@ -1,0 +1,4 @@
+# Allowlist historical false positives from example configuration commits
+fd80dd3af97dbe5130ada2bc0166112f4616d47a:creem_payment_example/.env.example:jwt:4
+fd80dd3af97dbe5130ada2bc0166112f4616d47a:creem_payment_example/.env.example:jwt:7
+5d1a11f2c0e11848f45d51e3b6a2621f0314c116:tests/api/handlers/creem.test.ts:generic-api-key:17
