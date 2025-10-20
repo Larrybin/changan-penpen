@@ -92,18 +92,60 @@ export const server = setupServer(
             uptime: 1234,
         });
     }),
+    http.post("/api/health", () => {
+        return HttpResponse.json(
+            { error: "Method not allowed" },
+            { status: 405 },
+        );
+    }),
+    http.put("/api/health", () => {
+        return HttpResponse.json(
+            { error: "Method not allowed" },
+            { status: 405 },
+        );
+    }),
+    http.delete("/api/health", () => {
+        return HttpResponse.json(
+            { error: "Method not allowed" },
+            { status: 405 },
+        );
+    }),
 
     // 认证相关API mock
     http.post("/api/auth/signin", async ({ request }) => {
-        const body = (await request.json()) as {
-            email?: string;
-            password?: string;
+        let payload: unknown;
+
+        try {
+            payload = await request.json();
+        } catch {
+            return HttpResponse.json(
+                { error: "Invalid request body" },
+                { status: 400 },
+            );
+        }
+
+        const { email, password } = (payload ?? {}) as {
+            email?: unknown;
+            password?: unknown;
         };
 
-        // 基本验证
-        if (!body.email || !body.password) {
+        const normalizedEmail = typeof email === "string" ? email.trim() : "";
+        const normalizedPassword = typeof password === "string" ? password : "";
+
+        if (!normalizedEmail || !normalizedPassword) {
             return HttpResponse.json(
                 { error: "Missing email or password" },
+                { status: 400 },
+            );
+        }
+
+        const emailPattern = /^\S+@\S+\.\S+$/;
+        if (
+            !emailPattern.test(normalizedEmail) ||
+            normalizedPassword.length < 8
+        ) {
+            return HttpResponse.json(
+                { error: "Invalid email or password" },
                 { status: 400 },
             );
         }
@@ -112,7 +154,7 @@ export const server = setupServer(
             success: true,
             user: {
                 id: "test-user-id",
-                email: body.email,
+                email: normalizedEmail,
                 name: "Test User",
             },
         });

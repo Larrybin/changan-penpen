@@ -59,12 +59,12 @@ vi.mock("@simplewebauthn/browser", () => ({
 }));
 
 // Mock toast
-const mockToast = {
+const mockToast = vi.hoisted(() => ({
     dismiss: vi.fn(),
     loading: vi.fn(),
     success: vi.fn(),
     error: vi.fn(),
-};
+}));
 
 vi.mock("sonner", () => ({
     toast: mockToast,
