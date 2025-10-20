@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/cache", () => ({
     revalidatePath: vi.fn(),
@@ -80,8 +80,16 @@ const buildFormData = (values: Record<string, string>) => {
 };
 
 describe("todos actions failure paths", () => {
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
     beforeEach(() => {
         vi.resetAllMocks();
+        consoleErrorSpy = vi.spyOn(console, "error");
+        consoleErrorSpy.mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
     });
 
     describe("createTodoAction", () => {
