@@ -70,14 +70,14 @@ graph TD
 
 ## 模块索引
 
-| 模块路径 | 职责描述 | 技术栈 | 入口文件 | 测试覆盖 |
+| 模块路径 | 职责描述 | 技术栈 | 入口文件 | 质量保障 |
 |---------|---------|--------|---------|----------|
-| `src/modules/auth` | 身份认证与授权 | Better Auth, Google OAuth | `auth.action.ts` | ✅ 单元测试 + 快照测试 |
-| `src/modules/dashboard` | 用户主仪表板布局 | Next.js Layout, TanStack Query | `dashboard.layout.tsx` | ⚠️ 需补充测试 |
-| `src/modules/todos` | 任务管理系统 | Drizzle ORM, Zod, Server Actions | `todo.service.ts` | ✅ 服务层单元测试 |
+| `src/modules/auth` | 身份认证与授权 | Better Auth, Google OAuth | `auth.action.ts` | 人工验收 |
+| `src/modules/dashboard` | 用户主仪表板布局 | Next.js Layout, TanStack Query | `dashboard.layout.tsx` | 人工验收 |
+| `src/modules/todos` | 任务管理系统 | Drizzle ORM, Zod, Server Actions | `todo.service.ts` | 人工验收 |
 | `src/modules/admin` | 管理后台系统 | Refine, Drizzle, 多功能面板 | `admin.layout.tsx` | ⚠️ 部分覆盖 |
-| `src/modules/marketing` | 营销落地页 | Next.js, SEO优化, i18n | `landing.page.tsx` | ⚠️ 需补充测试 |
-| `src/modules/creem` | 计费与订阅系统 | Creem API, Webhook处理 | `billing.service.ts` | ✅ 计费服务测试 |
+| `src/modules/marketing` | 营销落地页 | Next.js, SEO优化, i18n | `landing.page.tsx` | 人工验收 |
+| `src/modules/creem` | 计费与订阅系统 | Creem API, Webhook处理 | `billing.service.ts` | 人工验收 |
 
 ## 运行与开发
 
@@ -161,7 +161,7 @@ src/modules/[feature]/
 ├── models/             # 类型定义
 ├── utils/              # 工具函数
 ├── hooks/              # React Hooks
-└── __tests__/          # 测试文件
+└── __tests__/          # 已移除（无自动化测试）
 ```
 
 ### 数据库约定
@@ -284,7 +284,7 @@ interface ApiResponse<T = any> {
 
 ### Cloudflare 部署流程
 1. 代码推送至 main 分支
-2. GitHub Actions 自动构建和测试
+2. GitHub Actions 自动构建
 3. OpenNext 构建优化
 4. Wrangler 部署到 Cloudflare Workers
 5. 健康检查验证
@@ -300,7 +300,7 @@ interface ApiResponse<T = any> {
 ### 添加新功能模块
 1. 在 `src/modules/` 下创建新模块目录
 2. 按照标准目录结构组织代码
-3. 添加相应的测试文件
+3. 更新人工验收清单
 4. 更新路由配置
 5. 编写模块文档
 
@@ -317,7 +317,7 @@ pnpm db:migrate:local
 1. 在 `src/app/api/` 下创建路由文件
 2. 实现标准的错误处理
 3. 添加适当的认证中间件
-4. 编写集成测试
+4. 记录关键路径验证步骤
 
 ## 故障排除
 
@@ -345,7 +345,7 @@ pnpm db:migrate:local
 
 ### 下一步计划
 - [ ] 为每个模块生成详细的 CLAUDE.md 文档
-- [ ] 补充缺失的测试用例
+- [ ] 补充缺失的验收检查
 - [ ] 完善 API 文档
 - [ ] 添加更多开发示例和模板
 

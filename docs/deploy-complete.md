@@ -3,7 +3,7 @@
 This document complements `docs/deployment/cloudflare-workers.md` and `docs/workflows/deploy.md` with end‑to‑end considerations.
 
 ## Pre‑deploy
-- Ensure CI is green and coverage thresholds hold
+- Ensure CI is green (lint/typecheck/build)
 - Verify strict health check `/api/v1/health` passes in staging (fast mode 可选)
 - Review DB migrations and data impacts; export D1 snapshot if necessary
 
@@ -28,4 +28,3 @@ This document complements `docs/deployment/cloudflare-workers.md` and `docs/work
 - [ ] 健康检查通过（自动严格模式；若手动跑 fast=1 亦请确认）
 - [ ] Observability dashboards clean
 - [ ] Docs updated if process changed
-
