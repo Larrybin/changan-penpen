@@ -5,23 +5,24 @@ import {
     getActiveAppLocales,
     resolveAppUrl,
 } from "@/lib/seo";
-import { getDynamicSitemapEntries } from "@/lib/sitemap";
+import {
+    getDynamicSitemapEntries,
+    type SitemapEntryConfig,
+} from "@/lib/sitemap";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>';
 
-const staticRoutes = [
+const staticRoutes: SitemapEntryConfig[] = [
     { path: "/", changeFrequency: "daily", priority: 1 },
     { path: "/billing", changeFrequency: "weekly", priority: 0.6 },
     { path: "/about", changeFrequency: "monthly", priority: 0.5 },
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
     { path: "/privacy", changeFrequency: "yearly", priority: 0.5 },
     { path: "/terms", changeFrequency: "yearly", priority: 0.5 },
-] as const;
+];
 
-type RouteConfig =
-    | (typeof staticRoutes)[number]
-    | Awaited<ReturnType<typeof getDynamicSitemapEntries>>[number];
+type RouteConfig = SitemapEntryConfig;
 
 function normalizePath(path: string): string {
     if (!path || path === "/") {

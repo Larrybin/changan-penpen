@@ -66,57 +66,61 @@ function computeRuntimeConfig(input?: RuntimeConfigInput): RuntimeI18nConfig {
     const envLocales = readEnvLocales();
     const envDefault = readEnvDefaultLocale();
     const requestedLocales = parseLocales(input?.locales) || [];
-    const localesSource = requestedLocales.length
+
+    const requestedOrEnvLocales = requestedLocales.length
         ? requestedLocales
         : envLocales.length
           ? envLocales
           : Array.from(supportedLocales);
-    const locales = localesSource.length
-        ? localesSource
-        : Array.from(supportedLocales);
+
     const requestedDefault = normalizeLocale(input?.defaultLocale ?? null);
-    const defaultLocale =
+    const computedDefaultLocale =
         requestedDefault ??
-        (locales.length ? locales[0] : null) ??
+        requestedOrEnvLocales[0] ??
         envDefault ??
         supportedLocales[0];
 
-    if (!locales.includes(defaultLocale)) {
-        locales.unshift(defaultLocale);
-    }
+    const withDefault = requestedOrEnvLocales.includes(computedDefaultLocale)
+        ? requestedOrEnvLocales
+        : [computedDefaultLocale, ...requestedOrEnvLocales];
+
+    const uniqueLocales = Array.from(new Set(withDefault)) as AppLocale[];
 
     return {
-        locales: Array.from(new Set(locales)) as AppLocale[],
-        defaultLocale,
+        locales: uniqueLocales,
+        defaultLocale: computedDefaultLocale,
     };
 }
 
-let runtimeConfig: RuntimeI18nConfig | null = null;
+let runtimeConfig: RuntimeI18nConfig = computeRuntimeConfig();
 
-function ensureRuntimeConfig(): RuntimeI18nConfig {
-    if (!runtimeConfig) {
-        runtimeConfig = computeRuntimeConfig();
-    }
+export let locales: AppLocale[] = runtimeConfig.locales;
+export let defaultLocale: AppLocale = runtimeConfig.defaultLocale;
+
+function applyRuntimeConfig(config: RuntimeI18nConfig): RuntimeI18nConfig {
+    runtimeConfig = config;
+    locales = config.locales;
+    defaultLocale = config.defaultLocale;
     return runtimeConfig;
 }
 
 export function getRuntimeI18nConfig(): RuntimeI18nConfig {
-    return ensureRuntimeConfig();
+    return runtimeConfig;
 }
 
 export function setRuntimeI18nConfig(
     input: RuntimeConfigInput,
 ): RuntimeI18nConfig {
-    runtimeConfig = computeRuntimeConfig(input);
-    return runtimeConfig;
+    const computed = computeRuntimeConfig(input);
+    return applyRuntimeConfig(computed);
 }
 
 export function getLocales(): AppLocale[] {
-    return ensureRuntimeConfig().locales;
+    return runtimeConfig.locales;
 }
 
 export function getDefaultLocale(): AppLocale {
-    return ensureRuntimeConfig().defaultLocale;
+    return runtimeConfig.defaultLocale;
 }
 
 export function getSupportedAppLocales(): readonly AppLocale[] {

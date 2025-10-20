@@ -216,14 +216,11 @@ function mapRowToPayload(
     );
 
     const resolvedSeoTitle =
-        row.seoTitle ?? seoTitleLocalized[defaultLanguage] ?? "" ?? "";
+        row.seoTitle ?? seoTitleLocalized[defaultLanguage] ?? "";
     const resolvedSeoDescription =
-        row.seoDescription ??
-        seoDescriptionLocalized[defaultLanguage] ??
-        "" ??
-        "";
+        row.seoDescription ?? seoDescriptionLocalized[defaultLanguage] ?? "";
     const resolvedSeoOgImage =
-        row.seoOgImage ?? seoOgImageLocalized[defaultLanguage] ?? "" ?? "";
+        row.seoOgImage ?? seoOgImageLocalized[defaultLanguage] ?? "";
 
     return {
         id: row.id ?? undefined,
