@@ -1,13 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
-import {
-    afterEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { toast } from "@/lib/toast";
 import { renderWithQueryClient } from "@/test-utils/render-with-query-client";

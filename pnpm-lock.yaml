@@ -163,6 +163,9 @@ importers:
       '@next/bundle-analyzer':
         specifier: ^15.5.6
         version: 15.5.6
+      '@simplewebauthn/browser':
+        specifier: ^13.2.2
+        version: 13.2.2
       '@stoplight/spectral-cli':
         specifier: ^6.15.0
         version: 6.15.0

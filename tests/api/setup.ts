@@ -14,15 +14,18 @@ export const DEFAULT_HEADERS = {
     "Content-Type": "application/json",
 };
 
+const TEST_AUTH_TOKEN = "test-token"; // gitleaks:allow
+const TEST_ADMIN_TOKEN = "admin-token"; // gitleaks:allow
+
 // 认证测试headers
 export const AUTH_HEADERS = {
     ...DEFAULT_HEADERS,
-    Authorization: "Bearer test-token",
+    Authorization: `Bearer ${TEST_AUTH_TOKEN}`,
 };
 
 export const ADMIN_HEADERS = {
     ...AUTH_HEADERS,
-    Authorization: "Bearer admin-token",
+    Authorization: `Bearer ${TEST_ADMIN_TOKEN}`,
     "X-User-Role": "admin",
 };
 

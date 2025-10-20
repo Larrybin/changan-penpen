@@ -4,9 +4,9 @@
  * 遵循用户行为导向测试原则，专注于可访问性和用户体验
  */
 
-import { render, RenderOptions, waitFor, screen, within } from "@testing-library/react";
-import { ReactElement, ReactNode } from "react";
-import { vi, beforeAll, afterEach, afterAll } from "vitest";
+import { render as rtlRender, type RenderOptions, screen } from "@testing-library/react";
+import React, { type ReactElement, type ReactNode } from "react";
+import { vi, beforeEach, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 // 组件测试的全局配置
@@ -96,7 +96,7 @@ export const customRender = (
         };
     }
 
-    return render(ui, {
+    return rtlRender(ui, {
         wrapper,
         ...renderOptions,
     });

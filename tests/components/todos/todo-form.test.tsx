@@ -99,10 +99,10 @@ describe("TodoForm组件", () => {
 
         // Mock FileReader
         global.FileReader = class {
-            readAsDataURL: vi.fn();
-            result: "";
-            onloadend: vi.fn();
-        } as any;
+            readAsDataURL = vi.fn();
+            result: string | ArrayBuffer | null = "";
+            onloadend: FileReader["onloadend"] = null;
+        } as unknown as typeof FileReader;
     });
 
     afterEach(() => {
@@ -247,7 +247,7 @@ describe("TodoForm组件", () => {
             expect(screen.getByText("Work")).toBeInTheDocument();
         });
 
-        it("应该处理"无分类"选择", async () => {
+        it('应该处理"无分类"选择', async () => {
             customRender(
                 <TodoForm
                     user={mockUser}
