@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import Script from "next/script";
 import { getLocale, getTranslations } from "next-intl/server";
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
+import { readCspNonce } from "@/lib/security/csp";
 import { buildLocalizedPath, localeCurrencyMap } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 import CreditsSection from "@/modules/billing/components/credits-section";
@@ -13,7 +15,7 @@ import {
 } from "@/modules/creem/config/subscriptions";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
     const context = await getMetadataContext(locale);
     const { billing } = context.messages;
     return createMetadata(context, {
@@ -24,7 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page() {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
+    const nonce = readCspNonce(await headers());
     const [t, metadataContext] = await Promise.all([
         getTranslations("Billing"),
         getMetadataContext(locale),
@@ -91,7 +94,11 @@ export default async function Page() {
             <div className="mt-12">
                 <CreditsSection />
             </div>
-            <Script id="billing-structured-data" type="application/ld+json">
+            <Script
+                nonce={nonce}
+                id="billing-structured-data"
+                type="application/ld+json"
+            >
                 {JSON.stringify(structuredData)}
             </Script>
         </div>

@@ -2,6 +2,8 @@ import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { user } from "@/modules/auth/schemas/auth.schema";
 
+const isoNow = () => new Date().toISOString();
+
 export const CREDIT_TRANSACTION_TYPE = {
     PURCHASE: "PURCHASE",
     USAGE: "USAGE",
@@ -29,25 +31,19 @@ export const creditTransactions = sqliteTable(
             .notNull()
             .references(() => user.id, { onDelete: "cascade" }),
         amount: integer("amount").notNull(),
-        remainingAmount: integer("remaining_amount").notNull().default(0),
+        remainingAmount: integer("remainingAmount").notNull().default(0),
         type: text("type", {
             enum: CREDIT_TRANSACTION_TYPES,
         }).notNull(),
         description: text("description", { length: 255 }).notNull(),
-        expirationDate: integer("expiration_date", {
-            mode: "timestamp",
-        }),
-        expirationDateProcessedAt: integer("expiration_date_processed_at", {
-            mode: "timestamp",
-        }),
-        paymentIntentId: text("payment_intent_id", { length: 255 }),
-        createdAt: integer("created_at", { mode: "timestamp" })
+        expirationDate: text("expirationDate"),
+        expirationDateProcessedAt: text("expirationDateProcessedAt"),
+        paymentIntentId: text("paymentIntentId", { length: 255 }),
+        createdAt: text("createdAt").notNull().$defaultFn(isoNow),
+        updatedAt: text("updatedAt")
             .notNull()
-            .defaultNow(),
-        updatedAt: integer("updated_at", { mode: "timestamp" })
-            .notNull()
-            .defaultNow()
-            .$onUpdate(() => new Date()),
+            .$defaultFn(isoNow)
+            .$onUpdate(isoNow),
     },
     (table) => [
         index("credit_transactions_user_id_idx").on(table.userId),

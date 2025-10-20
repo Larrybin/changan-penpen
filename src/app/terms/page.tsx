@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { getLocale, getTranslations } from "next-intl/server";
-
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
+import { readCspNonce } from "@/lib/security/csp";
 import { buildLocalizedPath } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
     const context = await getMetadataContext(locale);
     const { terms } = context.messages;
     return createMetadata(context, {
@@ -18,7 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function TermsPage() {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
+    const nonce = readCspNonce(await headers());
     const [t, metadataContext] = await Promise.all([
         getTranslations("StaticPages.terms"),
         getMetadataContext(locale),
@@ -73,7 +75,11 @@ export default async function TermsPage() {
                     </section>
                 ))}
             </div>
-            <Script id="terms-structured-data" type="application/ld+json">
+            <Script
+                nonce={nonce}
+                id="terms-structured-data"
+                type="application/ld+json"
+            >
                 {JSON.stringify(structuredData)}
             </Script>
         </div>

@@ -9,13 +9,13 @@ export const categories = sqliteTable("categories", {
     name: text("name").notNull(),
     color: text("color").default("#6366f1"),
     description: text("description"),
-    userId: text("user_id")
+    userId: text("userId")
         .notNull()
         .references(() => user.id, { onDelete: "cascade" }),
-    createdAt: text("created_at")
+    createdAt: text("createdAt")
         .notNull()
         .$defaultFn(() => new Date().toISOString()),
-    updatedAt: text("updated_at")
+    updatedAt: text("updatedAt")
         .notNull()
         .$defaultFn(() => new Date().toISOString()),
 });

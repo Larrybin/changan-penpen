@@ -40,10 +40,13 @@ export async function createCategory(data: unknown): Promise<Category> {
     } catch (error) {
         console.error("Error creating category:", error);
 
-        throw new Error(
-            error instanceof Error
-                ? error.message
-                : "Failed to create category",
-        );
+        if (
+            error instanceof Error &&
+            error.message === "Authentication required"
+        ) {
+            throw error;
+        }
+
+        throw new Error("Unable to create category at this time.");
     }
 }

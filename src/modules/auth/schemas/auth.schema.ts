@@ -1,5 +1,7 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+const isoNow = () => new Date().toISOString();
+
 export const user = sqliteTable("user", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -9,28 +11,17 @@ export const user = sqliteTable("user", {
         .notNull(),
     image: text("image"),
     currentCredits: integer("current_credits").notNull().default(0),
-    lastCreditRefreshAt: integer("last_credit_refresh_at", {
-        mode: "timestamp",
-    }),
-    createdAt: integer("created_at", { mode: "timestamp" })
-        .defaultNow()
-        .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-        .defaultNow()
-        .$onUpdate(() => /* @__PURE__ */ new Date())
-        .notNull(),
+    lastCreditRefreshAt: text("lastCreditRefreshAt"),
+    createdAt: text("createdAt").notNull().$defaultFn(isoNow),
+    updatedAt: text("updatedAt").notNull().$defaultFn(isoNow).$onUpdate(isoNow),
 });
 
 export const session = sqliteTable("session", {
     id: text("id").primaryKey(),
-    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    expiresAt: text("expiresAt").notNull(),
     token: text("token").notNull().unique(),
-    createdAt: integer("created_at", { mode: "timestamp" })
-        .defaultNow()
-        .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-        .$onUpdate(() => /* @__PURE__ */ new Date())
-        .notNull(),
+    createdAt: text("createdAt").notNull().$defaultFn(isoNow),
+    updatedAt: text("updatedAt").notNull().$defaultFn(isoNow).$onUpdate(isoNow),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
@@ -48,32 +39,19 @@ export const account = sqliteTable("account", {
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: integer("access_token_expires_at", {
-        mode: "timestamp",
-    }),
-    refreshTokenExpiresAt: integer("refresh_token_expires_at", {
-        mode: "timestamp",
-    }),
+    accessTokenExpiresAt: text("accessTokenExpiresAt"),
+    refreshTokenExpiresAt: text("refreshTokenExpiresAt"),
     scope: text("scope"),
     password: text("password"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-        .defaultNow()
-        .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-        .$onUpdate(() => /* @__PURE__ */ new Date())
-        .notNull(),
+    createdAt: text("createdAt").notNull().$defaultFn(isoNow),
+    updatedAt: text("updatedAt").notNull().$defaultFn(isoNow).$onUpdate(isoNow),
 });
 
 export const verification = sqliteTable("verification", {
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
-    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" })
-        .defaultNow()
-        .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-        .defaultNow()
-        .$onUpdate(() => /* @__PURE__ */ new Date())
-        .notNull(),
+    expiresAt: text("expiresAt").notNull(),
+    createdAt: text("createdAt").notNull().$defaultFn(isoNow),
+    updatedAt: text("updatedAt").notNull().$defaultFn(isoNow).$onUpdate(isoNow),
 });

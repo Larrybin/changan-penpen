@@ -8,6 +8,7 @@ import { getDb } from "@/db";
 type BetterAuthInstance = ReturnType<typeof betterAuth>;
 
 let authInstance: BetterAuthInstance | null = null;
+let authPromise: Promise<BetterAuthInstance> | null = null;
 
 async function buildAuthInstance(): Promise<BetterAuthInstance> {
     const { env } = await getCloudflareContext({ async: true });
@@ -52,12 +53,37 @@ async function buildAuthInstance(): Promise<BetterAuthInstance> {
 export async function getAuth({
     fresh = false,
 } = {}): Promise<BetterAuthInstance> {
-    if (!authInstance || fresh) {
-        authInstance = await buildAuthInstance();
+    if (fresh) {
+        authInstance = null;
+        authPromise = null;
     }
-    return authInstance;
+
+    if (authInstance && !fresh) {
+        return authInstance;
+    }
+
+    if (!authPromise) {
+        authPromise = buildAuthInstance()
+            .then((instance) => {
+                authInstance = instance;
+                return instance;
+            })
+            .catch((error) => {
+                authPromise = null;
+                throw error;
+            });
+    }
+
+    const instance = await authPromise;
+
+    if (fresh) {
+        authInstance = instance;
+    }
+
+    return instance;
 }
 
 export function __resetAuthInstanceForTests() {
     authInstance = null;
+    authPromise = null;
 }

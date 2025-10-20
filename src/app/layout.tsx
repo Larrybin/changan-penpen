@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
 import { InjectedHtml } from "@/components/seo/custom-html";
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
 import { pickMessages } from "@/lib/intl";
+import { readCspNonce } from "@/lib/security/csp";
 import { sanitizeCustomHtml } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
@@ -16,7 +18,9 @@ export default async function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const locale = (await getLocale()) as AppLocale;
+    const headerList = await headers();
+    const nonce = readCspNonce(headerList);
+    const locale = resolveAppLocale(await getLocale());
     const [allMessages, metadataContext] = await Promise.all([
         getMessages({ locale }),
         getMetadataContext(locale),
@@ -27,7 +31,7 @@ export default async function RootLayout({
     return (
         <html lang={locale}>
             <head>
-                <InjectedHtml nodes={headNodes} />
+                <InjectedHtml nodes={headNodes} nonce={nonce} />
             </head>
             <body className="font-sans antialiased bg-gray-50 min-h-screen">
                 <a
@@ -39,14 +43,14 @@ export default async function RootLayout({
                 <NextIntlClientProvider locale={locale} messages={messages}>
                     <main id="main-content">{children}</main>
                 </NextIntlClientProvider>
-                <InjectedHtml nodes={footerNodes} />
+                <InjectedHtml nodes={footerNodes} nonce={nonce} />
             </body>
         </html>
     );
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
     const context = await getMetadataContext(locale);
     return createMetadata(context, { path: "/" });
 }

@@ -33,7 +33,10 @@ async function processExpiredCredits(userId: string, currentTime: Date) {
         .where(
             and(
                 eq(creditTransactions.userId, userId),
-                lt(creditTransactions.expirationDate, currentTime),
+                lt(
+                    creditTransactions.expirationDate,
+                    currentTime.toISOString(),
+                ),
                 isNull(creditTransactions.expirationDateProcessedAt),
                 gt(creditTransactions.remainingAmount, 0),
             ),
@@ -55,7 +58,7 @@ async function processExpiredCredits(userId: string, currentTime: Date) {
         await db
             .update(creditTransactions)
             .set({
-                expirationDateProcessedAt: currentTime,
+                expirationDateProcessedAt: currentTime.toISOString(),
                 remainingAmount: 0,
             })
             .where(eq(creditTransactions.id, transaction.id));
@@ -65,7 +68,7 @@ async function processExpiredCredits(userId: string, currentTime: Date) {
                 .update(user)
                 .set({
                     currentCredits: sql`${user.currentCredits} - ${transaction.remainingAmount}`,
-                    updatedAt: new Date(),
+                    updatedAt: new Date().toISOString(),
                 })
                 .where(eq(user.id, userId));
         }
@@ -88,7 +91,9 @@ export async function logCreditTransaction(params: {
         remainingAmount: params.amount,
         type: params.type,
         description: params.description,
-        expirationDate: params.expirationDate ?? null,
+        expirationDate: params.expirationDate
+            ? params.expirationDate.toISOString()
+            : null,
         paymentIntentId: params.paymentIntentId ?? null,
     });
 }
@@ -114,7 +119,7 @@ export async function addCredits({
         .update(user)
         .set({
             currentCredits: sql`${user.currentCredits} + ${amount}`,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
         })
         .where(eq(user.id, userId));
 
@@ -164,12 +169,15 @@ export async function consumeCredits({
                     isNull(creditTransactions.expirationDateProcessedAt),
                     gt(
                         creditTransactions.expirationDateProcessedAt,
-                        new Date(),
+                        new Date().toISOString(),
                     ),
                 ),
                 or(
                     isNull(creditTransactions.expirationDate),
-                    gt(creditTransactions.expirationDate, new Date()),
+                    gt(
+                        creditTransactions.expirationDate,
+                        new Date().toISOString(),
+                    ),
                 ),
             ),
         )
@@ -189,7 +197,7 @@ export async function consumeCredits({
             .update(creditTransactions)
             .set({
                 remainingAmount: transaction.remainingAmount - deductFromThis,
-                updatedAt: new Date(),
+                updatedAt: new Date().toISOString(),
             })
             .where(eq(creditTransactions.id, transaction.id));
 
@@ -200,7 +208,7 @@ export async function consumeCredits({
         .update(user)
         .set({
             currentCredits: sql`${user.currentCredits} - ${amount}`,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
         })
         .where(eq(user.id, userId));
 
@@ -245,8 +253,8 @@ export async function addFreeMonthlyCreditsIfNeeded(userId: string) {
     await db
         .update(user)
         .set({
-            lastCreditRefreshAt: now,
-            updatedAt: new Date(),
+            lastCreditRefreshAt: now.toISOString(),
+            updatedAt: new Date().toISOString(),
         })
         .where(eq(user.id, userId));
 

@@ -31,10 +31,7 @@ export async function deleteTodoAction(todoId: number) {
 
         return {
             success: false,
-            error:
-                error instanceof Error
-                    ? error.message
-                    : "Failed to delete todo",
+            error: "Unable to delete todo at this time.",
         };
     }
 }

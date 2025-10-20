@@ -5,7 +5,7 @@ import type React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
 import Playground from "./components/playground-loader";
 import PublicFooter from "./components/public-footer";
@@ -15,15 +15,17 @@ type MarketingLandingPageProps = {
     appUrl: string;
     structuredDataImage: string;
     siteName?: string;
+    nonce?: string;
 };
 
 export default function MarketingLandingPage({
     appUrl,
     structuredDataImage,
     siteName,
+    nonce,
 }: MarketingLandingPageProps) {
     const t = useTranslations("Marketing");
-    const locale = useLocale();
+    const locale = resolveAppLocale(useLocale());
     const resolvedSiteName = siteName?.trim().length
         ? siteName.trim()
         : t("structuredData.name");
@@ -46,8 +48,7 @@ export default function MarketingLandingPage({
     }>;
     const heroSupport = t.raw("hero.support") as Record<string, string>;
     const heroSupportValues = Object.values(heroSupport);
-    const localeKey = (locale as AppLocale) ?? "en";
-    const currency = localeCurrencyMap[localeKey] ?? localeCurrencyMap.en;
+    const currency = localeCurrencyMap[locale] ?? localeCurrencyMap.en;
     const structuredData = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
@@ -356,7 +357,11 @@ export default function MarketingLandingPage({
             </main>
 
             <PublicFooter />
-            <Script id="marketing-structured-data" type="application/ld+json">
+            <Script
+                id="marketing-structured-data"
+                type="application/ld+json"
+                nonce={nonce}
+            >
                 {JSON.stringify(structuredDataPayload)}
             </Script>
         </div>

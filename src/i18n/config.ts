@@ -104,6 +104,40 @@ function applyRuntimeConfig(config: RuntimeI18nConfig): RuntimeI18nConfig {
     return runtimeConfig;
 }
 
+function normalizeRuntimeLocale(
+    value: string | null | undefined,
+): AppLocale | null {
+    const normalized = normalizeLocale(value);
+    if (!normalized) {
+        return null;
+    }
+    return runtimeConfig.locales.includes(normalized) ? normalized : null;
+}
+
+export function isRuntimeLocale(
+    value: string | null | undefined,
+): value is AppLocale {
+    return normalizeRuntimeLocale(value) !== null;
+}
+
+export function resolveAppLocale(
+    value: string | null | undefined,
+    { fallbackToDefault = true }: { fallbackToDefault?: boolean } = {},
+): AppLocale {
+    const normalized = normalizeRuntimeLocale(value);
+    if (normalized) {
+        return normalized;
+    }
+    if (fallbackToDefault) {
+        return runtimeConfig.defaultLocale;
+    }
+    throw new Error(
+        value
+            ? `Unsupported locale: ${value}`
+            : "Locale could not be determined",
+    );
+}
+
 export function getRuntimeI18nConfig(): RuntimeI18nConfig {
     return runtimeConfig;
 }
