@@ -184,24 +184,29 @@ enum TodoPriority {
 
 ## 测试与质量
 
-### 测试覆盖
-- ✅ **服务层测试**: `services/__tests__/todo.service.test.ts`
-- ✅ **分类服务测试**: `services/__tests__/category.service.test.ts`
-- ✅ **Actions 测试**: `actions/__tests__/todo-actions.test.ts`
-- ✅ **工具函数测试**: `utils/pagination.test.ts`
-
-### 测试用例类型
-- CRUD 操作测试
-- 权限验证测试
-- 数据验证测试
-- 分页功能测试
-- 边界条件测试
+### 测试策略
+⚠️ **注意**: 此项目已移除自动化测试框架，质量保障依赖手工验收。
 
 ### 质量保证
 - Zod schema 验证
 - TypeScript 类型安全
 - 数据库事务处理
 - 错误边界处理
+- 统一的错误响应格式
+- 输入验证和权限控制
+
+### 手工验收清单
+- [ ] 任务创建功能正常
+- [ ] 任务编辑功能正常
+- [ ] 任务删除功能正常
+- [ ] 任务状态切换正常
+- [ ] 分类管理功能正常
+- [ ] 分页功能正常
+- [ ] 权限控制正确（用户只能操作自己的任务）
+- [ ] 数据验证有效
+- [ ] 错误处理友好
+
+详见 `docs/testing-status.md` 了解完整的测试策略。
 
 ## API 路由
 
@@ -311,10 +316,6 @@ A: 在 service 层添加批量操作方法，并创建相应的 Server Actions�
 - `new-todo.page.tsx` - 新建任务页
 - `edit-todo.page.tsx` - 编辑任务页
 
-### 测试文件
-- `actions/__tests__/todo-actions.test.ts`
-- `services/__tests__/todo.service.test.ts`
-- `services/__tests__/category.service.test.ts`
 
 ## 使用示例
 
