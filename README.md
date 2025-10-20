@@ -162,7 +162,7 @@ MIT © 2025 Muhammad Arifin
 | CI |  | .github/workflows/ci.yml |
 | Dependabot Auto‑Merge |  | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare |  | .github/workflows/deploy.yml |
-| Build (SonarCloud + coverage) |  | .github/workflows/build.yml |
+| Build (SonarCloud scan) |  | .github/workflows/build.yml |
 
 <!-- DOCSYNC:README_AUTOMATION END -->
 

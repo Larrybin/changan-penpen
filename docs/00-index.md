@@ -47,3 +47,6 @@
 ---
 
 Docs are the runbook: when a process changes, update the relevant docs first, then submit code or workflow changes.
+
+## Quality & Testing
+- [testing-status.md](testing-status.md) — Testing status and manual QA checklist

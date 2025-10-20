@@ -79,7 +79,6 @@ export const AdminDataProvider = {
 ## 关键依赖与配置
 
 ### 核心依赖
-- **@refinedev/core**: 管理后台框架
 - **@tanstack/react-table**: 表格组件
 - **@tanstack/react-query**: 数据获取和缓存
 - **@hookform/resolvers**: 表单验证
@@ -263,14 +262,17 @@ export function buildPaginationParams(page: number, perPage: number): Record<str
 - 条件筛选和排序
 - 缓存热点数据
 
-## 测试与质量
+## 测试策略
 
-### 测试覆盖
-- ✅ **工具函数测试**: `utils/pagination.test.ts`
-- ✅ **权限检查测试**: `utils/admin-access.test.ts`
-- ✅ **提供者测试**: `providers/__tests__/auth-provider.test.ts`
-- ✅ **路由测试**: `routes/__tests__/admin.routes.test.ts`
-- ⚠️ **组件测试**: 需补充更多UI组件测试
+项目已移除自动化测试框架，质量保障依赖类型检查、文档一致性以及 PR 手工验收。
+
+### 手工验收清单
+- 功能完整性验证
+- 权限控制测试
+- UI/UX 交互检查
+- 响应式设计验证
+- API 接口测试
+- 数据一致性检查
 
 ### 质量保证
 - TypeScript 严格类型检查
@@ -278,21 +280,23 @@ export function buildPaginationParams(page: number, perPage: number): Record<str
 - 错误边界处理
 - 权限安全检查
 
+详细测试状态请参考：`docs/testing-status.md`
+
 ## API 路由
 
 ### 管理 API 端点
 ```
-GET    /api/admin/dashboard         # 仪表板数据
-GET    /api/admin/todos            # 任务列表
-POST   /api/admin/todos            # 创建任务
-GET    /api/admin/users            # 用户列表
-GET    /api/admin/tenants          # 租户列表
-GET    /api/admin/orders           # 订单列表
-GET    /api/admin/credits-history  # 积分历史
-GET    /api/admin/reports          # 报表数据
-GET    /api/admin/audit-logs       # 审计日志
-GET    /api/admin/site-settings    # 站点设置
-PUT    /api/admin/site-settings    # 更新站点设置
+GET    /api/v1/admin/dashboard         # 仪表板数据
+GET    /api/v1/admin/todos            # 任务列表
+POST   /api/v1/admin/todos            # 创建任务
+GET    /api/v1/admin/users            # 用户列表
+GET    /api/v1/admin/tenants          # 租户列表
+GET    /api/v1/admin/orders           # 订单列表
+GET    /api/v1/admin/credits-history  # 积分历史
+GET    /api/v1/admin/reports          # 报表数据
+GET    /api/v1/admin/audit-logs       # 审计日志
+GET    /api/v1/admin/site-settings    # 站点设置
+PUT    /api/v1/admin/site-settings    # 更新站点设置
 ```
 
 ### API 权限中间件
@@ -375,12 +379,20 @@ A: 在数据提供者中添加批量操作方法，并在表格组件中添加�
 - `schemas/catalog.schema.ts` - 目录数据验证
 - `types/resource.types.ts` - 资源类型定义
 
-### 测试文件
-- `utils/admin-access.test.ts` - 权限检查测试
-- `utils/pagination.test.ts` - 分页工具测试
-- `providers/__tests__/auth-provider.test.ts` - 认证提供者测试
-- `providers/__tests__/data-provider.test.ts` - 数据提供者测试
-- `routes/__tests__/admin.routes.test.ts` - 路由测试
+### 变更记录 (Changelog)
+
+### 2025-10-21 - 文档一致性更新
+- ✅ 移除虚假测试声明和测试文件路径
+- ✅ 修正API路径为 `/api/v1/admin/` 格式
+- ✅ 更新测试策略说明，引用 `docs/testing-status.md`
+- ✅ 移除不存在的技术栈引用
+
+### 2025-10-16 01:48:57 - 文档初始化
+- ✅ 创建管理后台模块文档
+- ✅ 详细的功能模块说明
+- ✅ 权限控制机制描述
+- ✅ API 路由结构说明
+- ✅ 安全特性说明
 
 ## 使用示例
 
@@ -400,7 +412,7 @@ export default async function NewFeaturePage() {
 
 ### 添加新的 API 端点
 ```typescript
-// api/admin/new-feature/route.ts
+// api/v1/admin/new-feature/route.ts
 import { withAdminAuth } from "@/modules/admin/utils/api-guard";
 
 export async function GET(request: Request) {
