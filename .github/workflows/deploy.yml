@@ -429,7 +429,7 @@ jobs:
 
       - name: 将部署审计写入环境注释
         if: github.ref == 'refs/heads/main' && steps.deployment_audit.outputs.summary_json != ''
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         env:
           SUMMARY_JSON: ${{ steps.deployment_audit.outputs.summary_json }}
           DEPLOYMENT_ID: ${{ github.deployment_id }}
