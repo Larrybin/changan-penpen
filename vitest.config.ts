@@ -25,8 +25,6 @@ export default defineConfig({
             "**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
         ],
         exclude: ["node_modules/**", "dist/**", "coverage/**", ".next/**"],
-        // 监视模式忽略配置
-        watchExclude: ["node_modules/**", "dist/**", "coverage/**"],
         typecheck: {
             checker: "tsc",
             tsconfig: path.resolve(__dirname, "./tsconfig.test.json"),

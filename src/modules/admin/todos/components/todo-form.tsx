@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -71,9 +71,8 @@ export function AdminTodoForm({
     disableTenantSelection,
     tenantEmail,
 }: AdminTodoFormProps) {
-    const form = useForm<AdminTodoFormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
+    const resolvedInitialValues = useMemo(
+        () => ({
             userId: initialValues?.userId ?? "",
             title: initialValues?.title ?? "",
             description: initialValues?.description ?? "",
@@ -86,38 +85,26 @@ export function AdminTodoForm({
             dueDate: initialValues?.dueDate
                 ? initialValues.dueDate.split("T")[0]
                 : undefined,
-        },
+        }),
+        [initialValues],
+    );
+
+    const form = useForm<AdminTodoFormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: resolvedInitialValues,
     });
 
     useEffect(() => {
-        if (initialValues) {
-            form.reset({
-                userId: initialValues.userId ?? "",
-                title: initialValues.title ?? "",
-                description: initialValues.description ?? "",
-                categoryId: initialValues.categoryId ?? undefined,
-                status: initialValues.status ?? TodoStatus.PENDING,
-                priority: initialValues.priority ?? TodoPriority.MEDIUM,
-                imageUrl: initialValues.imageUrl ?? "",
-                imageAlt: initialValues.imageAlt ?? "",
-                completed: initialValues.completed ?? false,
-                dueDate: initialValues.dueDate
-                    ? initialValues.dueDate.split("T")[0]
-                    : undefined,
-            });
-
-            if (initialValues.userId) {
-                onTenantChange?.(initialValues.userId);
-            }
+        if (!initialValues) {
+            return;
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-        initialValues?.userId,
-        initialValues?.title,
-        initialValues,
-        form.reset,
-        onTenantChange,
-    ]);
+
+        form.reset(resolvedInitialValues);
+
+        if (initialValues.userId) {
+            onTenantChange?.(initialValues.userId);
+        }
+    }, [form, initialValues, onTenantChange, resolvedInitialValues]);
 
     const watchedTenantId = form.watch("userId") ?? "";
     const selectedTenantId = watchedTenantId.trim();

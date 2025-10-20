@@ -219,7 +219,22 @@ afterAll(() => {
 });
 
 // 测试工具函数
-export const createMockUser = (overrides = {}) => ({
+type MockUser = {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    createdAt: string;
+};
+
+type MockTodo = {
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt: string;
+};
+
+export const createMockUser = (overrides: Partial<MockUser> = {}) => ({
     id: "test-user-id",
     email: "test@example.com",
     name: "Test User",
@@ -228,7 +243,7 @@ export const createMockUser = (overrides = {}) => ({
     ...overrides,
 });
 
-export const createMockTodo = (overrides = {}) => ({
+export const createMockTodo = (overrides: Partial<MockTodo> = {}) => ({
     id: "test-todo-id",
     title: "Test Todo",
     completed: false,
@@ -236,8 +251,17 @@ export const createMockTodo = (overrides = {}) => ({
     ...overrides,
 });
 
+declare global {
+    // eslint-disable-next-line no-var
+    var testUtils: {
+        createMockUser: typeof createMockUser;
+        createMockTodo: typeof createMockTodo;
+        server: typeof server;
+    };
+}
+
 // 全局测试变量
-global.testUtils = {
+globalThis.testUtils = {
     createMockUser,
     createMockTodo,
     server,
