@@ -1,13 +1,13 @@
 "use client";
 
-import type React from "react";
-import { useMemo } from "react";
 import {
     type AbstractIntlMessages,
     NextIntlClientProvider,
     useLocale,
     useMessages,
 } from "next-intl";
+import type React from "react";
+import { useMemo } from "react";
 
 interface MarketingMessagesProviderProps {
     children: React.ReactNode;

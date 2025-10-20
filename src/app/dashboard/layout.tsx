@@ -1,8 +1,8 @@
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
 import DashboardLayout from "@/modules/dashboard/dashboard.layout";
 
-const Toast = dynamic(() => import("@/components/ui/toast"), {
+const Toast = nextDynamic(() => import("@/components/ui/toast"), {
     ssr: false,
 });
 
