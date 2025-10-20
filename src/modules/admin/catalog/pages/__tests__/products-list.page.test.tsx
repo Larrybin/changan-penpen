@@ -1,29 +1,18 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
-import { setupServer } from "msw/node";
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    describe,
-    expect,
-    it,
-    vi,
-} from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { toast } from "@/lib/toast";
 import { renderWithQueryClient } from "@/test-utils/render-with-query-client";
 import { ProductsListPage } from "../products-list.page";
 
-const server = setupServer();
+const server = testUtils.server;
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
     server.resetHandlers();
     vi.clearAllMocks();
 });
-afterAll(() => server.close());
 
 describe("ProductsListPage", () => {
     it("renders skeleton rows while the list is loading", async () => {

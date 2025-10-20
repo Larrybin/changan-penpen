@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 import {
     buildAdminMenuGroups,
     DEFAULT_ADMIN_MENU_GROUP,
@@ -31,9 +32,13 @@ export function AdminShell({ children, user }: AdminShellProps) {
     }, []);
 
     const handleLogout = async () => {
-        const result = await adminAuthProvider.logout?.();
-        if (result && typeof result.redirectTo === "string") {
-            router.push(result.redirectTo);
+        try {
+            const result = await adminAuthProvider.logout?.();
+            if (result && typeof result.redirectTo === "string") {
+                router.push(result.redirectTo);
+            }
+        } catch (_error) {
+            toast.error("退出登录失败，请稍后再试");
         }
     };
 
@@ -41,7 +46,12 @@ export function AdminShell({ children, user }: AdminShellProps) {
         <div className="flex min-h-screen bg-muted/40">
             <aside className="flex w-[var(--layout-sidebar-width)] flex-col border-r border-border bg-background">
                 <div className="flex items-center gap-2 border-b border-border px-6 py-5">
-                    <CheckSquare className="h-5 w-5 text-primary" />
+                    <CheckSquare
+                        aria-hidden="true"
+                        className="h-5 w-5 text-primary"
+                        focusable="false"
+                        role="img"
+                    />
                     <span className="text-lg font-semibold">站长仪表盘</span>
                 </div>
                 <div className="border-b border-border px-6 py-4">

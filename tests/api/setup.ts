@@ -14,27 +14,61 @@ export const DEFAULT_HEADERS = {
     "Content-Type": "application/json",
 };
 
+const TEST_AUTH_TOKEN = "test-token"; // gitleaks:allow
+const TEST_ADMIN_TOKEN = "admin-token"; // gitleaks:allow
+
 // 认证测试headers
 export const AUTH_HEADERS = {
     ...DEFAULT_HEADERS,
-    Authorization: "Bearer test-token",
+    Authorization: `Bearer ${TEST_AUTH_TOKEN}`,
 };
 
 export const ADMIN_HEADERS = {
     ...AUTH_HEADERS,
-    Authorization: "Bearer admin-token",
+    Authorization: `Bearer ${TEST_ADMIN_TOKEN}`,
     "X-User-Role": "admin",
 };
 
 // API测试工具函数
+const mergeHeaders = (base: Headers, incoming?: HeadersInit) => {
+    if (!incoming) {
+        return;
+    }
+
+    if (incoming instanceof Headers) {
+        incoming.forEach((value, key) => {
+            base.set(key, value);
+        });
+        return;
+    }
+
+    if (Array.isArray(incoming)) {
+        incoming.forEach(([key, value]) => {
+            base.set(key, value);
+        });
+        return;
+    }
+
+    Object.entries(incoming).forEach(([key, value]) => {
+        if (typeof value === "undefined") {
+            return;
+        }
+
+        base.set(key, String(value));
+    });
+};
+
 export const apiRequest = async (
     endpoint: string,
     options: RequestInit = {}
 ) => {
     const url = `${API_BASE_URL}${endpoint}`;
+    const { headers: optionHeaders, ...restOptions } = options;
+    const mergedHeaders = new Headers(DEFAULT_HEADERS);
+    mergeHeaders(mergedHeaders, optionHeaders);
     const response = await fetch(url, {
-        headers: DEFAULT_HEADERS,
-        ...options,
+        ...restOptions,
+        headers: mergedHeaders,
     });
 
     return {
