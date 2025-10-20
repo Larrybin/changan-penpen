@@ -150,8 +150,8 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_AUTOMATION START -->
 ### Automation & DevOps (auto)
-- Local workflow: run `pnpm check:all`, `pnpm typecheck`, `pnpm lint`, `pnpm test` before推送，确保质量门槛达标。
-- 详情参见 docs/local-dev.md、docs/ci-cd.md、docs/docs-maintenance.md。
+- Local workflow: run `pnpm check:all`, `pnpm typecheck`, `pnpm lint`, `pnpm test` before推送,确保质量门槛达标.
+- 详情参见 docs/local-dev.md,docs/ci-cd.md,docs/docs-maintenance.md.
 
 #### Common Scripts Snapshot
 | Script | Command |
@@ -193,6 +193,6 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_QUALITY_GATES START -->
 ### Quality Gates (auto)
-- 建议本地先执行 `pnpm check:all`、`pnpm lint`、`pnpm typecheck`、`pnpm test`，再进行提交或推送。
-- 门槛与策略详见 docs/quality-gates.md（覆盖率、fail-fast、跳过开关等）。
+- 建议本地先执行 `pnpm check:all`,`pnpm lint`,`pnpm typecheck`,`pnpm test`,再进行提交或推送.
+- 门槛与策略详见 docs/quality-gates.md(覆盖率,fail-fast,跳过开关等).
 <!-- DOCSYNC:README_QUALITY_GATES END -->

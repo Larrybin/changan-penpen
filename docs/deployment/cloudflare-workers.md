@@ -19,7 +19,7 @@ This project targets Cloudflare Workers using OpenNext.
 
 ### Deploy
 - `pnpm deploy:cf` - OpenNext build + `wrangler deploy`
-- Health gate: CI and rollout 默认在部署后重试 `/api/v1/health`（严格模式）；可选追加 `/api/v1/health?fast=1` 作为快速自检
+- Health gate: CI and rollout 默认在部署后重试 `/api/v1/health`(严格模式);可选追加 `/api/v1/health?fast=1` 作为快速自检
 
 ### Deployment Audit Trail
 - GitHub Actions 的 `Deploy Production` job 会生成部署审计摘要,内容包含版本号,执行者以及推送到生产的提交列表.

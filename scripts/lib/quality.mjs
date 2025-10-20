@@ -8,6 +8,15 @@ import {
 } from "node:fs";
 import path from "node:path";
 
+// Normalize Windows shell environment so downstream tools (pnpm, cross-spawn)
+// don't inherit an overridden ComSpec that points to PowerShell.
+if (process.platform === "win32") {
+    const cs = process.env.ComSpec || "";
+    if (!/cmd(\.exe)?$/i.test(cs)) {
+        process.env.ComSpec = "cmd.exe";
+    }
+}
+
 function timestamp(prefix) {
     return `${prefix}-${new Date()
         .toISOString()
@@ -54,7 +63,14 @@ export class QualitySession {
         const header = `\n$ ${cmd}`;
         console.log(header);
         this.logLine(header);
-        const res = spawnSync(cmd, { shell: true, encoding: "utf8", ...opts });
+        // Force a stable shell on Windows to avoid pnpm/npm script-shell overrides
+        // that replace cmd.exe with PowerShell and break standard "/d /s /c" args.
+        const shellOption = process.platform === "win32" ? "cmd.exe" : true;
+        const res = spawnSync(cmd, {
+            shell: shellOption,
+            encoding: "utf8",
+            ...opts,
+        });
         if (res.stdout) {
             process.stdout.write(res.stdout);
             this.logLine(res.stdout.trimEnd());
@@ -78,8 +94,9 @@ export class QualitySession {
     }
 
     getOutput(cmd, opts = {}) {
+        const shellOption = process.platform === "win32" ? "cmd.exe" : true;
         const res = spawnSync(cmd, {
-            shell: true,
+            shell: shellOption,
             encoding: "utf8",
             ...opts,
         });
