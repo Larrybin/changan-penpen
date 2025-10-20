@@ -26,16 +26,25 @@ export interface TranslationProvider {
 }
 
 export class TranslationError extends Error {
+    readonly retriable: boolean;
+
     constructor(
         message: string,
-        readonly cause?: unknown,
+        options: { cause?: unknown; retriable?: boolean } = {},
     ) {
-        super(message);
+        super(
+            message,
+            options.cause !== undefined ? { cause: options.cause } : undefined,
+        );
         this.name = "TranslationError";
+        this.retriable = options.retriable ?? false;
     }
 }
 
 const DEFAULT_RETRY_ATTEMPTS = 2;
+const MAX_ENTRIES_PER_BATCH = 50;
+const MAX_TOTAL_CHARACTERS = 12_000;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 export class TranslationService {
     constructor(private readonly provider: TranslationProvider) {}
@@ -47,6 +56,8 @@ export class TranslationService {
             return [];
         }
 
+        validateBatchRequest(request);
+
         let attempt = 0;
         let lastError: unknown;
 
@@ -56,7 +67,10 @@ export class TranslationService {
             } catch (error) {
                 lastError = error;
                 attempt += 1;
-                if (attempt > DEFAULT_RETRY_ATTEMPTS) {
+                if (
+                    attempt > DEFAULT_RETRY_ATTEMPTS ||
+                    !isRetriableError(error)
+                ) {
                     break;
                 }
                 await new Promise((resolve) =>
@@ -65,10 +79,9 @@ export class TranslationService {
             }
         }
 
-        throw new TranslationError(
-            "Failed to translate batch after retries",
-            lastError,
-        );
+        throw new TranslationError("Failed to translate batch after retries", {
+            cause: lastError,
+        });
     }
 }
 
@@ -106,7 +119,11 @@ const buildUserPrompt = (entries: TranslationEntry[]) => {
             ),
         );
 
-    return `Translate the following entries and respond with JSON mapping keys to translated strings.\n${JSON.stringify(data, null, 2)}`;
+    return `Translate the following entries and respond with JSON mapping keys to translated strings.\n${JSON.stringify(
+        data,
+        null,
+        2,
+    )}`;
 };
 
 const parseJsonResponse = (raw: string): Record<string, string> => {
@@ -153,10 +170,9 @@ const parseJsonResponse = (raw: string): Record<string, string> => {
         } catch (_error) {}
     }
 
-    throw new TranslationError(
-        "Unable to parse JSON translation response",
-        trimmed,
-    );
+    throw new TranslationError("Unable to parse JSON translation response", {
+        cause: trimmed,
+    });
 };
 
 class GeminiTranslationProvider implements TranslationProvider {
@@ -197,17 +213,19 @@ class GeminiTranslationProvider implements TranslationProvider {
             },
         } satisfies Record<string, unknown>;
 
-        const response = await fetch(url, {
+        const response = await fetchWithTimeout(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(body),
+            timeout: REQUEST_TIMEOUT_MS,
         });
 
         if (!response.ok) {
             throw new TranslationError(
                 `Gemini API request failed: ${response.status} ${response.statusText}`,
+                { retriable: isRetriableStatus(response.status) },
             );
         }
 
@@ -223,7 +241,9 @@ class GeminiTranslationProvider implements TranslationProvider {
                 ?.trim() ?? "";
 
         if (!text) {
-            throw new TranslationError("Gemini API returned empty response");
+            throw new TranslationError("Gemini API returned empty response", {
+                retriable: true,
+            });
         }
 
         const parsed = parseJsonResponse(text);
@@ -272,18 +292,23 @@ class OpenAiTranslationProvider implements TranslationProvider {
             ],
         } satisfies Record<string, unknown>;
 
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${this.apiKey}`,
+        const response = await fetchWithTimeout(
+            `${this.baseUrl}/chat/completions`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${this.apiKey}`,
+                },
+                body: JSON.stringify(body),
+                timeout: REQUEST_TIMEOUT_MS,
             },
-            body: JSON.stringify(body),
-        });
+        );
 
         if (!response.ok) {
             throw new TranslationError(
                 `OpenAI API request failed: ${response.status} ${response.statusText}`,
+                { retriable: isRetriableStatus(response.status) },
             );
         }
 
@@ -293,7 +318,9 @@ class OpenAiTranslationProvider implements TranslationProvider {
         const text = payload.choices?.[0]?.message?.content?.trim();
 
         if (!text) {
-            throw new TranslationError("OpenAI API returned empty response");
+            throw new TranslationError("OpenAI API returned empty response", {
+                retriable: true,
+            });
         }
 
         const parsed = parseJsonResponse(text);
@@ -370,3 +397,60 @@ export const NEEDS_REVIEW_MARKERS = [
     "__NEEDS_REVIEW__",
     "__REVIEW__",
 ];
+
+function validateBatchRequest(request: TranslationBatchRequest) {
+    if (request.entries.length > MAX_ENTRIES_PER_BATCH) {
+        throw new TranslationError(
+            `Batch size exceeds limit of ${MAX_ENTRIES_PER_BATCH} entries`,
+        );
+    }
+
+    const totalCharacters = request.entries.reduce((total, entry) => {
+        return (
+            total + (entry.text?.length ?? 0) + (entry.description?.length ?? 0)
+        );
+    }, 0);
+
+    if (totalCharacters > MAX_TOTAL_CHARACTERS) {
+        throw new TranslationError(
+            `Batch payload exceeds ${MAX_TOTAL_CHARACTERS} characters`,
+        );
+    }
+}
+
+function isRetriableError(error: unknown): boolean {
+    if (error instanceof TranslationError) {
+        return error.retriable;
+    }
+    return true;
+}
+
+function isRetriableStatus(status: number) {
+    return status === 429 || status >= 500;
+}
+
+async function fetchWithTimeout(
+    input: RequestInfo | URL,
+    init: RequestInit & { timeout?: number },
+) {
+    const controller = new AbortController();
+    const { timeout = REQUEST_TIMEOUT_MS, ...rest } = init;
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        return await fetch(input, { ...rest, signal: controller.signal });
+    } catch (error) {
+        if ((error as Error)?.name === "AbortError") {
+            throw new TranslationError("Translation request timed out", {
+                cause: error,
+                retriable: true,
+            });
+        }
+        throw new TranslationError("Translation request failed", {
+            cause: error,
+            retriable: true,
+        });
+    } finally {
+        clearTimeout(id);
+    }
+}
