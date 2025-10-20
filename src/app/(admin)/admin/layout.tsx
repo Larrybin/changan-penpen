@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
 import { omitMessages } from "@/lib/intl";
 import AdminLayout from "@/modules/admin/admin.layout";
 import { generateAdminMetadata } from "@/modules/admin/metadata";
@@ -22,7 +22,7 @@ export default async function Layout({
 }: {
     children: React.ReactNode;
 }) {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
     const allMessages = await getMessages({ locale });
     const messages = omitMessages(allMessages, ADMIN_OMIT_NAMESPACES);
 

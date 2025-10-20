@@ -1,7 +1,7 @@
 import nextDynamic from "next/dynamic";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
 import { omitMessages } from "@/lib/intl";
 import DashboardLayout from "@/modules/dashboard/dashboard.layout";
 
@@ -18,7 +18,7 @@ export default async function Layout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
     const allMessages = await getMessages({ locale });
     const messages = omitMessages(allMessages, DASHBOARD_OMIT_NAMESPACES);
 

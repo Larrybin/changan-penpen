@@ -43,6 +43,13 @@
             "when": 1762000000000,
             "tag": "0007_multilingual_seo_fields",
             "breakpoints": true
+        },
+        {
+            "idx": 8,
+            "version": "11",
+            "when": 1764000000000,
+            "tag": "0008_iso_timestamps_and_indexes",
+            "breakpoints": true
         }
     ]
 }

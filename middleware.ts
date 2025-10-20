@@ -9,6 +9,7 @@ import {
     setRuntimeI18nConfig,
 } from "./src/i18n/config";
 import { getSiteSettingsPayload } from "./src/modules/admin/services/site-settings.service";
+import { CSP_NONCE_HEADER, generateCspNonce } from "./src/lib/security/csp";
 
 let cachedI18nKey: string | null = null;
 let cachedI18nMiddleware:
@@ -49,26 +50,40 @@ async function handleI18nRouting(request: NextRequest) {
 }
 
 const CURRENT_API_VERSION = "v1";
-const CSP = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: https:",
-    "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://api.cloudflare.com https://*.upstash.io",
-    "frame-ancestors 'none'",
-    "form-action 'self'",
-].join("; ");
+
+function buildContentSecurityPolicy(nonce: string): string {
+    return [
+        "default-src 'self'",
+        `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
+        `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
+        "img-src 'self' data: https:",
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self' https://api.cloudflare.com https://*.upstash.io",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+    ].join("; ");
+}
 
 function applySecurityHeaders(
     response: NextResponse,
     options: { isApi: boolean; apiVersion?: string },
+    nonce: string,
 ) {
     const headers = response.headers;
 
-    if (!headers.has("Content-Security-Policy")) {
-        headers.set("Content-Security-Policy", CSP);
+    const policy = buildContentSecurityPolicy(nonce);
+    headers.set("Content-Security-Policy", policy);
+    headers.set(CSP_NONCE_HEADER, nonce);
+    const overrideKey = 'x-middleware-override-headers';
+    const existingOverride = headers.get(overrideKey);
+    if (existingOverride) {
+        headers.set(overrideKey, `${existingOverride},${CSP_NONCE_HEADER}`);
+    } else {
+        headers.set(overrideKey, CSP_NONCE_HEADER);
     }
+    headers.set(`x-middleware-request-${CSP_NONCE_HEADER}`, nonce);
     headers.set(
         "Strict-Transport-Security",
         "max-age=31536000; includeSubDomains; preload",
@@ -89,7 +104,7 @@ function applySecurityHeaders(
     return response;
 }
 
-function rewriteToCurrentVersion(request: NextRequest) {
+function rewriteToCurrentVersion(request: NextRequest, nonce: string) {
     const rewriteUrl = request.nextUrl.clone();
     const suffix = request.nextUrl.pathname.slice("/api".length);
     rewriteUrl.pathname = `/api/${CURRENT_API_VERSION}${suffix}`;
@@ -98,31 +113,34 @@ function rewriteToCurrentVersion(request: NextRequest) {
     return applySecurityHeaders(response, {
         isApi: true,
         apiVersion: CURRENT_API_VERSION,
-    });
+    }, nonce);
 }
 
 export async function middleware(request: NextRequest) {
+    const nonce = generateCspNonce();
+    const forwardedHeaders = new Headers(request.headers);
+    forwardedHeaders.set(CSP_NONCE_HEADER, nonce);
     const { pathname } = request.nextUrl;
 
     if (pathname.startsWith("/api")) {
         if (pathname === "/api" || pathname === "/api/") {
-            const response = NextResponse.next();
+            const response = NextResponse.next({ request: { headers: forwardedHeaders } });
             return applySecurityHeaders(response, {
                 isApi: true,
                 apiVersion: CURRENT_API_VERSION,
-            });
+            }, nonce);
         }
 
         const versionMatch = pathname.match(/^\/api\/(v\d+)(?:\/|$)/);
         if (!versionMatch) {
-            return rewriteToCurrentVersion(request);
+            return rewriteToCurrentVersion(request, nonce);
         }
 
-        const response = NextResponse.next();
+        const response = NextResponse.next({ request: { headers: forwardedHeaders } });
         return applySecurityHeaders(response, {
             isApi: true,
             apiVersion: versionMatch[1],
-        });
+        }, nonce);
     }
 
     let response = await handleI18nRouting(request);
@@ -145,17 +163,17 @@ export async function middleware(request: NextRequest) {
                 const redirect = NextResponse.redirect(
                     new URL("/login", request.url),
                 );
-                return applySecurityHeaders(redirect, { isApi: false });
+                return applySecurityHeaders(redirect, { isApi: false }, nonce);
             }
         } catch (_error) {
             const redirect = NextResponse.redirect(
                 new URL("/login", request.url),
             );
-            return applySecurityHeaders(redirect, { isApi: false });
+            return applySecurityHeaders(redirect, { isApi: false }, nonce);
         }
     }
 
-    return applySecurityHeaders(response, { isApi: false });
+    return applySecurityHeaders(response, { isApi: false }, nonce);
 }
 
 export const config = {

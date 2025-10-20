@@ -79,9 +79,7 @@ export async function updateTodoAction(todoId: number, formData: FormData) {
             throw new Error("Authentication required");
         }
 
-        throw new Error(
-            error instanceof Error ? error.message : "Failed to update todo",
-        );
+        throw new Error("Unable to update todo at this time.");
     }
 }
 
@@ -128,10 +126,7 @@ export async function updateTodoFieldAction(
 
         return {
             success: false,
-            error:
-                error instanceof Error
-                    ? error.message
-                    : "Failed to update todo",
+            error: "Unable to update todo at this time.",
         };
     }
 }

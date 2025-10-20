@@ -1,13 +1,13 @@
 ﻿import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { getUsageDaily } from "@/modules/creem/services/usage.service";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
     const context = await getMetadataContext(locale);
     const { billingUsage } = context.messages;
     return createMetadata(context, {

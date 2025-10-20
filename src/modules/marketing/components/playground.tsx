@@ -26,7 +26,7 @@ export default function Playground() {
                     {tPlayground("title")}
                 </h2>
                 <div className="flex flex-wrap gap-x-2 gap-y-1 text-[10px] md:text-xs text-yellow-200/70">
-                    {badges.map((badge, index) => (
+                    {badges.map((badge, _index) => (
                         <span
                             key={badge}
                             className="before:mr-1 before:content-['·'] first:before:content-none"

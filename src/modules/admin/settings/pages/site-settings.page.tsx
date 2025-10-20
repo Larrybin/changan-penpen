@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { type AppLocale, getSupportedAppLocales } from "@/i18n/config";
+import {
+    type AppLocale,
+    getSupportedAppLocales,
+    isRuntimeLocale,
+} from "@/i18n/config";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
 import { adminApiClient } from "@/modules/admin/api/client";
@@ -134,10 +138,8 @@ export function SiteSettingsPage() {
             }>("/site-settings");
             const incoming = response.data.data ?? {};
             const candidateDefault = incoming.defaultLanguage;
-            const defaultLanguage = SUPPORTED_LANGUAGES.includes(
-                candidateDefault as AppLocale,
-            )
-                ? (candidateDefault as AppLocale)
+            const defaultLanguage = isRuntimeLocale(candidateDefault)
+                ? candidateDefault
                 : defaultSettings.defaultLanguage;
             const merged: SiteSettingsState = {
                 ...defaultSettings,
@@ -360,10 +362,8 @@ export function SiteSettingsPage() {
                         : [...previous.enabledLanguages],
                     defaultLanguage:
                         patch.defaultLanguage &&
-                        SUPPORTED_LANGUAGES.includes(
-                            patch.defaultLanguage as AppLocale,
-                        )
-                            ? (patch.defaultLanguage as AppLocale)
+                        isRuntimeLocale(patch.defaultLanguage)
+                            ? patch.defaultLanguage
                             : previous.defaultLanguage,
                     seoTitleLocalized: patch.seoTitleLocalized
                         ? cloneLocalizedMap(patch.seoTitleLocalized)
@@ -418,10 +418,10 @@ export function SiteSettingsPage() {
     };
 
     const handleDefaultLanguageChange = (locale: string) => {
-        if (!SUPPORTED_LANGUAGES.includes(locale as AppLocale)) {
+        if (!isRuntimeLocale(locale)) {
             return;
         }
-        const normalized = locale as AppLocale;
+        const normalized = locale;
         setSettings((prev) => {
             const nextLanguages = prev.enabledLanguages.includes(normalized)
                 ? prev.enabledLanguages

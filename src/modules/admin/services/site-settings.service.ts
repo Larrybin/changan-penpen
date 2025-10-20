@@ -59,9 +59,11 @@ const EMPTY_SETTINGS: SiteSettingsPayload = {
     enabledLanguages: ["en"],
 };
 
-const SUPPORTED_LOCALE_SET = new Set<AppLocale>(
-    getSupportedAppLocales() as AppLocale[],
-);
+const SUPPORTED_LOCALE_SET = new Set<string>(getSupportedAppLocales());
+
+function isSupportedLocale(value: string): value is AppLocale {
+    return SUPPORTED_LOCALE_SET.has(value);
+}
 
 function toAppLocale(value: string | null | undefined): AppLocale | null {
     if (!value) {
@@ -71,9 +73,7 @@ function toAppLocale(value: string | null | undefined): AppLocale | null {
     if (!trimmed) {
         return null;
     }
-    return SUPPORTED_LOCALE_SET.has(trimmed as AppLocale)
-        ? (trimmed as AppLocale)
-        : null;
+    return isSupportedLocale(trimmed) ? trimmed : null;
 }
 
 function sanitizeEnabledLocales(

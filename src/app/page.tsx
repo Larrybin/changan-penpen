@@ -1,14 +1,17 @@
+import { headers } from "next/headers";
 import { getLocale, getMessages } from "next-intl/server";
 
-import type { AppLocale } from "@/i18n/config";
+import { resolveAppLocale } from "@/i18n/config";
 import { pickMessages } from "@/lib/intl";
+import { readCspNonce } from "@/lib/security/csp";
 import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 import MarketingLandingPage from "@/modules/marketing/landing.page";
 import { MarketingMessagesProvider } from "@/modules/marketing/marketing-messages-provider";
 
 export default async function HomePage() {
-    const locale = (await getLocale()) as AppLocale;
+    const locale = resolveAppLocale(await getLocale());
+    const nonce = readCspNonce(await headers());
     const settings = await getSiteSettingsPayload();
     const marketingMessages = pickMessages(await getMessages({ locale }), [
         "Marketing",
@@ -36,6 +39,7 @@ export default async function HomePage() {
                 appUrl={appUrl}
                 structuredDataImage={structuredDataImage}
                 siteName={siteName}
+                nonce={nonce}
             />
         </MarketingMessagesProvider>
     );

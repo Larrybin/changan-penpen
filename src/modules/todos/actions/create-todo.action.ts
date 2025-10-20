@@ -85,8 +85,6 @@ export async function createTodoAction(formData: FormData) {
             throw new Error("Authentication required");
         }
 
-        throw new Error(
-            error instanceof Error ? error.message : "Failed to create todo",
-        );
+        throw new Error("Unable to create todo at this time.");
     }
 }

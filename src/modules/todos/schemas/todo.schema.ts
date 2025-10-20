@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -13,35 +13,44 @@ import {
 } from "@/modules/todos/models/todo.enum";
 import { categories } from "./category.schema";
 
-export const todos = sqliteTable("todos", {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    title: text("title").notNull(),
-    description: text("description"),
-    categoryId: integer("category_id").references(() => categories.id),
-    userId: text("user_id")
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    status: text("status")
-        .$type<TodoStatusType>()
-        .notNull()
-        .default(TodoStatus.PENDING),
-    priority: text("priority")
-        .$type<TodoPriorityType>()
-        .notNull()
-        .default(TodoPriority.MEDIUM),
-    imageUrl: text("image_url"),
-    imageAlt: text("image_alt"),
-    completed: integer("completed", { mode: "boolean" })
-        .notNull()
-        .default(false),
-    dueDate: text("due_date"), // ISO string
-    createdAt: text("created_at")
-        .notNull()
-        .$defaultFn(() => new Date().toISOString()),
-    updatedAt: text("updated_at")
-        .notNull()
-        .$defaultFn(() => new Date().toISOString()),
-});
+export const todos = sqliteTable(
+    "todos",
+    {
+        id: integer("id").primaryKey({ autoIncrement: true }),
+        title: text("title").notNull(),
+        description: text("description"),
+        categoryId: integer("categoryId").references(() => categories.id),
+        userId: text("userId")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        status: text("status")
+            .$type<TodoStatusType>()
+            .notNull()
+            .default(TodoStatus.PENDING),
+        priority: text("priority")
+            .$type<TodoPriorityType>()
+            .notNull()
+            .default(TodoPriority.MEDIUM),
+        imageUrl: text("imageUrl"),
+        imageAlt: text("imageAlt"),
+        completed: integer("completed", { mode: "boolean" })
+            .notNull()
+            .default(false),
+        dueDate: text("dueDate"), // ISO string
+        createdAt: text("createdAt")
+            .notNull()
+            .$defaultFn(() => new Date().toISOString()),
+        updatedAt: text("updatedAt")
+            .notNull()
+            .$defaultFn(() => new Date().toISOString())
+            .$onUpdate(() => new Date().toISOString()),
+    },
+    (table) => [
+        index("todos_user_id_idx").on(table.userId),
+        index("todos_status_idx").on(table.status),
+        index("todos_created_at_idx").on(table.createdAt),
+    ],
+);
 
 // Zod schemas for validation
 export const insertTodoSchema = createInsertSchema(todos, {
