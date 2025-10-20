@@ -18,17 +18,19 @@ export default function Playground() {
             className="border border-yellow-400/30 rounded-lg p-4 md:p-6 bg-black/40 text-yellow-50"
             aria-labelledby="playground-heading"
         >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col gap-2 mb-4 xs:flex-row xs:items-center xs:justify-between">
                 <h2
                     id="playground-heading"
                     className="font-semibold tracking-wide"
                 >
                     {tPlayground("title")}
                 </h2>
-                <div className="text-[10px] md:text-xs text-yellow-200/70 space-x-2">
+                <div className="flex flex-wrap gap-x-2 gap-y-1 text-[10px] md:text-xs text-yellow-200/70">
                     {badges.map((badge, index) => (
-                        <span key={badge}>
-                            {index > 0 ? "· " : ""}
+                        <span
+                            key={badge}
+                            className="before:mr-1 before:content-['·'] first:before:content-none"
+                        >
                             {badge}
                         </span>
                     ))}
@@ -89,7 +91,7 @@ export default function Playground() {
                             {tPlayground("aspectRatioLabel")}
                         </legend>
                         <div
-                            className="flex gap-2"
+                            className="flex flex-wrap gap-2"
                             role="radiogroup"
                             aria-label={tPlayground("aspectRatioLabel")}
                         >
@@ -99,7 +101,7 @@ export default function Playground() {
                                 return (
                                     <label
                                         key={r}
-                                        className={`px-3 py-1 rounded border text-xs transition cursor-pointer focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-yellow-300 ${
+                                        className={`flex min-w-[4.5rem] items-center justify-center rounded border px-3 py-1 text-center text-xs transition cursor-pointer focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-yellow-300 ${
                                             isActive
                                                 ? "border-yellow-400 bg-yellow-400 text-black"
                                                 : "border-yellow-400/30 text-yellow-100/80 hover:border-yellow-400/60"
