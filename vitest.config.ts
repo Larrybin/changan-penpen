@@ -7,8 +7,35 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
     test: {
         environment: "jsdom",
-        setupFiles: "./vitest.setup.ts",
+        setupFiles: ["./vitest.setup.ts"],
         globals: true,
+        // 性能优化配置
+        testTimeout: 10000,           // 单个测试10秒超时
+        hookTimeout: 10000,           // 钩子10秒超时
+        pool: 'threads',              // 线程池提升并行性能
+        poolOptions: {
+            threads: {
+                maxThreads: 4,        // 最大4个并行线程
+                minThreads: 1,        // 最小1个线程
+            },
+        },
+        // 测试文件匹配模式优化
+        include: [
+            '**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+        ],
+        exclude: [
+            'node_modules/**',
+            'dist/**',
+            'coverage/**',
+            '.next/**',
+        ],
+        // 监视模式忽略配置
+        watchExclude: [
+            'node_modules/**',
+            'dist/**',
+            'coverage/**',
+        ],
         typecheck: {
             checker: "tsc",
             tsconfig: path.resolve(__dirname, "./tsconfig.test.json"),
@@ -36,10 +63,21 @@ export default defineConfig({
                 "**/*.d.ts",
             ],
             thresholds: {
-                lines: 15,
-                statements: 15,
-                branches: 20,
-                functions: 20,
+                // 第1阶段: 基础建设目标 (30% coverage)
+                lines: 30,
+                statements: 30,
+                branches: 25,
+                functions: 35,
+                // 注释: 后续阶段将逐步提升至55%
+                // 第2阶段 (第3周): lines: 45, statements: 45, branches: 40, functions: 50
+                // 第3阶段 (第5周): lines: 55, statements: 55, branches: 50, functions: 60
+            },
+            // 添加覆盖率水印配置 - 提供视觉指示器
+            watermarks: {
+                statements: [50, 80],
+                functions: [50, 80],
+                branches: [50, 80],
+                lines: [50, 80],
             },
         },
         alias: {
