@@ -27,14 +27,45 @@ export const ADMIN_HEADERS = {
 };
 
 // API测试工具函数
+const mergeHeaders = (base: Headers, incoming?: HeadersInit) => {
+    if (!incoming) {
+        return;
+    }
+
+    if (incoming instanceof Headers) {
+        incoming.forEach((value, key) => {
+            base.set(key, value);
+        });
+        return;
+    }
+
+    if (Array.isArray(incoming)) {
+        incoming.forEach(([key, value]) => {
+            base.set(key, value);
+        });
+        return;
+    }
+
+    Object.entries(incoming).forEach(([key, value]) => {
+        if (typeof value === "undefined") {
+            return;
+        }
+
+        base.set(key, String(value));
+    });
+};
+
 export const apiRequest = async (
     endpoint: string,
     options: RequestInit = {}
 ) => {
     const url = `${API_BASE_URL}${endpoint}`;
+    const { headers: optionHeaders, ...restOptions } = options;
+    const mergedHeaders = new Headers(DEFAULT_HEADERS);
+    mergeHeaders(mergedHeaders, optionHeaders);
     const response = await fetch(url, {
-        headers: DEFAULT_HEADERS,
-        ...options,
+        ...restOptions,
+        headers: mergedHeaders,
     });
 
     return {

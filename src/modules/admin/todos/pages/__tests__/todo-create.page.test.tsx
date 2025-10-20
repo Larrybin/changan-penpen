@@ -1,11 +1,8 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
-import { setupServer } from "msw/node";
 import {
-    afterAll,
     afterEach,
-    beforeAll,
     describe,
     expect,
     it,
@@ -28,9 +25,8 @@ vi.mock("next/navigation", () => ({
     }),
 }));
 
-const server = setupServer();
+const server = testUtils.server;
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
     server.resetHandlers();
     vi.clearAllMocks();
@@ -38,7 +34,6 @@ afterEach(() => {
     replaceMock.mockReset();
     prefetchMock.mockReset();
 });
-afterAll(() => server.close());
 
 describe("AdminTodoCreatePage", () => {
     it("submits the form and redirects to the todo list", async () => {
