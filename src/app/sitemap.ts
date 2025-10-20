@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import type { MetadataRoute } from "next";
 
 import {
     buildLocalizedPath,
@@ -10,8 +10,6 @@ import {
     type SitemapEntryConfig,
 } from "@/lib/sitemap";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
-
-const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>';
 
 const staticRoutes: SitemapEntryConfig[] = [
     { path: "/", changeFrequency: "daily", priority: 1 },
@@ -34,25 +32,21 @@ function normalizePath(path: string): string {
 function formatChangeFrequency(
     entry: RouteConfig,
     normalizedPath: string,
-): string {
+): MetadataRoute.Sitemap[number]["changeFrequency"] {
     if (entry.changeFrequency) {
         return entry.changeFrequency;
     }
     return normalizedPath === "/" ? "daily" : "weekly";
 }
 
-function formatPriority(entry: RouteConfig): string {
-    const priority = entry.priority ?? (entry.path === "/" ? 1 : 0.6);
-    return priority % 1 === 0 ? String(priority) : priority.toFixed(1);
+function formatPriority(entry: RouteConfig): number {
+    return entry.priority ?? (entry.path === "/" ? 1 : 0.6);
 }
 
-export default async function sitemap(): Promise<Response> {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const settings = await getSiteSettingsPayload();
     if (!settings.sitemapEnabled) {
-        const empty = `${XML_HEADER}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml"></urlset>`;
-        return new NextResponse(empty, {
-            headers: { "Content-Type": "application/xml; charset=UTF-8" },
-        });
+        return [];
     }
 
     const [dynamicEntries] = await Promise.all([getDynamicSitemapEntries()]);
@@ -72,7 +66,7 @@ export default async function sitemap(): Promise<Response> {
     });
 
     const now = new Date();
-    const urlFragments: string[] = [];
+    const entries: MetadataRoute.Sitemap = [];
 
     for (const entry of uniqueEntries) {
         const localizedAlternates = locales.map((locale) => {
@@ -87,40 +81,26 @@ export default async function sitemap(): Promise<Response> {
             localizedAlternates.find((item) => item.locale === defaultLocale) ??
             localizedAlternates[0];
 
+        const languages: Record<string, string> = {};
+        for (const alternate of localizedAlternates) {
+            languages[alternate.locale] = alternate.href;
+        }
+        if (defaultAlternate) {
+            languages["x-default"] = defaultAlternate.href;
+        }
+
         for (const { href, normalized } of localizedAlternates) {
-            const alternatesMarkup = localizedAlternates
-                .map(
-                    (alternate) =>
-                        `<xhtml:link rel="alternate" hreflang="${alternate.locale}" href="${alternate.href}" />`,
-                )
-                .join("");
-            const xDefaultMarkup = `<xhtml:link rel="alternate" hreflang="x-default" href="${defaultAlternate?.href ?? href}" />`;
-            const lastMod = (entry.lastModified ?? now).toISOString();
-            const changefreq = formatChangeFrequency(entry, normalized);
-            const priority = formatPriority(entry);
-            urlFragments.push(
-                [
-                    "<url>",
-                    `<loc>${href}</loc>`,
-                    `<lastmod>${lastMod}</lastmod>`,
-                    `<changefreq>${changefreq}</changefreq>`,
-                    `<priority>${priority}</priority>`,
-                    alternatesMarkup,
-                    xDefaultMarkup,
-                    "</url>",
-                ].join(""),
-            );
+            entries.push({
+                url: href,
+                lastModified: entry.lastModified ?? now,
+                changeFrequency: formatChangeFrequency(entry, normalized),
+                priority: formatPriority(entry),
+                alternates: {
+                    languages,
+                },
+            });
         }
     }
 
-    const xml = [
-        XML_HEADER,
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
-        ...urlFragments,
-        "</urlset>",
-    ].join("");
-
-    return new NextResponse(xml, {
-        headers: { "Content-Type": "application/xml; charset=UTF-8" },
-    });
+    return entries;
 }
