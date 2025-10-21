@@ -100,9 +100,11 @@ async function getCache(): Promise<Cache | null> {
         const cacheStorage = caches as CacheStorage;
 
         if ("default" in cacheStorage) {
-            const defaultCache = (cacheStorage as CacheStorage & {
-                default?: Cache;
-            }).default;
+            const defaultCache = (
+                cacheStorage as CacheStorage & {
+                    default?: Cache;
+                }
+            ).default;
             if (defaultCache) {
                 return defaultCache;
             }
