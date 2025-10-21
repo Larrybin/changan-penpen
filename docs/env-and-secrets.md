@@ -64,6 +64,7 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
 - `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_D1_DATABASE_ID`
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_D1_TOKEN`
 - `CLOUDFLARE_R2_URL`

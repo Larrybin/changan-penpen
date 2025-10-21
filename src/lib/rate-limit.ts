@@ -277,6 +277,7 @@ function buildUpstashErrorResponse(
         message: message || "Too many requests",
         details,
         headers,
+        severity: "medium",
     });
 }
 
@@ -365,6 +366,7 @@ export async function applyRateLimit(
             status: 429,
             code: "RATE_LIMITED",
             message: message || "Too many requests",
+            severity: "medium",
         }),
     };
 }

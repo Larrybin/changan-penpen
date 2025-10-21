@@ -13,6 +13,7 @@ export async function requireSessionUser(
             status: 401,
             code: "UNAUTHORIZED",
             message: "Unauthorized",
+            severity: "high",
         });
     }
     return userId;
