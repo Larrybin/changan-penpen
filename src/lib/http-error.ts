@@ -2,12 +2,15 @@ export interface ApiErrorDetails {
     [key: string]: unknown;
 }
 
+export type ApiErrorSeverity = "low" | "medium" | "high" | "critical";
+
 export interface ApiErrorResponse<Details = ApiErrorDetails> {
     success: false;
     error: {
         code: string;
         message: string;
         details?: Details;
+        severity: ApiErrorSeverity;
     };
     status: number;
     timestamp: string;
@@ -23,6 +26,7 @@ export interface CreateApiErrorResponseOptions<Details = ApiErrorDetails> {
     traceId?: string;
     timestamp?: string;
     requestId?: string;
+    severity?: ApiErrorSeverity;
 }
 
 function generateTraceId() {
@@ -49,6 +53,7 @@ export function createApiErrorPayload<Details = ApiErrorDetails>(
     const status = options.status ?? 500;
     const traceId = options.traceId ?? generateTraceId();
     const timestamp = options.timestamp ?? new Date().toISOString();
+    const severity = options.severity ?? "medium";
 
     const payload: ApiErrorResponse<Details> = {
         success: false,
@@ -58,6 +63,7 @@ export function createApiErrorPayload<Details = ApiErrorDetails>(
             ...(options.details !== undefined
                 ? { details: options.details }
                 : {}),
+            severity,
         },
         status,
         timestamp,
@@ -100,6 +106,7 @@ export class ApiError<Details = ApiErrorDetails> extends Error {
     public readonly code: string;
     public readonly details?: Details;
     public readonly traceId?: string;
+    public readonly severity: ApiErrorSeverity;
 
     constructor(message: string, init: ApiErrorInit<Details>) {
         super(init.message ?? message);
@@ -108,6 +115,7 @@ export class ApiError<Details = ApiErrorDetails> extends Error {
         this.code = init.code;
         this.details = init.details;
         this.traceId = init.traceId;
+        this.severity = init.severity ?? "medium";
     }
 
     toResponse(options?: {
@@ -120,6 +128,7 @@ export class ApiError<Details = ApiErrorDetails> extends Error {
             message: this.message,
             details: this.details,
             traceId: this.traceId,
+            severity: this.severity,
             headers: options?.headers,
             timestamp: options?.timestamp,
         });

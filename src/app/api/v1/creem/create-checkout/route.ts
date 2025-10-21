@@ -117,6 +117,7 @@ export async function POST(request: Request) {
             throw new ApiError("Authentication required", {
                 status: 401,
                 code: "UNAUTHORIZED",
+                severity: "high",
             });
         }
 
@@ -169,6 +170,7 @@ export async function POST(request: Request) {
             throw new ApiError("Missing CREEM_API_URL or CREEM_API_KEY", {
                 status: 503,
                 code: "SERVICE_UNAVAILABLE",
+                severity: "high",
             });
         }
 
@@ -188,6 +190,7 @@ export async function POST(request: Request) {
                     productId,
                     tierId: body.tierId ?? null,
                 },
+                severity: "medium",
             });
         }
 
@@ -199,6 +202,7 @@ export async function POST(request: Request) {
             throw new ApiError("User email required", {
                 status: 400,
                 code: "INVALID_REQUEST",
+                severity: "medium",
             });
         }
 
@@ -259,6 +263,7 @@ export async function POST(request: Request) {
                     upstreamBodySnippet: snippet,
                     isClientError,
                 },
+                severity: isClientError ? "medium" : "high",
             });
         }
 
@@ -270,6 +275,7 @@ export async function POST(request: Request) {
                     status: 502,
                     code: "UPSTREAM_INVALID_RESPONSE",
                     details: { data },
+                    severity: "high",
                 },
             );
         }

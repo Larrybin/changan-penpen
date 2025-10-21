@@ -13,6 +13,7 @@ export async function GET(request: Request) {
                 status: 401,
                 code: "UNAUTHORIZED",
                 message: "Authentication required",
+                severity: "high",
             });
         }
 

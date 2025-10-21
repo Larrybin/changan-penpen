@@ -14,6 +14,31 @@ const DEFAULT_ALLOWED_MIME_TYPES = [
 ];
 
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const DEFAULT_R2_CACHE_TTL_SECONDS = 300;
+const R2_CACHE_META_HEADER = "x-r2-metadata";
+const R2_CACHE_PREFIX = "https://r2-cache.internal/";
+
+export interface R2ObjectResult {
+    body: ArrayBuffer;
+    size: number;
+    etag?: string;
+    uploaded?: string;
+    httpMetadata?: R2HTTPMetadata | null;
+    customMetadata?: Record<string, string> | null;
+}
+
+export interface GetFromR2Options {
+    cacheTtlSeconds?: number;
+    bypassCache?: boolean;
+}
+
+type CachedR2Metadata = {
+    size: number;
+    etag?: string | null;
+    uploaded?: string | null;
+    httpMetadata?: R2HTTPMetadata | null;
+    customMetadata?: Record<string, string> | null;
+};
 
 export type UploadResult =
     | {
@@ -64,6 +89,96 @@ function getR2Bucket(env: unknown): R2BucketLike {
         ? (rec as Record<string, unknown>).next_cf_app_bucket
         : undefined;
     return bucket as unknown as R2BucketLike;
+}
+
+async function getCache(): Promise<Cache | null> {
+    try {
+        if (typeof caches === "undefined") {
+            return null;
+        }
+
+        const cacheStorage = caches as CacheStorage;
+
+        if ("default" in cacheStorage) {
+            const defaultCache = (
+                cacheStorage as CacheStorage & {
+                    default?: Cache;
+                }
+            ).default;
+            if (defaultCache) {
+                return defaultCache;
+            }
+        }
+
+        if (typeof cacheStorage.open === "function") {
+            return await cacheStorage.open("r2-object-cache");
+        }
+
+        return null;
+    } catch (error) {
+        console.warn("R2 cache unavailable", error);
+        return null;
+    }
+}
+
+function buildCacheRequest(key: string): Request {
+    return new Request(`${R2_CACHE_PREFIX}${encodeURIComponent(key)}`);
+}
+
+async function readCachedObject(
+    cache: Cache,
+    key: string,
+): Promise<R2ObjectResult | null> {
+    try {
+        const request = buildCacheRequest(key);
+        const cached = await cache.match(request);
+        if (!cached) {
+            return null;
+        }
+
+        const metaHeader = cached.headers.get(R2_CACHE_META_HEADER);
+        if (!metaHeader) {
+            return null;
+        }
+
+        const metadata = JSON.parse(metaHeader) as CachedR2Metadata;
+        const body = await cached.arrayBuffer();
+        return {
+            body,
+            size: metadata.size,
+            etag: metadata.etag ?? undefined,
+            uploaded: metadata.uploaded ?? undefined,
+            httpMetadata: metadata.httpMetadata ?? undefined,
+            customMetadata: metadata.customMetadata ?? undefined,
+        } satisfies R2ObjectResult;
+    } catch (error) {
+        console.warn("Failed to read cached R2 object", error);
+        return null;
+    }
+}
+
+async function writeCachedObject(
+    cache: Cache,
+    key: string,
+    object: R2ObjectBody,
+    metadata: CachedR2Metadata,
+    ttlSeconds: number,
+    arrayBuffer: ArrayBuffer,
+): Promise<void> {
+    try {
+        const response = new Response(arrayBuffer.slice(0), {
+            headers: {
+                "Cache-Control": `public, max-age=${Math.max(ttlSeconds, 0)}`,
+                "Content-Type":
+                    object.httpMetadata?.contentType ??
+                    "application/octet-stream",
+                [R2_CACHE_META_HEADER]: JSON.stringify(metadata),
+            },
+        });
+        await cache.put(buildCacheRequest(key), response);
+    } catch (error) {
+        console.warn("Failed to cache R2 object", error);
+    }
 }
 
 function normalizeFolder(folder: string | undefined) {
@@ -337,11 +452,62 @@ export async function uploadToR2(
     }
 }
 
-export async function getFromR2(key: string): Promise<R2Object | null> {
+export async function getFromR2(
+    key: string,
+    options: GetFromR2Options = {},
+): Promise<R2ObjectResult | null> {
     try {
         const { env } = await getCloudflareContext({ async: true });
         const bucket = getR2Bucket(env);
-        return bucket.get(key);
+        const cacheTtl =
+            options.cacheTtlSeconds ?? DEFAULT_R2_CACHE_TTL_SECONDS;
+        const bypassCache = options.bypassCache === true || cacheTtl <= 0;
+        const cache = bypassCache ? null : await getCache();
+
+        if (cache) {
+            const cached = await readCachedObject(cache, key);
+            if (cached) {
+                return cached;
+            }
+        }
+
+        const object = (await bucket.get(key)) as R2ObjectBody | null;
+        if (!object) {
+            return null;
+        }
+
+        const metadata: CachedR2Metadata = {
+            size: object.size,
+            etag: object.etag ?? null,
+            uploaded:
+                typeof object.uploaded === "string"
+                    ? object.uploaded
+                    : (object.uploaded?.toISOString?.() ?? null),
+            httpMetadata: object.httpMetadata ?? null,
+            customMetadata: object.customMetadata ?? null,
+        };
+
+        const arrayBuffer = await object.arrayBuffer();
+
+        if (cache) {
+            await writeCachedObject(
+                cache,
+                key,
+                object,
+                metadata,
+                cacheTtl,
+                arrayBuffer,
+            );
+        }
+
+        return {
+            body: arrayBuffer,
+            size: metadata.size,
+            etag: metadata.etag ?? undefined,
+            uploaded: metadata.uploaded ?? undefined,
+            httpMetadata: metadata.httpMetadata ?? undefined,
+            customMetadata: metadata.customMetadata ?? undefined,
+        } satisfies R2ObjectResult;
     } catch (error) {
         console.error("Error getting data from R2", error);
         return null;

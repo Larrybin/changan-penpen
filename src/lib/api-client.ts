@@ -367,12 +367,20 @@ function buildApiError({ response, parsedBody, rawBody }: BuildErrorOptions) {
         ...(rateLimit ? { rateLimit } : {}),
     };
 
+    const severity =
+        response.status >= 500
+            ? "high"
+            : response.status >= 400
+              ? "medium"
+              : "low";
+
     throw new ApiError(extracted.message, {
         status: response.status,
         code:
             extracted.code ||
             `HTTP_${Number.isFinite(response.status) ? response.status : "ERROR"}`,
         details,
+        severity,
     });
 }
 

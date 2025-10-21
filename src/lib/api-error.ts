@@ -18,6 +18,7 @@ export default function handleApiError(error: unknown) {
             code: "INVALID_REQUEST",
             message: firstError?.message ?? "请求参数验证失败",
             details,
+            severity: "medium",
         });
     }
 
@@ -26,6 +27,7 @@ export default function handleApiError(error: unknown) {
             status: 400,
             code: "INVALID_JSON",
             message: "Invalid JSON payload",
+            severity: "medium",
         });
     }
 
@@ -33,6 +35,7 @@ export default function handleApiError(error: unknown) {
         return new ApiError(error.message, {
             status: 500,
             code: "INTERNAL_ERROR",
+            severity: "high",
         }).toResponse();
     }
 
@@ -40,5 +43,6 @@ export default function handleApiError(error: unknown) {
         status: 500,
         code: "INTERNAL_ERROR",
         message: "Internal server error",
+        severity: "high",
     });
 }

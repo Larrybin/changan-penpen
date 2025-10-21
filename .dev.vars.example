@@ -15,6 +15,7 @@ HEALTH_ACCESS_TOKEN=
 # Get your Account ID from: https://dash.cloudflare.com/ (right sidebar)
 # Get your API Token from: https://dash.cloudflare.com/profile/api-tokens
 CLOUDFLARE_ACCOUNT_ID=your-account-id-here
+CLOUDFLARE_D1_DATABASE_ID=your-d1-database-id-here
 CLOUDFLARE_D1_TOKEN=your-api-token-here
 
 # Creem (test/staging values suggested)

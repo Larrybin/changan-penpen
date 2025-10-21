@@ -98,6 +98,7 @@ export async function POST(request: Request) {
             throw new ApiError("Missing webhook secret", {
                 status: 500,
                 code: "SERVICE_CONFIGURATION_ERROR",
+                severity: "high",
             });
         }
         const redis = getRedisClient({
@@ -123,6 +124,7 @@ export async function POST(request: Request) {
             throw new ApiError("Invalid signature", {
                 status: 401,
                 code: "INVALID_SIGNATURE",
+                severity: "high",
             });
         }
 

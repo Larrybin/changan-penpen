@@ -19,6 +19,7 @@ export async function requireCreemCustomerId(
             status: 404,
             code: "CREEM_CUSTOMER_NOT_FOUND",
             message: "No subscription/customer found",
+            severity: "low",
         });
     }
     return creemCustomerId;

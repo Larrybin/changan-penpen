@@ -57,6 +57,15 @@ Browser → Next.js App Router (Edge/SSR) → Server Actions / Route Handlers
 5. Caching & revalidation — TanStack Query + Next.js revalidate; optionally layer CF Cache.
 6. External deps — R2, Creem, Workers AI through typed `CloudflareEnv` bindings and env vars.
 
+## Security Posture & Resilience
+- **Strict headers** — `middleware.ts` issues nonce-based CSP (no `unsafe-inline`/`unsafe-eval`), HSTS, frame denial, referrer policy, and propagates the nonce for downstream rendering.
+- **Secrets & config** — Drizzle CLI credentials resolve from environment variables (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_D1_TOKEN`); Workers secrets live in Wrangler and `.dev.vars` is a template only.
+- **Auth caching** — Better Auth instances are cached per-secret in a global map to avoid race conditions across isolates while still supporting `fresh` reloads.
+- **Rate limiting** — `src/lib/rate-limit.ts` wraps Upstash or the Worker binding and standardises 429 responses with metadata.
+- **Error telemetry** — `ApiError` responses now include a `severity` tier so dashboards/alerts can weight issues (e.g., auth failures vs upstream outages).
+- **Object storage** — `src/lib/r2.ts` adds an edge Cache API layer with TTL control to reduce R2 egress and improve latency for frequently accessed objects.
+- **Replay protection** — Webhooks verify signatures and optionally persist replay tokens via Upstash Redis.
+
 ## Cloudflare Bindings & Env
 - Wrangler config — enable `nodejs_compat`, `nodejs_als`, `global_fetch_strictly_public` in `wrangler.toml` when needed.
 - Bindings — `next_cf_app` (D1), `next_cf_app_bucket` (R2), `AI`, `ASSETS`.

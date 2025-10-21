@@ -17,6 +17,7 @@ function requireCreemEnv(
                 status: 503,
                 code: "SERVICE_UNAVAILABLE",
                 message: "Missing CREEM_API_URL or CREEM_API_KEY",
+                severity: "high",
             }),
         };
     }
@@ -107,6 +108,7 @@ export async function GET(request: Request) {
                     status,
                     upstreamBodySnippet: snippet,
                 },
+                severity: mapped >= 500 ? "high" : "medium",
             });
         }
 
@@ -116,6 +118,7 @@ export async function GET(request: Request) {
                 status: 502,
                 code: "UPSTREAM_INVALID_RESPONSE",
                 message: "Invalid response from Creem: missing portal url",
+                severity: "high",
             });
         }
         // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
