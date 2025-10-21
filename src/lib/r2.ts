@@ -96,8 +96,23 @@ async function getCache(): Promise<Cache | null> {
         if (typeof caches === "undefined") {
             return null;
         }
+
         const cacheStorage = caches as CacheStorage;
-        return cacheStorage.default ?? null;
+
+        if ("default" in cacheStorage) {
+            const defaultCache = (cacheStorage as CacheStorage & {
+                default?: Cache;
+            }).default;
+            if (defaultCache) {
+                return defaultCache;
+            }
+        }
+
+        if (typeof cacheStorage.open === "function") {
+            return await cacheStorage.open("r2-object-cache");
+        }
+
+        return null;
     } catch (error) {
         console.warn("R2 cache unavailable", error);
         return null;
