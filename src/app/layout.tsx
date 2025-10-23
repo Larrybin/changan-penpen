@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
 import { InjectedHtml } from "@/components/seo/custom-html";
+import { WebVitals } from "@/components/performance/web-vitals";
 import { resolveAppLocale } from "@/i18n/config";
 import { pickMessages } from "@/lib/intl";
 import { readCspNonce } from "@/lib/security/csp";
@@ -40,6 +41,7 @@ export default async function RootLayout({
                 >
                     Skip to main content
                 </a>
+                <WebVitals />
                 <NextIntlClientProvider locale={locale} messages={messages}>
                     <main id="main-content">{children}</main>
                 </NextIntlClientProvider>
