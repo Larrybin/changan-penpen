@@ -20,11 +20,135 @@ const FAST_BY_LOCALE = {
     pt: "⚡ Rápido",
 };
 
+function updateString(value, transform, assign) {
+    const next = transform(value);
+    if (next !== value) {
+        assign(next);
+        return true;
+    }
+    return false;
+}
+
+function processArrayEntries(array, transform, stack) {
+    let mutated = false;
+    for (let i = 0; i < array.length; i++) {
+        const value = array[i];
+        if (typeof value === "string") {
+            mutated =
+                updateString(value, transform, (next) => {
+                    array[i] = next;
+                }) || mutated;
+        } else if (value && typeof value === "object") {
+            stack.push(value);
+        }
+    }
+    return mutated;
+}
+
+function processObjectEntries(object, transform, stack, seen) {
+    if (seen.has(object)) return false;
+    seen.add(object);
+    let mutated = false;
+    for (const key of Object.keys(object)) {
+        const value = object[key];
+        if (typeof value === "string") {
+            mutated =
+                updateString(value, transform, (next) => {
+                    object[key] = next;
+                }) || mutated;
+        } else if (value && typeof value === "object") {
+            stack.push(value);
+        }
+    }
+    return mutated;
+}
+
+function mutateStrings(root, transform) {
+    let mutated = false;
+    const seenObjects = new WeakSet();
+    const stack = [root];
+
+    while (stack.length > 0) {
+        const current = stack.pop();
+        if (handleNode(current, transform, stack, seenObjects)) {
+            mutated = true;
+        }
+    }
+
+    return mutated;
+}
+
+function handleNode(node, transform, stack, seenObjects) {
+    if (!node) return false;
+    if (Array.isArray(node)) {
+        return processArrayEntries(node, transform, stack);
+    }
+    if (typeof node === "string") {
+        return transform(node) !== node;
+    }
+    if (typeof node === "object") {
+        return processObjectEntries(node, transform, stack, seenObjects);
+    }
+    return false;
+}
+
+const QUOTE_STYLES = {
+    de: {
+        doubleOpen: "„",
+        doubleClose: "“",
+        singleOpen: "‚",
+        singleClose: "‘",
+    },
+    pt: {
+        doubleOpen: "“",
+        doubleClose: "”",
+        singleOpen: "‘",
+        singleClose: "’",
+    },
+};
+
+const DASH_NORMALIZERS = {
+    de: (value) => value.replace(/\s+[-—]\s+/g, " – "),
+    pt: (value) => value.replace(/\s+[-–]\s+/g, " — "),
+};
+
+function createQuoteTransformer(style) {
+    return (value) => {
+        let out = value.replace(
+            /"([^"{}\n]+)"/g,
+            `${style.doubleOpen}$1${style.doubleClose}`,
+        );
+        out = out.replace(
+            /'([^'{}\n]+)'/g,
+            `${style.singleOpen}$1${style.singleClose}`,
+        );
+        return out;
+    };
+}
+
+const FRENCH_PUNCTUATION = /[!?;:]/;
+
+function applyFrenchSpacing(value) {
+    let replaced = value
+        .replace(/[\u00A0\u202F ]+([!?;:])/g, "\u202F$1")
+        .replace(
+            new RegExp(`([^\u00A0\u202Fs])(${FRENCH_PUNCTUATION.source})`, "g"),
+            "$1\u202F$2",
+        );
+    replaced = replaced.replace(/«\s*/g, "«\u00A0").replace(/\s*»/g, "\u00A0»");
+    return replaced;
+}
+
 let totalChanged = 0;
 for (const file of walk(ROOT)) {
     const locale = path.basename(file, ".json");
     const json = JSON.parse(fs.readFileSync(file, "utf8"));
     let changed = false;
+    const applyStrings = (transform) => {
+        if (mutateStrings(json, transform)) {
+            changed = true;
+        }
+    };
 
     // Normalize hero.support.fast across locales
     const fast = FAST_BY_LOCALE[locale];
@@ -56,46 +180,13 @@ for (const file of walk(ROOT)) {
             }
 
             // Generic deep normalization: remove Unicode replacement chars and collapse extra spaces
-            function normalizeString(value) {
-                if (typeof value !== "string") return value;
+            const normalizeString = (value) => {
                 let out = value.replace(/\uFFFD/g, "");
                 out = out.replace(/\s{2,}/g, " ");
-                // Normalize ellipsis
                 out = out.replace(/\.{3}/g, "…");
-                // Normalize number ranges to en-dash: 9-12 -> 9–12
-                out = out.replace(/(\d)\s*-\s*(\d)/g, "$1–$2");
-                return out;
-            }
-
-            function walkAndNormalize(obj) {
-                if (obj && typeof obj === "object") {
-                    if (Array.isArray(obj)) {
-                        for (let i = 0; i < obj.length; i++) {
-                            const before = obj[i];
-                            const after = walkAndNormalize(before);
-                            if (after !== before) {
-                                obj[i] = after;
-                                changed = true;
-                            }
-                        }
-                    } else {
-                        for (const k of Object.keys(obj)) {
-                            const before = obj[k];
-                            const after = walkAndNormalize(before);
-                            if (after !== before) {
-                                obj[k] = after;
-                                changed = true;
-                            }
-                        }
-                    }
-                    return obj;
-                }
-                const normalized = normalizeString(obj);
-                if (normalized !== obj) return normalized;
-                return obj;
-            }
-
-            walkAndNormalize(json);
+                return out.replace(/(\d)\s*-\s*(\d)/g, "$1–$2");
+            };
+            applyStrings(normalizeString);
 
             // Ensure FAQ questions end with '?'
             const faqItems = json?.Marketing?.faq?.items;
@@ -112,260 +203,25 @@ for (const file of walk(ROOT)) {
             }
 
             // Apostrophes: use typographic apostrophe in all locales (don't touch tags or placeholders)
-            function typographicApostrophes(value) {
-                if (typeof value !== "string") return value;
-                // Replace letter ' letter with letter ’ letter
-                return value.replace(
+            const typographicApostrophes = (value) =>
+                value.replace(
                     /([A-Za-zÀ-ÖØ-öø-ÿ])'([A-Za-zÀ-ÖØ-öø-ÿ])/g,
                     "$1’$2",
                 );
-            }
-
-            function walkApostrophes(obj) {
-                if (obj && typeof obj === "object") {
-                    if (Array.isArray(obj)) {
-                        for (let i = 0; i < obj.length; i++) {
-                            const before = obj[i];
-                            const after = walkApostrophes(before);
-                            if (after !== before) {
-                                obj[i] = after;
-                                changed = true;
-                            }
-                        }
-                    } else {
-                        for (const k of Object.keys(obj)) {
-                            const before = obj[k];
-                            const after = walkApostrophes(before);
-                            if (after !== before) {
-                                obj[k] = after;
-                                changed = true;
-                            }
-                        }
-                    }
-                    return obj;
-                }
-                const next = typographicApostrophes(obj);
-                if (next !== obj) return next;
-                return obj;
-            }
-
-            walkApostrophes(json);
+            applyStrings(typographicApostrophes);
 
             // Non-breaking space between number and unit (MP, KB/MB/GB/TB, %, km/cm/mm, px)
-            function nbspNumberUnit(value) {
-                if (typeof value !== "string") return value;
-                let out = value.replace(
+            const nbspNumberUnit = (value) => {
+                const out = value.replace(
                     /(\d)\s+(MP|KB|K[Bb]|MB|GB|TB|%|km|cm|mm|px)/g,
                     "$1\u00A0$2",
                 );
-                // Placeholder-based: {{total}} {{unit}} -> {{total}} NBSP {{unit}}
-                out = out.replace(
+                return out.replace(
                     /(\{\{\s*(?:total|count|amount|size)\s*\}\})\s+(\{\{\s*unit\s*\}\})/g,
                     "$1\u00A0$2",
                 );
-                return out;
-            }
-
-            function walkNbsp(obj) {
-                if (obj && typeof obj === "object") {
-                    if (Array.isArray(obj)) {
-                        for (let i = 0; i < obj.length; i++) {
-                            const before = obj[i];
-                            const after = walkNbsp(before);
-                            if (after !== before) {
-                                obj[i] = after;
-                                changed = true;
-                            }
-                        }
-                    } else {
-                        for (const k of Object.keys(obj)) {
-                            const before = obj[k];
-                            const after = walkNbsp(before);
-                            if (after !== before) {
-                                obj[k] = after;
-                                changed = true;
-                            }
-                        }
-                    }
-                    return obj;
-                }
-                const next = nbspNumberUnit(obj);
-                if (next !== obj) return next;
-                return obj;
-            }
-
-            walkNbsp(json);
-
-            // Locale-specific quotes and dash normalization
-            function replaceQuotes(
-                value,
-                { doubleOpen, doubleClose, singleOpen, singleClose },
-            ) {
-                if (typeof value !== "string") return value;
-                let out = value;
-                // Replace straight double quotes around simple phrases (avoid braces/tags)
-                out = out.replace(
-                    /"([^"{}\n]+)"/g,
-                    `${doubleOpen}$1${doubleClose}`,
-                );
-                // Replace straight single quotes around simple phrases (avoid braces/tags)
-                out = out.replace(
-                    /'([^'{}\n]+)'/g,
-                    `${singleOpen}$1${singleClose}`,
-                );
-                return out;
-            }
-
-            function walkQuotes(obj, style) {
-                if (obj && typeof obj === "object") {
-                    if (Array.isArray(obj)) {
-                        for (let i = 0; i < obj.length; i++) {
-                            const before = obj[i];
-                            const after = walkQuotes(before, style);
-                            if (after !== before) {
-                                obj[i] = after;
-                                changed = true;
-                            }
-                        }
-                    } else {
-                        for (const k of Object.keys(obj)) {
-                            const before = obj[k];
-                            const after = walkQuotes(before, style);
-                            if (after !== before) {
-                                obj[k] = after;
-                                changed = true;
-                            }
-                        }
-                    }
-                    return obj;
-                }
-                const next = replaceQuotes(obj, style);
-                if (next !== obj) return next;
-                return obj;
-            }
-
-            function normalizeDashesDE(value) {
-                if (typeof value !== "string") return value;
-                // Gedankenstrich: use en dash with surrounding spaces
-                return value.replace(/\s+[-—]\s+/g, " – ");
-            }
-
-            function normalizeDashesPT(value) {
-                if (typeof value !== "string") return value;
-                // Portuguese style: use em dash with surrounding spaces
-                return value.replace(/\s+[-–]\s+/g, " — ");
-            }
-
-            function walkDashes(obj, locale) {
-                if (obj && typeof obj === "object") {
-                    if (Array.isArray(obj)) {
-                        for (let i = 0; i < obj.length; i++) {
-                            const before = obj[i];
-                            const after = walkDashes(before, locale);
-                            if (after !== before) {
-                                obj[i] = after;
-                                changed = true;
-                            }
-                        }
-                    } else {
-                        for (const k of Object.keys(obj)) {
-                            const before = obj[k];
-                            const after = walkDashes(before, locale);
-                            if (after !== before) {
-                                obj[k] = after;
-                                changed = true;
-                            }
-                        }
-                    }
-                    return obj;
-                }
-                const next =
-                    locale === "de"
-                        ? normalizeDashesDE(obj)
-                        : locale === "pt"
-                          ? normalizeDashesPT(obj)
-                          : obj;
-                if (next !== obj) return next;
-                return obj;
-            }
-
-            if (locale === "de") {
-                // German quotes „…“ and ‚…‘
-                walkQuotes(json, {
-                    doubleOpen: "„",
-                    doubleClose: "“",
-                    singleOpen: "‚",
-                    singleClose: "‘",
-                });
-                walkDashes(json, "de");
-            }
-
-            if (locale === "pt") {
-                // Portuguese quotes “…” and ‘…’
-                walkQuotes(json, {
-                    doubleOpen: "“",
-                    doubleClose: "”",
-                    singleOpen: "‘",
-                    singleClose: "’",
-                });
-                walkDashes(json, "pt");
-            }
-
-            // Language-specific typography rules
-            if (locale === "fr") {
-                // In French, use a narrow no-break space (U+202F) before ! ? ; :
-                const FRENCH_PUNCT_BEFORE = /[!?;:]/;
-
-                function applyFrenchSpacing(value) {
-                    if (typeof value !== "string") return value;
-                    // Collapse any sequence of normal space or NBSP/narrow NBSP before the target punctuation to a single U+202F
-                    let replaced = value
-                        .replace(/[\u00A0\u202F ]+([!?;:])/g, "\u202F$1")
-                        // And ensure there is exactly one U+202F before the punctuation when there was none
-                        .replace(
-                            new RegExp(
-                                `([^\u00A0\u202Fs])(${FRENCH_PUNCT_BEFORE.source})`,
-                                "g",
-                            ),
-                            "$1\u202F$2",
-                        );
-                    // Ensure NBSP around guillemets « »: NBSP after « and before »
-                    replaced = replaced
-                        .replace(/«\s*/g, "«\u00A0")
-                        .replace(/\s*»/g, "\u00A0»");
-                    return replaced;
-                }
-
-                function walkFrench(obj) {
-                    if (obj && typeof obj === "object") {
-                        if (Array.isArray(obj)) {
-                            for (let i = 0; i < obj.length; i++) {
-                                const before = obj[i];
-                                const after = walkFrench(before);
-                                if (after !== before) {
-                                    obj[i] = after;
-                                    changed = true;
-                                }
-                            }
-                        } else {
-                            for (const k of Object.keys(obj)) {
-                                const before = obj[k];
-                                const after = walkFrench(before);
-                                if (after !== before) {
-                                    obj[k] = after;
-                                    changed = true;
-                                }
-                            }
-                        }
-                        return obj;
-                    }
-                    const next = applyFrenchSpacing(obj);
-                    if (next !== obj) return next;
-                    return obj;
-                }
-
-                walkFrench(json);
-            }
+            };
+            applyStrings(nbspNumberUnit);
         }
 
         // Fix contact hours
@@ -408,14 +264,29 @@ for (const file of walk(ROOT)) {
         }
     }
 
+    if (locale === "de" || locale === "pt") {
+        const style = QUOTE_STYLES[locale];
+        if (style) {
+            applyStrings(createQuoteTransformer(style));
+        }
+        const dashNormalizer = DASH_NORMALIZERS[locale];
+        if (dashNormalizer) {
+            applyStrings(dashNormalizer);
+        }
+    }
+
+    if (locale === "fr") {
+        applyStrings(applyFrenchSpacing);
+    }
+
     if (changed) {
         fs.writeFileSync(file, `${JSON.stringify(json, null, 4)}\n`, "utf8");
         totalChanged++;
-        console.log(`Fixed: ${path.relative(process.cwd(), file)}`);
+        console.info(`Fixed: ${path.relative(process.cwd(), file)}`);
     }
 }
 
-console.log(
+console.info(
     totalChanged === 0
         ? "No i18n encoding issues found."
         : `Done. Updated ${totalChanged} file(s).`,

@@ -6,6 +6,39 @@ import type { StaticAssetCacheHeadersConfig } from "../src/config/types";
 
 const OUTPUT_PATH = path.join(process.cwd(), "public", "_headers");
 const DEFAULT_MAX_AGE_SECONDS = 31536000; // 365 days
+const UNIT_MULTIPLIERS: Record<string, number> = {
+    s: 1,
+    m: 60,
+    h: 60 * 60,
+    d: 60 * 60 * 24,
+    w: 60 * 60 * 24 * 7,
+    y: 60 * 60 * 24 * 365,
+};
+
+function parseNumericDuration(value: string): number | undefined {
+    if (!/^\d+$/.test(value)) {
+        return undefined;
+    }
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : undefined;
+}
+
+function parseShorthandDuration(value: string): number | undefined {
+    const match = value.match(/^(\d+)([smhdwy])$/i);
+    if (!match) {
+        return undefined;
+    }
+    const [, amount, unit] = match;
+    const numericAmount = Number.parseInt(amount, 10);
+    if (!Number.isFinite(numericAmount)) {
+        return undefined;
+    }
+    const multiplier = UNIT_MULTIPLIERS[unit.toLowerCase()];
+    if (!multiplier) {
+        return undefined;
+    }
+    return Math.max(0, numericAmount * multiplier);
+}
 
 function parseDurationToSeconds(value: unknown): number | undefined {
     if (typeof value === "number" && Number.isFinite(value)) {
@@ -18,37 +51,12 @@ function parseDurationToSeconds(value: unknown): number | undefined {
             return undefined;
         }
 
-        if (/^\d+$/.test(trimmed)) {
-            const parsed = Number.parseInt(trimmed, 10);
-            return Number.isFinite(parsed) ? parsed : undefined;
+        const numeric = parseNumericDuration(trimmed);
+        if (numeric !== undefined) {
+            return numeric;
         }
 
-        const match = trimmed.match(/^(\d+)([smhdwy])$/i);
-        if (!match) {
-            return undefined;
-        }
-
-        const [, amount, unit] = match;
-        const numericAmount = Number.parseInt(amount, 10);
-        if (!Number.isFinite(numericAmount)) {
-            return undefined;
-        }
-
-        const unitMultiplier: Record<string, number> = {
-            s: 1,
-            m: 60,
-            h: 60 * 60,
-            d: 60 * 60 * 24,
-            w: 60 * 60 * 24 * 7,
-            y: 60 * 60 * 24 * 365,
-        };
-
-        const multiplier = unitMultiplier[unit.toLowerCase()];
-        if (!multiplier) {
-            return undefined;
-        }
-
-        return Math.max(0, numericAmount * multiplier);
+        return parseShorthandDuration(trimmed);
     }
 
     return undefined;
@@ -86,7 +94,7 @@ async function main() {
 
     const content = createHeadersFileContent({ maxAge, immutable });
     writeFileSync(OUTPUT_PATH, content, "utf8");
-    console.log(
+    console.info(
         `[config] Wrote static headers to ${path.relative(process.cwd(), OUTPUT_PATH)} (max-age=${maxAge}, immutable=${immutable})`,
     );
 }
