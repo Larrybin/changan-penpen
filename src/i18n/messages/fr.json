@@ -56,10 +56,10 @@
             "title": "Bon retour",
             "description": "Connectez-vous avec votre compte Google",
             "googleCta": "Se connecter avec Google",
-            "forgotPassword": "Mot de passe oublié ?",
+            "forgotPassword": "Mot de passe oublié ?",
             "forgotUnavailable": "La réinitialisation du mot de passe n’est pas encore disponible. Veuillez contacter le support.",
             "submit": "Se connecter",
-            "switchPrompt": "Vous n'avez pas de compte ?",
+            "switchPrompt": "Vous n'avez pas de compte ?",
             "switchCta": "Inscrivez-vous"
         },
         "Signup": {
@@ -67,7 +67,7 @@
             "description": "Inscrivez-vous avec votre compte Google",
             "googleCta": "S'inscrire avec Google",
             "submit": "S'inscrire",
-            "switchPrompt": "Vous avez déjà un compte ?",
+            "switchPrompt": "Vous avez déjà un compte ?",
             "switchCta": "Connectez-vous"
         },
         "Validation": {
@@ -129,7 +129,7 @@
             }
         },
         "features": {
-            "title": "Qu'est-ce que Banana Generator ?",
+            "title": "Qu'est-ce que Banana Generator ?",
             "items": [
                 {
                     "title": "Accès gratuit et illimité",
@@ -159,7 +159,7 @@
             "learnMore": "Consultez nos <billingLink>offres de retouche d'images IA</billingLink> pour tous les détails tarifaires."
         },
         "why": {
-            "title": "Pourquoi choisir Banana Generator ?",
+            "title": "Pourquoi choisir Banana Generator ?",
             "items": [
                 {
                     "title": "Éditeur photo IA",
@@ -179,23 +179,23 @@
             "title": "Foire aux questions",
             "items": [
                 {
-                    "question": "Qu'est-ce que Banana Generator ?",
+                    "question": "Qu'est-ce que Banana Generator ?",
                     "answer": "Un éditeur photo et générateur d'images IA gratuit alimenté par le modèle Nano Banana."
                 },
                 {
-                    "question": "Dois-je m'inscrire ou payer ?",
+                    "question": "Dois-je m'inscrire ou payer ?",
                     "answer": "Non. Commencez immédiatement, gratuitement et sans limites."
                 },
                 {
-                    "question": "Quels formats sont pris en charge ?",
-                    "answer": "Importez les formats courants comme PNG et JPG ; l'export haute résolution est pris en charge."
+                    "question": "Quels formats sont pris en charge ?",
+                    "answer": "Importez les formats courants comme PNG et JPG ; l'export haute résolution est pris en charge."
                 },
                 {
-                    "question": "Mes données sont-elles privées et sécurisées ?",
+                    "question": "Mes données sont-elles privées et sécurisées ?",
                     "answer": "Nous appliquons une politique axée sur la confidentialité. Vous gardez la propriété de vos images."
                 }
             ],
-            "supportingCopy": "Besoin d'aide ? <contactLink>Contactez notre équipe support IA</contactLink> ou découvrez notre vision sur la <aboutLink>page À propos de Banana Generator</aboutLink>."
+            "supportingCopy": "Besoin d'aide ? <contactLink>Contactez notre équipe support IA</contactLink> ou découvrez notre vision sur la <aboutLink>page À propos de Banana Generator</aboutLink>."
         },
         "trust": {
             "title": "Plébiscité par les équipes créatives",
@@ -217,12 +217,12 @@
                     "role": "Réalisatrice YouTube"
                 }
             ],
-            "callout": "Besoin de documents de conformité ? Consultez notre <privacyLink>centre de confidentialité</privacyLink> pour connaître nos pratiques de données IA.",
+            "callout": "Besoin de documents de conformité ? Consultez notre <privacyLink>centre de confidentialité</privacyLink> pour connaître nos pratiques de données IA.",
             "socialProfiles": []
         },
         "cta": {
-            "title": "Prêt à passer en mode Banana ?",
-            "description": "Essayez Banana Generator dès maintenant et transformez vos photos en créations d'exception !",
+            "title": "Prêt à passer en mode Banana ?",
+            "description": "Essayez Banana Generator dès maintenant et transformez vos photos en créations d'exception !",
             "primaryCta": "Démarrer avec l'éditeur photo IA"
         },
         "playground": {
@@ -238,7 +238,7 @@
             "instructionsLabel": "Instructions de retouche",
             "usageGuide": "Guide d'utilisation",
             "usageGuideHint": "Le guide interactif arrive bientôt.",
-            "promptPlaceholder": "ex. : « ajouter un chapeau d'anniversaire au chat »",
+            "promptPlaceholder": "ex. : « ajouter un chapeau d'anniversaire au chat »",
             "aspectRatioLabel": "Format d'image",
             "humanCheck": "Confirmez que vous êtes humain",
             "generate": "Éplucher",
@@ -358,7 +358,7 @@
         "loginRequiredTitle": "Rapports d’utilisation",
         "loginRequiredMessage": "Connectez-vous pour consulter votre activité récente.",
         "empty": "Aucune donnée d’utilisation pour cette période.",
-        "entry": "{{feature}} : {{total}} {{unit}}"
+        "entry": "{{feature}} : {{total}} {{unit}}"
     },
     "BillingStatus": {
         "success": {
