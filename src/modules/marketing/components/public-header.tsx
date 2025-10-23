@@ -31,29 +31,36 @@ export default function PublicHeader() {
                         {tCommon("appName")}
                     </span>
                 </Link>
-                <nav className="hidden xs:flex items-center gap-6 text-sm text-foreground/80">
+                <nav
+                    className="hidden xs:flex items-center gap-6 text-sm text-foreground/80"
+                    role="navigation"
+                    aria-label={tMarketingHeader("mainNavigation")}
+                >
                     {navigationItems.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="hover:text-accent transition"
+                            className="hover:text-accent transition focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md px-2 py-1"
+                            aria-label={`${tMarketingHeader("navigateTo")} ${item.label}`}
                         >
                             {item.label}
                         </Link>
                     ))}
                 </nav>
-                <div className="hidden xs:flex items-center gap-2">
+                <div className="hidden xs:flex items-center gap-2" role="navigation" aria-label={tMarketingHeader("userActions")}>
                     <LanguageSwitcher />
-                    <Link href="/login">
+                    <Link href="/login" aria-label={tMarketingHeader("loginToAccount")}>
                         <Button
                             variant="outline"
-                            className="border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+                            className="border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                         >
                             {tAuth("login")}
                         </Button>
                     </Link>
-                    <Link href="/signup">
-                        <Button>{tMarketingHeader("cta")}</Button>
+                    <Link href="/signup" aria-label={tMarketingHeader("createAccount")}>
+                        <Button className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                            {tMarketingHeader("cta")}
+                        </Button>
                     </Link>
                 </div>
                 <Dialog>
@@ -61,20 +68,36 @@ export default function PublicHeader() {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="xs:hidden"
+                            className="xs:hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                             aria-label={tMarketingHeader("menuLabel")}
+                            aria-expanded={false}
+                            aria-controls="mobile-navigation-menu"
                         >
                             <Menu className="h-5 w-5" aria-hidden="true" />
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="xs:hidden max-w-sm">
+                    <DialogContent
+                        className="xs:hidden max-w-sm"
+                        id="mobile-navigation-menu"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="mobile-menu-title"
+                    >
                         <div className="flex flex-col gap-4">
-                            <nav className="flex flex-col gap-3 text-base text-foreground/80">
+                            <h2 id="mobile-menu-title" className="sr-only">
+                                {tMarketingHeader("mobileMenuTitle")}
+                            </h2>
+                            <nav
+                                className="flex flex-col gap-3 text-base text-foreground/80"
+                                role="navigation"
+                                aria-label={tMarketingHeader("mobileNavigation")}
+                            >
                                 {navigationItems.map((item) => (
                                     <DialogClose asChild key={item.href}>
                                         <Link
                                             href={item.href}
-                                            className="hover:text-accent transition"
+                                            className="hover:text-accent transition focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md px-3 py-2"
+                                            aria-label={`${tMarketingHeader("navigateTo")} ${item.label}`}
                                         >
                                             {item.label}
                                         </Link>
@@ -82,20 +105,20 @@ export default function PublicHeader() {
                                 ))}
                             </nav>
                             <LanguageSwitcher />
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-2" role="navigation" aria-label={tMarketingHeader("mobileUserActions")}>
                                 <DialogClose asChild>
-                                    <Link href="/login">
+                                    <Link href="/login" aria-label={tMarketingHeader("loginToAccount")}>
                                         <Button
                                             variant="outline"
-                                            className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+                                            className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                                         >
                                             {tAuth("login")}
                                         </Button>
                                     </Link>
                                 </DialogClose>
                                 <DialogClose asChild>
-                                    <Link href="/signup">
-                                        <Button className="w-full">
+                                    <Link href="/signup" aria-label={tMarketingHeader("createAccount")}>
+                                        <Button className="w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                             {tMarketingHeader("cta")}
                                         </Button>
                                     </Link>

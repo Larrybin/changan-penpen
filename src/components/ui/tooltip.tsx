@@ -39,7 +39,8 @@ const TooltipContent = React.forwardRef<
             ref={ref}
             sideOffset={sideOffset}
             className={cn(
-                "z-[var(--z-dropdown)] overflow-hidden rounded-xs bg-foreground/90 px-2.5 py-1.5 text-xs font-medium text-background shadow-xs duration-[var(--token-motion-duration-sm)] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+                "z-[var(--z-tooltip)] overflow-hidden rounded-xs bg-[var(--popover)] text-[var(--popover-foreground)] px-2.5 py-1.5 text-xs font-medium shadow-[var(--shadow-dropdown)] fade-in color-transition",
+                "data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                 className,
             )}
             {...props}
@@ -48,25 +49,4 @@ const TooltipContent = React.forwardRef<
 });
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-const TooltipArrow = React.forwardRef<
-    React.ElementRef<typeof TooltipPrimitive.Arrow>,
-    React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Arrow>
->(({ className, ...props }, ref) => {
-    return (
-        <TooltipPrimitive.Arrow
-            data-slot="tooltip-arrow"
-            ref={ref}
-            className={cn("fill-foreground/90", className)}
-            {...props}
-        />
-    );
-});
-TooltipArrow.displayName = TooltipPrimitive.Arrow.displayName;
-
-export {
-    Tooltip,
-    TooltipArrow,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-};
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };

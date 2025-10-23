@@ -17,8 +17,20 @@ function Separator({
             decorative={decorative}
             orientation={orientation}
             className={cn(
-                "bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px",
-                className,
+                // 基础样式
+                "shrink-0",
+                // 背景色令牌
+                "bg-[var(--color-border,var(--color-muted-foreground)/15)]",
+                // 方向样式
+                "data-[orientation=horizontal]:h-[1px] data-[orientation=horizontal]:w-full",
+                "data-[orientation=vertical]:h-full data-[orientation=vertical]:w-[1px]",
+                // 渐入动画
+                "fade-in",
+                // 过渡动画
+                "color-transition transition-[background-color,color] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
+                // 微交互
+                "hover:bg-[var(--color-border,var(--color-muted-foreground)/25)]",
+                className
             )}
             {...props}
         />

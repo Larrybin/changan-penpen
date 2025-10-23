@@ -5,20 +5,20 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center gap-[var(--button-gap)] whitespace-nowrap rounded-[var(--button-radius)] text-sm font-medium transition-all duration-[var(--button-transition)] active:scale-[var(--button-press-scale)] xs:min-h-[48px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-[var(--icon-md)] shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-[var(--token-focus-ring-color)] focus-visible:ring-[var(--token-focus-ring-width)] aria-invalid:ring-destructive/20 aria-invalid:border-destructive",
+    "inline-flex items-center justify-center gap-[var(--button-gap)] whitespace-nowrap rounded-[var(--button-radius)] text-sm font-medium transition-all duration-[var(--button-transition)] active:scale-[var(--button-press-scale)] xs:min-h-[48px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-[var(--icon-md)] shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-[var(--token-focus-ring-color)] focus-visible:ring-[var(--token-focus-ring-width)] aria-invalid:ring-destructive/20 aria-invalid:border-destructive btn-interactive scale-active color-transition",
     {
         variants: {
             variant: {
                 default:
                     "bg-[var(--button-bg)] text-[var(--button-fg)] shadow-xs hover:bg-[var(--button-hover-bg)]",
                 destructive:
-                    "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20",
+                    "bg-[var(--color-danger)] text-[var(--color-danger-foreground)] shadow-[var(--shadow-button)] hover:bg-[var(--color-danger)]/90 focus-visible:ring-[var(--color-danger)]/20",
                 outline:
-                    "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
+                    "border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] shadow-[var(--shadow-sm)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]",
                 secondary:
-                    "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
-                ghost: "hover:bg-accent hover:text-accent-foreground",
-                link: "text-primary underline-offset-4 hover:underline",
+                    "bg-[var(--secondary)] text-[var(--secondary-foreground)] shadow-[var(--shadow-sm)] hover:bg-[var(--secondary)]/80",
+                ghost: "hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]",
+                link: "text-[var(--token-link-color)] underline-offset-[var(--token-link-underline-offset)] hover:text-[var(--token-link-hover)] hover:underline",
             },
             size: {
                 default:

@@ -1,0 +1,514 @@
+/**
+ * 可访问性增强工具类
+ *
+ * 提供WCAG 2.1 AA级别的可访问性增强功能
+ * 包括焦点管理、屏幕阅读器支持、键盘导航等
+ */
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .sr-only-high-contrast {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .high-contrast-border {
+    border-width: 2px !important;
+    border-color: #000000 !important;
+  }
+
+  .high-contrast-text {
+    color: #000000 !important;
+  }
+
+  .high-contrast-bg {
+    background-color: #ffffff !important;
+  }
+
+  .high-contrast-focus:focus-visible {
+    outline: 3px solid #0000ff !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px #ffffff, 0 0 0 6px #0000ff !important;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  .accessible-animation {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .no-animation {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* 屏幕阅读器专用内容 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* 跳转到主要内容的链接 */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+  transition: top 0.2s ease-in-out;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* 增强的焦点指示器 */
+.focus-enhanced:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.focus-enhanced-dark:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 键盘导航支持 */
+.keyboard-nav {
+  outline: none;
+}
+
+.keyboard-nav:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* 交互区域增强 - 最小触摸目标44px */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.touch-target-small {
+  min-height: 32px;
+  min-width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 颜色对比度增强 */
+.text-contrast-high {
+  color: var(--foreground);
+}
+
+.text-contrast-medium {
+  color: var(--muted-foreground);
+}
+
+.text-contrast-low {
+  color: var(--muted-foreground);
+  opacity: 0.8;
+}
+
+.bg-contrast-high {
+  background-color: var(--background);
+}
+
+.bg-contrast-medium {
+  background-color: var(--muted);
+}
+
+/* 错误状态的可访问性 */
+.error-visual {
+  border-color: var(--destructive);
+  background-color: rgba(220, 38, 38, 0.05);
+}
+
+.error-visual:focus-visible {
+  outline-color: var(--destructive);
+  outline-width: 2px;
+}
+
+.success-visual {
+  border-color: var(--color-success);
+  background-color: rgba(5, 150, 105, 0.05);
+}
+
+.success-visual:focus-visible {
+  outline-color: var(--color-success);
+  outline-width: 2px;
+}
+
+.warning-visual {
+  border-color: var(--color-warning);
+  background-color: rgba(217, 119, 6, 0.05);
+}
+
+.warning-visual:focus-visible {
+  outline-color: var(--color-warning);
+  outline-width: 2px;
+}
+
+/* 加载状态的可访问性 */
+.loading-indicator {
+  position: relative;
+}
+
+.loading-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 1;
+}
+
+.loading-indicator::after {
+  content: '加载中...';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+/* 表单可访问性增强 */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.form-description {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.form-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--destructive);
+  font-weight: 500;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+/* 链接可访问性增强 */
+.link-accessible {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.link-accessible:hover {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+.link-accessible:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.link-unstyled {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link-unstyled:hover {
+  text-decoration: underline;
+}
+
+/* 图片可访问性增强 */
+.img-accessible {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.img-decorative {
+  alt: '';
+  aria-hidden: 'true';
+}
+
+.img-informative {
+  alt: attr(alt);
+  role: 'img';
+}
+
+/* 表格可访问性增强 */
+.table-accessible {
+  width: 100%;
+  border-collapse: collapse;
+  caption-side: bottom;
+}
+
+.table-accessible caption {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  text-align: left;
+}
+
+.table-accessible th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--foreground);
+  border-bottom: 2px solid var(--border);
+}
+
+.table-accessible td {
+  border-bottom: 1px solid var(--border);
+}
+
+.table-accessible th,
+.table-accessible td {
+  padding: 0.75rem;
+}
+
+/* 列表可访问性增强 */
+.list-accessible {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-accessible li {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.list-accessible li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+/* 模态框可访问性增强 */
+.modal-accessible {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-accessible:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* 工具提示可访问性增强 */
+.tooltip-accessible {
+  position: absolute;
+  background-color: var(--foreground);
+  color: var(--background);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  z-index: 1001;
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+/* 进度条可访问性增强 */
+.progress-accessible {
+  width: 100%;
+  height: 1rem;
+  background-color: var(--muted);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--primary);
+  transition: width 0.3s ease-in-out;
+}
+
+.progress-bar[aria-valuenow] {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+}
+
+/* 自定义复选框和单选按钮可访问性 */
+.checkbox-custom,
+.radio-custom {
+  position: relative;
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border);
+  border-radius: 0.25rem;
+  background-color: var(--background);
+  transition: all 0.2s ease-in-out;
+}
+
+.checkbox-custom:checked,
+.radio-custom:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.checkbox-custom:focus-visible,
+.radio-custom:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.radio-custom {
+  border-radius: 50%;
+}
+
+/* 响应式字体大小 - 支持用户字体大小偏好 */
+@media (min-resolution: 120dpi) {
+  .text-responsive {
+    font-size: calc(1rem * 1.1);
+  }
+}
+
+/* 打印样式可访问性 */
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-break-before {
+    page-break-before: always;
+  }
+
+  .print-break-after {
+    page-break-after: always;
+  }
+
+  .print-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+}
+
+/* 深色模式可访问性支持 */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-accessible {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  .dark-mode-accessible .focus-enhanced:focus-visible {
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* 焦点陷阱 - 用于模态框和下拉菜单 */
+.focus-trap {
+  position: relative;
+}
+
+.focus-trap::before,
+.focus-trap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.focus-trap::before {
+  order: -1;
+}
+
+.focus-trap::after {
+  order: 1;
+}
+
+/* 实时区域 - 用于动态内容 */
+.live-region {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.live-polite {
+  aria-live: polite;
+}
+
+.live-assertive {
+  aria-live: assertive;
+}
+
+.live-off {
+  aria-live: off;
+}

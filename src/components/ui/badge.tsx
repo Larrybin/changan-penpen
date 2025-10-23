@@ -10,13 +10,13 @@ const badgeVariants = cva(
         variants: {
             variant: {
                 default:
-                    "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+                    "border-transparent bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-sm)] [a&]:hover:bg-[var(--primary)]/90 [a&]:hover:shadow-[var(--shadow-md)]",
                 secondary:
-                    "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+                    "border-transparent bg-[var(--secondary)] text-[var(--secondary-foreground)] shadow-[var(--shadow-sm)] [a&]:hover:bg-[var(--secondary)]/90 [a&]:hover:shadow-[var(--shadow-md)]",
                 destructive:
-                    "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20",
+                    "border-transparent bg-[var(--color-danger)] text-[var(--color-danger-foreground)] shadow-[var(--shadow-sm)] [a&]:hover:bg-[var(--color-danger)]/90 [a&]:hover:shadow-[var(--shadow-md)] focus-visible:ring-[var(--color-danger)]/20",
                 outline:
-                    "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+                    "text-[var(--foreground)] border-[var(--border)] bg-transparent shadow-[var(--shadow-sm)] [a&]:hover:bg-[var(--accent)] [a&]:hover:text-[var(--accent-foreground)] [a&]:hover:shadow-[var(--shadow-md)]",
             },
         },
         defaultVariants: {

@@ -6,6 +6,38 @@
         "languageSwitcherLabel": "Select language",
         "brandTagline": "AI image editing that keeps you the top banana."
     },
+    "Accessibility": {
+        "skipToMain": "Skip to main content",
+        "skipToNavigation": "Skip to navigation",
+        "skipToSearch": "Skip to search",
+        "menuOpen": "Menu opened",
+        "menuClosed": "Menu closed",
+        "loading": "Loading",
+        "error": "Error",
+        "success": "Success",
+        "warning": "Warning",
+        "info": "Information",
+        "required": "Required field",
+        "optional": "Optional field",
+        "invalid": "Invalid input",
+        "valid": "Valid input",
+        "expanded": "Expanded",
+        "collapsed": "Collapsed",
+        "selected": "Selected",
+        "notSelected": "Not selected",
+        "checked": "Checked",
+        "unchecked": "Unchecked",
+        "disabled": "Disabled",
+        "enabled": "Enabled",
+        "keyboardShortcuts": "Keyboard shortcuts",
+        "escapeKey": "Escape key to close",
+        "tabNavigation": "Use Tab to navigate",
+        "enterKey": "Enter key to activate",
+        "spaceKey": "Space key to toggle",
+        "arrowKeys": "Arrow keys to navigate",
+        "homeEndKeys": "Home and End keys to jump to start or end",
+        "pageUpDownKeys": "Page Up and Page Down keys to scroll"
+    },
     "Nav": {
         "home": "Home",
         "dashboard": "Dashboard",
@@ -113,7 +145,15 @@
     "Marketing": {
         "header": {
             "cta": "Launch the AI photo editor",
-            "menuLabel": "Open navigation menu"
+            "menuLabel": "Open navigation menu",
+            "mainNavigation": "Main navigation",
+            "userActions": "User actions",
+            "mobileNavigation": "Mobile navigation",
+            "mobileUserActions": "Mobile user actions",
+            "mobileMenuTitle": "Mobile Navigation Menu",
+            "navigateTo": "Navigate to",
+            "loginToAccount": "Login to your account",
+            "createAccount": "Create a new account"
         },
         "hero": {
             "badge": "Free Online",
@@ -122,6 +162,11 @@
             "description": "Transform, edit, and enhance your images with simple text prompts. Add, remove, or restyle anything in seconds using AI image editing.",
             "primaryCta": "Start AI photo editing free",
             "secondaryCta": "Explore AI image workflows",
+            "primaryAriaLabel": "Start editing photos for free",
+            "secondaryAriaLabel": "Try AI image editing playground",
+            "primaryActions": "Primary actions",
+            "featuresLabel": "Features and benefits",
+            "featurePrefix": "Feature:",
             "support": {
                 "fast": "⚡ Fast",
                 "secure": "🔒 No sign-up",

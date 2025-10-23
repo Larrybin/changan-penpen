@@ -9,7 +9,13 @@ export function Breadcrumb({ className, ...props }: BreadcrumbProps) {
     return (
         <nav
             aria-label="breadcrumb"
-            className={cn("w-full", className)}
+            className={cn(
+                // 基础样式
+                "w-full",
+                // 渐入动画
+                "fade-in",
+                className
+            )}
             {...props}
         />
     );
@@ -22,8 +28,17 @@ export const BreadcrumbList = React.forwardRef<
     <ol
         ref={ref}
         className={cn(
-            "inline-flex items-center gap-1 text-muted-foreground",
-            className,
+            // 基础布局
+            "inline-flex items-center flex-wrap",
+            // 间距令牌
+            "gap-[var(--token-spacing-1)]",
+            // 排版令牌
+            "text-[var(--token-text-sm)] leading-[var(--token-line-height-normal)]",
+            // 颜色令牌
+            "text-[var(--color-muted-foreground)]",
+            // 渐入动画
+            "fade-in",
+            className
         )}
         {...props}
     />
@@ -36,7 +51,15 @@ export const BreadcrumbItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <li
         ref={ref}
-        className={cn("inline-flex items-center gap-1", className)}
+        className={cn(
+            // 基础布局
+            "inline-flex items-center",
+            // 间距令牌
+            "gap-[var(--token-spacing-1)]",
+            // 渐入动画
+            "fade-in",
+            className
+        )}
         {...props}
     />
 ));
@@ -56,8 +79,22 @@ export const BreadcrumbLink = React.forwardRef<
         <Comp
             ref={ref}
             className={cn(
-                "inline-flex items-center gap-1 transition-colors hover:text-foreground",
-                className,
+                // 基础布局
+                "inline-flex items-center",
+                // 间距令牌
+                "gap-[var(--token-spacing-1)]",
+                // 排版令牌
+                "text-[var(--token-text-sm)] leading-[var(--token-line-height-normal)]",
+                // 颜色令牌
+                "text-[var(--color-muted-foreground)]",
+                // 微交互
+                "transition-[color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
+                "hover:text-[var(--color-foreground)] hover:scale-[1.02]",
+                // 焦点状态
+                "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)] rounded-[var(--token-radius-sm)]",
+                // 渐入动画
+                "fade-in",
+                className
             )}
             {...props}
         />
@@ -72,7 +109,17 @@ export const BreadcrumbPage = React.forwardRef<
     <span
         ref={ref}
         aria-current="page"
-        className={cn("inline-flex items-center font-semibold", className)}
+        className={cn(
+            // 基础布局
+            "inline-flex items-center",
+            // 排版令牌
+            "text-[var(--token-text-sm)] font-[var(--token-font-weight-semibold)] leading-[var(--token-line-height-tight)]",
+            // 颜色令牌
+            "text-[var(--color-foreground)]",
+            // 渐入动画
+            "fade-in",
+            className
+        )}
         {...props}
     />
 ));
@@ -85,10 +132,20 @@ export function BreadcrumbSeparator({
     return (
         <span
             role="presentation"
-            className={cn("inline-flex items-center justify-center", className)}
+            className={cn(
+                // 基础布局
+                "inline-flex items-center justify-center",
+                // 尺寸令牌
+                "size-[var(--token-spacing-4)]",
+                // 颜色令牌
+                "text-[var(--color-muted-foreground)]/60",
+                // 渐入动画
+                "fade-in",
+                className
+            )}
             {...props}
         >
-            <ChevronRightIcon className="h-3 w-3" />
+            <ChevronRightIcon className="size-3" />
         </span>
     );
 }

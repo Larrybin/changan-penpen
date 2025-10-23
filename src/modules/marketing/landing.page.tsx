@@ -5,11 +5,13 @@ import type React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DecorativeImage } from "@/components/ui/image-optimizer";
 import { resolveAppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
 import Playground from "./components/playground-loader";
 import PublicFooter from "./components/public-footer";
 import PublicHeader from "./components/public-header";
+import { SkipLink } from "@/components/accessibility/skip-link";
 
 type MarketingLandingPageProps = {
     appUrl: string;
@@ -135,59 +137,111 @@ export default function MarketingLandingPage({
                 } as React.CSSProperties
             }
         >
+            <SkipLink />
             <PublicHeader />
 
-            <main>
-                <section className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-12 md:py-16">
+            <main id="main-content" role="main" tabIndex={-1}>
+                <section
+                    className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-12 md:py-16"
+                    aria-labelledby="hero-heading"
+                    role="banner"
+                >
                     <div className="grid xs:grid-cols-2 gap-[var(--grid-gap-section)] items-center">
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Badge className="bg-yellow-400 text-black">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Badge
+                                    className="bg-yellow-400 text-black focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
+                                    aria-label={t("hero.badge")}
+                                >
                                     {t("hero.badge")}
                                 </Badge>
-                                <span className="text-lg">
+                                {/* 装饰性emoji，使用aria-hidden */}
+                                <span
+                                    className="text-lg"
+                                    aria-hidden="true"
+                                    role="presentation"
+                                >
                                     {t("hero.emoji")}
                                 </span>
                             </div>
-                            <h1 className="text-title font-extrabold tracking-tight mb-4">
+                            <h1
+                                id="hero-heading"
+                                className="text-title font-extrabold tracking-tight mb-4"
+                            >
                                 {t("hero.title")}
                             </h1>
-                            <p className="text-yellow-200/80 leading-relaxed mb-6">
+                            <p className="text-yellow-200/80 leading-relaxed mb-6 text-lg">
                                 {t("hero.description")}
                             </p>
-                            <div className="flex flex-col gap-3 xs:flex-row xs:gap-3">
-                                <Link href="/signup">
-                                    <Button className="w-full xs:w-auto">
+                            <div className="flex flex-col gap-3 xs:flex-row xs:gap-3 mb-6" role="group" aria-label={t("hero.primaryActions")}>
+                                <Link
+                                    href="/signup"
+                                    className="inline-flex"
+                                    aria-label={t("hero.primaryAriaLabel")}
+                                >
+                                    <Button
+                                        className="w-full xs:w-auto focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
+                                        size="lg"
+                                    >
                                         {t("hero.primaryCta")}
                                     </Button>
                                 </Link>
-                                <Link href="#playground">
+                                <Link
+                                    href="#playground"
+                                    className="inline-flex"
+                                    aria-label={t("hero.secondaryAriaLabel")}
+                                >
                                     <Button
                                         variant="outline"
-                                        className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] xs:w-auto"
+                                        size="lg"
+                                        className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] xs:w-auto focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
                                     >
                                         {t("hero.secondaryCta")}
                                     </Button>
                                 </Link>
                             </div>
-                            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-yellow-200/70">
-                                {heroSupportValues.map((item) => (
-                                    <span key={item}>{item}</span>
+                            <div
+                                className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-yellow-200/70"
+                                role="list"
+                                aria-label={t("hero.featuresLabel")}
+                            >
+                                {heroSupportValues.map((item, index) => (
+                                    <span
+                                        key={`${item}-${index}`}
+                                        role="listitem"
+                                        className="inline-flex items-center gap-1"
+                                    >
+                                        <span className="sr-only">{t("hero.featurePrefix")}</span>
+                                        {item}
+                                    </span>
                                 ))}
                             </div>
                         </div>
-                        <div className="hidden lg-narrow:block text-right text-7xl">
+                        {/* 装饰性emoji区域，添加固定高度防止CLS */}
+                        <div
+                            className="hidden lg-narrow:block text-right text-7xl min-h-[4rem] animate-pulse"
+                            aria-hidden="true"
+                            role="presentation"
+                        >
                             {t("hero.emoji")}✨
                         </div>
                     </div>
                 </section>
 
-                <div
+                <section
                     id="playground"
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] pb-12"
+                    aria-labelledby="playground-heading"
                 >
-                    <Playground />
-                </div>
+                    <header className="text-center mb-8">
+                        <h2 id="playground-heading" className="sr-only">
+                            AI Photo Editor Playground
+                        </h2>
+                    </header>
+                    <main>
+                        <Playground />
+                    </main>
+                </section>
 
                 <section
                     id="features"

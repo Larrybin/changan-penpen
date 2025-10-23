@@ -8,7 +8,17 @@ import { cn } from "@/lib/utils";
 function AlertDialog({
     ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-    return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
+    return (
+        <AlertDialogPrimitive.Root
+            data-slot="alert-dialog"
+            className={cn(
+                // 基础动画类
+                "fade-in",
+                props.className
+            )}
+            {...props}
+        />
+    );
 }
 
 function AlertDialogTrigger({
@@ -17,6 +27,11 @@ function AlertDialogTrigger({
     return (
         <AlertDialogPrimitive.Trigger
             data-slot="alert-dialog-trigger"
+            className={cn(
+                // 基础交互类
+                "interactive-base scale-active",
+                props.className
+            )}
             {...props}
         />
     );
@@ -41,8 +56,18 @@ function AlertDialogOverlay({
         <AlertDialogPrimitive.Overlay
             data-slot="alert-dialog-overlay"
             className={cn(
-                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-[var(--z-modal)] bg-[var(--overlay-bg)]",
-                className,
+                // 基础覆盖层样式
+                "fixed inset-0 z-[var(--z-modal,50)]",
+                // 背景色令牌 - 警告对话框使用更深的背景
+                "bg-[var(--color-overlay,rgba(0,0,0,0.6))]",
+                // 背景模糊效果
+                "backdrop-blur-sm",
+                // 进场和出场动画
+                "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+                // 过渡动画
+                "transition-[opacity,backdrop-filter] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
+                className
             )}
             {...props}
         />
@@ -59,8 +84,29 @@ function AlertDialogContent({
             <AlertDialogPrimitive.Content
                 data-slot="alert-dialog-content"
                 className={cn(
-                    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[var(--z-modal)] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-[var(--token-radius-card)] border p-6 shadow-lg duration-[var(--token-motion-duration-md)] sm:max-w-lg",
-                    className,
+                    // 基础定位和布局
+                    "fixed top-[50%] left-[50%] z-[var(--z-modal,50)]",
+                    // 响应式宽度和最大宽度 - 警告对话框稍大
+                    "grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%]",
+                    "sm:max-w-xl",
+                    // 内边距令牌
+                    "p-[var(--token-spacing-6)]",
+                    // 背景色和圆角令牌
+                    "bg-[var(--color-background)] rounded-[var(--token-radius-card,var(--token-radius-lg))]",
+                    // 边框和阴影令牌 - 警告对话框使用更强的阴影
+                    "border border-[var(--color-destructive,var(--color-muted-foreground)/20)] shadow-[var(--shadow-2xl)]",
+                    // 进场和出场动画
+                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+                    "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+                    "data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2",
+                    // 过渡动画
+                    "transition-[all,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
+                    // 渐入动画
+                    "fade-in",
+                    // 微交互
+                    "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
+                    className
                 )}
                 {...props}
             />
@@ -76,8 +122,13 @@ function AlertDialogHeader({
         <div
             data-slot="alert-dialog-header"
             className={cn(
-                "flex flex-col gap-2 text-center sm:text-left",
-                className,
+                // 基础布局
+                "flex flex-col gap-[var(--token-spacing-3)]",
+                // 文本对齐
+                "text-center sm:text-left",
+                // 渐入动画
+                "fade-in",
+                className
             )}
             {...props}
         />
@@ -92,8 +143,12 @@ function AlertDialogFooter({
         <div
             data-slot="alert-dialog-footer"
             className={cn(
-                "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-                className,
+                // 响应式布局
+                "flex flex-col-reverse gap-[var(--token-spacing-3)]",
+                "sm:flex-row sm:justify-end sm:gap-[var(--token-spacing-2)]",
+                // 渐入动画
+                "fade-in",
+                className
             )}
             {...props}
         />
@@ -107,7 +162,15 @@ function AlertDialogTitle({
     return (
         <AlertDialogPrimitive.Title
             data-slot="alert-dialog-title"
-            className={cn("text-lg font-semibold", className)}
+            className={cn(
+                // 排版令牌
+                "text-[var(--token-text-lg)] font-[var(--token-font-weight-semibold)] leading-[var(--token-line-height-tight)]",
+                // 颜色令牌 - 警告对话框标题使用警告色
+                "text-[var(--color-destructive-foreground,var(--color-foreground))]",
+                // 渐入动画
+                "fade-in",
+                className
+            )}
             {...props}
         />
     );
@@ -120,7 +183,15 @@ function AlertDialogDescription({
     return (
         <AlertDialogPrimitive.Description
             data-slot="alert-dialog-description"
-            className={cn("text-muted-foreground text-sm", className)}
+            className={cn(
+                // 排版令牌
+                "text-[var(--token-text-sm)] leading-[var(--token-line-height-normal)]",
+                // 颜色令牌
+                "text-[var(--color-muted-foreground)]",
+                // 渐入动画
+                "fade-in",
+                className
+            )}
             {...props}
         />
     );
@@ -132,7 +203,16 @@ function AlertDialogAction({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action>) {
     return (
         <AlertDialogPrimitive.Action
-            className={cn(buttonVariants(), className)}
+            className={cn(
+                buttonVariants(),
+                // 警告对话框操作按钮默认使用destructive变体
+                buttonVariants({ variant: "destructive" }),
+                // 微交互
+                "scale-active",
+                // 渐入动画
+                "fade-in",
+                className
+            )}
             {...props}
         />
     );
@@ -144,7 +224,14 @@ function AlertDialogCancel({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
     return (
         <AlertDialogPrimitive.Cancel
-            className={cn(buttonVariants({ variant: "outline" }), className)}
+            className={cn(
+                buttonVariants({ variant: "outline" }),
+                // 微交互
+                "scale-active",
+                // 渐入动画
+                "fade-in",
+                className
+            )}
             {...props}
         />
     );
