@@ -264,45 +264,211 @@ export const insertSubscriptionSchema = z.object({
 ```typescript
 // app/api/v1/creem/create-checkout/route.ts
 export async function POST(request: Request) {
-  try {
-    const { planId, userId } = await request.json();
+  const auth = await getAuthInstance();
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.email) {
+    throw new ApiError("Authentication required", {
+      status: 401,
+      code: "UNAUTHORIZED",
+      severity: "high",
+    });
+  }
 
-    // 创建或获取客户
-    const customerId = await getOrCreateCustomer(userId);
+  const cfContext = await getCloudflareContext({ async: true });
+  const cf = cfContext.env as Pick<
+    CloudflareEnv,
+    | "RATE_LIMITER"
+    | "CREEM_API_URL"
+    | "CREEM_API_KEY"
+    | "CREEM_SUCCESS_URL"
+    | "CREEM_CANCEL_URL"
+    | "UPSTASH_REDIS_REST_URL"
+    | "UPSTASH_REDIS_REST_TOKEN"
+  >;
 
-    // 创建 Creem 支付会话
-    const session = await creem.checkout.sessions.create({
-      customer_id: customerId,
-      success_url: `${process.env.APP_URL}/billing/success`,
-      cancel_url: `${process.env.APP_URL}/billing/canceled`,
-      line_items: [{
-        price: planId,
-        quantity: 1
-      }]
+  const rateLimitResult = await applyRateLimit({
+    request,
+    identifier: "creem:create-checkout",
+    env: {
+      RATE_LIMITER: cf.RATE_LIMITER,
+      UPSTASH_REDIS_REST_URL: cf.UPSTASH_REDIS_REST_URL,
+      UPSTASH_REDIS_REST_TOKEN: cf.UPSTASH_REDIS_REST_TOKEN,
+    },
+    message: "Too many checkout attempts",
+    upstash: {
+      strategy: { type: "sliding", requests: 3, window: "10 s" },
+      analytics: true,
+      prefix: "@ratelimit/checkout",
+      includeHeaders: true,
+    },
+  });
+  if (!rateLimitResult.ok) {
+    return rateLimitResult.response;
+  }
+
+  const body = (await request.json()) as Body;
+  const normalizedType = (body.productType || "").toLowerCase();
+  const isSubscription = normalizedType === "subscription";
+  const { productId, creditsAmount } = selectProduct(
+    { productId: body.productId, tierId: body.tierId },
+    isSubscription,
+  );
+  if (!productId) {
+    throw new ApiError("Invalid or missing productId/tierId", {
+      status: 400,
+      code: "INVALID_REQUEST",
+      severity: "medium",
+    });
+  }
+
+  const productType: "subscription" | "credits" = isSubscription
+    ? "subscription"
+    : "credits";
+  const { successUrl, cancelUrl } = buildRedirectUrls(
+    cf,
+    request.headers.get("origin"),
+  );
+
+  const requestBody = {
+    product_id: productId,
+    customer: { email: session.user.email },
+    metadata: {
+      user_id: session.user.id,
+      product_type: productType,
+      credits: productType === "credits" ? creditsAmount ?? 0 : 0,
+    },
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    discount_code: body.discountCode,
+  } satisfies {
+    product_id: string;
+    customer: { email: string };
+    metadata: {
+      user_id: string;
+      product_type: "subscription" | "credits";
+      credits: number;
+    };
+    success_url?: string;
+    cancel_url?: string;
+    discount_code?: string;
+  };
+
+  const { ok, status, data, text, attempts, contentType } =
+    await fetchWithRetry(`${cf.CREEM_API_URL}/checkouts`, {
+      method: "POST",
+      headers: {
+        "x-api-key": cf.CREEM_API_KEY,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    return Response.json({ sessionId: session.id });
-  } catch (error) {
-    return Response.json(
-      { error: 'Failed to create checkout session' },
-      { status: 500 }
+  if (!ok) {
+    const snippet = (text || "").slice(0, 300);
+    const isClientError = status === 400 || status === 404 || status === 422;
+    throw new ApiError(
+      isClientError
+        ? "Create checkout failed due to invalid request"
+        : "Create checkout failed",
+      {
+        status: _mapUpstreamToHttp(status),
+        code: isClientError ? "UPSTREAM_BAD_REQUEST" : "UPSTREAM_FAILURE",
+        details: {
+          status,
+          attempts,
+          contentType: contentType || null,
+          upstreamBodySnippet: snippet,
+          isClientError,
+        },
+        severity: isClientError ? "medium" : "high",
+      },
     );
   }
+
+  const checkoutUrl = _ensureCheckoutUrl(data);
+  if (!checkoutUrl) {
+    throw new ApiError("Invalid response from Creem: missing checkout_url", {
+      status: 502,
+      code: "UPSTREAM_INVALID_RESPONSE",
+      details: { data },
+      severity: "high",
+    });
+  }
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      data: { checkoutUrl },
+      error: null,
+      meta: { raw: data },
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 }
 ```
 
 ### 客户门户
 ```typescript
 // app/api/v1/creem/customer-portal/route.ts
-export async function POST(request: Request) {
-  const { customerId } = await request.json();
+export async function GET(request: Request) {
+  const userIdOrResp = await requireSessionUser(request);
+  if (userIdOrResp instanceof Response) return userIdOrResp;
+  const userId = userIdOrResp;
 
-  const portalSession = await creem.billing.portal_sessions.create({
-    customer: customerId,
-    return_url: `${process.env.APP_URL}/billing`,
+  const customerIdOrResp = await requireCreemCustomerId(userId);
+  if (customerIdOrResp instanceof Response) return customerIdOrResp;
+  const creemCustomerId = customerIdOrResp;
+
+  const { env } = await getCloudflareContext({ async: true });
+  const cf = env as Pick<CloudflareEnv, "CREEM_API_URL" | "CREEM_API_KEY">;
+  const envRes = requireCreemEnv(cf);
+  if (!("ok" in envRes) || envRes.ok === false) return envRes.response;
+  const creem = envRes.cf;
+
+  const upstream = await fetchWithRetry(`${creem.CREEM_API_URL}/customers/billing`, {
+    method: "POST",
+    headers: {
+      "x-api-key": creem.CREEM_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ customer_id: creemCustomerId }),
   });
 
-  return Response.json({ url: portalSession.url });
+  if (!upstream.ok) {
+    const snippet = (upstream.text || "").slice(0, 300);
+    return createApiErrorResponse({
+      status: _mapUpstreamToHttp(upstream.status),
+      code: "UPSTREAM_FAILURE",
+      message: "Failed to get portal link",
+      details: {
+        status: upstream.status,
+        upstreamBodySnippet: snippet,
+      },
+      severity: upstream.status >= 500 ? "high" : "medium",
+    });
+  }
+
+  const portalUrl = _ensurePortalUrl(upstream.data);
+  if (!portalUrl) {
+    return createApiErrorResponse({
+      status: 502,
+      code: "UPSTREAM_INVALID_RESPONSE",
+      message: "Invalid response from Creem: missing portal url",
+      severity: "high",
+    });
+  }
+
+  return json(200, {
+    success: true,
+    data: { portalUrl },
+    error: null,
+    meta: { raw: upstream.data },
+  });
 }
 ```
 
@@ -310,31 +476,86 @@ export async function POST(request: Request) {
 ```typescript
 // app/api/v1/webhooks/creem/route.ts
 export async function POST(request: Request) {
-  const body = await request.text();
-  const signature = request.headers.get('creem-signature');
+  const raw = await request.text();
+  const signature = request.headers.get("creem-signature") || "";
 
-  // 验证签名
-  if (!verifyCreemSignature(body, signature, process.env.CREEM_WEBHOOK_SECRET)) {
-    return Response.json({ error: 'Invalid signature' }, { status: 401 });
+  const cfContext = await getCloudflareContext({ async: true });
+  const env = cfContext.env as CloudflareEnv;
+  const rateLimitResult = await applyRateLimit({
+    request,
+    identifier: "creem:webhook",
+    env: {
+      RATE_LIMITER: env.RATE_LIMITER,
+      UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
+      UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
+    },
+    message: "Too many webhook requests",
+    upstash: {
+      strategy: { type: "fixed", requests: 60, window: "60 s" },
+      prefix: "@ratelimit/webhook",
+      includeHeaders: true,
+    },
+  });
+  if (!rateLimitResult.ok) {
+    return rateLimitResult.response;
   }
 
-  const event = JSON.parse(body) as CreemWebhookEvent;
-
-  // 处理不同类型的事件
-  switch (event.type) {
-    case 'customer.created':
-      await handleCustomerCreated(event.data.object as CreemCustomer);
-      break;
-    case 'subscription.created':
-      await handleSubscriptionCreated(event.data.object as CreemSubscription);
-      break;
-    case 'payment_intent.succeeded':
-      await handlePaymentSucceeded(event.data.object);
-      break;
-    // ... 其他事件类型
+  if (!env.CREEM_WEBHOOK_SECRET) {
+    throw new ApiError("Missing webhook secret", {
+      status: 500,
+      code: "SERVICE_CONFIGURATION_ERROR",
+      severity: "high",
+    });
   }
 
-  return Response.json({ received: true });
+  const redis = getRedisClient({
+    UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
+  });
+  const replayStore = redis
+    ? createRedisReplayProtectionStore({
+        set: (key, value, options) =>
+          redis.set(`creem:webhook:replay:${key}`, value, options),
+      })
+    : undefined;
+
+  const valid = await verifyCreemWebhookSignature(
+    raw,
+    signature,
+    env.CREEM_WEBHOOK_SECRET,
+    {
+      replayStore,
+      toleranceSeconds: 5 * 60,
+    },
+  );
+  if (!valid) {
+    throw new ApiError("Invalid signature", {
+      status: 401,
+      code: "INVALID_SIGNATURE",
+      severity: "high",
+    });
+  }
+
+  const parsed = JSON.parse(raw) as CreemWebhookEvent;
+  switch (parsed.eventType) {
+    case "checkout.completed":
+      await onCheckoutCompleted(parsed.object);
+      break;
+    case "subscription.active":
+    case "subscription.paid":
+    case "subscription.canceled":
+    case "subscription.expired":
+    case "subscription.trialing":
+      await onSubscriptionChanged(parsed.object);
+      break;
+    default:
+      console.log(`[creem webhook] unhandled: ${parsed.eventType}`);
+  }
+
+  return new Response(JSON.stringify({ received: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 ```
 
