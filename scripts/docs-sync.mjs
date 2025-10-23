@@ -12,17 +12,27 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
+const VERBOSE = process.env.DOCS_SYNC_VERBOSE === "1";
 
 function log(...args) {
-    if (process.env.DOCS_SYNC_VERBOSE === "1")
-        console.log("[docs-sync]", ...args);
+    if (VERBOSE) console.info("[docs-sync]", ...args);
+}
+
+function logError(scope, error) {
+    if (!error) return;
+    const message = error?.message || String(error);
+    log(`${scope}: ${message}`);
 }
 
 function ensureLogsDir() {
     const p = path.join(root, "logs");
-    try {
-        fs.mkdirSync(p, { recursive: true });
-    } catch {}
+    if (!fs.existsSync(p)) {
+        try {
+            fs.mkdirSync(p, { recursive: true });
+        } catch (error) {
+            console.error("[docs-sync] Failed to ensure log directory:", error);
+        }
+    }
     return p;
 }
 
@@ -30,41 +40,50 @@ function outPath() {
     return path.join(ensureLogsDir(), "docs-sync-changed.json");
 }
 
-function getChangedFiles() {
-    // Prefer staged changes; then PR base; then last commit
+function readGitDiff(args, scope) {
     try {
-        const r = spawnSync(
-            "git",
-            ["diff", "--name-only", "--diff-filter=ACMR", "--cached"],
-            { encoding: "utf8" },
-        );
-        const lines = (r.stdout || "").split(/[\r\n]+/).filter(Boolean);
-        if (lines.length) return lines;
-    } catch {}
+        const result = spawnSync("git", args, { encoding: "utf8" });
+        const lines = (result.stdout || "").split(/[\r\n]+/).filter(Boolean);
+        return lines;
+    } catch (error) {
+        logError(scope, error);
+    }
+    return [];
+}
+
+function fetchBase(base) {
     try {
-        const base = process.env.GITHUB_BASE_REF;
-        if (base) {
-            try {
-                spawnSync("git", ["fetch", "origin", base, "--depth=1"], {
-                    stdio: "ignore",
-                });
-            } catch {}
-            const r = spawnSync(
-                "git",
-                ["diff", "--name-only", `origin/${base}...HEAD`],
-                { encoding: "utf8" },
-            );
-            const lines = (r.stdout || "").split(/[\r\n]+/).filter(Boolean);
-            if (lines.length) return lines;
-        }
-    } catch {}
-    try {
-        const r = spawnSync("git", ["diff", "--name-only", "HEAD~1"], {
-            encoding: "utf8",
+        spawnSync("git", ["fetch", "origin", base, "--depth=1"], {
+            stdio: "ignore",
         });
-        const lines = (r.stdout || "").split(/[\r\n]+/).filter(Boolean);
-        if (lines.length) return lines;
-    } catch {}
+    } catch (error) {
+        logError("fetch-base", error);
+    }
+}
+
+function getChangedFiles() {
+    const staged = readGitDiff(
+        ["diff", "--name-only", "--diff-filter=ACMR", "--cached"],
+        "diff-staged",
+    );
+    if (staged.length) return staged;
+
+    const base = process.env.GITHUB_BASE_REF;
+    if (base) {
+        fetchBase(base);
+        const prDiff = readGitDiff(
+            ["diff", "--name-only", `origin/${base}...HEAD`],
+            "diff-pr",
+        );
+        if (prDiff.length) return prDiff;
+    }
+
+    const lastCommit = readGitDiff(
+        ["diff", "--name-only", "HEAD~1"],
+        "diff-last",
+    );
+    if (lastCommit.length) return lastCommit;
+
     return [];
 }
 
@@ -88,48 +107,49 @@ function isDocPath(p) {
     return p === "README.md" || /^docs\/.+\.(md|mdx)$/i.test(p);
 }
 
+function resolveLinkTarget(baseDir, target) {
+    const trimmed = target.trim();
+    if (
+        !trimmed ||
+        trimmed.startsWith("#") ||
+        /^(https?:|mailto:|tel:|data:)/i.test(trimmed) ||
+        trimmed.startsWith("/")
+    ) {
+        return null;
+    }
+
+    const normalized = trimmed.replace(/\\\\/g, "/");
+    const candidate = path.resolve(baseDir, normalized);
+    if (fs.existsSync(candidate)) return null;
+
+    if (fs.existsSync(`${candidate}.md`)) {
+        return `${normalized}.md`;
+    }
+
+    try {
+        const stats = fs.statSync(candidate);
+        if (stats.isDirectory()) {
+            const readme = path.join(candidate, "README.md");
+            if (fs.existsSync(readme)) {
+                return path.posix.join(normalized, "README.md");
+            }
+        }
+    } catch (error) {
+        logError("resolve-link", error);
+    }
+
+    return null;
+}
+
 function fixRelativeLinks(filePath, text) {
     const baseDir = path.dirname(path.join(root, filePath));
     const linkRe = /\[(?:[^\]]*)\]\(([^)]+)\)/g;
     let changed = false;
-    const out = text.replace(linkRe, (m, target) => {
-        const orig = target;
-        const t = target.trim();
-        // Ignore absolute/anchors/site routes
-        if (
-            !t ||
-            t.startsWith("#") ||
-            /^(https?:|mailto:|tel:|data:)/i.test(t) ||
-            t.startsWith("/")
-        )
-            return m;
-        // Normalize backslashes
-        const relT = t.replace(/\\\\/g, "/");
-        // If it already exists on disk (relative to file), keep
-        const candidate = path.resolve(baseDir, relT);
-        if (fs.existsSync(candidate)) return m;
-        // Try .md
-        if (fs.existsSync(`${candidate}.md`)) {
-            const replaced = m.replace(orig, `${relT}.md`);
-            changed = changed || replaced !== m;
-            return replaced;
-        }
-        // Try README.md if target is a directory
-        try {
-            const st = fs.statSync(candidate);
-            if (st.isDirectory()) {
-                const readme = path.join(candidate, "README.md");
-                if (fs.existsSync(readme)) {
-                    const replaced = m.replace(
-                        orig,
-                        path.posix.join(relT, "README.md"),
-                    );
-                    changed = changed || replaced !== m;
-                    return replaced;
-                }
-            }
-        } catch {}
-        return m;
+    const out = text.replace(linkRe, (match, target) => {
+        const resolved = resolveLinkTarget(baseDir, target);
+        if (!resolved || resolved === target) return match;
+        changed = true;
+        return match.replace(target, resolved);
     });
     return { text: out, changed };
 }
@@ -149,7 +169,6 @@ function processFile(relPath, dry) {
     const noBom = stripBom(beforeBuf);
     let text = toUnixEol(noBom.toString("utf8"));
     const beforeText = text;
-    // Conservative cleanups
     text = trimTrailingSpaces(text);
     const linkFix = fixRelativeLinks(relPath, text);
     text = linkFix.text;
@@ -160,55 +179,74 @@ function processFile(relPath, dry) {
     return changed;
 }
 
-function main() {
-    if (process.env.DOCS_SYNC === "0") {
-        console.log("[docs-sync] Skipped (DOCS_SYNC=0)");
-        process.exit(0);
-    }
-    const scope = (process.env.DOCS_SYNC_SCOPE || "changed").toLowerCase();
-    const dry = process.env.DOCS_SYNC_DRY === "1";
-    let targets = [];
-    if (scope === "all") {
-        // All docs + README
-        targets.push("README.md");
-        const stack = [path.join(root, "docs")];
-        while (stack.length) {
-            const dir = stack.pop();
-            if (!dir || !fs.existsSync(dir)) continue;
-            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-                const p = path.join(dir, e.name);
-                if (e.isDirectory()) stack.push(p);
-                else if (/\.(md|mdx)$/i.test(e.name))
-                    targets.push(path.relative(root, p));
-            }
+function gatherAllDocs() {
+    const results = new Set(["README.md"]);
+    const stack = [path.join(root, "docs")];
+    while (stack.length) {
+        const dir = stack.pop();
+        if (!dir || !fs.existsSync(dir)) continue;
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            const target = path.join(dir, entry.name);
+            if (entry.isDirectory()) stack.push(target);
+            else if (/\.(md|mdx)$/i.test(entry.name))
+                results.add(path.relative(root, target));
         }
-    } else {
-        targets = getChangedFiles().filter(isDocPath);
     }
+    return Array.from(results);
+}
 
-    const uniq = Array.from(new Set(targets));
+function resolveTargets(scope) {
+    if (scope === "all") return gatherAllDocs();
+    return getChangedFiles().filter(isDocPath);
+}
+
+function syncTargets(targets, dry) {
     const changed = [];
-    for (const rel of uniq) {
+    for (const rel of new Set(targets)) {
         try {
             if (!isDocPath(rel)) continue;
             const did = processFile(rel, dry);
             if (did) changed.push(rel);
             log("processed", rel, did ? "(changed)" : "");
-        } catch (e) {
-            console.error("[docs-sync] error:", rel, e.message || e);
+        } catch (error) {
+            console.error("[docs-sync] error:", rel, error?.message || error);
             process.exitCode = 1;
         }
     }
-    // Write result file for the push script to read
-    const out = { scope, dryRun: dry, changed };
+    return changed;
+}
+
+function writeResult(payload) {
     try {
-        fs.writeFileSync(outPath(), JSON.stringify(out, null, 2));
-    } catch {}
-    if (dry)
-        console.log(
-            `[docs-sync] Dry run complete. Would change: ${changed.length} files.`,
-        );
-    else console.log(`[docs-sync] Changed ${changed.length} file(s).`);
+        fs.writeFileSync(outPath(), JSON.stringify(payload, null, 2));
+    } catch (error) {
+        console.error("[docs-sync] Failed to write result payload:", error);
+    }
+}
+
+function report(changed, dry) {
+    const message = dry
+        ? `[docs-sync] Dry run complete. Would change: ${changed.length} files.`
+        : `[docs-sync] Changed ${changed.length} file(s).`;
+    console.info(message);
+}
+
+function shouldSkip() {
+    if (process.env.DOCS_SYNC === "0") {
+        console.info("[docs-sync] Skipped (DOCS_SYNC=0)");
+        process.exit(0);
+    }
+    return false;
+}
+
+function main() {
+    if (shouldSkip()) return;
+    const scope = (process.env.DOCS_SYNC_SCOPE || "changed").toLowerCase();
+    const dry = process.env.DOCS_SYNC_DRY === "1";
+    const targets = resolveTargets(scope);
+    const changed = syncTargets(targets, dry);
+    writeResult({ scope, dryRun: dry, changed });
+    report(changed, dry);
 }
 
 main();
