@@ -43,7 +43,9 @@ function checkLocalLink(baseFile, linkRaw) {
             fs.existsSync(path.join(candidate, "README.md"))
         )
             return null;
-    } catch {}
+    } catch {
+        // ignore: candidate path does not exist
+    }
     return `${path.relative(root, baseFile)} -> ${relPath}`;
 }
 
@@ -74,7 +76,7 @@ function main() {
         );
         process.exit(1);
     } else {
-        console.log("[check-links] OK");
+        console.info("[check-links] OK");
     }
 }
 

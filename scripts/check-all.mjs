@@ -46,8 +46,19 @@ function handleFailure(message, error) {
     if (error) console.error(error?.message || error);
     logLine(message);
     if (error) logLine(error?.stack || String(error));
-    console.log(`\nFull log saved to: ${LOG_PATH}`);
+    console.info(`\nFull log saved to: ${LOG_PATH}`);
     process.exit(1);
+}
+
+function removeNextCache(step) {
+    try {
+        if (existsSync(".next"))
+            rmSync(".next", { recursive: true, force: true });
+    } catch (error) {
+        logLine(
+            `${step}: failed to remove .next directory (${error?.message || error})`,
+        );
+    }
 }
 
 // --- 0) lint-staged (optional) ---------------------------------------------
@@ -60,7 +71,7 @@ try {
         LINT_STAGED_STATUS = "ran";
     }
     if (!STRICT_MODE && LINT_STAGED_STATUS === "skipped") {
-        console.log("lint-staged 未配置或执行失败，继续后续检查。");
+        console.info("lint-staged 未配置或执行失败，继续后续检查。");
         logLine("lint-staged unavailable, continuing.");
     }
     timeEnd("lint-staged");
@@ -114,16 +125,16 @@ const DO_TSC = !CH.docsOnly && !CH.workflowsOnly;
 const DO_NEXT_BUILD = DO_TSC && !SKIP_NEXT_BUILD;
 
 // --- 3) Biome 写入 --------------------------------------------------------
-if (!STRICT_MODE) {
+if (STRICT_MODE) {
+    console.info("严格模式：跳过 Biome 写入修复。");
+} else {
     timeStart("biome-write");
     BIOME_WRITE_RAN = tryRun("pnpm exec biome check . --write --unsafe");
     timeEnd("biome-write");
     if (!BIOME_WRITE_RAN)
-        console.log(
+        console.info(
             "Biome 写入未成功（可能未安装）。继续执行最终 Biome 校验。",
         );
-} else {
-    console.log("严格模式：跳过 Biome 写入修复。");
 }
 
 if (!STRICT_MODE) {
@@ -146,15 +157,12 @@ if (DO_CF_TYPEGEN) {
     }
     timeEnd("cf-typegen");
 } else {
-    console.log("绑定未变更，跳过 cf-typegen。");
+    console.info("绑定未变更，跳过 cf-typegen。");
 }
 
 // --- 5) TypeScript 检查 ---------------------------------------------------
 if (DO_TSC) {
-    try {
-        if (existsSync(".next"))
-            rmSync(".next", { recursive: true, force: true });
-    } catch {}
+    removeNextCache("tsc");
     timeStart("tsc");
     try {
         run("pnpm exec tsc --noEmit");
@@ -165,15 +173,12 @@ if (DO_TSC) {
     }
     timeEnd("tsc");
 } else {
-    console.log("仅文档或流程改动，跳过 TypeScript 检查。");
+    console.info("仅文档或流程改动，跳过 TypeScript 检查。");
 }
 
 // --- 6) Next.js build ------------------------------------------------------
 if (DO_NEXT_BUILD) {
-    try {
-        if (existsSync(".next"))
-            rmSync(".next", { recursive: true, force: true });
-    } catch {}
+    removeNextCache("next-build");
     if (!process.env.NEXT_PUBLIC_APP_URL) {
         process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
         logLine(
@@ -194,12 +199,12 @@ if (DO_NEXT_BUILD) {
     }
     timeEnd("next-build");
 } else {
-    console.log("跳过 Next.js 构建（变更范围不需要或显式跳过）。");
+    console.info("跳过 Next.js 构建（变更范围不需要或显式跳过）。");
 }
 
 // --- 7) 文档与链接校验 ---------------------------------------------------
 if (SKIP_DOCS_CHECK) {
-    console.log("SKIP_DOCS_CHECK=1，跳过文档与链接校验。");
+    console.info("SKIP_DOCS_CHECK=1，跳过文档与链接校验。");
 } else {
     timeStart("docs-checks");
     try {
@@ -230,12 +235,12 @@ timeEnd("biome-final");
 try {
     const branch = getOutput("git rev-parse --abbrev-ref HEAD");
     const commit = getOutput("git show -s --format=%h %s -1");
-    console.log("\n-- Check Summary --");
-    console.log(`Status: Success`);
-    console.log(`Branch: ${branch}`);
-    console.log(`Commit: ${commit}`);
+    console.info("\n-- Check Summary --");
+    console.info(`Status: Success`);
+    console.info(`Branch: ${branch}`);
+    console.info(`Commit: ${commit}`);
     if (STEP_TIMES["lint-staged"])
-        console.log(
+        console.info(
             `- lint-staged: ${LINT_STAGED_STATUS}${
                 STEP_TIMES["lint-staged"].ms
                     ? ` (${STEP_TIMES["lint-staged"].ms}ms)`
@@ -243,44 +248,46 @@ try {
             }`,
         );
     if (STEP_TIMES["cf-typegen"])
-        console.log(
+        console.info(
             `- cf-typegen: ${CF_TYPEGEN ? "OK" : "FAILED"} (${STEP_TIMES["cf-typegen"].ms}ms)`,
         );
-    console.log(
+    console.info(
         `- Biome 写入: ${STRICT_MODE ? "Skipped(strict)" : BIOME_WRITE_RAN ? "Ran" : "Skipped"}${
             STEP_TIMES["biome-write"]
                 ? ` (${STEP_TIMES["biome-write"].ms}ms)`
                 : ""
         }`,
     );
-    console.log(
+    console.info(
         `- TypeScript: ${TSC_OK ? "OK" : DO_TSC ? "FAILED" : "Skipped"}${
             STEP_TIMES.tsc ? ` (${STEP_TIMES.tsc.ms}ms)` : ""
         }`,
     );
-    console.log(
+    console.info(
         `- Next.js build: ${NEXT_BUILD_STATUS}${
             STEP_TIMES["next-build"]
                 ? ` (${STEP_TIMES["next-build"].ms}ms)`
                 : ""
         }`,
     );
-    console.log(
+    console.info(
         `- Docs: ${DOCS_OK ? "OK" : SKIP_DOCS_CHECK ? "Skipped" : "FAILED"}${
             STEP_TIMES["docs-checks"]
                 ? ` (${STEP_TIMES["docs-checks"].ms}ms)`
                 : ""
         }`,
     );
-    console.log(
+    console.info(
         `- Links: ${LINKS_OK ? "OK" : SKIP_DOCS_CHECK ? "Skipped" : "FAILED"}`,
     );
-    console.log(
+    console.info(
         `- 最终 Biome: ${BIOME_FINAL_OK ? "OK" : "FAILED"}${
             STEP_TIMES["biome-final"]
                 ? ` (${STEP_TIMES["biome-final"].ms}ms)`
                 : ""
         }`,
     );
-    console.log(`\nFull log saved to: ${LOG_PATH}`);
-} catch {}
+    console.info(`\nFull log saved to: ${LOG_PATH}`);
+} catch (error) {
+    logLine(`summary: failed to print (${error?.message || error})`);
+}

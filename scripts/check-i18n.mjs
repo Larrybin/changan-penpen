@@ -67,7 +67,7 @@ if (flaggedFiles.length > 0) {
     }
     process.exitCode = 1;
 } else {
-    console.log(
+    console.info(
         "[check-i18n] No hard-coded CJK strings detected in shared components.",
     );
 }
