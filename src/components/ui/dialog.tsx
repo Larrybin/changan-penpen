@@ -6,20 +6,12 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Dialog({
-    ...props
-}: React.ComponentProps<typeof DialogPrimitive.Root>) {
-    return (
-        <DialogPrimitive.Root
-            data-slot="dialog"
-            className={cn(
-                // 基础动画类
-                "fade-in",
-                props.className
-            )}
-            {...props}
-        />
-    );
+type DialogRootProps = React.ComponentPropsWithoutRef<
+    typeof DialogPrimitive.Root
+>;
+
+function Dialog({ ...props }: DialogRootProps) {
+    return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
 function DialogTrigger({
@@ -31,7 +23,7 @@ function DialogTrigger({
             className={cn(
                 // 基础交互类
                 "interactive-base scale-active",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -53,7 +45,7 @@ function DialogClose({
             className={cn(
                 // 基础交互类
                 "interactive-base scale-active",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -79,7 +71,7 @@ function DialogOverlay({
                 "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                 // 过渡动画
                 "transition-[opacity,backdrop-filter] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
-                className
+                className,
             )}
             {...props}
         />
@@ -122,7 +114,7 @@ function DialogContent({
                     "fade-in",
                     // 微交互
                     "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
-                    className
+                    className,
                 )}
                 {...props}
             >
@@ -148,7 +140,7 @@ function DialogContent({
                             // 禁用状态
                             "disabled:pointer-events-none disabled:opacity-50",
                             // 图标样式
-                            "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4"
+                            "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4",
                         )}
                     >
                         <XIcon />
@@ -171,7 +163,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
                 "text-center sm:text-left",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -188,7 +180,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
                 "sm:flex-row sm:justify-end sm:gap-[var(--token-spacing-2)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -209,7 +201,7 @@ function DialogTitle({
                 "text-[var(--color-foreground)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -230,7 +222,7 @@ function DialogDescription({
                 "text-[var(--color-muted-foreground)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />

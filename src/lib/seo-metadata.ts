@@ -292,52 +292,125 @@ export function createMetadata(
         ],
     };
 
-    // 如果有文章信息，添加article类型
-    if (options.article) {
-        baseOpenGraph.type = "article";
-        if (options.article.publishedTime) {
-            baseOpenGraph.publishedTime = options.article.publishedTime;
-        }
-        if (options.article.modifiedTime) {
-            baseOpenGraph.modifiedTime = options.article.modifiedTime;
-        }
-        if (options.article.authors && options.article.authors.length > 0) {
-            baseOpenGraph.authors = options.article.authors.map(author => author);
-        }
-        if (options.article.section) {
-            baseOpenGraph.section = options.article.section;
-        }
-        if (options.article.tags && options.article.tags.length > 0) {
-            baseOpenGraph.tags = options.article.tags;
-        }
-    }
-
-    // 添加作者信息
-    if (options.author) {
-        baseOpenGraph.authors = [
-            {
-                type: "Person",
-                name: options.author.name,
-                url: options.author.url,
-            },
-            ...(baseOpenGraph.authors || []),
-        ];
-    }
-
-    const openGraph = options.openGraph
+    let openGraph: NonNullable<Metadata["openGraph"]> = options.openGraph
         ? {
               ...baseOpenGraph,
               ...options.openGraph,
               images: options.openGraph.images ?? baseOpenGraph.images,
           }
         : baseOpenGraph;
+
+    if (options.article) {
+        const { publishedTime, modifiedTime, authors, section, tags } =
+            options.article;
+        openGraph = {
+            ...openGraph,
+            type: "article",
+            ...(publishedTime ? { publishedTime } : {}),
+            ...(modifiedTime ? { modifiedTime } : {}),
+            ...(section ? { section } : {}),
+            ...(tags && tags.length ? { tags } : {}),
+        };
+
+        if (authors && authors.length) {
+            const normalizedAuthors = authors
+                .map((author) => author.trim())
+                .filter((author) => author.length > 0);
+            if (normalizedAuthors.length) {
+                openGraph = {
+                    ...openGraph,
+                    authors: normalizedAuthors,
+                };
+            }
+        }
+    }
+
+    type TypedOpenGraph = Extract<
+        NonNullable<Metadata["openGraph"]>,
+        { type: string }
+    >;
+    type OpenGraphWithAuthors = Extract<
+        NonNullable<Metadata["openGraph"]>,
+        { authors?: unknown }
+    >;
+
+    const hasOpenGraphType = (
+        value: NonNullable<Metadata["openGraph"]>,
+    ): value is TypedOpenGraph => {
+        return typeof (value as { type?: unknown }).type === "string";
+    };
+
+    const hasOpenGraphAuthors = (
+        value: NonNullable<Metadata["openGraph"]>,
+    ): value is OpenGraphWithAuthors => "authors" in value;
+
+    const openGraphAuthorCandidates = new Set<string>();
+
+    const collectAuthors = (
+        value: string | URL | Array<string | URL> | null | undefined,
+    ) => {
+        if (!value) {
+            return;
+        }
+        const addAuthor = (entry: string | URL) => {
+            const asString = entry instanceof URL ? entry.toString() : entry;
+            const trimmed = asString.trim();
+            if (trimmed.length) {
+                openGraphAuthorCandidates.add(trimmed);
+            }
+        };
+
+        if (Array.isArray(value)) {
+            value.forEach(addAuthor);
+            return;
+        }
+
+        addAuthor(value);
+    };
+
+    if (
+        hasOpenGraphType(openGraph) &&
+        hasOpenGraphAuthors(openGraph) &&
+        (openGraph.type === "article" || openGraph.type === "book")
+    ) {
+        collectAuthors(openGraph.authors);
+    }
+
+    if (options.article?.authors?.length) {
+        options.article.authors.forEach((author) => {
+            const trimmed = author.trim();
+            if (trimmed.length) {
+                openGraphAuthorCandidates.add(trimmed);
+            }
+        });
+    }
+
+    if (options.author?.name.trim()) {
+        openGraphAuthorCandidates.add(options.author.name.trim());
+    }
+
+    if (
+        openGraphAuthorCandidates.size > 0 &&
+        hasOpenGraphType(openGraph) &&
+        (openGraph.type === "article" || openGraph.type === "book")
+    ) {
+        openGraph = {
+            ...openGraph,
+            authors: Array.from(openGraphAuthorCandidates),
+        } as Extract<
+            NonNullable<Metadata["openGraph"]>,
+            { type: "article" | "book" }
+        >;
+    }
     // 构建增强的Twitter Cards
     const baseTwitter: NonNullable<Metadata["twitter"]> = {
         card: "summary_large_image",
         title,
         description,
-        site: context.settings.siteName?.trim() || context.messages.openGraph.siteName,
-        creator: options.creator || context.settings.creatorTwitter,
+        site:
+            context.settings.siteName?.trim() ||
+            context.messages.openGraph.siteName,
+        ...(options.creator ? { creator: options.creator } : {}),
         images: [
             {
                 url: context.shareImage,
@@ -413,10 +486,10 @@ export function createMetadata(
     const faviconSource = context.settings.faviconUrl?.trim();
     const icons = faviconSource
         ? {
-            icon: ensureAbsoluteUrl(faviconSource, context.appUrl),
-            shortcut: ensureAbsoluteUrl(faviconSource, context.appUrl),
-            apple: ensureAbsoluteUrl(faviconSource, context.appUrl),
-        }
+              icon: ensureAbsoluteUrl(faviconSource, context.appUrl),
+              shortcut: ensureAbsoluteUrl(faviconSource, context.appUrl),
+              apple: ensureAbsoluteUrl(faviconSource, context.appUrl),
+          }
         : undefined;
 
     // 预加载配置
@@ -431,7 +504,8 @@ export function createMetadata(
     // 合并预加载到other对象
     if (preloadResources && preloadResources.length > 0) {
         preloadResources.forEach((resource, index) => {
-            other[`preload-${index}`] = `${resource.rel}; href=${resource.href}; as=${resource.as}${resource.type ? `; type=${resource.type}` : ""}${resource.crossOrigin ? `; crossorigin=${resource.crossOrigin}` : ""}`;
+            other[`preload-${index}`] =
+                `${resource.rel}; href=${resource.href}; as=${resource.as}${resource.type ? `; type=${resource.type}` : ""}${resource.crossOrigin ? `; crossorigin=${resource.crossOrigin}` : ""}`;
         });
     }
 
@@ -467,7 +541,7 @@ export function createArticleMetadata(
     context: MetadataContext,
     options: Omit<CreateMetadataOptions, "openGraph" | "article"> & {
         article: CreateMetadataOptions["article"];
-    }
+    },
 ): Metadata {
     return createMetadata(context, {
         ...options,
@@ -491,25 +565,14 @@ export function createProductMetadata(
         brand?: string;
         sku?: string;
         inStock?: boolean;
-    }
+    },
 ): Metadata {
     return createMetadata(context, {
         title: options.productName,
         description: options.productDescription,
         category: "Product",
         openGraph: {
-            type: "product",
-            ...(options.price && options.currency && {
-                product: {
-                    price: options.price.toString(),
-                    currency: options.currency,
-                    availability: options.inStock
-                        ? "https://schema.org/InStock"
-                        : "https://schema.org/OutOfStock",
-                    brand: options.brand,
-                    sku: options.sku,
-                },
-            }),
+            type: "website",
         },
     });
 }
@@ -524,7 +587,7 @@ export function createServiceMetadata(
         serviceDescription: string;
         provider?: string;
         serviceType?: string;
-    }
+    },
 ): Metadata {
     return createMetadata(context, {
         title: options.serviceName,
@@ -533,9 +596,11 @@ export function createServiceMetadata(
         openGraph: {
             type: "website",
         },
-        publisher: options.provider ? {
-            name: options.provider,
-        } : undefined,
+        publisher: options.provider
+            ? {
+                  name: options.provider,
+              }
+            : undefined,
     });
 }
 
@@ -549,11 +614,20 @@ export function createAuthorMetadata(
         authorBio?: string;
         authorImage?: string;
         authorUrl?: string;
-    }
+    },
 ): Metadata {
+    const [firstNameRaw, ...rest] = options.authorName.trim().split(/\s+/);
+    const firstName = firstNameRaw || options.authorName;
+    const lastName = rest.join(" ");
+    const username = options.authorName
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "");
+
     return createMetadata(context, {
         title: `${options.authorName} - ${context.settings.siteName || ""}`,
-        description: options.authorBio || `了解更多关于${options.authorName}的信息`,
+        description:
+            options.authorBio || `了解更多关于${options.authorName}的信息`,
         author: {
             name: options.authorName,
             url: options.authorUrl,
@@ -561,11 +635,9 @@ export function createAuthorMetadata(
         },
         openGraph: {
             type: "profile",
-            profile: {
-                firstName: options.authorName.split(" ")[0],
-                lastName: options.authorName.split(" ").slice(1).join(" "),
-                username: options.authorName.toLowerCase().replace(/\s+/g, ""),
-            },
+            firstName,
+            ...(lastName ? { lastName } : {}),
+            username,
         },
     });
 }
@@ -640,13 +712,13 @@ export class MetadataValidator {
         if (title.length < 30) {
             return {
                 valid: true,
-                warning: "标题长度较短，建议至少30个字符以获得更好的SEO效果"
+                warning: "标题长度较短，建议至少30个字符以获得更好的SEO效果",
             };
         }
         if (title.length > 60) {
             return {
                 valid: true,
-                warning: "标题长度过长，建议控制在60个字符以内以避免截断"
+                warning: "标题长度过长，建议控制在60个字符以内以避免截断",
             };
         }
         return { valid: true };
@@ -655,17 +727,20 @@ export class MetadataValidator {
     /**
      * 验证描述长度
      */
-    static validateDescription(description: string): { valid: boolean; warning?: string } {
+    static validateDescription(description: string): {
+        valid: boolean;
+        warning?: string;
+    } {
         if (description.length < 120) {
             return {
                 valid: true,
-                warning: "描述长度较短，建议至少120个字符以获得更好的展示效果"
+                warning: "描述长度较短，建议至少120个字符以获得更好的展示效果",
             };
         }
         if (description.length > 160) {
             return {
                 valid: true,
-                warning: "描述长度过长，建议控制在160个字符以内以避免截断"
+                warning: "描述长度过长，建议控制在160个字符以内以避免截断",
             };
         }
         return { valid: true };
@@ -677,15 +752,22 @@ export class MetadataValidator {
     static validateImageUrl(url: string): { valid: boolean; error?: string } {
         try {
             const urlObj = new URL(url);
-            const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.svg'];
-            const hasImageExtension = imageExtensions.some(ext =>
-                urlObj.pathname.toLowerCase().endsWith(ext)
+            const imageExtensions = [
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp",
+                ".avif",
+                ".svg",
+            ];
+            const hasImageExtension = imageExtensions.some((ext) =>
+                urlObj.pathname.toLowerCase().endsWith(ext),
             );
 
             if (!hasImageExtension) {
                 return {
                     valid: false,
-                    error: "图片URL应该是有效的图片格式"
+                    error: "图片URL应该是有效的图片格式",
                 };
             }
 
@@ -693,7 +775,7 @@ export class MetadataValidator {
         } catch {
             return {
                 valid: false,
-                error: "无效的图片URL格式"
+                error: "无效的图片URL格式",
             };
         }
     }
@@ -719,7 +801,9 @@ export class MetadataValidator {
         }
 
         if (metadata.description) {
-            const descValidation = this.validateDescription(metadata.description);
+            const descValidation = this.validateDescription(
+                metadata.description,
+            );
             if (descValidation.warning) warnings.push(descValidation.warning);
         } else {
             errors.push("缺少页面描述");
@@ -730,7 +814,9 @@ export class MetadataValidator {
             metadata.openGraph.images.forEach((image, index) => {
                 const imageValidation = this.validateImageUrl(image.url);
                 if (!imageValidation.valid && imageValidation.error) {
-                    errors.push(`Open Graph图片${index + 1}: ${imageValidation.error}`);
+                    errors.push(
+                        `Open Graph图片${index + 1}: ${imageValidation.error}`,
+                    );
                 }
             });
         }

@@ -52,8 +52,7 @@
             },
             "security": {
                 "noDangerouslySetInnerHtml": "warn",
-                "noGlobalEval": "error",
-                "noGlobalObjectCalls": "error"
+                "noGlobalEval": "error"
             },
             "style": {
                 "noNegationElse": "error",
@@ -64,11 +63,15 @@
             "suspicious": {
                 "noArrayIndexKey": "warn",
                 "noAssignInExpressions": "error",
-                "noConsoleLog": "warn",
+                "noConsole": {
+                    "level": "warn",
+                    "options": {
+                        "allow": ["warn", "error", "info"]
+                    }
+                },
                 "noDebugger": "error",
                 "noEmptyBlockStatements": "warn",
                 "noExplicitAny": "warn",
-                "noExtraBooleanCast": "error",
                 "noGlobalAssign": "error",
                 "noMisleadingCharacterClass": "error",
                 "noUnsafeNegation": "error"
@@ -81,7 +84,6 @@
                 "noUselessConstructor": "error",
                 "noUselessLoneBlockStatements": "error",
                 "noUselessRename": "error",
-                "noWith": "error",
                 "useArrowFunction": "warn",
                 "useLiteralKeys": "error"
             },
@@ -90,17 +92,7 @@
                 "noDelete": "error"
             },
             "nursery": {
-                "useSortedClasses": "error",
-                "noHeadElement": "warn",
-                "noRestrictedImports": {
-                    "level": "warn",
-                    "options": {
-                        "paths": {
-                            "lodash": "Use native JavaScript methods or smaller utilities",
-                            "moment": "Use date-fns or native Date API for better performance"
-                        }
-                    }
-                }
+                "useSortedClasses": "error"
             }
         }
     },
