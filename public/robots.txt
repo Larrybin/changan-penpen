@@ -1,0 +1,99 @@
+# Robots.txt for Banana Generator (AI Photo Editor)
+# Generated: 2025-10-23
+# Website: https://banana-generator.com
+
+User-agent: *
+Allow: /
+
+# Allow search engines to crawl all important directories
+Allow: /api/
+Allow: /login
+Allow: /signup
+Allow: /dashboard/
+Allow: /billing/
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+
+# Block crawling of Next.js internal directories
+Disallow: /_next/
+Disallow: /api/v1/internal/
+Disallow: /_vercel/
+Disallow: /.well-known/
+
+# Block crawling of development and testing routes
+Disallow: /test/
+Disallow: /dev/
+Disallow: /staging/
+Disallow: /debug/
+Disallow: /preview/
+
+# Block crawling of authentication-related pages
+Disallow: /api/auth/
+Disallow: /auth/
+Disallow: /api/webhooks/
+
+# Block crawling of administrative routes
+Disallow: /admin/
+Disallow: /api/admin/
+Disallow: /management/
+
+# Block crawling of file uploads and user data
+Disallow: /uploads/
+Disallow: /user-files/
+Disallow: /temp/
+
+# Block crawling of API documentation (if it should not be indexed)
+# Disallow: /api-docs/
+# Disallow: /openapi.json
+
+# Crawl delay (optional, for better server performance)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://banana-generator.com/sitemap.xml
+
+# Specific instructions for major search engines
+
+User-agent: Googlebot
+Allow: /
+Disallow: /_next/
+Disallow: /api/v1/internal/
+Disallow: /admin/
+Crawl-delay: 0.5
+
+User-agent: Bingbot
+Allow: /
+Disallow: /_next/
+Disallow: /api/v1/internal/
+Disallow: /admin/
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Disallow: /_next/
+Disallow: /api/v1/internal/
+Disallow: /admin/
+Crawl-delay: 1
+
+# Block aggressive crawlers
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Allow image search crawlers
+User-agent: Googlebot-Image
+Allow: /og-image.svg
+Allow: /images/
+Allow: /api/og/
+
+User-agent: Bingbot-Image
+Allow: /og-image.svg
+Allow: /images/
+Allow: /api/og/
