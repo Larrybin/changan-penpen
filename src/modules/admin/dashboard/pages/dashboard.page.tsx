@@ -78,10 +78,25 @@ export function AdminDashboardPage() {
         queryFn: async () => {
             const response = await adminApiClient.get<{
                 data?: DashboardMetricsPayload;
+                meta?: {
+                    cacheHit?: boolean;
+                    responseTime?: number;
+                };
             }>("/dashboard");
             return response.data.data ?? null;
         },
-        staleTime: 1000 * 60,
+        // 优化查询配置，配合后端缓存
+        staleTime: 1000 * 30, // 30秒内认为数据新鲜
+        cacheTime: 1000 * 60 * 5, // 5分钟内存缓存
+        refetchOnWindowFocus: false, // 减少网络请求
+        retry: 2, // 最多重试2次
+
+        // 启用后台重新获取，保持数据相对新鲜
+        refetchInterval: false, // 禁用自动轮询，但可以通过手动刷新
+        refetchIntervalInBackground: false,
+
+        // 网络重连时重新获取
+        refetchOnReconnect: true,
     });
 
     const isLoading = query.isLoading;

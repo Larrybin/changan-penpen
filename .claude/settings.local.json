@@ -7,7 +7,8 @@
       "mcp__memory__search_nodes",
       "mcp__sequential-thinking__sequentialthinking",
       "mcp__memory__add_observations",
-      "mcp__memory__open_nodes"
+      "mcp__memory__open_nodes",
+      "mcp__memory__create_relations"
     ],
     "deny": [],
     "ask": []
