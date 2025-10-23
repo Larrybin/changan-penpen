@@ -22,7 +22,7 @@ async function main() {
                 );
                 process.exit(1);
             }
-            console.log("[openapi] public/openapi.json 已是最新。");
+            console.info("[openapi] public/openapi.json 已是最新。");
             return;
         } catch (error) {
             console.error(
@@ -37,7 +37,7 @@ async function main() {
 
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     await fs.writeFile(outputPath, json, "utf8");
-    console.log(`[openapi] 写入 ${path.relative(root, outputPath)}`);
+    console.info(`[openapi] 写入 ${path.relative(root, outputPath)}`);
 }
 
 main().catch((error) => {

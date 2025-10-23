@@ -38,20 +38,12 @@ function useMediaQuery(query: string) {
     return matches;
 }
 
-function Select({
-    ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) {
-    return (
-        <SelectPrimitive.Root
-            data-slot="select"
-            className={cn(
-                // 基础动画类
-                "fade-in",
-                props.className
-            )}
-            {...props}
-        />
-    );
+type SelectRootProps = React.ComponentPropsWithoutRef<
+    typeof SelectPrimitive.Root
+>;
+
+function Select({ ...props }: SelectRootProps) {
+    return <SelectPrimitive.Root data-slot="select" {...props} />;
 }
 
 function SelectGroup({
@@ -63,7 +55,7 @@ function SelectGroup({
             className={cn(
                 // 基础布局
                 "grid gap-[var(--token-spacing-1)]",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -79,7 +71,7 @@ function SelectValue({
             className={cn(
                 // 基础样式
                 "line-clamp-1 flex items-center gap-[var(--token-spacing-2)]",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -119,7 +111,7 @@ function SelectTrigger({
                 "fade-in",
                 // 图标样式
                 "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-                className
+                className,
             )}
             {...props}
         >
@@ -132,7 +124,7 @@ function SelectTrigger({
                         // 颜色样式
                         "text-[var(--color-muted-foreground)]/60",
                         // 动画状态
-                        "data-[state=open]:rotate-180 data-[state=closed]:rotate-0"
+                        "data-[state=open]:rotate-180 data-[state=closed]:rotate-0",
                     )}
                 />
             </SelectPrimitive.Icon>
@@ -203,20 +195,21 @@ function SelectContent({
                         "relative z-[var(--z-dropdown,40)] min-w-[8rem]",
                         "origin-[var(--radix-select-content-transform-origin)]",
                         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
-                        "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
+                        "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
                     ],
-                    resolvedLayout === "popover" && position === "popper" && [
-                        "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1",
-                        "data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1"
-                    ],
+                    resolvedLayout === "popover" &&
+                        position === "popper" && [
+                            "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1",
+                            "data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+                        ],
                     // Sheet布局样式
                     resolvedLayout === "sheet" && [
                         "fixed inset-x-3 bottom-4 left-1/2 top-auto z-[var(--z-modal,50)]",
                         "w-[calc(100%-1.5rem)] translate-x-[-50%] translate-y-0 origin-bottom",
                         "bg-[var(--color-background)] shadow-[var(--shadow-xl)]",
-                        "data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2"
+                        "data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2",
                     ],
-                    className
+                    className,
                 )}
                 position={position}
                 style={{
@@ -232,12 +225,13 @@ function SelectContent({
                         // 基础内边距
                         "p-[var(--token-spacing-1)]",
                         // Popover特定样式
-                        position === "popper" && resolvedLayout === "popover" && [
-                            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
-                            "scroll-my-1"
-                        ],
+                        position === "popper" &&
+                            resolvedLayout === "popover" && [
+                                "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
+                                "scroll-my-1",
+                            ],
                         // Sheet特定样式
-                        resolvedLayout === "sheet" && "w-full"
+                        resolvedLayout === "sheet" && "w-full",
                     )}
                 >
                     {children}
@@ -264,7 +258,7 @@ function SelectLabel({
                 "px-[var(--token-spacing-2)] py-[var(--token-spacing-1.5)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -300,33 +294,37 @@ function SelectItem({
                 "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
                 // 特殊布局处理
                 "*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-[var(--token-spacing-2)]",
-                className
+                className,
             )}
             {...props}
         >
-            <span className={cn(
-                // 选中指示器位置
-                "absolute right-[var(--token-spacing-2)] flex size-3.5 items-center justify-center",
-                // 渐入动画
-                "fade-in"
-            )}>
+            <span
+                className={cn(
+                    // 选中指示器位置
+                    "absolute right-[var(--token-spacing-2)] flex size-3.5 items-center justify-center",
+                    // 渐入动画
+                    "fade-in",
+                )}
+            >
                 <SelectPrimitive.ItemIndicator>
                     <CheckIcon
                         className={cn(
                             // 图标样式
                             "size-4 text-[var(--color-primary)]",
                             // 动画
-                            "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]"
+                            "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                         )}
                     />
                 </SelectPrimitive.ItemIndicator>
             </span>
-            <SelectPrimitive.ItemText className={cn(
-                // 文本样式
-                "truncate",
-                // 渐入动画
-                "fade-in"
-            )}>
+            <SelectPrimitive.ItemText
+                className={cn(
+                    // 文本样式
+                    "truncate",
+                    // 渐入动画
+                    "fade-in",
+                )}
+            >
                 {children}
             </SelectPrimitive.ItemText>
         </SelectPrimitive.Item>
@@ -347,7 +345,7 @@ function SelectSeparator({
                 "-mx-[var(--token-spacing-1)] my-[var(--token-spacing-1)] h-px",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -371,7 +369,7 @@ function SelectScrollUpButton({
                 "color-transition transition-colors duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         >
@@ -397,7 +395,7 @@ function SelectScrollDownButton({
                 "color-transition transition-colors duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         >

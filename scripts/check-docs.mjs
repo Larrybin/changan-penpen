@@ -70,7 +70,9 @@ function getChangedFiles() {
             .split(/\r?\n/)
             .filter(Boolean);
         if (staged.length) return staged;
-    } catch {}
+    } catch {
+        // ignore: no staged changes or git diff failed
+    }
 
     try {
         const base = process.env.GITHUB_BASE_REF;
@@ -79,7 +81,9 @@ function getChangedFiles() {
                 execSync(`git fetch origin ${base} --depth=1`, {
                     stdio: "ignore",
                 });
-            } catch {}
+            } catch {
+                // ignore fetch failures; continue with other diff strategies
+            }
             const prDiff = execSync(
                 `git diff --name-only origin/${base}...HEAD`,
                 {
@@ -91,7 +95,9 @@ function getChangedFiles() {
                 .filter(Boolean);
             if (prDiff.length) return prDiff;
         }
-    } catch {}
+    } catch {
+        // ignore: likely not in PR context
+    }
 
     try {
         const last = execSync("git diff --name-only HEAD~1", {
@@ -101,7 +107,9 @@ function getChangedFiles() {
             .split(/\r?\n/)
             .filter(Boolean);
         if (last.length) return last;
-    } catch {}
+    } catch {
+        // ignore: no previous commit or git unavailable
+    }
 
     return results; // empty → invariant checks only
 }
@@ -112,6 +120,162 @@ function requireDocChange(changed, docFiles, reason, errors) {
         errors.push(
             `Docs update required: ${reason}. Expected one of: ${docFiles.join(", ")}`,
         );
+    }
+}
+
+function changedAny(changed, pattern) {
+    return changed.some((file) => pattern.test(file));
+}
+
+function checkPackageScripts({ changed, errors }) {
+    if (!changed.includes("package.json")) return;
+    const before = errors.length;
+    requireDocChange(
+        changed,
+        ["README.md", "docs/local-dev.md"],
+        "package.json scripts changed",
+        errors,
+    );
+    const hasAuto =
+        docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") ||
+        docHasAnchor("README.md", "README_AUTOMATION");
+    if (hasAuto && errors.length > before) errors.pop();
+}
+
+function checkEnvDocs({ changed, errors }) {
+    if (
+        !changed.includes("wrangler.toml") &&
+        !changed.includes(".dev.vars.example")
+    )
+        return;
+    requireDocChange(
+        changed,
+        ["docs/env-and-secrets.md"],
+        "wrangler.toml or .dev.vars.example changed",
+        errors,
+    );
+}
+
+function checkWorkflowDocs({ changed, errors }) {
+    if (!changedAny(changed, /^\.github\/workflows\/[^/]+\.yml$/)) return;
+    requireDocChange(
+        changed,
+        ["docs/ci-cd.md", "README.md"],
+        ".github/workflows/*.yml changed",
+        errors,
+    );
+}
+
+function checkRouteDocs({ changed, errors }) {
+    const touchedRoutes =
+        changedAny(
+            changed,
+            /(^|\/)src\/(app|modules)\/.*\.(route\.ts|page\.tsx)$/,
+        ) || changedAny(changed, /(^|\/)src\/app\/.*\/api\/.*\/route\.ts$/);
+    if (!touchedRoutes && !changed.includes("middleware.ts")) return;
+    requireDocChange(
+        changed,
+        ["docs/api-index.md"],
+        "routes/pages/API/middleware changed",
+        errors,
+    );
+}
+
+function checkServiceDocs({ changed, errors }) {
+    if (!changedAny(changed, /^src\/modules\/[^/]+\/services\/[^/]+\.ts$/))
+        return;
+    requireDocChange(
+        changed,
+        ["docs/error-code-index.md"],
+        "service layer changed; sync error code index",
+        errors,
+    );
+}
+
+const RATE_LIMIT_DOCS = ["docs/api-index.md", "docs/ratelimit-index.md"];
+const RATE_LIMIT_ROUTES = [
+    "src/app/api/v1/auth/[...all]/route.ts",
+    "src/app/api/v1/creem/create-checkout/route.ts",
+    "src/app/api/v1/webhooks/creem/route.ts",
+];
+
+function checkRateLimitDocs({ changed, errors }) {
+    const touched = RATE_LIMIT_ROUTES.filter((file) => changed.includes(file));
+    if (!touched.length) return;
+    requireDocChange(
+        changed,
+        RATE_LIMIT_DOCS,
+        "rate-limited route changed; update rate limit documentation",
+        errors,
+    );
+    for (const file of touched) {
+        if (!fileContains(file, "applyRateLimit")) {
+            errors.push(
+                `Rate limit enforcement missing: ${file} should call applyRateLimit()`,
+            );
+        }
+    }
+}
+
+function checkMigrationDocs({ changed, errors }) {
+    if (!changedAny(changed, /^src\/drizzle\/.*\.sql$/)) return;
+    requireDocChange(
+        changed,
+        ["docs/db-d1.md"],
+        "DB migrations changed",
+        errors,
+    );
+}
+
+function checkScriptDocs({ changed, errors }) {
+    if (!changedAny(changed, /^scripts\/.+/)) return;
+    const before = errors.length;
+    requireDocChange(
+        changed,
+        ["docs/local-dev.md"],
+        "scripts/ changed",
+        errors,
+    );
+    if (
+        docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") &&
+        errors.length > before
+    )
+        errors.pop();
+}
+
+function enforceEnglishDocs({ changed, errors }) {
+    const changedDocs = changed.filter(isDocPath);
+    for (const p of changedDocs) {
+        try {
+            const text = readFile(p);
+            if (containsNonEnglish(text)) {
+                errors.push(
+                    `Docs language must be English only: ${p} contains non-English (CJK) characters`,
+                );
+            }
+        } catch {
+            // Ignore read errors; files may have been deleted in the diff
+        }
+    }
+}
+
+const DIFF_RULES = [
+    checkPackageScripts,
+    checkEnvDocs,
+    checkWorkflowDocs,
+    checkRouteDocs,
+    checkServiceDocs,
+    checkRateLimitDocs,
+    checkMigrationDocs,
+    checkScriptDocs,
+];
+
+function runDiffChecks(context) {
+    for (const rule of DIFF_RULES) {
+        rule(context);
+    }
+    if (process.env.STRICT_ENGLISH === "1") {
+        enforceEnglishDocs(context);
     }
 }
 
@@ -149,146 +313,12 @@ function _checkIndexInvariants(errors) {
 
 function main() {
     const errors = [];
-    // Invariant checks removed; only diff-based checks below
-
     const changed = getChangedFiles();
-    const hasChanges = changed.length > 0;
 
-    if (hasChanges) {
-        const changedAny = (re) => changed.some((f) => re.test(f));
-
-        // package.json scripts -> README or local-dev docs
-        if (changed.includes("package.json")) {
-            const before = errors.length;
-            requireDocChange(
-                changed,
-                ["README.md", "docs/local-dev.md"],
-                "package.json scripts changed",
-                errors,
-            );
-            // Relax when auto anchors exist (autogen keeps docs in sync even if no diff)
-            const hasAuto =
-                docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") ||
-                docHasAnchor("README.md", "README_AUTOMATION");
-            if (hasAuto && errors.length > before) errors.pop();
-        }
-
-        // Env/bindings -> env docs
-        if (
-            changed.includes("wrangler.toml") ||
-            changed.includes(".dev.vars.example")
-        ) {
-            requireDocChange(
-                changed,
-                ["docs/env-and-secrets.md"],
-                "wrangler.toml or .dev.vars.example changed",
-                errors,
-            );
-        }
-
-        // Workflows -> ci-cd docs
-        if (changedAny(/^\.github\/workflows\/[^/]+\.yml$/)) {
-            requireDocChange(
-                changed,
-                ["docs/ci-cd.md", "README.md"],
-                ".github/workflows/*.yml changed",
-                errors,
-            );
-        }
-
-        // Routes/pages/API/middleware -> api-index docs
-        if (
-            changedAny(
-                /(^|\/)src\/(app|modules)\/.*\.(route\.ts|page\.tsx)$/,
-            ) ||
-            changedAny(/(^|\/)src\/app\/.*\/api\/.*\/route\.ts$/) ||
-            changed.includes("middleware.ts")
-        ) {
-            requireDocChange(
-                changed,
-                ["docs/api-index.md"],
-                "routes/pages/API/middleware changed",
-                errors,
-            );
-        }
-
-        if (changedAny(/^src\/modules\/[^/]+\/services\/[^/]+\.ts$/)) {
-            requireDocChange(
-                changed,
-                ["docs/error-code-index.md"],
-                "service layer changed; sync error code index",
-                errors,
-            );
-        }
-
-        const rateLimitDocs = ["docs/api-index.md", "docs/ratelimit-index.md"];
-        const rateLimitedRoutes = [
-            "src/app/api/v1/auth/[...all]/route.ts",
-            "src/app/api/v1/creem/create-checkout/route.ts",
-            "src/app/api/v1/webhooks/creem/route.ts",
-        ];
-        const touchedRateLimitedRoutes = rateLimitedRoutes.filter((file) =>
-            changed.includes(file),
-        );
-        if (touchedRateLimitedRoutes.length > 0) {
-            requireDocChange(
-                changed,
-                rateLimitDocs,
-                "rate-limited route changed; update rate limit documentation",
-                errors,
-            );
-            for (const file of touchedRateLimitedRoutes) {
-                if (!fileContains(file, "applyRateLimit")) {
-                    errors.push(
-                        `Rate limit enforcement missing: ${file} should call applyRateLimit()`,
-                    );
-                }
-            }
-        }
-
-        // Migrations -> db docs
-        if (changedAny(/^src\/drizzle\/.*\.sql$/)) {
-            requireDocChange(
-                changed,
-                ["docs/db-d1.md"],
-                "DB migrations changed",
-                errors,
-            );
-        }
-
-        // Scripts -> local dev docs
-        if (changedAny(/^scripts\/.+/)) {
-            const before = errors.length;
-            requireDocChange(
-                changed,
-                ["docs/local-dev.md"],
-                "scripts/ changed",
-                errors,
-            );
-            if (
-                docHasAnchor("docs/local-dev.md", "SCRIPTS_TABLE_AUTO") &&
-                errors.length > before
-            )
-                errors.pop();
-        }
-
-        // English‑only docs policy (enforced on changed docs)
-        if (process.env.STRICT_ENGLISH === "1") {
-            const changedDocs = changed.filter(isDocPath);
-            for (const p of changedDocs) {
-                try {
-                    const t = readFile(p);
-                    if (containsNonEnglish(t)) {
-                        errors.push(
-                            `Docs language must be English only: ${p} contains non‑English (CJK) characters`,
-                        );
-                    }
-                } catch {}
-            }
-        }
+    if (changed.length > 0) {
+        runDiffChecks({ changed, errors });
     } else {
-        // No diff found; nothing to validate
-        console.log(
+        console.info(
             "[check-docs] No git diff detected; skipped diff-based checks.",
         );
     }
@@ -297,7 +327,7 @@ function main() {
         console.error(`\n[check-docs] Found issues:\n- ${errors.join("\n- ")}`);
         process.exit(1);
     } else {
-        console.log("[check-docs] OK");
+        console.info("[check-docs] OK");
     }
 }
 

@@ -63,46 +63,55 @@ const adminTodoSelection = {
     userEmail: user.email,
 };
 
+const EMPTYABLE_FIELDS: readonly (
+    | keyof TodoCreateInput
+    | keyof TodoUpdateInput
+)[] = ["imageUrl", "imageAlt", "status", "priority"];
+
+function normalizeOptionalValue(value: unknown) {
+    return value === "" || value === null ? undefined : value;
+}
+
+function normalizeCategoryIdValue(value: unknown) {
+    if (typeof value === "string") {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isNaN(parsed) ? undefined : parsed;
+    }
+    return value;
+}
+
+function applyTodoFallback<TValue>(value: unknown, fallback: TValue): TValue {
+    if (value === undefined || value === "") {
+        return fallback;
+    }
+    return value as TValue;
+}
+
 function normalizeTodoPayload<T extends Record<string, unknown>>(
     payload: T,
     applyDefaults = false,
 ) {
     const sanitized: Record<string, unknown> = { ...payload };
 
-    if (sanitized.dueDate === "" || sanitized.dueDate === null) {
-        sanitized.dueDate = undefined;
+    sanitized.dueDate = normalizeOptionalValue(sanitized.dueDate);
+
+    for (const field of EMPTYABLE_FIELDS) {
+        if (Object.hasOwn(sanitized, field)) {
+            sanitized[field] = normalizeOptionalValue(sanitized[field]);
+        }
     }
 
-    if (sanitized.imageUrl === "") {
-        sanitized.imageUrl = undefined;
-    }
-
-    if (sanitized.imageAlt === "") {
-        sanitized.imageAlt = undefined;
-    }
-
-    if (sanitized.status === "") {
-        sanitized.status = undefined;
-    }
-
-    if (sanitized.priority === "") {
-        sanitized.priority = undefined;
-    }
-
-    const categoryId = sanitized.categoryId;
-    if (typeof categoryId === "string") {
-        const parsed = Number.parseInt(categoryId, 10);
-        sanitized.categoryId = Number.isNaN(parsed) ? undefined : parsed;
-    }
+    sanitized.categoryId = normalizeCategoryIdValue(sanitized.categoryId);
 
     if (applyDefaults) {
-        if (sanitized.status === undefined || sanitized.status === "") {
-            sanitized.status = TodoStatus.PENDING;
-        }
-
-        if (sanitized.priority === undefined || sanitized.priority === "") {
-            sanitized.priority = TodoPriority.MEDIUM;
-        }
+        sanitized.status = applyTodoFallback(
+            sanitized.status,
+            TodoStatus.PENDING,
+        );
+        sanitized.priority = applyTodoFallback(
+            sanitized.priority,
+            TodoPriority.MEDIUM,
+        );
     }
 
     return sanitized as T;

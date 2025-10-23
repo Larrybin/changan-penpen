@@ -133,7 +133,7 @@
             "items": [
                 {
                     "title": "Acesso gratuito e ilimitado",
-                    "description": "Aproveite geração ilimitada de imagens – sem cadastro e sem custos ocultos."
+                    "description": "Aproveite geração ilimitada de imagens — sem cadastro e sem custos ocultos."
                 },
                 {
                     "title": "Edição em linguagem natural",
@@ -238,7 +238,7 @@
             "instructionsLabel": "Instruções de edição",
             "usageGuide": "Guia de uso",
             "usageGuideHint": "Guia interativo disponível em breve.",
-            "promptPlaceholder": "ex.: \"coloque um chapéu de aniversário no gato\"",
+            "promptPlaceholder": "ex.: “coloque um chapéu de aniversário no gato”",
             "aspectRatioLabel": "Proporção",
             "humanCheck": "Prove que você é humano",
             "generate": "Descascar",
@@ -269,7 +269,7 @@
         }
     },
     "Metadata": {
-        "title": "Banana Generator – Editor de fotos e gerador de imagens com IA",
+        "title": "Banana Generator — Editor de fotos e gerador de imagens com IA",
         "description": "Crie e edite fotos com prompts de texto baseados em IA. O Banana Generator oferece edição de imagens com IA rápida, segura e ilimitada para equipes e criadores.",
         "keywords": [
             "editor de fotos com IA",
@@ -279,7 +279,7 @@
             "Banana Generator"
         ],
         "openGraph": {
-            "title": "Banana Generator – Edite e gere fotos com IA",
+            "title": "Banana Generator — Edite e gere fotos com IA",
             "description": "Aproveite edição de fotos com IA instantânea, geração texto-para-imagem e fluxos criativos com o Banana Generator.",
             "siteName": "Banana Generator",
             "imageAlt": "Imagem de pré-visualização mostrando os recursos do Banana Generator."

@@ -10,10 +10,10 @@ export default async function TodoListPage() {
 
     return (
         <>
-            <div className="flex justify-between items-center mb-8 w-full">
+            <div className="mb-8 flex w-full items-center justify-between">
                 <div>
-                    <h1 className="text-title-sm font-bold">Todos</h1>
-                    <p className="text-muted-foreground mt-1">
+                    <h1 className="font-bold text-title-sm">Todos</h1>
+                    <p className="mt-1 text-muted-foreground">
                         Manage your tasks and stay organized
                     </p>
                 </div>
@@ -26,14 +26,14 @@ export default async function TodoListPage() {
             </div>
 
             {todos.length === 0 ? (
-                <div className="text-center py-12 w-full">
-                    <div className="text-muted-foreground text-6xl mb-4">
+                <div className="w-full py-12 text-center">
+                    <div className="mb-4 text-6xl text-muted-foreground">
                         📝
                     </div>
-                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">
+                    <h3 className="mb-2 font-semibold text-muted-foreground text-xl">
                         No todos yet
                     </h3>
-                    <p className="text-muted-foreground mb-6">
+                    <p className="mb-6 text-muted-foreground">
                         Create your first todo to get started
                     </p>
                     <Link href={todosRoutes.new}>

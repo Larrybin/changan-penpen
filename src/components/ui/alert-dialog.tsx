@@ -5,20 +5,12 @@ import type * as React from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-function AlertDialog({
-    ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-    return (
-        <AlertDialogPrimitive.Root
-            data-slot="alert-dialog"
-            className={cn(
-                // 基础动画类
-                "fade-in",
-                props.className
-            )}
-            {...props}
-        />
-    );
+type AlertDialogRootProps = React.ComponentPropsWithoutRef<
+    typeof AlertDialogPrimitive.Root
+>;
+
+function AlertDialog({ ...props }: AlertDialogRootProps) {
+    return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
 function AlertDialogTrigger({
@@ -30,7 +22,7 @@ function AlertDialogTrigger({
             className={cn(
                 // 基础交互类
                 "interactive-base scale-active",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -67,7 +59,7 @@ function AlertDialogOverlay({
                 "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                 // 过渡动画
                 "transition-[opacity,backdrop-filter] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
-                className
+                className,
             )}
             {...props}
         />
@@ -106,7 +98,7 @@ function AlertDialogContent({
                     "fade-in",
                     // 微交互
                     "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
-                    className
+                    className,
                 )}
                 {...props}
             />
@@ -128,7 +120,7 @@ function AlertDialogHeader({
                 "text-center sm:text-left",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -148,7 +140,7 @@ function AlertDialogFooter({
                 "sm:flex-row sm:justify-end sm:gap-[var(--token-spacing-2)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -169,7 +161,7 @@ function AlertDialogTitle({
                 "text-[var(--color-destructive-foreground,var(--color-foreground))]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -190,7 +182,7 @@ function AlertDialogDescription({
                 "text-[var(--color-muted-foreground)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -211,7 +203,7 @@ function AlertDialogAction({
                 "scale-active",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -230,7 +222,7 @@ function AlertDialogCancel({
                 "scale-active",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />

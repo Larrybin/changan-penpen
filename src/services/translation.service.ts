@@ -126,52 +126,118 @@ const buildUserPrompt = (entries: TranslationEntry[]) => {
     )}`;
 };
 
-const parseJsonResponse = (raw: string): Record<string, string> => {
-    const trimmed = raw.trim();
-    const candidates = [trimmed];
+const CODE_FENCE_PATTERN = /```(?:json)?\s*([\s\S]*?)```/i;
 
-    if (!trimmed.startsWith("{")) {
-        // 线性扫描提取第一个平衡的大括号 JSON 片段，避免使用回溯型正则
-        const start = trimmed.indexOf("{");
-        if (start !== -1) {
-            let depth = 0;
-            let inString = false;
-            let escaping = false;
-            for (let i = start; i < trimmed.length; i++) {
-                const ch = trimmed.charCodeAt(i);
-                if (inString) {
-                    if (escaping) {
-                        escaping = false;
-                    } else if (ch === 92 /* \\ */) {
-                        escaping = true;
-                    } else if (ch === 34 /* " */) {
-                        inString = false;
-                    }
-                    continue;
-                }
-                if (ch === 34 /* " */) {
-                    inString = true;
-                    continue;
-                }
-                if (ch === 123 /* { */) depth++;
-                if (ch === 125 /* } */) depth--;
-                if (depth === 0) {
-                    candidates.push(trimmed.slice(start, i + 1));
-                    break;
-                }
-            }
+const extractCodeFence = (text: string) => {
+    const match = text.match(CODE_FENCE_PATTERN);
+    return match?.[1]?.trim() ?? null;
+};
+
+const CHAR_CODES = {
+    quote: 34,
+    backslash: 92,
+    openBrace: 123,
+    closeBrace: 125,
+} as const;
+
+type BraceScannerState = {
+    depth: number;
+    inString: boolean;
+    escaping: boolean;
+};
+
+const handleStringCharacter = (state: BraceScannerState, code: number) => {
+    if (state.escaping) {
+        state.escaping = false;
+        return;
+    }
+    if (code === CHAR_CODES.backslash) {
+        state.escaping = true;
+        return;
+    }
+    if (code === CHAR_CODES.quote) state.inString = false;
+};
+
+const handleBraceCharacter = (state: BraceScannerState, code: number) => {
+    if (code === CHAR_CODES.quote) {
+        state.inString = true;
+        return;
+    }
+    if (code === CHAR_CODES.openBrace) {
+        state.depth += 1;
+        return;
+    }
+    if (code === CHAR_CODES.closeBrace) state.depth -= 1;
+};
+
+const findBalancedClosingBrace = (text: string, start: number) => {
+    const state: BraceScannerState = {
+        depth: 0,
+        inString: false,
+        escaping: false,
+    };
+    for (let i = start; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        if (state.inString) {
+            handleStringCharacter(state, code);
+            continue;
         }
+        handleBraceCharacter(state, code);
+        if (state.depth === 0 && code === CHAR_CODES.closeBrace) return i;
     }
+    return null;
+};
 
+const extractBalancedJsonObject = (text: string) => {
+    const start = text.indexOf("{");
+    if (start === -1) return null;
+    const end = findBalancedClosingBrace(text, start);
+    return end === null ? null : text.slice(start, end + 1);
+};
+
+const isStringRecord = (value: unknown): value is Record<string, string> => {
+    if (!value || typeof value !== "object" || Array.isArray(value))
+        return false;
+    return Object.values(value).every((entry) => typeof entry === "string");
+};
+
+type JsonCandidateResult = {
+    value: Record<string, string> | null;
+    error?: unknown;
+};
+
+const tryParseCandidate = (candidate: string): JsonCandidateResult => {
+    try {
+        const parsed = JSON.parse(candidate);
+        return { value: isStringRecord(parsed) ? parsed : null };
+    } catch (error) {
+        return { value: null, error };
+    }
+};
+
+const collectJsonCandidates = (raw: string) => {
+    const trimmed = raw.trim();
+    const candidates = new Set<string>();
+    if (trimmed) candidates.add(trimmed);
+    const fenced = extractCodeFence(trimmed);
+    if (fenced) candidates.add(fenced.trim());
+    if (!trimmed.startsWith("{")) {
+        const balanced = extractBalancedJsonObject(trimmed);
+        if (balanced) candidates.add(balanced.trim());
+    }
+    return { trimmed, candidates: Array.from(candidates) };
+};
+
+const parseJsonResponse = (raw: string): Record<string, string> => {
+    const { trimmed, candidates } = collectJsonCandidates(raw);
+    const errors: unknown[] = [];
     for (const candidate of candidates) {
-        try {
-            const parsed = JSON.parse(candidate);
-            return parsed as Record<string, string>;
-        } catch (_error) {}
+        const { value, error } = tryParseCandidate(candidate);
+        if (value) return value;
+        if (error) errors.push(error);
     }
-
     throw new TranslationError("Unable to parse JSON translation response", {
-        cause: trimmed,
+        cause: { raw: trimmed, errors },
     });
 };
 

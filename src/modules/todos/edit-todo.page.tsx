@@ -57,8 +57,8 @@ export default async function EditTodoPage({ id }: EditTodoPageProps) {
                         Back to Todos
                     </Button>
                 </Link>
-                <h1 className="text-title-sm font-bold">Edit Todo</h1>
-                <p className="text-muted-foreground mt-1">
+                <h1 className="font-bold text-title-sm">Edit Todo</h1>
+                <p className="mt-1 text-muted-foreground">
                     Update your task details
                 </p>
             </div>

@@ -19,8 +19,8 @@ export default async function NewTodoPage() {
                         Back to Todos
                     </Button>
                 </Link>
-                <h1 className="text-title-sm font-bold">Create New Todo</h1>
-                <p className="text-muted-foreground mt-1">
+                <h1 className="font-bold text-title-sm">Create New Todo</h1>
+                <p className="mt-1 text-muted-foreground">
                     Add a new task to your todo list
                 </p>
             </div>

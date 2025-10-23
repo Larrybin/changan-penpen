@@ -28,27 +28,19 @@ const Menubar = React.forwardRef<
             "shadow-[var(--shadow-sm)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
 ));
 Menubar.displayName = MenubarPrimitive.Root.displayName;
 
-function MenubarMenu({
-    ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Menu>) {
-    return (
-        <MenubarPrimitive.Menu
-            data-slot="menubar-menu"
-            className={cn(
-                // 渐入动画
-                "fade-in",
-                props.className
-            )}
-            {...props}
-        />
-    );
+type MenubarMenuProps = React.ComponentPropsWithoutRef<
+    typeof MenubarPrimitive.Menu
+>;
+
+function MenubarMenu({ ...props }: MenubarMenuProps) {
+    return <MenubarPrimitive.Menu data-slot="menubar-menu" {...props} />;
 }
 
 const MenubarTrigger = React.forwardRef<
@@ -80,7 +72,7 @@ const MenubarTrigger = React.forwardRef<
             "disabled:pointer-events-none disabled:opacity-50",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -111,19 +103,21 @@ const MenubarSubTrigger = React.forwardRef<
             "color-transition transition-[color,background-color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     >
         {children}
-        <ChevronRightIcon className={cn(
-            // 图标样式
-            "ml-auto size-4 shrink-0",
-            // 过渡动画
-            "transition-transform duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
-            // 颜色
-            "text-[var(--color-muted-foreground)]/60"
-        )} />
+        <ChevronRightIcon
+            className={cn(
+                // 图标样式
+                "ml-auto size-4 shrink-0",
+                // 过渡动画
+                "transition-transform duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
+                // 颜色
+                "text-[var(--color-muted-foreground)]/60",
+            )}
+        />
     </MenubarPrimitive.SubTrigger>
 ));
 MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName;
@@ -158,7 +152,7 @@ const MenubarSubContent = React.forwardRef<
             "fade-in",
             // 微交互
             "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
-            className
+            className,
         )}
         {...props}
     />
@@ -200,7 +194,7 @@ const MenubarContent = React.forwardRef<
             "fade-in",
             // 微交互
             "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
-            className
+            className,
         )}
         {...props}
     />
@@ -231,7 +225,7 @@ const MenubarItem = React.forwardRef<
             "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -262,24 +256,28 @@ const MenubarCheckboxItem = React.forwardRef<
             "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         checked={checked}
         {...props}
     >
-        <span className={cn(
-            // 选中指示器位置
-            "absolute left-[var(--token-spacing-2)] inline-flex size-4 items-center justify-center",
-            // 渐入动画
-            "fade-in"
-        )}>
+        <span
+            className={cn(
+                // 选中指示器位置
+                "absolute left-[var(--token-spacing-2)] inline-flex size-4 items-center justify-center",
+                // 渐入动画
+                "fade-in",
+            )}
+        >
             <MenubarPrimitive.ItemIndicator>
-                <CheckIcon className={cn(
-                    // 图标样式
-                    "size-4 text-[var(--color-primary)]",
-                    // 动画
-                    "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]"
-                )} />
+                <CheckIcon
+                    className={cn(
+                        // 图标样式
+                        "size-4 text-[var(--color-primary)]",
+                        // 动画
+                        "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
+                    )}
+                />
             </MenubarPrimitive.ItemIndicator>
         </span>
         {children}
@@ -299,7 +297,7 @@ const MenubarRadioGroup = React.forwardRef<
             "grid gap-[var(--token-spacing-1)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -330,23 +328,27 @@ const MenubarRadioItem = React.forwardRef<
             "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     >
-        <span className={cn(
-            // 选中指示器位置
-            "absolute left-[var(--token-spacing-2)] inline-flex size-4 items-center justify-center",
-            // 渐入动画
-            "fade-in"
-        )}>
+        <span
+            className={cn(
+                // 选中指示器位置
+                "absolute left-[var(--token-spacing-2)] inline-flex size-4 items-center justify-center",
+                // 渐入动画
+                "fade-in",
+            )}
+        >
             <MenubarPrimitive.ItemIndicator>
-                <CircleIcon className={cn(
-                    // 图标样式
-                    "size-2.5 fill-current text-[var(--color-primary)]",
-                    // 动画
-                    "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]"
-                )} />
+                <CircleIcon
+                    className={cn(
+                        // 图标样式
+                        "size-2.5 fill-current text-[var(--color-primary)]",
+                        // 动画
+                        "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
+                    )}
+                />
             </MenubarPrimitive.ItemIndicator>
         </span>
         {children}
@@ -374,7 +376,7 @@ const MenubarLabel = React.forwardRef<
             inset && "pl-[calc(var(--token-spacing-3)*2)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -397,7 +399,7 @@ const MenubarSeparator = React.forwardRef<
             "fade-in",
             // 过渡动画
             "color-transition transition-[background-color] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
-            className
+            className,
         )}
         {...props}
     />
@@ -420,7 +422,7 @@ const MenubarShortcut = React.forwardRef<
             "text-[var(--color-muted-foreground)]/70",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />

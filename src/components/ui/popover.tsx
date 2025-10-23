@@ -5,20 +5,12 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Popover({
-    ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-    return (
-        <PopoverPrimitive.Root
-            data-slot="popover"
-            className={cn(
-                // 基础动画类
-                "fade-in",
-                props.className
-            )}
-            {...props}
-        />
-    );
+type PopoverRootProps = React.ComponentPropsWithoutRef<
+    typeof PopoverPrimitive.Root
+>;
+
+function Popover({ ...props }: PopoverRootProps) {
+    return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
 function PopoverTrigger({
@@ -30,7 +22,7 @@ function PopoverTrigger({
             className={cn(
                 // 基础交互类
                 "interactive-base scale-active",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -40,12 +32,7 @@ function PopoverTrigger({
 function PopoverAnchor({
     ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-    return (
-        <PopoverPrimitive.Anchor
-            data-slot="popover-anchor"
-            {...props}
-        />
-    );
+    return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
 }
 
 function PopoverClose({
@@ -57,7 +44,7 @@ function PopoverClose({
             className={cn(
                 // 基础交互类
                 "interactive-base scale-active",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -107,7 +94,7 @@ const PopoverContent = React.forwardRef<
                     "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
                     // 边距处理
                     "outline-none",
-                    className
+                    className,
                 )}
                 {...props}
             />
