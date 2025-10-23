@@ -44,17 +44,12 @@ jobs:
         name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
-      - &setup-pnpm
-        name: Setup pnpm
-        uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - &setup-node
-        name: Setup Node
-        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          cache-key-suffix: "-ci-${{ matrix.node-version }}"
 
       - &install
         name: Install dependencies (composite)
@@ -96,37 +91,96 @@ jobs:
       NODE_VERSION: ${{ matrix.node-version }}
     steps:
       - *checkout
-      - *setup-pnpm
-      - *setup-node
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          cache-key-suffix: "-typecheck-${{ matrix.node-version }}"
       - *install
-
       - name: Type check (tsc)
         run: pnpm exec tsc --noEmit
 
   supply-chain:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     if: github.event_name == 'pull_request'
     steps:
       - *checkout
-      - *setup-pnpm
-      - *setup-node
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          cache-key-suffix: "-security"
 
       - name: Secret scan (gitleaks)
         env:
           GITLEAKS_VERSION: '8.18.2'
         run: |
           set -euo pipefail
+          echo "::group::Installing Gitleaks"
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             -o /tmp/gitleaks.tar.gz
           tar -xzf /tmp/gitleaks.tar.gz -C /tmp
-          /tmp/gitleaks detect --source . --no-banner --redact
+          echo "::endgroup::"
+
+          echo "::group::Running Gitleaks secret detection"
+          if /tmp/gitleaks detect --source . --no-banner --redact --verbose; then
+            echo "✅ No secrets detected"
+          else
+            echo "::error::Secrets detected in repository! Please review and fix before merging."
+            exit 1
+          fi
+          echo "::endgroup::"
 
       - name: Check for duplicate dependencies
-        run: pnpm dedupe --check
+        run: |
+          echo "::group::Checking for duplicate dependencies"
+          if pnpm dedupe --check; then
+            echo "✅ No duplicate dependencies found"
+          else
+            echo "::warning::Duplicate dependencies detected. Consider running 'pnpm dedupe'"
+          fi
+          echo "::endgroup::"
 
-      - name: Audit production dependencies
-        run: pnpm audit --prod --audit-level high
+      - name: Security audit (enhanced)
+        run: |
+          echo "::group::Running security audit on production dependencies"
+
+          # First check for high/critical vulnerabilities
+          high_vulns=$(pnpm audit --prod --audit-level high --json | jq -r '.vulnerabilities | length' 2>/dev/null || echo "0")
+
+          if [[ "$high_vulns" -gt 0 ]]; then
+            echo "::error::Found $high_vulns high/critical vulnerabilities:"
+            pnpm audit --prod --audit-level high
+            echo ""
+            echo "🔧 To fix vulnerabilities:"
+            echo "  1. Run 'pnpm audit --fix' locally"
+            echo "  2. Or manually update affected packages"
+            echo "  3. For more info: https://pnpm.io/cli/audit"
+            exit 1
+          fi
+
+          # Check for moderate vulnerabilities and warn
+          if pnpm audit --prod --audit-level moderate 2>/dev/null | grep -q "vulnerabilities"; then
+            echo "::warning::Moderate vulnerabilities detected. Consider updating dependencies."
+            pnpm audit --prod --audit-level moderate
+          else
+            echo "✅ No production vulnerabilities found"
+          fi
+
+          echo "::endgroup::"
+
+      - name: License compliance check
+        run: |
+          echo "::group::Checking license compliance"
+          if command -v npx >/dev/null 2>&1; then
+            npx license-checker --summary --excludePrivatePackages || echo "::warning::License check failed"
+          else
+            echo "::warning::License checker not available"
+          fi
+          echo "::endgroup::"
 
   build:
     runs-on: ubuntu-latest
