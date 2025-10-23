@@ -365,13 +365,41 @@
             "title": "Pagamento concluído",
             "description": "Recebemos seu pagamento. Os benefícios da conta serão atualizados em breve.",
             "primaryCta": "Ir para o painel",
-            "secondaryCta": "Ver mais planos"
+            "secondaryCta": "Ver mais planos",
+            "verificationTitle": "Verificação do redirecionamento",
+            "detailsHeading": "Detalhes do pagamento",
+            "verification": {
+                "verified": "Confirmamos que este redirecionamento foi assinado pela Creem.",
+                "invalid": "Não foi possível verificar a assinatura deste redirecionamento. Entre em contato com o suporte se o pagamento parecer incorreto.",
+                "missingSignature": "A Creem não incluiu assinatura neste redirecionamento. Os detalhes são apenas informativos.",
+                "missingSecret": "Este ambiente ainda não está configurado para validar redirecionamentos da Creem."
+            },
+            "fields": {
+                "requestId": "ID da requisição",
+                "checkoutId": "ID do checkout",
+                "status": "Status",
+                "timestamp": "Timestamp"
+            }
         },
         "cancel": {
             "title": "Pagamento cancelado",
             "description": "O pagamento foi cancelado. Você pode retomar a compra quando quiser.",
             "primaryCta": "Voltar aos planos",
-            "secondaryCta": "Retornar ao painel"
+            "secondaryCta": "Retornar ao painel",
+            "verificationTitle": "Verificação do redirecionamento",
+            "detailsHeading": "Detalhes do checkout",
+            "verification": {
+                "verified": "Confirmamos que este redirecionamento foi assinado pela Creem.",
+                "invalid": "Não foi possível verificar a assinatura deste redirecionamento. Refaça a compra ou fale com o suporte.",
+                "missingSignature": "A Creem não incluiu assinatura neste redirecionamento. Os detalhes são apenas informativos.",
+                "missingSecret": "Este ambiente ainda não está configurado para validar redirecionamentos da Creem."
+            },
+            "fields": {
+                "requestId": "ID da requisição",
+                "checkoutId": "ID do checkout",
+                "status": "Status",
+                "timestamp": "Timestamp"
+            }
         }
     },
     "StaticPages": {

@@ -188,3 +188,53 @@ function parseSignatureHeader(signature: string) {
         signatures: Array.from(signatures),
     } as const;
 }
+
+export function splitSignatureFromParams(
+    params: Record<string, string>,
+    signatureKeys: string[] = ["signature", "sig"],
+): { signature?: string; sanitized: Record<string, string> } {
+    const sanitized: Record<string, string> = {};
+    let signature: string | undefined;
+    const seen = new Set(signatureKeys.map((key) => key.toLowerCase()));
+
+    for (const [key, value] of Object.entries(params)) {
+        if (seen.has(key.toLowerCase())) {
+            if (!signature && value) {
+                signature = value;
+            }
+            continue;
+        }
+        sanitized[key] = value;
+    }
+
+    return { signature, sanitized };
+}
+
+export function canonicalizeCreemReturnPayload(
+    params: Record<string, string>,
+): string {
+    return Object.entries(params)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key, value]) => [key, value ?? ""] as const)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${key}=${value}`)
+        .join("&");
+}
+
+export async function verifyCreemReturnUrlSignature(
+    params: Record<string, string>,
+    secret: string,
+    signature: string,
+): Promise<boolean> {
+    if (!secret || !signature) {
+        return false;
+    }
+
+    const payload = canonicalizeCreemReturnPayload(params);
+    if (!payload) {
+        return false;
+    }
+
+    const { hex, b64 } = await hmacSha256(payload, secret);
+    return timingSafeEqual(signature, hex) || timingSafeEqual(signature, b64);
+}

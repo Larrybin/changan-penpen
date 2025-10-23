@@ -13,7 +13,76 @@ type Body = {
     productType?: string; // "subscription" | "credits"
     tierId?: string;
     discountCode?: string;
+    requestId?: string;
+    units?: number;
 };
+
+const REQUEST_ID_REGEX = /^[A-Za-z0-9:_-]{8,128}$/;
+
+function normalizeRequestId(input: unknown): string | undefined {
+    if (typeof input !== "string") {
+        return undefined;
+    }
+    const value = input.trim();
+    if (!value) {
+        return undefined;
+    }
+    if (!REQUEST_ID_REGEX.test(value)) {
+        throw new ApiError("Invalid requestId format", {
+            status: 400,
+            code: "INVALID_REQUEST",
+            severity: "medium",
+            details: { requestId: value },
+        });
+    }
+    return value;
+}
+
+function normalizeUnits(input: unknown): number | undefined {
+    if (input === null || input === undefined) {
+        return undefined;
+    }
+    const candidate =
+        typeof input === "string" ? Number.parseInt(input, 10) : input;
+    if (!Number.isFinite(candidate)) {
+        throw new ApiError("Invalid units value", {
+            status: 400,
+            code: "INVALID_REQUEST",
+            severity: "medium",
+            details: { units: input },
+        });
+    }
+    const normalized = Number(candidate);
+    if (!Number.isInteger(normalized) || normalized <= 0 || normalized > 1000) {
+        throw new ApiError("Units must be a positive integer up to 1000", {
+            status: 400,
+            code: "INVALID_REQUEST",
+            severity: "medium",
+            details: { units: normalized },
+        });
+    }
+    return normalized;
+}
+
+function generateRequestId(): string {
+    try {
+        if (
+            typeof crypto !== "undefined" &&
+            typeof crypto.randomUUID === "function"
+        ) {
+            return crypto.randomUUID();
+        }
+    } catch {}
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const nodeCrypto =
+            require("node:crypto") as typeof import("node:crypto");
+        if (typeof nodeCrypto.randomUUID === "function") {
+            return nodeCrypto.randomUUID();
+        }
+    } catch {}
+    return `req_${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`;
+}
 
 // -------------------- helpers to reduce POST complexity --------------------
 function isEnvMissing(
@@ -206,6 +275,10 @@ export async function POST(request: Request) {
             });
         }
 
+        const requestId =
+            normalizeRequestId(body.requestId) ?? generateRequestId();
+        const units = normalizeUnits(body.units);
+
         const requestBody: {
             product_id: string;
             customer: { email: string };
@@ -213,10 +286,14 @@ export async function POST(request: Request) {
                 user_id: string;
                 product_type: "subscription" | "credits";
                 credits: number;
+                request_id?: string;
+                units?: number;
             };
             success_url?: string;
             cancel_url?: string;
             discount_code?: string;
+            request_id?: string;
+            units?: number;
         } = {
             product_id: productId,
             customer: { email },
@@ -226,10 +303,24 @@ export async function POST(request: Request) {
                 credits: productType === "credits" ? (creditsAmount ?? 0) : 0,
             },
         };
+        requestBody.metadata.request_id = requestId;
+        requestBody.request_id = requestId;
         const { successUrl, cancelUrl } = buildRedirectUrls(cf, origin);
         if (successUrl) requestBody.success_url = successUrl;
         if (cancelUrl) requestBody.cancel_url = cancelUrl;
         if (body.discountCode) requestBody.discount_code = body.discountCode;
+        if (typeof units === "number") {
+            requestBody.units = units;
+            requestBody.metadata.units = units;
+        }
+
+        console.info("[api/creem/create-checkout] creating checkout", {
+            requestId,
+            userId: session.user.id,
+            productId,
+            productType,
+            units: units ?? null,
+        });
 
         // 涓婃父璇锋眰锛氬鍔犺秴鏃躲€侀噸璇曪紙鎸囨暟閫€閬?+ 鎶栧姩锛変笌閿欒褰掑洜
         const { ok, status, data, text, attempts, contentType } =
@@ -286,7 +377,7 @@ export async function POST(request: Request) {
                 success: true,
                 data: { checkoutUrl },
                 error: null,
-                meta: { raw: json },
+                meta: { raw: json, requestId },
             }),
             {
                 status: 200,

@@ -365,13 +365,41 @@
             "title": "Zahlung erfolgreich",
             "description": "Wir haben Ihre Zahlung erhalten. Ihre Kontorechte werden in Kürze aktualisiert.",
             "primaryCta": "Zum Dashboard",
-            "secondaryCta": "Weitere Tarife ansehen"
+            "secondaryCta": "Weitere Tarife ansehen",
+            "verificationTitle": "Weiterleitungsüberprüfung",
+            "detailsHeading": "Zahlungsdetails",
+            "verification": {
+                "verified": "Wir haben bestätigt, dass diese Weiterleitung von Creem signiert wurde.",
+                "invalid": "Wir konnten die Signatur dieser Weiterleitung nicht verifizieren. Bitte wenden Sie sich an den Support, wenn die Zahlung falsch erscheint.",
+                "missingSignature": "Creem hat dieser Weiterleitung keine Signatur hinzugefügt. Details dienen nur zu Referenzzwecken.",
+                "missingSecret": "Diese Umgebung ist noch nicht dafür konfiguriert, Creem-Weiterleitungen zu validieren."
+            },
+            "fields": {
+                "requestId": "Request-ID",
+                "checkoutId": "Checkout-ID",
+                "status": "Status",
+                "timestamp": "Zeitstempel"
+            }
         },
         "cancel": {
             "title": "Zahlung abgebrochen",
             "description": "Die Zahlung wurde abgebrochen. Sie können den Kauf jederzeit fortsetzen.",
             "primaryCta": "Zur Tarifübersicht",
-            "secondaryCta": "Zurück zum Dashboard"
+            "secondaryCta": "Zurück zum Dashboard",
+            "verificationTitle": "Weiterleitungsüberprüfung",
+            "detailsHeading": "Checkout-Details",
+            "verification": {
+                "verified": "Wir haben bestätigt, dass diese Weiterleitung von Creem signiert wurde.",
+                "invalid": "Wir konnten die Signatur dieser Weiterleitung nicht verifizieren. Bitte starten Sie den Checkout erneut oder kontaktieren Sie den Support.",
+                "missingSignature": "Creem hat dieser Weiterleitung keine Signatur hinzugefügt. Details dienen nur zu Referenzzwecken.",
+                "missingSecret": "Diese Umgebung ist noch nicht dafür konfiguriert, Creem-Weiterleitungen zu validieren."
+            },
+            "fields": {
+                "requestId": "Request-ID",
+                "checkoutId": "Checkout-ID",
+                "status": "Status",
+                "timestamp": "Zeitstempel"
+            }
         }
     },
     "StaticPages": {

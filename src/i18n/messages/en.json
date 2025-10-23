@@ -361,13 +361,41 @@
             "title": "Payment successful",
             "description": "We’ve received your payment. Your account benefits will update shortly.",
             "primaryCta": "Go to dashboard",
-            "secondaryCta": "View more plans"
+            "secondaryCta": "View more plans",
+            "verificationTitle": "Redirect verification",
+            "detailsHeading": "Payment details",
+            "verification": {
+                "verified": "We confirmed this redirect was signed by Creem.",
+                "invalid": "We couldn’t verify the signature on this redirect. Please contact support if the payment looks wrong.",
+                "missingSignature": "Creem did not include a signature with this redirect. Details are shown for reference only.",
+                "missingSecret": "This environment is not configured to validate Creem redirect signatures yet."
+            },
+            "fields": {
+                "requestId": "Request ID",
+                "checkoutId": "Checkout ID",
+                "status": "Status",
+                "timestamp": "Timestamp"
+            }
         },
         "cancel": {
             "title": "Payment cancelled",
             "description": "Your payment was cancelled. You can resume checkout whenever you’re ready.",
             "primaryCta": "Back to plans",
-            "secondaryCta": "Return to dashboard"
+            "secondaryCta": "Return to dashboard",
+            "verificationTitle": "Redirect verification",
+            "detailsHeading": "Checkout details",
+            "verification": {
+                "verified": "We confirmed this redirect was signed by Creem.",
+                "invalid": "We couldn’t verify the signature on this redirect. Please retry checkout or contact support.",
+                "missingSignature": "Creem did not include a signature with this redirect. Details are shown for reference only.",
+                "missingSecret": "This environment is not configured to validate Creem redirect signatures yet."
+            },
+            "fields": {
+                "requestId": "Request ID",
+                "checkoutId": "Checkout ID",
+                "status": "Status",
+                "timestamp": "Timestamp"
+            }
         }
     },
     "StaticPages": {
