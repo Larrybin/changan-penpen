@@ -8,13 +8,13 @@
 import DocConsistencyChecker from "./lib/doc-consistency-checker.mjs";
 import WorkflowOptimizer from "./lib/workflow-optimizer.mjs";
 
-console.log("📚 文档优化工具启动");
+console.info("📚 文档优化工具启动");
 
 async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || "check";
 
-    console.log(`📋 执行模式: ${command}`);
+    console.info(`📋 执行模式: ${command}`);
 
     try {
         switch (command) {
@@ -35,7 +35,7 @@ async function main() {
                 break;
         }
 
-        console.log("✅ 文档优化完成");
+        console.info("✅ 文档优化完成");
     } catch (error) {
         console.error("❌ 文档优化失败:", error.message);
         process.exit(1);
@@ -46,7 +46,7 @@ async function main() {
  * 执行文档检查
  */
 async function performDocCheck() {
-    console.log("🔍 执行文档一致性检查...");
+    console.info("🔍 执行文档一致性检查...");
 
     const checker = new DocConsistencyChecker({
         enableMCP: process.env.ENABLE_MCP === "1",
@@ -60,16 +60,16 @@ async function performDocCheck() {
     const result = await checker.checkAll();
 
     if (result.success) {
-        console.log("✅ 文档一致性检查通过");
+        console.info("✅ 文档一致性检查通过");
     } else {
-        console.log("❌ 文档一致性检查失败");
+        console.warn("❌ 文档一致性检查失败");
 
         // 显示关键问题
         const errors = result.issues.filter((i) => i.severity === "error");
         if (errors.length > 0) {
-            console.log("\n关键错误:");
+            console.info("\n关键错误:");
             errors.slice(0, 5).forEach((error) => {
-                console.log(`  - ${error.file}: ${error.message}`);
+                console.info(`  - ${error.file}: ${error.message}`);
             });
         }
 
@@ -81,7 +81,7 @@ async function performDocCheck() {
  * 执行文档修复
  */
 async function performDocFix() {
-    console.log("🔧 执行文档修复...");
+    console.info("🔧 执行文档修复...");
 
     // 1. 首先执行检查
     const checker = new DocConsistencyChecker({
@@ -105,12 +105,12 @@ async function performDocFix() {
     );
 
     if (fixableIssues.length > 0) {
-        console.log(`🔧 发现 ${fixableIssues.length} 个可自动修复的问题`);
+        console.info(`🔧 发现 ${fixableIssues.length} 个可自动修复的问题`);
 
         for (const issue of fixableIssues) {
             try {
                 await autoFixDocIssue(issue);
-                console.log(`  ✅ 修复: ${issue.message}`);
+                console.info(`  ✅ 修复: ${issue.message}`);
             } catch (error) {
                 console.error(
                     `  ❌ 修复失败: ${issue.message} - ${error.message}`,
@@ -120,21 +120,21 @@ async function performDocFix() {
     }
 
     // 3. 重新检查
-    console.log("\n🔄 重新检查文档...");
+    console.info("\n🔄 重新检查文档...");
     const recheckResult = await checker.checkAll();
 
     if (recheckResult.success) {
-        console.log("✅ 文档修复完成");
+        console.info("✅ 文档修复完成");
     } else {
-        console.log("⚠️ 部分问题需要手动修复");
+        console.warn("⚠️ 部分问题需要手动修复");
 
         const remainingIssues = recheckResult.issues.filter(
             (i) => i.severity === "error",
         );
         if (remainingIssues.length > 0) {
-            console.log(`\n需要手动修复的问题 (${remainingIssues.length}):`);
+            console.info(`\n需要手动修复的问题 (${remainingIssues.length}):`);
             remainingIssues.forEach((issue) => {
-                console.log(`  - ${issue.file}: ${issue.message}`);
+                console.info(`  - ${issue.file}: ${issue.message}`);
             });
         }
     }
@@ -144,7 +144,7 @@ async function performDocFix() {
  * 执行文档优化
  */
 async function performDocOptimize() {
-    console.log("⚡ 执行文档优化...");
+    console.info("⚡ 执行文档优化...");
 
     const optimizer = new WorkflowOptimizer({
         enableMCP: process.env.ENABLE_MCP === "1",
@@ -155,7 +155,7 @@ async function performDocOptimize() {
     const docFiles = await getDocFiles();
 
     if (docFiles.length === 0) {
-        console.log("ℹ️ 未发现文档文件");
+        console.info("ℹ️ 未发现文档文件");
         return;
     }
 
@@ -164,24 +164,24 @@ async function performDocOptimize() {
         await optimizer.analyzeDocumentConsistency(docFiles);
 
     if (optimizationResult.length > 0) {
-        console.log(`💡 发现 ${optimizationResult.length} 个文档优化机会`);
+        console.info(`💡 发现 ${optimizationResult.length} 个文档优化机会`);
 
         // 显示优化建议
         optimizationResult.forEach((opt, index) => {
-            console.log(`\n${index + 1}. ${opt.issue}`);
-            console.log(`   文件: ${opt.file}`);
-            console.log(`   影响: ${(opt.impact * 100).toFixed(1)}%`);
-            console.log(`   工作量: ${(opt.effort * 100).toFixed(1)}%`);
+            console.info(`\n${index + 1}. ${opt.issue}`);
+            console.info(`   文件: ${opt.file}`);
+            console.info(`   影响: ${(opt.impact * 100).toFixed(1)}%`);
+            console.info(`   工作量: ${(opt.effort * 100).toFixed(1)}%`);
 
             if (opt.suggestion) {
-                console.log(`   建议: ${opt.suggestion.description}`);
+                console.info(`   建议: ${opt.suggestion.description}`);
                 if (opt.suggestion.command) {
-                    console.log(`   命令: ${opt.suggestion.command}`);
+                    console.info(`   命令: ${opt.suggestion.command}`);
                 }
             }
         });
     } else {
-        console.log("✅ 文档结构良好，无需优化");
+        console.info("✅ 文档结构良好，无需优化");
     }
 }
 
@@ -189,7 +189,7 @@ async function performDocOptimize() {
  * 生成文档报告
  */
 async function generateDocReport() {
-    console.log("📊 生成文档报告...");
+    console.info("📊 生成文档报告...");
 
     const checker = new DocConsistencyChecker({
         enableMCP: process.env.ENABLE_MCP === "1",
@@ -249,31 +249,31 @@ async function generateDocReport() {
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
 
     // 显示报告摘要
-    console.log("\n📋 文档质量报告摘要:");
-    console.log(`  质量评分: ${report.qualityScore}/100`);
-    console.log(`  检查文件: ${report.summary.totalFiles}`);
-    console.log(`  发现问题: ${report.summary.totalIssues}`);
-    console.log(`  错误: ${report.summary.errors}`);
-    console.log(`  警告: ${report.summary.warnings}`);
-    console.log(`  链接检查: ${report.summary.linksChecked}`);
-    console.log(`  API文档: ${report.summary.apiDocsChecked}`);
-    console.log(`  代码块: ${report.summary.codeBlocksChecked}`);
+    console.info("\n📋 文档质量报告摘要:");
+    console.info(`  质量评分: ${report.qualityScore}/100`);
+    console.info(`  检查文件: ${report.summary.totalFiles}`);
+    console.info(`  发现问题: ${report.summary.totalIssues}`);
+    console.info(`  错误: ${report.summary.errors}`);
+    console.info(`  警告: ${report.summary.warnings}`);
+    console.info(`  链接检查: ${report.summary.linksChecked}`);
+    console.info(`  API文档: ${report.summary.apiDocsChecked}`);
+    console.info(`  代码块: ${report.summary.codeBlocksChecked}`);
 
     if (report.recommendations && report.recommendations.length > 0) {
-        console.log(`\n💡 改进建议:`);
+        console.info(`\n💡 改进建议:`);
         report.recommendations.slice(0, 3).forEach((rec) => {
-            console.log(`  - ${rec.description}`);
+            console.info(`  - ${rec.description}`);
         });
     }
 
-    console.log(`\n📄 完整报告: ${reportPath}`);
+    console.info(`\n📄 完整报告: ${reportPath}`);
 }
 
 /**
  * 执行完整的文档优化流程
  */
 async function performFullDocOptimization() {
-    console.log("🚀 执行完整文档优化流程...");
+    console.info("🚀 执行完整文档优化流程...");
 
     // 1. 执行检查
     await performDocCheck();
@@ -356,34 +356,44 @@ async function getDocFiles() {
     const path = await import("node:path");
 
     const docFiles = [];
-    const searchDirectory = async (dir, baseDir = "") => {
+    const includeExtensions = new Set([".md", ".mdx"]);
+    const shouldTraverseDirectory = (name) =>
+        !name.startsWith(".") && name !== "node_modules";
+
+    const readDirectory = async (directory) => {
         try {
-            const entries = await fs.readdir(dir, { withFileTypes: true });
-
-            for (const entry of entries) {
-                const fullPath = path.join(dir, entry.name);
-                const relativePath = path.join(baseDir, entry.name);
-
-                if (entry.isDirectory()) {
-                    if (
-                        !entry.name.startsWith(".") &&
-                        entry.name !== "node_modules"
-                    ) {
-                        await searchDirectory(fullPath, relativePath);
-                    }
-                } else if (entry.isFile()) {
-                    const ext = path.extname(entry.name);
-                    if ([".md", ".mdx"].includes(ext)) {
-                        docFiles.push(relativePath);
-                    }
-                }
-            }
+            return await fs.readdir(directory, { withFileTypes: true });
         } catch (_error) {
-            // 忽略无法读取的目录
+            return [];
         }
     };
 
-    await searchDirectory(process.cwd());
+    const stack = [{ dir: process.cwd(), baseDir: "" }];
+
+    while (stack.length > 0) {
+        const { dir, baseDir } = stack.pop();
+        const entries = await readDirectory(dir);
+
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            const relativePath = path.join(baseDir, entry.name);
+
+            if (entry.isDirectory()) {
+                if (shouldTraverseDirectory(entry.name)) {
+                    stack.push({ dir: fullPath, baseDir: relativePath });
+                }
+                continue;
+            }
+
+            if (
+                entry.isFile() &&
+                includeExtensions.has(path.extname(entry.name))
+            ) {
+                docFiles.push(relativePath);
+            }
+        }
+    }
+
     return docFiles;
 }
 

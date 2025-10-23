@@ -45,20 +45,20 @@ function shouldRunRemoteMigrations(env) {
 const env = process.env ?? {};
 let isSuccessful = true;
 
-console.log("[info] Syncing local D1 database migrations...");
+console.info("[info] Syncing local D1 database migrations...");
 isSuccessful &&= runWranglerMigration(
     ["d1", "migrations", "apply", "next-cf-app", "--local"],
     "local",
 );
 
 if (shouldRunRemoteMigrations(env)) {
-    console.log("[info] Syncing remote D1 database migrations...");
+    console.info("[info] Syncing remote D1 database migrations...");
     isSuccessful &&= runWranglerMigration(
         ["d1", "migrations", "apply", "next-cf-app", "--remote"],
         "remote",
     );
 } else {
-    console.log(
+    console.info(
         "[info] Skipping remote D1 migrations. Set CLOUDFLARE_RUN_REMOTE_MIGRATIONS=true to enable.",
     );
 }
@@ -67,4 +67,4 @@ if (!isSuccessful) {
     process.exit(1);
 }
 
-console.log("[info] D1 database migrations completed successfully.");
+console.info("[info] D1 database migrations completed successfully.");

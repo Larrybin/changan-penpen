@@ -2,6 +2,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { useLocale, useTranslations } from "next-intl";
 import type React from "react";
+import { SkipLink } from "@/components/accessibility/skip-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +12,6 @@ import { localeCurrencyMap } from "@/lib/seo";
 import Playground from "./components/playground-loader";
 import PublicFooter from "./components/public-footer";
 import PublicHeader from "./components/public-header";
-import { SkipLink } from "@/components/accessibility/skip-link";
 
 type MarketingLandingPageProps = {
     appUrl: string;
@@ -140,11 +140,10 @@ export default function MarketingLandingPage({
             <SkipLink />
             <PublicHeader />
 
-            <main id="main-content" role="main" tabIndex={-1}>
-                <section
+            <main id="main-content" tabIndex={-1}>
+                <header
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-12 md:py-16"
                     aria-labelledby="hero-heading"
-                    role="banner"
                 >
                     <div className="grid xs:grid-cols-2 gap-[var(--grid-gap-section)] items-center">
                         <div className="space-y-4">
@@ -173,7 +172,10 @@ export default function MarketingLandingPage({
                             <p className="text-yellow-200/80 leading-relaxed mb-6 text-lg">
                                 {t("hero.description")}
                             </p>
-                            <div className="flex flex-col gap-3 xs:flex-row xs:gap-3 mb-6" role="group" aria-label={t("hero.primaryActions")}>
+                            <div
+                                aria-label={t("hero.primaryActions")}
+                                className="flex flex-col gap-3 xs:flex-row xs:gap-3 mb-6"
+                            >
                                 <Link
                                     href="/signup"
                                     className="inline-flex"
@@ -211,7 +213,9 @@ export default function MarketingLandingPage({
                                         role="listitem"
                                         className="inline-flex items-center gap-1"
                                     >
-                                        <span className="sr-only">{t("hero.featurePrefix")}</span>
+                                        <span className="sr-only">
+                                            {t("hero.featurePrefix")}
+                                        </span>
                                         {item}
                                     </span>
                                 ))}
@@ -226,7 +230,7 @@ export default function MarketingLandingPage({
                             {t("hero.emoji")}✨
                         </div>
                     </div>
-                </section>
+                </header>
 
                 <section
                     id="playground"

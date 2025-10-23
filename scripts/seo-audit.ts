@@ -470,8 +470,8 @@ class SEOAuditor {
    * 生成审计报告
    */
   generateReport(): void {
-    console.log('\n🔍 SEO审计报告');
-    console.log('='.repeat(60));
+    console.info('\n🔍 SEO审计报告');
+    console.info('='.repeat(60));
 
     const passed = this.results.filter(r => r.status === 'pass').length;
     const warnings = this.results.filter(r => r.status === 'warning').length;
@@ -481,51 +481,51 @@ class SEOAuditor {
       const icon = result.status === 'pass' ? '✅' :
                    result.status === 'warning' ? '⚠️' : '❌';
 
-      console.log(`\n${icon} ${result.name}`);
-      console.log(`   ${result.description}`);
+      console.info(`\n${icon} ${result.name}`);
+      console.info(`   ${result.description}`);
 
       if (result.recommendations && result.recommendations.length > 0) {
-        console.log('   💡 建议:');
+        console.info('   💡 建议:');
         result.recommendations.forEach(rec => {
-          console.log(`     • ${rec}`);
+          console.info(`     • ${rec}`);
         });
       }
     });
 
-    console.log('\n📊 审计统计:');
-    console.log(`   ✅ 通过: ${passed}`);
-    console.log(`   ⚠️  警告: ${warnings}`);
-    console.log(`   ❌ 失败: ${failed}`);
-    console.log(`   📈 总分: ${Math.round((passed / this.results.length) * 100)}%`);
+    console.info('\n📊 审计统计:');
+    console.info(`   ✅ 通过: ${passed}`);
+    console.info(`   ⚠️  警告: ${warnings}`);
+    console.info(`   ❌ 失败: ${failed}`);
+    console.info(`   📈 总分: ${Math.round((passed / this.results.length) * 100)}%`);
 
     // 总体评估
     if (failed === 0 && warnings <= 1) {
-      console.log('\n🎉 SEO优化优秀！项目具备了完整的SEO基础设施。');
+      console.info('\n🎉 SEO优化优秀！项目具备了完整的SEO基础设施。');
     } else if (failed === 0) {
-      console.log('\n👍 SEO优化良好！有少量改进空间。');
+      console.info('\n👍 SEO优化良好！有少量改进空间。');
     } else if (failed <= 2) {
-      console.log('\n👌 SEO优化一般，需要关注失败的检查项目。');
+      console.info('\n👌 SEO优化一般，需要关注失败的检查项目。');
     } else {
-      console.log('\n⚠️  需要重点改进SEO配置，多个检查项目未通过。');
+      console.info('\n⚠️  需要重点改进SEO配置，多个检查项目未通过。');
     }
 
-    console.log('\n🚀 下一步行动建议:');
+    console.info('\n🚀 下一步行动建议:');
     if (failed > 0) {
-      console.log('1. 优先修复失败的检查项目');
+      console.info('1. 优先修复失败的检查项目');
     }
     if (warnings > 0) {
-      console.log('2. 根据建议改进警告项目');
+      console.info('2. 根据建议改进警告项目');
     }
-    console.log('3. 定期运行SEO审计检查');
-    console.log('4. 监控Core Web Vitals指标');
-    console.log('5. 持续优化用户体验');
+    console.info('3. 定期运行SEO审计检查');
+    console.info('4. 监控Core Web Vitals指标');
+    console.info('5. 持续优化用户体验');
   }
 
   /**
    * 运行完整的SEO审计
    */
   runAudit(): void {
-    console.log('🚀 开始SEO审计...\n');
+    console.info('🚀 开始SEO审计...\n');
 
     this.checkSemanticHTML();
     this.checkStructuredData();
