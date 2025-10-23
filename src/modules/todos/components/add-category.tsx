@@ -87,7 +87,7 @@ export function AddCategory({ onCategoryAdded }: AddCategoryProps) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start px-2 py-1.5 h-auto font-normal"
+                    className="h-auto w-full justify-start px-2 py-1.5 font-normal"
                 >
                     <Plus className="mr-2 h-4 w-4" />
                     Add new category
@@ -136,7 +136,7 @@ export function AddCategory({ onCategoryAdded }: AddCategoryProps) {
                                         <div className="flex items-center space-x-2">
                                             <Input
                                                 type="color"
-                                                className="w-16 h-10 p-1 rounded cursor-pointer"
+                                                className="h-10 w-16 cursor-pointer rounded p-1"
                                                 {...field}
                                             />
                                             <Input

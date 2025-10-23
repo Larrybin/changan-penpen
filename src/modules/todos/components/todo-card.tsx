@@ -65,14 +65,14 @@ export function TodoCard({ todo }: TodoCardProps) {
         >
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3 flex-1">
+                    <div className="flex flex-1 items-start space-x-3">
                         <div className="pt-1">
                             <ToggleComplete
                                 todoId={todo.id}
                                 completed={todo.completed}
                             />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                             <h3
                                 className={`font-semibold text-lg leading-tight ${todo.completed ? "line-through text-muted-foreground" : ""}`}
                             >
@@ -80,14 +80,14 @@ export function TodoCard({ todo }: TodoCardProps) {
                             </h3>
                             {todo.description && (
                                 <p
-                                    className={`text-sm mt-1 text-muted-foreground${todo.completed ? " line-through" : ""}`}
+                                    className={`mt-1 text-sm text-muted-foreground${todo.completed ? " line-through" : ""}`}
                                 >
                                     {todo.description}
                                 </p>
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="ml-4 flex items-center space-x-2">
                         <Link href={todosRoutes.edit(todo.id)}>
                             <Button variant="ghost" size="sm">
                                 <Edit className="h-4 w-4" />
@@ -98,7 +98,7 @@ export function TodoCard({ todo }: TodoCardProps) {
                 </div>
             </CardHeader>
             <CardContent className="pt-0">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
                     <Badge
                         variant="outline"
                         className={
@@ -127,7 +127,7 @@ export function TodoCard({ todo }: TodoCardProps) {
                     )}
                     {todo.imageUrl && (
                         <Badge variant="outline" className="text-blue-600">
-                            <ImageIcon className="h-3 w-3 mr-1" />
+                            <ImageIcon className="mr-1 h-3 w-3" />
                             Image
                         </Badge>
                     )}
@@ -137,10 +137,10 @@ export function TodoCard({ todo }: TodoCardProps) {
                     <div
                         className={`flex items-center text-sm ${isOverdue ? "text-red-600" : "text-muted-foreground"}`}
                     >
-                        <Calendar className="h-4 w-4 mr-1" />
+                        <Calendar className="mr-1 h-4 w-4" />
                         Due: {formatDate(todo.dueDate)}
                         {isOverdue && (
-                            <span className="ml-2 text-red-600 font-semibold">
+                            <span className="ml-2 font-semibold text-red-600">
                                 (Overdue)
                             </span>
                         )}
@@ -157,7 +157,7 @@ export function TodoCard({ todo }: TodoCardProps) {
                             height={360}
                             loading="lazy"
                             decoding="async"
-                            className="max-w-full h-auto rounded-md max-h-48 object-cover"
+                            className="h-auto max-h-48 max-w-full rounded-md object-cover"
                         />
                     </div>
                 )}

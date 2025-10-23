@@ -3,7 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Upload, X } from "lucide-react";
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import type { ChangeEvent } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -65,113 +66,177 @@ interface TodoFormProps {
     user: AuthUser;
 }
 
-type FormData = z.infer<typeof insertTodoSchema>;
+type TodoFormValues = z.infer<typeof insertTodoSchema>;
+
+function normalizeDateInput(value: string | null | undefined) {
+    if (!value) return "";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toISOString().split("T")[0];
+}
+
+function createDefaultValues(
+    initialData: TodoFormProps["initialData"],
+    user: AuthUser,
+): TodoFormValues {
+    return {
+        title: initialData?.title ?? "",
+        description: initialData?.description ?? "",
+        categoryId: initialData?.categoryId ?? undefined,
+        status: initialData?.status ?? TodoStatus.PENDING,
+        priority: initialData?.priority ?? TodoPriority.MEDIUM,
+        imageUrl: initialData?.imageUrl ?? "",
+        imageAlt: initialData?.imageAlt ?? "",
+        completed: initialData?.completed ?? false,
+        dueDate: normalizeDateInput(initialData?.dueDate ?? null),
+        userId: user.id,
+    };
+}
+
+function appendField(formData: FormData, key: string, value: unknown) {
+    if (value === undefined || value === null || value === "") return;
+
+    if (key === "categoryId") {
+        if (value === "none") return;
+        formData.append(key, String(value));
+        return;
+    }
+
+    if (key === "completed" && typeof value === "boolean") {
+        formData.append(key, value ? "true" : "false");
+        return;
+    }
+
+    formData.append(key, String(value));
+}
+
+function buildTodoFormData(values: TodoFormValues, image: File | null) {
+    const formData = new FormData();
+    Object.entries(values).forEach(([key, value]) => {
+        appendField(formData, key, value);
+    });
+
+    if (image) {
+        formData.append("image", image);
+    }
+
+    return formData;
+}
+
+interface UseTodoFormStateOptions {
+    user: AuthUser;
+    initialData?: TodoFormProps["initialData"];
+    initialCategories: Category[];
+}
+
+function useTodoFormState({
+    user,
+    initialData,
+    initialCategories,
+}: UseTodoFormStateOptions) {
+    const defaultValues = useMemo(
+        () => createDefaultValues(initialData, user),
+        [initialData, user],
+    );
+
+    const form = useForm<TodoFormValues>({
+        resolver: zodResolver(insertTodoSchema),
+        defaultValues,
+    });
+
+    const [categories, setCategories] = useState<Category[]>(initialCategories);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(
+        initialData?.imageUrl ?? null,
+    );
+    const [isPending, startTransition] = useTransition();
+
+    const handleCategoryAdded = useCallback(
+        (newCategory: Category) => {
+            setCategories((prev) => [...prev, newCategory]);
+            form.setValue("categoryId", newCategory.id);
+        },
+        [form],
+    );
+
+    const updatePreview = useCallback((file: File | null) => {
+        if (!file) {
+            setImagePreview(null);
+            return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }, []);
+
+    const handleImageChange = useCallback(
+        (event: ChangeEvent<HTMLInputElement>) => {
+            const file = event.target.files?.[0] ?? null;
+            setImageFile(file);
+            updatePreview(file);
+        },
+        [updatePreview],
+    );
+
+    const removeImage = useCallback(() => {
+        setImageFile(null);
+        setImagePreview(null);
+        form.setValue("imageUrl", "");
+        form.setValue("imageAlt", "");
+    }, [form]);
+
+    const submit = useCallback(
+        (data: TodoFormValues) => {
+            startTransition(async () => {
+                try {
+                    const formData = buildTodoFormData(data, imageFile);
+
+                    if (initialData) {
+                        await updateTodoAction(initialData.id, formData);
+                    } else {
+                        await createTodoAction(formData);
+                    }
+                } catch (error) {
+                    console.error("Error saving todo:", error);
+                }
+            });
+        },
+        [imageFile, initialData],
+    );
+
+    return {
+        categories,
+        form,
+        handleCategoryAdded,
+        handleImageChange,
+        imagePreview,
+        isPending,
+        onSubmit: submit,
+        removeImage,
+    };
+}
 
 export function TodoForm({
     user,
     categories: initialCategories,
     initialData,
 }: TodoFormProps) {
-    const [isPending, startTransition] = useTransition();
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(
-        initialData?.imageUrl || null,
-    );
-    const [categories, setCategories] = useState<Category[]>(initialCategories);
-
-    const form = useForm<FormData>({
-        resolver: zodResolver(insertTodoSchema),
-        defaultValues: {
-            title: initialData?.title || "",
-            description: initialData?.description || "",
-            categoryId: initialData?.categoryId
-                ? initialData.categoryId
-                : undefined,
-            status: initialData?.status || TodoStatus.PENDING,
-            priority: initialData?.priority || TodoPriority.MEDIUM,
-            imageUrl: initialData?.imageUrl || "",
-            imageAlt: initialData?.imageAlt || "",
-            completed: initialData?.completed || false,
-            dueDate: initialData?.dueDate
-                ? new Date(initialData.dueDate).toISOString().split("T")[0]
-                : "",
-            userId: user.id,
-        },
+    const {
+        categories,
+        form,
+        handleCategoryAdded,
+        handleImageChange,
+        imagePreview,
+        isPending,
+        onSubmit,
+        removeImage,
+    } = useTodoFormState({
+        user,
+        initialData,
+        initialCategories,
     });
-
-    const handleCategoryAdded = (newCategory: Category) => {
-        setCategories((prev) => [...prev, newCategory]);
-        // Automatically select the newly created category
-        form.setValue("categoryId", newCategory.id);
-    };
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImageFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const removeImage = () => {
-        setImageFile(null);
-        setImagePreview(null);
-        form.setValue("imageUrl", "");
-        form.setValue("imageAlt", "");
-    };
-
-    const onSubmit = (data: FormData) => {
-        startTransition(async () => {
-            try {
-                const formData = new FormData();
-
-                // Add all form fields
-                Object.entries(data).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && value !== "") {
-                        if (key === "categoryId") {
-                            // Handle "none" value for categoryId
-                            if (value === "none") {
-                                // Don't append categoryId if "none" is selected
-                                return;
-                            }
-                            if (typeof value === "number") {
-                                formData.append(key, value.toString());
-                            } else if (
-                                typeof value === "string" &&
-                                value !== "none"
-                            ) {
-                                formData.append(key, value);
-                            }
-                        } else if (
-                            key === "completed" &&
-                            typeof value === "boolean"
-                        ) {
-                            formData.append(key, value.toString());
-                        } else {
-                            formData.append(key, value as string);
-                        }
-                    }
-                });
-
-                // Add image file if present
-                if (imageFile) {
-                    formData.append("image", imageFile);
-                }
-
-                if (initialData) {
-                    await updateTodoAction(initialData.id, formData);
-                } else {
-                    await createTodoAction(formData);
-                }
-            } catch (error) {
-                console.error("Error saving todo:", error);
-            }
-        });
-    };
 
     return (
         <Card>
@@ -224,7 +289,7 @@ export function TodoForm({
                             )}
                         />
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="categoryId"
@@ -263,7 +328,7 @@ export function TodoForm({
                                                         <div className="flex items-center">
                                                             {category.color && (
                                                                 <div
-                                                                    className="w-3 h-3 rounded-full mr-2"
+                                                                    className="mr-2 h-3 w-3 rounded-full"
                                                                     style={{
                                                                         backgroundColor:
                                                                             category.color,
@@ -274,7 +339,7 @@ export function TodoForm({
                                                         </div>
                                                     </SelectItem>
                                                 ))}
-                                                <div className="border-t pt-1 mt-1">
+                                                <div className="mt-1 border-t pt-1">
                                                     <AddCategory
                                                         onCategoryAdded={
                                                             handleCategoryAdded
@@ -307,7 +372,7 @@ export function TodoForm({
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="priority"
@@ -430,7 +495,7 @@ export function TodoForm({
                                                 alt="Preview"
                                                 width={400}
                                                 height={200}
-                                                className="max-w-full h-auto rounded-md max-h-48 object-cover"
+                                                className="h-auto max-h-48 max-w-full rounded-md object-cover"
                                             />
                                             <Button
                                                 type="button"
@@ -443,7 +508,7 @@ export function TodoForm({
                                             </Button>
                                         </div>
                                     ) : (
-                                        <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                                        <div className="rounded-md border-2 border-gray-300 border-dashed p-6 text-center">
                                             <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                                             <div className="mt-2">
                                                 <label
@@ -460,7 +525,7 @@ export function TodoForm({
                                                     onChange={handleImageChange}
                                                 />
                                             </div>
-                                            <p className="text-xs text-muted-foreground mt-1">
+                                            <p className="mt-1 text-muted-foreground text-xs">
                                                 PNG, JPG up to 5MB
                                             </p>
                                         </div>
