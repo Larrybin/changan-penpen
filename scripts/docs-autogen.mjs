@@ -18,6 +18,19 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
+const LOG_PREFIX = "[docs-autogen]";
+const VERBOSE = process.env.DOCS_AUTOGEN_VERBOSE === "1";
+
+const logInfo = (message, ...rest) =>
+    console.info(`${LOG_PREFIX} ${message}`, ...rest);
+const logWarn = (message, ...rest) =>
+    console.warn(`${LOG_PREFIX} ${message}`, ...rest);
+const logDebug = (message, ...rest) => {
+    if (VERBOSE) console.info(`${LOG_PREFIX} [debug] ${message}`, ...rest);
+};
+
+const describeError = (error) =>
+    error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 
 function getChangedFiles() {
     try {
@@ -28,7 +41,9 @@ function getChangedFiles() {
         );
         const a = (r.stdout || "").split(/[\r\n]+/).filter(Boolean);
         if (a.length) return a;
-    } catch {}
+    } catch (error) {
+        logDebug("git diff --cached failed", describeError(error));
+    }
     try {
         const base = process.env.GITHUB_BASE_REF;
         if (base) {
@@ -36,7 +51,12 @@ function getChangedFiles() {
                 spawnSync("git", ["fetch", "origin", base, "--depth=1"], {
                     stdio: "ignore",
                 });
-            } catch {}
+            } catch (error) {
+                logDebug(
+                    `git fetch origin ${base} failed`,
+                    describeError(error),
+                );
+            }
             const r = spawnSync(
                 "git",
                 ["diff", "--name-only", `origin/${base}...HEAD`],
@@ -45,14 +65,18 @@ function getChangedFiles() {
             const a = (r.stdout || "").split(/[\r\n]+/).filter(Boolean);
             if (a.length) return a;
         }
-    } catch {}
+    } catch (error) {
+        logDebug("git diff vs base branch failed", describeError(error));
+    }
     try {
         const r = spawnSync("git", ["diff", "--name-only", "HEAD~1"], {
             encoding: "utf8",
         });
         const a = (r.stdout || "").split(/[\r\n]+/).filter(Boolean);
         if (a.length) return a;
-    } catch {}
+    } catch (error) {
+        logDebug("git diff HEAD~1 failed", describeError(error));
+    }
     return [];
 }
 
@@ -91,70 +115,143 @@ function replaceAnchored(text, key, body) {
     return text.replace(re, block);
 }
 
+const bindingExtractors = [
+    {
+        key: "d1_databases",
+        map: (entry) => ({
+            type: "D1",
+            name: entry?.binding,
+            database_id: entry?.database_id,
+        }),
+    },
+    {
+        key: "r2_buckets",
+        map: (entry) => ({
+            type: "R2",
+            name: entry?.binding,
+            bucket_name: entry?.bucket_name,
+        }),
+    },
+    {
+        key: "kv_namespaces",
+        map: (entry) => ({ type: "KV", name: entry?.binding, id: entry?.id }),
+    },
+    {
+        key: ["queues", "producers"],
+        map: (entry) => ({
+            type: "QueueProducer",
+            name: entry?.binding,
+            queue: entry?.queue,
+        }),
+    },
+    {
+        key: ["queues", "consumers"],
+        map: (entry) => ({ type: "QueueConsumer", queue: entry?.queue }),
+    },
+];
+
+const singletonBindingExtractors = [
+    {
+        key: "ai",
+        map: (value) => ({
+            type: "AI",
+            name: typeof value === "string" ? value : "AI",
+        }),
+    },
+    {
+        key: "assets",
+        map: (value) => ({
+            type: "ASSETS",
+            name: value?.binding || "ASSETS",
+        }),
+    },
+];
+
+const normalizeArray = (maybeArray) =>
+    Array.isArray(maybeArray) ? maybeArray.filter(Boolean) : [];
+
+const deepGet = (obj, pathSegments) => {
+    if (!obj) return undefined;
+    return pathSegments.reduce(
+        (acc, segment) => (acc && segment in acc ? acc[segment] : undefined),
+        obj,
+    );
+};
+
+function parseWranglerConfig(filePath) {
+    if (!exists(filePath)) return null;
+    try {
+        return JSON.parse(stripJsonc(readUtf8(filePath)));
+    } catch (error) {
+        logWarn(
+            "unable to parse wrangler.toml; binding metadata will be limited",
+            describeError(error),
+        );
+        return null;
+    }
+}
+
+function collectBindingRecords(config) {
+    if (!config) return [];
+    const bindings = [];
+    for (const extractor of bindingExtractors) {
+        const target = Array.isArray(extractor.key)
+            ? deepGet(config, extractor.key)
+            : config?.[extractor.key];
+        for (const entry of normalizeArray(target)) {
+            bindings.push(extractor.map(entry));
+        }
+    }
+    for (const extractor of singletonBindingExtractors) {
+        const value = config?.[extractor.key];
+        if (value) bindings.push(extractor.map(value));
+    }
+    return bindings;
+}
+
+function collectWranglerVarKeys(config) {
+    if (!config?.vars) return [];
+    try {
+        return Object.keys(config.vars);
+    } catch (error) {
+        logWarn(
+            "unable to enumerate vars from wrangler config",
+            describeError(error),
+        );
+        return [];
+    }
+}
+
+function readDevVarKeys(filePath) {
+    if (!exists(filePath)) return [];
+    try {
+        return readUtf8(filePath)
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line && !line.startsWith("#"))
+            .map((line) => {
+                const eq = line.indexOf("=");
+                return eq > 0 ? line.slice(0, eq).trim() : line;
+            })
+            .filter(Boolean);
+    } catch (error) {
+        logWarn("unable to parse .dev.vars.example", describeError(error));
+        return [];
+    }
+}
+
+function uniqueSorted(values) {
+    return Array.from(new Set(values)).sort();
+}
+
 function gatherEnvBindings() {
-    const out = { bindings: [], vars: [] };
-    const wrangler = path.join(root, "wrangler.toml");
-    if (exists(wrangler)) {
-        try {
-            const json = JSON.parse(stripJsonc(readUtf8(wrangler)));
-            const b = [];
-            const a = json?.vars ? Object.keys(json.vars) : [];
-            if (Array.isArray(json?.d1_databases))
-                for (const x of json.d1_databases)
-                    b.push({
-                        type: "D1",
-                        name: x?.binding,
-                        database_id: x?.database_id,
-                    });
-            if (Array.isArray(json?.r2_buckets))
-                for (const x of json.r2_buckets)
-                    b.push({
-                        type: "R2",
-                        name: x?.binding,
-                        bucket_name: x?.bucket_name,
-                    });
-            if (Array.isArray(json?.kv_namespaces))
-                for (const x of json.kv_namespaces)
-                    b.push({ type: "KV", name: x?.binding, id: x?.id });
-            if (Array.isArray(json?.queues?.producers))
-                for (const x of json.queues.producers)
-                    b.push({
-                        type: "QueueProducer",
-                        name: x?.binding,
-                        queue: x?.queue,
-                    });
-            if (Array.isArray(json?.queues?.consumers))
-                for (const x of json.queues.consumers)
-                    b.push({ type: "QueueConsumer", queue: x?.queue });
-            if (json?.ai)
-                b.push({
-                    type: "AI",
-                    name: typeof json.ai === "string" ? json.ai : "AI",
-                });
-            if (json?.assets)
-                b.push({
-                    type: "ASSETS",
-                    name: json.assets?.binding || "ASSETS",
-                });
-            out.bindings = b;
-            out.vars = a;
-        } catch {}
-    }
-    const devvars = path.join(root, ".dev.vars.example");
-    if (exists(devvars)) {
-        try {
-            const lines = readUtf8(devvars).split(/\r?\n/);
-            for (const l of lines) {
-                const s = l.trim();
-                if (!s || s.startsWith("#")) continue;
-                const eq = s.indexOf("=");
-                const key = eq > 0 ? s.slice(0, eq).trim() : s;
-                if (key && !out.vars.includes(key)) out.vars.push(key);
-            }
-        } catch {}
-    }
-    out.vars.sort();
-    return out;
+    const wranglerPath = path.join(root, "wrangler.toml");
+    const wranglerConfig = parseWranglerConfig(wranglerPath);
+    const bindings = collectBindingRecords(wranglerConfig);
+    const wranglerVars = collectWranglerVarKeys(wranglerConfig);
+    const devVarPath = path.join(root, ".dev.vars.example");
+    const devVarKeys = readDevVarKeys(devVarPath);
+    return { bindings, vars: uniqueSorted([...wranglerVars, ...devVarKeys]) };
 }
 
 function renderEnvSection() {
@@ -185,33 +282,57 @@ function renderEnvSection() {
     return lines.join("\n");
 }
 
+const WORKFLOW_FILE_PATTERN = /\.ya?ml$/i;
+
+const extractWorkflowTriggers = (text) => {
+    const triggers = new Set();
+    const onIdx = text.indexOf("\non:");
+    if (onIdx < 0) return [];
+    const lines = text.slice(onIdx + 1).split(/\r?\n/);
+    for (const line of lines) {
+        const match = line.match(/^\s{2,}([a-zA-Z_]+):/);
+        if (match) triggers.add(match[1]);
+        else if (/^\S/.test(line)) break;
+    }
+    return Array.from(triggers);
+};
+
+const deriveWorkflowName = (text, fallback) => {
+    const match = text.match(/^\s*name:\s*(.+)$/m);
+    return (match?.[1] || fallback).trim();
+};
+
+const parseWorkflowFile = (filePath) => {
+    try {
+        const contents = readUtf8(filePath);
+        return {
+            file: rel(filePath),
+            name: deriveWorkflowName(contents, path.basename(filePath)),
+            triggers: extractWorkflowTriggers(contents),
+        };
+    } catch (error) {
+        logWarn(
+            `unable to read workflow definition at ${rel(filePath)}`,
+            describeError(error),
+        );
+        return null;
+    }
+};
+
 function listWorkflows() {
     const dir = path.join(root, ".github", "workflows");
     if (!exists(dir)) return [];
-    const out = [];
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (!e.isFile() || !/\.yml$|\.yaml$/i.test(e.name)) continue;
-        const p = path.join(dir, e.name);
-        const t = readUtf8(p);
-        const name = (t.match(/^\s*name:\s*(.+)$/m)?.[1] || e.name).trim();
-        // extract triggers under top-level 'on:'
-        const triggers = [];
-        const onIdx = t.indexOf("\non:");
-        if (onIdx >= 0) {
-            const lines = t.slice(onIdx + 1).split(/\r?\n/);
-            for (const line of lines) {
-                const m = line.match(/^\s{2,}([a-zA-Z_]+):/);
-                if (m) triggers.push(m[1]);
-                else if (/^\S/.test(line)) break;
-            }
-        }
-        out.push({
-            file: rel(p),
-            name,
-            triggers: Array.from(new Set(triggers)),
-        });
+    const entries = fs
+        .readdirSync(dir, { withFileTypes: true })
+        .filter(
+            (entry) => entry.isFile() && WORKFLOW_FILE_PATTERN.test(entry.name),
+        );
+    const workflows = [];
+    for (const entry of entries) {
+        const parsed = parseWorkflowFile(path.join(dir, entry.name));
+        if (parsed) workflows.push(parsed);
     }
-    return out.sort((a, b) => a.name.localeCompare(b.name));
+    return workflows.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function renderWorkflowTable() {
@@ -315,133 +436,152 @@ function renderReadmeAutomation() {
     return lines.join("\n");
 }
 
-function renderReadmeStructure() {
-    // Prefer parsing AGENTS.md > Project Structure & Module Organization
+const AGENTS_STRUCTURE_SECTION =
+    /^##\s+Project Structure\s*&\s*Module Organization\s*$/im;
+
+const parseStructureFromAgents = () => {
+    const agents = path.join(root, "AGENTS.md");
+    if (!exists(agents)) return null;
     try {
-        const agents = path.join(root, "AGENTS.md");
-        if (exists(agents)) {
-            const t = readUtf8(agents);
-            const secRe =
-                /^##\s+Project Structure\s*&\s*Module Organization\s*$/im;
-            const m = t.match(secRe);
-            if (m) {
-                const idx = m.index || 0;
-                const tail = t.slice(idx);
-                const linesMd = tail.split(/\r?\n/);
-                const out = [];
-                let started = false;
-                for (const ln of linesMd) {
-                    if (!started) {
-                        if (/^\s*-\s+/.test(ln)) started = true;
-                        else continue;
-                    }
-                    if (/^\s*##\s+/.test(ln)) break; // next section
-                    if (/^\s*-\s+/.test(ln)) {
-                        // Keep original bullet text
-                        out.push(ln.replace(/^\s*-\s+/, "- "));
-                    } else if (started && ln.trim().length) {
-                        // Continuation lines – append
-                        out.push(ln);
-                    }
-                }
-                if (out.length) {
-                    return ["### Project Structure (auto)", ...out].join("\n");
-                }
+        const text = readUtf8(agents);
+        const match = text.match(AGENTS_STRUCTURE_SECTION);
+        if (!match) return null;
+        const startIndex = match.index || 0;
+        const lines = text.slice(startIndex).split(/\r?\n/);
+        const bullets = [];
+        let started = false;
+        for (const line of lines) {
+            if (!started) {
+                if (/^\s*-\s+/.test(line)) started = true;
+                else continue;
             }
+            if (/^\s*##\s+/.test(line)) break;
+            if (/^\s*-\s+/.test(line))
+                bullets.push(line.replace(/^\s*-\s+/, "- "));
+            else if (line.trim()) bullets.push(line);
         }
-    } catch {}
-    // Fallback to probing directories
-    const paths = [
-        {
-            p: "src/app",
-            note: "Next.js App Router (pages/api routes, layouts)",
-        },
-        {
-            p: "src/modules",
-            note: "Domain modules (actions/components/hooks/models/schemas/utils)",
-        },
-        { p: "src/components", note: "Reusable UI components" },
-        { p: "src/components/ui", note: "Design system primitives" },
-        { p: "src/db", note: "Data access" },
-        { p: "src/drizzle", note: "D1 migrations" },
-        { p: "src/lib", note: "Shared helpers" },
-        { p: "public", note: "Static assets" },
-        { p: "docs", note: "Project documentation" },
-    ];
-    const outLines = ["### Project Structure (auto)"];
-    for (const it of paths) {
-        const abs = path.join(root, it.p);
-        if (exists(abs)) outLines.push(`- \`${it.p}\`: ${it.note}`);
+        return bullets.length ? bullets : null;
+    } catch (error) {
+        logDebug(
+            "failed to parse AGENTS.md project structure",
+            describeError(error),
+        );
+        return null;
     }
+};
+
+const fallbackStructurePaths = [
+    {
+        p: "src/app",
+        note: "Next.js App Router (pages/api routes, layouts)",
+    },
+    {
+        p: "src/modules",
+        note: "Domain modules (actions/components/hooks/models/schemas/utils)",
+    },
+    { p: "src/components", note: "Reusable UI components" },
+    { p: "src/components/ui", note: "Design system primitives" },
+    { p: "src/db", note: "Data access" },
+    { p: "src/drizzle", note: "D1 migrations" },
+    { p: "src/lib", note: "Shared helpers" },
+    { p: "public", note: "Static assets" },
+    { p: "docs", note: "Project documentation" },
+];
+
+const summarizeModulesDirectory = () => {
     const modsDir = path.join(root, "src", "modules");
-    if (exists(modsDir)) {
-        try {
-            const mods = fs
-                .readdirSync(modsDir, { withFileTypes: true })
-                .filter((d) => d.isDirectory())
-                .map((d) => d.name)
-                .sort();
-            const show = mods.slice(0, 10).join(", ");
-            if (mods.length)
-                outLines.push(
-                    `- Modules: ${show}${mods.length > 10 ? ` …(+${mods.length - 10})` : ""}`,
-                );
-        } catch {}
+    if (!exists(modsDir)) return null;
+    try {
+        const modules = fs
+            .readdirSync(modsDir, { withFileTypes: true })
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => entry.name)
+            .sort();
+        if (!modules.length) return null;
+        const shown = modules.slice(0, 10).join(", ");
+        const overflow =
+            modules.length > 10 ? ` …(+${modules.length - 10})` : "";
+        return `- Modules: ${shown}${overflow}`;
+    } catch (error) {
+        logWarn(
+            "unable to enumerate src/modules for README snapshot",
+            describeError(error),
+        );
+        return null;
     }
-    return outLines.join("\n");
+};
+
+const buildFallbackStructureLines = () => {
+    const lines = [];
+    for (const { p, note } of fallbackStructurePaths) {
+        if (exists(path.join(root, p))) lines.push(`- \`${p}\`: ${note}`);
+    }
+    const moduleSummary = summarizeModulesDirectory();
+    if (moduleSummary) lines.push(moduleSummary);
+    return lines;
+};
+
+function renderReadmeStructure() {
+    const fromAgents = parseStructureFromAgents();
+    const bodyLines = fromAgents ?? buildFallbackStructureLines();
+    return ["### Project Structure (auto)", ...bodyLines].join("\n");
 }
+
+const collectListAfterLabel = (lines, label, pattern) => {
+    const target = label.toLowerCase();
+    const collected = [];
+    let scanning = false;
+    for (const line of lines) {
+        if (!scanning) {
+            if (line.toLowerCase().includes(target)) scanning = true;
+            continue;
+        }
+        if (pattern.test(line)) collected.push(line.trim());
+        else if (collected.length && line.trim() === "") break;
+    }
+    return collected;
+};
+
+const parseQualityDoc = () => {
+    const docPath = path.join(root, "docs", "quality-gates.md");
+    if (!exists(docPath)) return { order: [], toggles: [] };
+    try {
+        const text = readUtf8(docPath);
+        const anchorIndex = text.toLowerCase().indexOf("local push self-check");
+        if (anchorIndex < 0) return { order: [], toggles: [] };
+        const sectionLines = text.slice(anchorIndex).split(/\r?\n/);
+        return {
+            order: collectListAfterLabel(
+                sectionLines,
+                "execution order:",
+                /^\s*\d+\.\s+/,
+            ).slice(0, 8),
+            toggles: collectListAfterLabel(
+                sectionLines,
+                "environment toggles:",
+                /^\s*-\s+`/,
+            ).slice(0, 10),
+        };
+    } catch (error) {
+        logDebug(
+            "failed to derive quality gates from docs/quality-gates.md",
+            describeError(error),
+        );
+        return { order: [], toggles: [] };
+    }
+};
 
 function renderReadmeQuality() {
     const lines = ["### Quality Gates (auto)"];
-    // Try to extract execution order and toggles from docs/quality-gates.md
-    try {
-        const q = path.join(root, "docs", "quality-gates.md");
-        if (exists(q)) {
-            const t = readUtf8(q);
-            const idxLocal = t.toLowerCase().indexOf("local push self-check");
-            if (idxLocal >= 0) {
-                const tail = t.slice(idxLocal);
-                const idxExec = tail.toLowerCase().indexOf("execution order:");
-                if (idxExec >= 0) {
-                    const tail2 = tail.slice(
-                        idxExec + "execution order:".length,
-                    );
-                    const linesRaw = tail2.split(/\r?\n/);
-                    const bullets = [];
-                    for (const ln of linesRaw) {
-                        if (/^\s*\d+\.\s+/.test(ln)) bullets.push(ln.trim());
-                        else if (bullets.length && ln.trim() === "") break;
-                    }
-                    if (bullets.length) {
-                        lines.push("- Local push order:");
-                        for (const b of bullets.slice(0, 8))
-                            lines.push(`  ${b}`);
-                    }
-                }
-                const idxTog = tail
-                    .toLowerCase()
-                    .indexOf("environment toggles:");
-                if (idxTog >= 0) {
-                    const tail3 = tail.slice(
-                        idxTog + "environment toggles:".length,
-                    );
-                    const linesRaw = tail3.split(/\r?\n/);
-                    const toggles = [];
-                    for (const ln of linesRaw) {
-                        if (/^\s*-\s+`/.test(ln)) toggles.push(ln.trim());
-                        else if (toggles.length && ln.trim() === "") break;
-                    }
-                    if (toggles.length) {
-                        lines.push("- Env toggles:");
-                        for (const l of toggles.slice(0, 10))
-                            lines.push(`  ${l}`);
-                    }
-                }
-            }
-        }
-    } catch {}
-    // Policy notes
-    // Removed Semgrep note; SonarCloud remains the primary CI quality scanner.
+    const { order, toggles } = parseQualityDoc();
+    if (order.length) {
+        lines.push("- Local push order:");
+        for (const entry of order) lines.push(`  ${entry}`);
+    }
+    if (toggles.length) {
+        lines.push("- Env toggles:");
+        for (const entry of toggles) lines.push(`  ${entry}`);
+    }
     lines.push(
         "- No extra commits: changes are amended into the last commit (ALLOW_FORCE_PUSH=1 for non-fast-forward).",
     );
@@ -512,100 +652,109 @@ function applyToFile(pRel, sections) {
     return changed ? text : null;
 }
 
+const shouldRunTask = (scopeMode, changedFiles, watchedPaths) => {
+    if (scopeMode === "all") return true;
+    if (!watchedPaths || watchedPaths.length === 0) return false;
+    return watchedPaths.some((watch) =>
+        changedFiles.some((file) => file.startsWith(watch)),
+    );
+};
+
+const runAutogenTask = (task, context) => {
+    if (!shouldRunTask(context.scope, context.changedFiles, task.watch))
+        return null;
+    const sections = task.buildSections();
+    const updated = applyToFile(task.output, sections);
+    if (updated == null) return null;
+    if (!context.dryRun) writeUtf8(path.join(root, task.output), updated);
+    return task.output;
+};
+
 function main() {
     if (process.env.DOCS_AUTOGEN === "0") {
-        console.log("[docs-autogen] Skipped (DOCS_AUTOGEN=0)");
+        logInfo("Skipped (DOCS_AUTOGEN=0)");
         process.exit(0);
     }
-    const scope = (process.env.DOCS_AUTOGEN_SCOPE || "changed").toLowerCase();
-    const dry = process.env.DOCS_AUTOGEN_DRY === "1";
-    const changed = new Set(getChangedFiles());
-
-    const shouldRun = (paths) => {
-        if (scope === "all") return true;
-        return paths.some((p) =>
-            Array.from(changed).some((c) => c.startsWith(p)),
-        );
+    const context = {
+        scope: (process.env.DOCS_AUTOGEN_SCOPE || "changed").toLowerCase(),
+        dryRun: process.env.DOCS_AUTOGEN_DRY === "1",
+        changedFiles: getChangedFiles(),
     };
+    const tasks = [
+        {
+            watch: ["wrangler.toml", ".dev.vars.example"],
+            output: "docs/env-and-secrets.md",
+            buildSections: () => [["ENV_BINDINGS", renderEnvSection()]],
+        },
+        {
+            watch: [".github/workflows/"],
+            output: "docs/ci-cd.md",
+            buildSections: () => [["WORKFLOWS_TABLE", renderWorkflowTable()]],
+        },
+        {
+            watch: ["package.json"],
+            output: "docs/local-dev.md",
+            buildSections: () => [["SCRIPTS_TABLE_AUTO", renderScriptsTable()]],
+        },
+        {
+            watch: ["src/app/"],
+            output: "docs/api-index.md",
+            buildSections: () => [["API_INDEX", renderApiIndex()]],
+        },
+        {
+            watch: [
+                "package.json",
+                ".github/workflows/",
+                "scripts/",
+                "src/",
+                "docs/quality-gates.md",
+                "AGENTS.md",
+            ],
+            output: "README.md",
+            buildSections: () => [
+                ["README_AUTOMATION", renderReadmeAutomation()],
+                ["README_STRUCTURE", renderReadmeStructure()],
+                ["README_QUALITY_GATES", renderReadmeQuality()],
+            ],
+        },
+    ];
 
     const results = [];
-    // ENV & Bindings
-    if (shouldRun(["wrangler.toml", ".dev.vars.example"])) {
-        const body = renderEnvSection();
-        const updated = applyToFile("docs/env-and-secrets.md", [
-            ["ENV_BINDINGS", body],
-        ]);
-        if (updated != null && !dry)
-            writeUtf8(path.join(root, "docs/env-and-secrets.md"), updated);
-        if (updated != null) results.push("docs/env-and-secrets.md");
-    }
-
-    // Workflows overview
-    if (shouldRun([".github/workflows/"])) {
-        const body = renderWorkflowTable();
-        const updated = applyToFile("docs/ci-cd.md", [
-            ["WORKFLOWS_TABLE", body],
-        ]);
-        if (updated != null && !dry)
-            writeUtf8(path.join(root, "docs/ci-cd.md"), updated);
-        if (updated != null) results.push("docs/ci-cd.md");
-    }
-
-    // Scripts table
-    if (shouldRun(["package.json"])) {
-        const body = renderScriptsTable();
-        const updated = applyToFile("docs/local-dev.md", [
-            ["SCRIPTS_TABLE_AUTO", body],
-        ]);
-        if (updated != null && !dry)
-            writeUtf8(path.join(root, "docs/local-dev.md"), updated);
-        if (updated != null) results.push("docs/local-dev.md");
-    }
-
-    // API index
-    if (shouldRun(["src/app/"])) {
-        const body = renderApiIndex();
-        const updated = applyToFile("docs/api-index.md", [["API_INDEX", body]]);
-        if (updated != null && !dry)
-            writeUtf8(path.join(root, "docs/api-index.md"), updated);
-        if (updated != null) results.push("docs/api-index.md");
-    }
-
-    // README snapshots
-    if (
-        shouldRun([
-            "package.json",
-            ".github/workflows/",
-            "scripts/",
-            "src/",
-            "docs/quality-gates.md",
-            "AGENTS.md",
-        ])
-    ) {
-        const sections = [
-            ["README_AUTOMATION", renderReadmeAutomation()],
-            ["README_STRUCTURE", renderReadmeStructure()],
-            ["README_QUALITY_GATES", renderReadmeQuality()],
-        ];
-        const updated = applyToFile("README.md", sections);
-        if (updated != null && !dry)
-            writeUtf8(path.join(root, "README.md"), updated);
-        if (updated != null) results.push("README.md");
+    for (const task of tasks) {
+        const output = runAutogenTask(task, context);
+        if (output) results.push(output);
     }
 
     const logDir = path.join(root, "logs");
     try {
         fs.mkdirSync(logDir, { recursive: true });
-    } catch {}
+    } catch (error) {
+        logWarn("unable to create logs directory", describeError(error));
+    }
     const outFile = path.join(logDir, "docs-autogen-changed.json");
     try {
         writeUtf8(
             outFile,
-            JSON.stringify({ scope, dryRun: dry, changed: results }, null, 2),
+            JSON.stringify(
+                {
+                    scope: context.scope,
+                    dryRun: context.dryRun,
+                    changed: results,
+                },
+                null,
+                2,
+            ),
         );
-    } catch {}
-    console.log(
-        `[docs-autogen] Updated ${results.length} file(s).${dry ? " (dry-run)" : ""}`,
+    } catch (error) {
+        logWarn(
+            "unable to persist docs-autogen change summary",
+            describeError(error),
+        );
+    }
+    logInfo(
+        `Updated ${results.length} file(s).${
+            context.dryRun ? " (dry-run)" : ""
+        }`,
     );
 }
 
