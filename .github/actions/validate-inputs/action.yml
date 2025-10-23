@@ -1,0 +1,93 @@
+name: 'Validate Production Inputs'
+description: 'Validate production environment variables and URLs for security'
+inputs:
+  app-url:
+    description: 'Production application URL'
+    required: true
+  creem-api-url:
+    description: 'CREEM API URL'
+    required: false
+  allow-localhost:
+    description: 'Allow localhost URLs (for development)'
+    required: false
+    default: 'false'
+  exit-on-error:
+    description: 'Exit on validation error'
+    required: false
+    default: 'true'
+outputs:
+  app-url:
+    description: 'Validated app URL'
+    value: ${{ inputs.app-url }}
+  creem-api-url:
+    description: 'Validated CREEM API URL'
+    value: ${{ inputs.creem-api-url }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate Production Inputs
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Configuration
+        ALLOW_LOCALHOST="${{ inputs.allow-localhost }}"
+        EXIT_ON_ERROR="${{ inputs.exit-on-error }}"
+
+        # Helper function to validate URLs
+        validate_url() {
+          local url="$1"
+          local name="$2"
+
+          if [[ -z "$url" ]]; then
+            if [[ "$EXIT_ON_ERROR" == "true" ]]; then
+              echo "::error::$name cannot be empty"
+              exit 1
+            else
+              echo "::warning::$name cannot be empty"
+              return 1
+            fi
+          fi
+
+          # Basic URL format validation
+          if [[ ! "$url" =~ ^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,} ]]; then
+            if [[ "$ALLOW_LOCALHOST" == "true" && "$url" =~ ^(https?://)?(localhost|127\.0\.0\.1|0\.0\.0\.0) ]]; then
+              echo "::warning::$name points to localhost (allowed for development)"
+              return 0
+            fi
+
+            if [[ "$EXIT_ON_ERROR" == "true" ]]; then
+              echo "::error::$name must be a valid HTTP/HTTPS URL: $url"
+              exit 1
+            else
+              echo "::warning::$name must be a valid HTTP/HTTPS URL: $url"
+              return 1
+            fi
+          fi
+
+          # Security checks for production
+          if [[ "$ALLOW_LOCALHOST" != "true" ]]; then
+            if echo "$url" | grep -qE 'localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.|10\.|172\.1[6-9]\.|172\.2[0-9]\.|172\.3[0-1]\.'; then
+              echo "::error::$name must not point to internal/private network for production: $url"
+              exit 1
+            fi
+
+            # Check for HTTP in production
+            if [[ "$url" =~ ^http:// ]]; then
+              echo "::warning::$name uses HTTP (not HTTPS), which is insecure for production: $url"
+            fi
+          fi
+
+          echo "✓ $name validation passed: $url"
+          return 0
+        }
+
+        # Validate APP URL (required)
+        validate_url "${{ inputs.app-url }}" "NEXT_PUBLIC_APP_URL"
+
+        # Validate CREEM API URL (optional)
+        if [[ -n "${{ inputs.creem-api-url }}" ]]; then
+          validate_url "${{ inputs.creem-api-url }}" "CREEM_API_URL"
+        fi
+
+        echo "✅ All input validations passed"

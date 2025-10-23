@@ -1,0 +1,134 @@
+name: Performance Monitoring
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  pull_request:
+    types: [opened, synchronize]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  bundle-analysis:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 20
+          pnpm-version: 10
+          cache-key-suffix: "-performance"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Analyze bundle size
+        run: |
+          set -euo pipefail
+          echo "::group::Bundle Analysis"
+
+          # Analyze the bundle
+          ANALYZE=true pnpm build
+
+          # Check if build output exists
+          if [[ -d ".next" ]]; then
+            echo "✅ Build completed successfully"
+
+            # Find build artifacts
+            if [[ -f ".next/static/chunks/pages/_app.js" ]]; then
+              app_size=$(stat -c%s ".next/static/chunks/pages/_app.js" 2>/dev/null || echo "0")
+              echo "📦 Main app bundle: $(( app_size / 1024 )) KB"
+            fi
+
+            # Analyze total .next size
+            if command -v du >/dev/null 2>&1; then
+              total_size=$(du -sh .next 2>/dev/null | cut -f1 || echo "0")
+              echo "📊 Total build size: $total_size"
+            fi
+          else
+            echo "::error::Build failed or .next directory not found"
+            exit 1
+          fi
+
+          echo "::endgroup::"
+
+      - name: Performance threshold check
+        run: |
+          set -euo pipefail
+
+          # Define thresholds (in KB)
+          MAX_APP_BUNDLE=500  # 500KB for main app bundle
+          MAX_TOTAL_SIZE=10000 # 10MB for total build
+
+          if [[ -f ".next/static/chunks/pages/_app.js" ]]; then
+            app_size=$(stat -c%s ".next/static/chunks/pages/_app.js" 2>/dev/null || echo "0")
+            app_size_kb=$(( app_size / 1024 ))
+
+            if [[ $app_size_kb -gt $MAX_APP_BUNDLE ]]; then
+              echo "::warning::App bundle size ($app_size_kb KB) exceeds threshold ($MAX_APP_BUNDLE KB)"
+            else
+              echo "✅ App bundle size ($app_size_kb KB) within threshold"
+            fi
+          fi
+
+      - name: PR Comment on Performance
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const fs = require('fs');
+
+            let comment = '## 📊 Performance Analysis\n\n';
+
+            // Bundle size information
+            if (fs.existsSync('.next/static/chunks/pages/_app.js')) {
+              const stats = fs.statSync('.next/static/chunks/pages/_app.js');
+              const sizeKB = Math.round(stats.size / 1024);
+              comment += `📦 **Main App Bundle**: ${sizeKB} KB\n\n`;
+            }
+
+            comment += 'This analysis helps track bundle size changes and performance impact.\n\n';
+            comment += '📝 **Recommendations**:\n';
+            comment += '- Keep main bundles under 500KB\n';
+            comment += '- Use dynamic imports for large libraries\n';
+            comment += '- Optimize images and assets\n';
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const existingComment = comments.find(comment =>
+              comment.body.includes('Performance Analysis') &&
+              comment.user.type === 'Bot'
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment,
+              });
+            }
