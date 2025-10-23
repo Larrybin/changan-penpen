@@ -34,10 +34,73 @@
             "recommended": true,
             "a11y": {
                 "noSvgWithoutTitle": "off",
-                "useValidAnchor": "off"
+                "useValidAnchor": "off",
+                "useAltText": "warn",
+                "useAnchorContent": "warn",
+                "useKeyWithClickEvents": "warn",
+                "useKeyWithMouseEvents": "warn",
+                "useValidLang": "warn"
             },
             "correctness": {
-                "useUniqueElementIds": "off"
+                "useUniqueElementIds": "off",
+                "noUnusedVariables": "error",
+                "noUnusedImports": "error",
+                "useExhaustiveDependencies": "warn",
+                "noUndeclaredVariables": "error",
+                "noUnreachable": "error",
+                "noUnreachableSuper": "error"
+            },
+            "security": {
+                "noDangerouslySetInnerHtml": "warn",
+                "noGlobalEval": "error",
+                "noGlobalObjectCalls": "error"
+            },
+            "style": {
+                "noNegationElse": "error",
+                "noNonNullAssertion": "warn",
+                "useTemplate": "error",
+                "useShorthandFunctionType": "error"
+            },
+            "suspicious": {
+                "noArrayIndexKey": "warn",
+                "noAssignInExpressions": "error",
+                "noConsoleLog": "warn",
+                "noDebugger": "error",
+                "noEmptyBlockStatements": "warn",
+                "noExplicitAny": "warn",
+                "noExtraBooleanCast": "error",
+                "noGlobalAssign": "error",
+                "noMisleadingCharacterClass": "error",
+                "noUnsafeNegation": "error"
+            },
+            "complexity": {
+                "noExcessiveCognitiveComplexity": "warn",
+                "noForEach": "off",
+                "noStaticOnlyClass": "error",
+                "noThisInStatic": "error",
+                "noUselessConstructor": "error",
+                "noUselessLoneBlockStatements": "error",
+                "noUselessRename": "error",
+                "noWith": "error",
+                "useArrowFunction": "warn",
+                "useLiteralKeys": "error"
+            },
+            "performance": {
+                "noAccumulatingSpread": "warn",
+                "noDelete": "error"
+            },
+            "nursery": {
+                "useSortedClasses": "error",
+                "noHeadElement": "warn",
+                "noRestrictedImports": {
+                    "level": "warn",
+                    "options": {
+                        "paths": {
+                            "lodash": "Use native JavaScript methods or smaller utilities",
+                            "moment": "Use date-fns or native Date API for better performance"
+                        }
+                    }
+                }
             }
         }
     },

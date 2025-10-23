@@ -55,7 +55,16 @@
         "optimize:docs": "node scripts/optimize-docs.mjs",
         "optimize:docs:check": "node scripts/optimize-docs.mjs check",
         "optimize:docs:fix": "node scripts/optimize-docs.mjs fix",
-        "optimize:docs:report": "node scripts/optimize-docs.mjs report"
+        "optimize:docs:report": "node scripts/optimize-docs.mjs report",
+        "quality:check": "pnpm exec tsx scripts/code-quality-check.ts",
+        "quality:fix": "pnpm exec biome check . --write --unsafe && pnpm exec biome format . --write",
+        "quality:strict": "pnpm exec tsc --project tsconfig.strict.json --noEmit",
+        "pre-commit:quality": "pnpm run quality:check && pnpm run quality:strict",
+        "performance:validate": "pnpm exec tsx scripts/performance-validation.ts",
+        "performance:lighthouse": "ANALYZE=true pnpm exec next build",
+        "seo:audit": "pnpm exec tsx scripts/seo-audit.ts",
+        "seo:validate": "pnpm run seo:audit && pnpm run performance:validate",
+        "pre-deploy:check": "pnpm run quality:check && pnpm run performance:validate && pnpm run seo:audit"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.1.0",
