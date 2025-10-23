@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -13,104 +12,27 @@ import {
     CREDITS_TIERS,
     SUBSCRIPTION_TIERS,
 } from "@/modules/creem/config/subscriptions";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
-}
-
-function readUrl(
-    payload: unknown,
-    key: "checkoutUrl" | "portalUrl",
-): string | undefined {
-    if (!isRecord(payload)) {
-        return undefined;
-    }
-    const data = payload.data;
-    if (!isRecord(data)) {
-        return undefined;
-    }
-    const url = data[key];
-    return typeof url === "string" ? url : undefined;
-}
-
-function readErrorMessage(payload: unknown): string | undefined {
-    if (typeof payload === "string") {
-        return payload;
-    }
-    if (!isRecord(payload)) {
-        return undefined;
-    }
-    const error = payload.error;
-    if (typeof error === "string") {
-        return error;
-    }
-    if (isRecord(error) && typeof error.message === "string") {
-        return error.message;
-    }
-    return undefined;
-}
+import { useBillingActions } from "@/modules/creem/hooks/use-billing-actions";
 
 export default function PricingGrid() {
-    const [loading, setLoading] = useState<string | null>(null);
-
-    async function startCheckout(
-        tierId: string,
-        productType: "subscription" | "credits",
-    ) {
-        try {
-            setLoading(`${tierId}-${productType}`);
-            const resp = await fetch("/api/v1/creem/create-checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tierId, productType }),
-            });
-            const payload: unknown = await resp.json();
-            const checkoutUrl = readUrl(payload, "checkoutUrl");
-            if (!resp.ok || !checkoutUrl) {
-                throw new Error(readErrorMessage(payload) || "创建结账失败");
-            }
-            window.location.href = checkoutUrl;
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : "结账错误";
-            alert(message);
-        } finally {
-            setLoading(null);
-        }
-    }
-
-    async function openCustomerPortal() {
-        try {
-            setLoading("portal");
-            const resp = await fetch("/api/v1/creem/customer-portal");
-            const payload: unknown = await resp.json();
-            if (!resp.ok) {
-                throw new Error(
-                    readErrorMessage(payload) || "获取账单门户失败",
-                );
-            }
-            const url = readUrl(payload, "portalUrl");
-            if (!url) throw new Error("门户链接缺失");
-            window.location.href = url;
-        } catch (error: unknown) {
-            const message =
-                error instanceof Error ? error.message : "打开门户失败";
-            alert(message);
-        } finally {
-            setLoading(null);
-        }
-    }
+    const { startCheckout, openCustomerPortal, isLoading, isBusy } =
+        useBillingActions();
 
     return (
         <div className="space-y-10">
             <div className="flex justify-center">
                 <Button
                     variant="secondary"
-                    onClick={openCustomerPortal}
-                    disabled={loading !== null}
+                    onClick={() =>
+                        openCustomerPortal({
+                            loadingKey: "portal",
+                            friendlyErrorMessage:
+                                "获取账单门户失败，请稍后再试。",
+                        })
+                    }
+                    disabled={isBusy}
                 >
-                    {loading === "portal"
-                        ? "打开中..."
-                        : "管理订阅（账单门户）"}
+                    {isLoading("portal") ? "打开中..." : "管理订阅（账单门户）"}
                 </Button>
             </div>
 
@@ -155,12 +77,20 @@ export default function PricingGrid() {
                                 </ul>
                                 <Button
                                     className="w-full"
-                                    disabled={loading !== null}
+                                    disabled={isBusy}
                                     onClick={() =>
-                                        startCheckout(tier.id, "subscription")
+                                        startCheckout({
+                                            tierId: tier.id,
+                                            productType: "subscription",
+                                            discountCode:
+                                                tier.discountCode || undefined,
+                                            loadingKey: `${tier.id}-subscription`,
+                                            friendlyErrorMessage:
+                                                "创建结账失败，请稍后再试。",
+                                        })
                                     }
                                 >
-                                    {loading === `${tier.id}-subscription`
+                                    {isLoading(`${tier.id}-subscription`)
                                         ? "处理中..."
                                         : "订阅"}
                                 </Button>
@@ -212,12 +142,20 @@ export default function PricingGrid() {
                                 </ul>
                                 <Button
                                     className="w-full"
-                                    disabled={loading !== null}
+                                    disabled={isBusy}
                                     onClick={() =>
-                                        startCheckout(tier.id, "credits")
+                                        startCheckout({
+                                            tierId: tier.id,
+                                            productType: "credits",
+                                            discountCode:
+                                                tier.discountCode || undefined,
+                                            loadingKey: `${tier.id}-credits`,
+                                            friendlyErrorMessage:
+                                                "创建结账失败，请稍后再试。",
+                                        })
                                     }
                                 >
-                                    {loading === `${tier.id}-credits`
+                                    {isLoading(`${tier.id}-credits`)
                                         ? "处理中..."
                                         : "购买积分"}
                                 </Button>
