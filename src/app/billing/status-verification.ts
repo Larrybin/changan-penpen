@@ -47,11 +47,11 @@ export async function evaluateReturnRedirect(
 ): Promise<VerificationResult> {
     const normalized = normalizeSearchParams(searchParams);
     const { signature, sanitized } = splitSignatureFromParams(normalized);
-    const secret = process.env.CREEM_API_KEY;
+    const secret = process.env.CREEM_WEBHOOK_SECRET;
 
     if (!secret) {
         console.error(
-            `[billing/${context}] CREEM_API_KEY missing for return verification`,
+            `[billing/${context}] CREEM_WEBHOOK_SECRET missing for return verification`,
             { params: sanitized },
         );
         return { state: "missingSecret", params: sanitized };
