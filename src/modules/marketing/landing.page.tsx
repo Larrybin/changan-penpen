@@ -2,16 +2,15 @@ import Link from "next/link";
 import Script from "next/script";
 import { useLocale, useTranslations } from "next-intl";
 import type React from "react";
+import { SkipLink } from "@/components/accessibility/skip-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DecorativeImage } from "@/components/ui/image-optimizer";
 import { resolveAppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
 import Playground from "./components/playground-loader";
 import PublicFooter from "./components/public-footer";
 import PublicHeader from "./components/public-header";
-import { SkipLink } from "@/components/accessibility/skip-link";
 
 type MarketingLandingPageProps = {
     appUrl: string;
@@ -140,13 +139,9 @@ export default function MarketingLandingPage({
             <SkipLink />
             <PublicHeader />
 
-            <main id="main-content" role="main" tabIndex={-1}>
-                <section
-                    className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-12 md:py-16"
-                    aria-labelledby="hero-heading"
-                    role="banner"
-                >
-                    <div className="grid xs:grid-cols-2 gap-[var(--grid-gap-section)] items-center">
+            <main id="main-content" tabIndex={-1}>
+                <header className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-12 md:py-16">
+                    <div className="grid xs:grid-cols-2 items-center gap-[var(--grid-gap-section)]">
                         <div className="space-y-4">
                             <div className="flex items-center gap-2">
                                 <Badge
@@ -166,14 +161,17 @@ export default function MarketingLandingPage({
                             </div>
                             <h1
                                 id="hero-heading"
-                                className="text-title font-extrabold tracking-tight mb-4"
+                                className="mb-4 font-extrabold text-title tracking-tight"
                             >
                                 {t("hero.title")}
                             </h1>
-                            <p className="text-yellow-200/80 leading-relaxed mb-6 text-lg">
+                            <p className="mb-6 text-lg text-yellow-200/80 leading-relaxed">
                                 {t("hero.description")}
                             </p>
-                            <div className="flex flex-col gap-3 xs:flex-row xs:gap-3 mb-6" role="group" aria-label={t("hero.primaryActions")}>
+                            <nav
+                                aria-label={t("hero.primaryActions")}
+                                className="mb-6 flex xs:flex-row flex-col gap-3 xs:gap-3"
+                            >
                                 <Link
                                     href="/signup"
                                     className="inline-flex"
@@ -194,46 +192,46 @@ export default function MarketingLandingPage({
                                     <Button
                                         variant="outline"
                                         size="lg"
-                                        className="w-full border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] xs:w-auto focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
+                                        className="w-full xs:w-auto border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
                                     >
                                         {t("hero.secondaryCta")}
                                     </Button>
                                 </Link>
-                            </div>
-                            <div
-                                className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-yellow-200/70"
-                                role="list"
+                            </nav>
+                            <ul
                                 aria-label={t("hero.featuresLabel")}
+                                className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-yellow-200/70"
                             >
-                                {heroSupportValues.map((item, index) => (
-                                    <span
-                                        key={`${item}-${index}`}
-                                        role="listitem"
+                                {heroSupportValues.map((item) => (
+                                    <li
                                         className="inline-flex items-center gap-1"
+                                        key={item}
                                     >
-                                        <span className="sr-only">{t("hero.featurePrefix")}</span>
+                                        <span className="sr-only">
+                                            {t("hero.featurePrefix")}
+                                        </span>
                                         {item}
-                                    </span>
+                                    </li>
                                 ))}
-                            </div>
+                            </ul>
                         </div>
                         {/* 装饰性emoji区域，添加固定高度防止CLS */}
                         <div
-                            className="hidden lg-narrow:block text-right text-7xl min-h-[4rem] animate-pulse"
+                            className="hidden min-h-[4rem] animate-pulse text-right text-7xl lg-narrow:block"
                             aria-hidden="true"
                             role="presentation"
                         >
                             {t("hero.emoji")}✨
                         </div>
                     </div>
-                </section>
+                </header>
 
                 <section
                     id="playground"
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] pb-12"
                     aria-labelledby="playground-heading"
                 >
-                    <header className="text-center mb-8">
+                    <header className="mb-8 text-center">
                         <h2 id="playground-heading" className="sr-only">
                             AI Photo Editor Playground
                         </h2>
@@ -247,17 +245,17 @@ export default function MarketingLandingPage({
                     id="features"
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
-                    <h2 className="text-subtitle font-bold text-center mb-6">
+                    <h2 className="mb-6 text-center font-bold text-subtitle">
                         {t("features.title")}
                     </h2>
-                    <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
+                    <div className="grid xs:grid-cols-2 gap-4 lg-narrow:grid-cols-3">
                         {features.map((f) => (
                             <Card
                                 key={f.title}
-                                className="bg-black/40 border-yellow-400/20"
+                                className="border-yellow-400/20 bg-black/40"
                             >
                                 <CardContent className="p-4">
-                                    <h3 className="font-semibold mb-1">
+                                    <h3 className="mb-1 font-semibold">
                                         {f.title}
                                     </h3>
                                     <p className="text-sm text-yellow-200/80">
@@ -272,7 +270,7 @@ export default function MarketingLandingPage({
                             billingLink: (chunks) => (
                                 <Link
                                     href="/billing"
-                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                    className="underline decoration-yellow-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 focus-visible:outline-offset-2"
                                 >
                                     {chunks}
                                 </Link>
@@ -285,17 +283,17 @@ export default function MarketingLandingPage({
                     id="why"
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
-                    <h2 className="text-subtitle font-bold text-center mb-6">
+                    <h2 className="mb-6 text-center font-bold text-subtitle">
                         {t("why.title")}
                     </h2>
-                    <div className="grid gap-4 xs:grid-cols-2 lg-narrow:grid-cols-3">
+                    <div className="grid xs:grid-cols-2 gap-4 lg-narrow:grid-cols-3">
                         {whyItems.map((f) => (
                             <Card
                                 key={f.title}
-                                className="bg-black/40 border-yellow-400/20"
+                                className="border-yellow-400/20 bg-black/40"
                             >
                                 <CardContent className="p-4">
-                                    <h3 className="font-semibold mb-1">
+                                    <h3 className="mb-1 font-semibold">
                                         {f.title}
                                     </h3>
                                     <p className="text-sm text-yellow-200/80">
@@ -311,14 +309,14 @@ export default function MarketingLandingPage({
                     id="faq"
                     className="mx-auto w-full max-w-4xl px-[var(--container-px)] py-10"
                 >
-                    <h2 className="text-subtitle font-bold text-center mb-6">
+                    <h2 className="mb-6 text-center font-bold text-subtitle">
                         {t("faq.title")}
                     </h2>
                     <div className="space-y-3">
                         {faqItems.map((item) => (
                             <details
                                 key={item.question}
-                                className="bg-black/40 border border-yellow-400/20 rounded-md p-4"
+                                className="rounded-md border border-yellow-400/20 bg-black/40 p-4"
                             >
                                 <summary className="cursor-pointer font-medium text-yellow-50">
                                     {item.question}
@@ -334,7 +332,7 @@ export default function MarketingLandingPage({
                             contactLink: (chunks) => (
                                 <Link
                                     href="/contact"
-                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                    className="underline decoration-yellow-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 focus-visible:outline-offset-2"
                                 >
                                     {chunks}
                                 </Link>
@@ -342,7 +340,7 @@ export default function MarketingLandingPage({
                             aboutLink: (chunks) => (
                                 <Link
                                     href="/about"
-                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                    className="underline decoration-yellow-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 focus-visible:outline-offset-2"
                                 >
                                     {chunks}
                                 </Link>
@@ -355,20 +353,20 @@ export default function MarketingLandingPage({
                     id="trust"
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
-                    <h2 className="text-subtitle font-bold text-center mb-4">
+                    <h2 className="mb-4 text-center font-bold text-subtitle">
                         {t("trust.title")}
                     </h2>
-                    <p className="text-center text-yellow-200/80 max-w-2xl mx-auto mb-8">
+                    <p className="mx-auto mb-8 max-w-2xl text-center text-yellow-200/80">
                         {t("trust.description")}
                     </p>
                     <div className="grid gap-4 md:grid-cols-3">
                         {trustItems.map((item) => (
                             <Card
                                 key={`${item.author}-${item.role}`}
-                                className="bg-black/40 border-yellow-400/20 h-full"
+                                className="h-full border-yellow-400/20 bg-black/40"
                             >
-                                <CardContent className="p-5 flex flex-col gap-3">
-                                    <p className="text-yellow-50 text-sm leading-relaxed">
+                                <CardContent className="flex flex-col gap-3 p-5">
+                                    <p className="text-sm text-yellow-50 leading-relaxed">
                                         “{item.quote}”
                                     </p>
                                     <div className="text-xs text-yellow-200/70">
@@ -381,12 +379,12 @@ export default function MarketingLandingPage({
                             </Card>
                         ))}
                     </div>
-                    <p className="mt-8 text-sm text-yellow-100/80 text-center">
+                    <p className="mt-8 text-center text-sm text-yellow-100/80">
                         {t.rich("trust.callout", {
                             privacyLink: (chunks) => (
                                 <Link
                                     href="/privacy"
-                                    className="underline underline-offset-4 decoration-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300"
+                                    className="underline decoration-yellow-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 focus-visible:outline-offset-2"
                                 >
                                     {chunks}
                                 </Link>
@@ -396,10 +394,10 @@ export default function MarketingLandingPage({
                 </section>
 
                 <section className="mx-auto w-full max-w-3xl px-4 py-14 text-center">
-                    <h3 className="text-3xl font-extrabold mb-3">
+                    <h3 className="mb-3 font-extrabold text-3xl">
                         {t("cta.title")}
                     </h3>
-                    <p className="text-yellow-200/80 mb-6">
+                    <p className="mb-6 text-yellow-200/80">
                         {t("cta.description")}
                     </p>
                     <Link href="/signup">

@@ -55,7 +55,7 @@ class PerformanceValidator {
     };
 
     try {
-      console.log('🔍 分析 Core Web Vitals...');
+      console.info('🔍 分析 Core Web Vitals...');
 
       // 基于Google标准的阈值定义
       const thresholds = {
@@ -106,13 +106,13 @@ class PerformanceValidator {
         result.suggestions.push('添加 Web Vitals 监控组件以实时跟踪性能指标');
       }
 
-      console.log('✅ Core Web Vitals 分析完成');
+      console.info('✅ Core Web Vitals 分析完成');
       this.printMetrics(result.metrics);
 
     } catch (error) {
       result.errors.push(`Core Web Vitals 分析失败: ${error}`);
       result.passed = false;
-      console.log('❌ Core Web Vitals 分析失败');
+      console.info('❌ Core Web Vitals 分析失败');
     }
 
     this.results.push(result);
@@ -133,7 +133,7 @@ class PerformanceValidator {
     };
 
     try {
-      console.log('🔍 检查图片优化配置...');
+      console.info('🔍 检查图片优化配置...');
 
       // 检查Next.js图片配置
       const nextConfigPath = join(this.projectRoot, 'next.config.ts');
@@ -153,7 +153,7 @@ class PerformanceValidator {
               threshold: { good: 100, needsImprovement: 50, poor: 0 },
               actual: 'good'
             });
-            console.log('  ✅ 支持现代图片格式 (AVIF/WebP)');
+            console.info('  ✅ 支持现代图片格式 (AVIF/WebP)');
           } else {
             result.warnings.push('建议启用 AVIF/WebP 格式支持');
             result.passed = false;
@@ -182,7 +182,7 @@ class PerformanceValidator {
       // 检查图片优化组件
       const imageOptimizerPath = join(this.projectRoot, 'src/components/ui/image-optimizer.tsx');
       if (existsSync(imageOptimizerPath)) {
-        console.log('  ✅ 图片优化组件已存在');
+        console.info('  ✅ 图片优化组件已存在');
       } else {
         result.suggestions.push('使用图片优化组件提升加载性能');
       }
@@ -190,17 +190,17 @@ class PerformanceValidator {
       // 检查Open Graph图片
       const ogImagePath = join(this.projectRoot, 'public/og-image.svg');
       if (existsSync(ogImagePath)) {
-        console.log('  ✅ Open Graph 图片已配置');
+        console.info('  ✅ Open Graph 图片已配置');
       } else {
         result.warnings.push('缺少 Open Graph 图片配置');
       }
 
-      console.log('✅ 图片优化检查完成');
+      console.info('✅ 图片优化检查完成');
 
     } catch (error) {
       result.errors.push(`图片优化检查失败: ${error}`);
       result.passed = false;
-      console.log('❌ 图片优化检查失败');
+      console.info('❌ 图片优化检查失败');
     }
 
     this.results.push(result);
@@ -221,7 +221,7 @@ class PerformanceValidator {
     };
 
     try {
-      console.log('🔍 分析包大小...');
+      console.info('🔍 分析包大小...');
 
       // 检查package.json依赖数量
       const packageJsonPath = join(this.projectRoot, 'package.json');
@@ -246,8 +246,8 @@ class PerformanceValidator {
           actual: devDepCount <= 30 ? 'good' : devDepCount <= 50 ? 'needs-improvement' : 'poor'
         });
 
-        console.log(`  📦 生产依赖: ${depCount}个`);
-        console.log(`  📦 开发依赖: ${devDepCount}个`);
+        console.info(`  📦 生产依赖: ${depCount}个`);
+        console.info(`  📦 开发依赖: ${devDepCount}个`);
 
         if (depCount > 100) {
           result.warnings.push('生产依赖较多，考虑优化或移除不必要的依赖');
@@ -258,18 +258,18 @@ class PerformanceValidator {
       const analyzeScript = 'analyze:bundle';
       const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
       if (packageJson.scripts && packageJson.scripts[analyzeScript]) {
-        console.log('  ✅ Bundle 分析脚本已配置');
+        console.info('  ✅ Bundle 分析脚本已配置');
         result.suggestions.push('运行 `pnpm run analyze:bundle` 查看详细的包大小分析');
       } else {
         result.suggestions.push('添加 bundle 分析脚本以监控包大小');
       }
 
-      console.log('✅ 包大小分析完成');
+      console.info('✅ 包大小分析完成');
 
     } catch (error) {
       result.errors.push(`包大小分析失败: ${error}`);
       result.passed = false;
-      console.log('❌ 包大小分析失败');
+      console.info('❌ 包大小分析失败');
     }
 
     this.results.push(result);
@@ -290,7 +290,7 @@ class PerformanceValidator {
     };
 
     try {
-      console.log('🔍 检查缓存配置...');
+      console.info('🔍 检查缓存配置...');
 
       // 检查_headers文件
       const headersPath = join(this.projectRoot, 'public/_headers');
@@ -306,7 +306,7 @@ class PerformanceValidator {
             threshold: { good: 31536000, needsImprovement: 86400, poor: 3600 },
             actual: 'good'
           });
-          console.log('  ✅ 静态资源长期缓存已配置');
+          console.info('  ✅ 静态资源长期缓存已配置');
         } else {
           result.warnings.push('建议为静态资源配置长期缓存');
         }
@@ -320,7 +320,7 @@ class PerformanceValidator {
 
         securityHeaders.forEach(header => {
           if (headers.includes(header)) {
-            console.log(`  ✅ ${header} 已配置`);
+            console.info(`  ✅ ${header} 已配置`);
           } else {
             result.suggestions.push(`考虑添加 ${header} 安全头部`);
           }
@@ -329,12 +329,12 @@ class PerformanceValidator {
         result.warnings.push('未找到 _headers 文件，建议配置缓存策略');
       }
 
-      console.log('✅ 缓存配置检查完成');
+      console.info('✅ 缓存配置检查完成');
 
     } catch (error) {
       result.errors.push(`缓存配置检查失败: ${error}`);
       result.passed = false;
-      console.log('❌ 缓存配置检查失败');
+      console.info('❌ 缓存配置检查失败');
     }
 
     this.results.push(result);
@@ -355,7 +355,7 @@ class PerformanceValidator {
     };
 
     try {
-      console.log('🔍 运行 Lighthouse 性能评估...');
+      console.info('🔍 运行 Lighthouse 性能评估...');
 
       // 模拟Lighthouse评分（实际项目中应使用真实的Lighthouse测试）
       const lighthouseScores = {
@@ -394,7 +394,7 @@ class PerformanceValidator {
         });
       });
 
-      console.log('✅ Lighthouse 评估完成');
+      console.info('✅ Lighthouse 评估完成');
       this.printMetrics(result.metrics);
 
       // Lighthouse建议
@@ -411,7 +411,7 @@ class PerformanceValidator {
     } catch (error) {
       result.errors.push(`Lighthouse 评估失败: ${error}`);
       result.passed = false;
-      console.log('❌ Lighthouse 评估失败');
+      console.info('❌ Lighthouse 评估失败');
     }
 
     this.results.push(result);
@@ -440,7 +440,7 @@ class PerformanceValidator {
       const rating = metric.actual === 'good' ? '🟢' :
                     metric.actual === 'needs-improvement' ? '🟡' : '🔴';
       const value = metric.value + metric.unit;
-      console.log(`  ${rating} ${metric.name}: ${value}`);
+      console.info(`  ${rating} ${metric.name}: ${value}`);
     });
   }
 
@@ -448,37 +448,37 @@ class PerformanceValidator {
    * 生成性能报告
    */
   generateReport(): void {
-    console.log('\n📊 性能验证报告');
-    console.log('='.repeat(50));
+    console.info('\n📊 性能验证报告');
+    console.info('='.repeat(50));
 
     let totalPassed = 0;
     let totalChecks = this.results.length;
 
     this.results.forEach(result => {
       const status = result.passed ? '✅' : '❌';
-      console.log(`${status} ${result.name}`);
+      console.info(`${status} ${result.name}`);
 
       if (result.metrics.length > 0) {
-        console.log('  📈 性能指标:');
+        console.info('  📈 性能指标:');
         this.printMetrics(result.metrics);
       }
 
       if (result.errors.length > 0) {
-        console.log(`  🚨 错误 (${result.errors.length}):`);
-        result.errors.forEach(error => console.log(`    ${error}`));
+        console.info(`  🚨 错误 (${result.errors.length}):`);
+        result.errors.forEach(error => console.info(`    ${error}`));
       }
 
       if (result.warnings.length > 0) {
-        console.log(`  ⚠️  警告 (${result.warnings.length}):`);
-        result.warnings.forEach(warning => console.log(`    ${warning}`));
+        console.info(`  ⚠️  警告 (${result.warnings.length}):`);
+        result.warnings.forEach(warning => console.info(`    ${warning}`));
       }
 
       if (result.suggestions.length > 0) {
-        console.log(`  💡 建议 (${result.suggestions.length}):`);
-        result.suggestions.forEach(suggestion => console.log(`    ${suggestion}`));
+        console.info(`  💡 建议 (${result.suggestions.length}):`);
+        result.suggestions.forEach(suggestion => console.info(`    ${suggestion}`));
       }
 
-      console.log('');
+      console.info('');
 
       if (result.passed) {
         totalPassed++;
@@ -486,32 +486,32 @@ class PerformanceValidator {
     });
 
     const score = Math.round((totalPassed / totalChecks) * 100);
-    console.log(`🚀 性能评分: ${score}% (${totalPassed}/${totalChecks})`);
+    console.info(`🚀 性能评分: ${score}% (${totalPassed}/${totalChecks})`);
 
     if (score >= 90) {
-      console.log('🎉 性能优秀！应用表现出色');
+      console.info('🎉 性能优秀！应用表现出色');
     } else if (score >= 80) {
-      console.log('👍 性能良好！有少量优化空间');
+      console.info('👍 性能良好！有少量优化空间');
     } else if (score >= 70) {
-      console.log('👌 性能一般，建议进行优化');
+      console.info('👌 性能一般，建议进行优化');
     } else {
-      console.log('⚠️  需要重点关注性能问题');
+      console.info('⚠️  需要重点关注性能问题');
     }
 
-    console.log('\n📋 性能优化建议:');
-    console.log('1. 定期监控 Core Web Vitals 指标');
-    console.log('2. 使用现代图片格式 (AVIF/WebP)');
-    console.log('3. 启用长期缓存策略');
-    console.log('4. 优化 JavaScript 包大小');
-    console.log('5. 改进可访问性配置');
-    console.log('6. 定期运行 Lighthouse 测试');
+    console.info('\n📋 性能优化建议:');
+    console.info('1. 定期监控 Core Web Vitals 指标');
+    console.info('2. 使用现代图片格式 (AVIF/WebP)');
+    console.info('3. 启用长期缓存策略');
+    console.info('4. 优化 JavaScript 包大小');
+    console.info('5. 改进可访问性配置');
+    console.info('6. 定期运行 Lighthouse 测试');
   }
 
   /**
    * 运行所有性能验证
    */
   async runAllValidations(): Promise<void> {
-    console.log('🚀 开始性能验证...\n');
+    console.info('🚀 开始性能验证...\n');
 
     await this.analyzeWebVitals();
     await this.checkImageOptimization();
@@ -524,10 +524,10 @@ class PerformanceValidator {
     // 设置退出码
     const hasErrors = this.results.some(result => result.errors.length > 0);
     if (hasErrors) {
-      console.log('\n❌ 发现性能问题，请优化后重新验证');
+      console.info('\n❌ 发现性能问题，请优化后重新验证');
       process.exit(1);
     } else {
-      console.log('\n✅ 所有性能验证通过！');
+      console.info('\n✅ 所有性能验证通过！');
       process.exit(0);
     }
   }

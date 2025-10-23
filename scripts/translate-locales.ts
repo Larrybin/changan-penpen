@@ -306,7 +306,7 @@ const main = async () => {
     });
 
     if (targets.length === 0) {
-        console.log("No valid target locales specified. Nothing to do.");
+        console.info("No valid target locales specified. Nothing to do.");
         return;
     }
 
@@ -327,11 +327,11 @@ const main = async () => {
         });
 
         if (missingEntries.length === 0) {
-            console.log(`✅ ${targetLocale}: 没有需要翻译的条目。`);
+            console.info(`✅ ${targetLocale}: 没有需要翻译的条目。`);
             continue;
         }
 
-        console.log(
+        console.info(
             `🌐 ${targetLocale}: 需要翻译 ${missingEntries.length} 条。`,
         );
 
@@ -341,7 +341,7 @@ const main = async () => {
         for (const [index, batch] of batches.entries()) {
             const batchEntries = buildTranslationEntries(batch);
             if (options.dryRun) {
-                console.log(
+                console.info(
                     `  • [dry-run] 批次 ${index + 1}/${batches.length}，跳过实际请求。`,
                 );
                 translated.push(
@@ -353,7 +353,7 @@ const main = async () => {
                 continue;
             }
 
-            console.log(`  • 批次 ${index + 1}/${batches.length} 翻译中…`);
+            console.info(`  • 批次 ${index + 1}/${batches.length} 翻译中…`);
             const results = await service.translateBatch({
                 entries: batchEntries,
                 sourceLocale,
@@ -375,12 +375,12 @@ const main = async () => {
         });
 
         if (options.dryRun) {
-            console.log(`🚫 [dry-run] 跳过写入 ${targetLocale}.json。`);
+            console.info(`🚫 [dry-run] 跳过写入 ${targetLocale}.json。`);
             continue;
         }
 
         await writeJsonFile(filePath, targetMessages);
-        console.log(`💾 已更新 ${path.relative(ROOT_DIR, filePath)}。`);
+        console.info(`💾 已更新 ${path.relative(ROOT_DIR, filePath)}。`);
     }
 };
 

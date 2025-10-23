@@ -44,7 +44,7 @@ export function WebVitals() {
         (metric: any) => {
             // 开发环境打印到控制台
             if (isDev) {
-                console.log(`📊 Core Web Vitals - ${metric.name}:`, {
+                console.info(`📊 Core Web Vitals - ${metric.name}:`, {
                     value: metric.value,
                     rating: metric.rating,
                     delta: metric.delta,

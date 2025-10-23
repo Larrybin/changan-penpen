@@ -90,7 +90,7 @@ export async function POST(request: Request) {
             env.CREEM_LOG_WEBHOOK_SIGNATURE === "1" &&
             envMode !== "production"
         ) {
-            console.log("[creem webhook] signature:", signature);
+            console.info("[creem webhook] signature:", signature);
         }
 
         if (!env.CREEM_WEBHOOK_SECRET) {
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
                 await onSubscriptionChanged(event.object);
                 break;
             default:
-                console.log(`[creem webhook] unhandled: ${event.eventType}`);
+                console.info(`[creem webhook] unhandled: ${event.eventType}`);
         }
 
         return new Response(JSON.stringify({ received: true }), {
