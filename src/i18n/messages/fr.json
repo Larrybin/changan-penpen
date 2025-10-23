@@ -365,13 +365,41 @@
             "title": "Paiement réussi",
             "description": "Nous avons reçu votre paiement. Les avantages de votre compte seront mis à jour sous peu.",
             "primaryCta": "Aller au tableau de bord",
-            "secondaryCta": "Voir d’autres offres"
+            "secondaryCta": "Voir d’autres offres",
+            "verificationTitle": "Vérification de la redirection",
+            "detailsHeading": "Détails du paiement",
+            "verification": {
+                "verified": "Nous avons confirmé que cette redirection est signée par Creem.",
+                "invalid": "Impossible de vérifier la signature de cette redirection. Contactez le support si le paiement semble incorrect.",
+                "missingSignature": "Creem n’a pas fourni de signature pour cette redirection. Les détails sont fournis à titre indicatif seulement.",
+                "missingSecret": "Cet environnement n’est pas encore configuré pour valider les redirections Creem."
+            },
+            "fields": {
+                "requestId": "ID de requête",
+                "checkoutId": "ID de checkout",
+                "status": "Statut",
+                "timestamp": "Horodatage"
+            }
         },
         "cancel": {
             "title": "Paiement annulé",
             "description": "Le paiement a été annulé. Vous pouvez reprendre la commande à tout moment.",
             "primaryCta": "Retour aux offres",
-            "secondaryCta": "Revenir au tableau de bord"
+            "secondaryCta": "Revenir au tableau de bord",
+            "verificationTitle": "Vérification de la redirection",
+            "detailsHeading": "Détails du checkout",
+            "verification": {
+                "verified": "Nous avons confirmé que cette redirection est signée par Creem.",
+                "invalid": "Impossible de vérifier la signature de cette redirection. Reprenez la commande ou contactez le support.",
+                "missingSignature": "Creem n’a pas fourni de signature pour cette redirection. Les détails sont fournis à titre indicatif seulement.",
+                "missingSecret": "Cet environnement n’est pas encore configuré pour valider les redirections Creem."
+            },
+            "fields": {
+                "requestId": "ID de requête",
+                "checkoutId": "ID de checkout",
+                "status": "Statut",
+                "timestamp": "Horodatage"
+            }
         }
     },
     "StaticPages": {

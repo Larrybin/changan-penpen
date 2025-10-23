@@ -8,6 +8,7 @@ export type ProductTier = {
     features?: string[];
     featured?: boolean;
     discountCode?: string;
+    defaultUnits?: number;
 };
 
 export const SUBSCRIPTION_TIERS: ProductTier[] = [
@@ -27,6 +28,7 @@ export const SUBSCRIPTION_TIERS: ProductTier[] = [
         ],
         featured: false,
         discountCode: "",
+        defaultUnits: 1,
     },
     {
         name: "Business",
@@ -44,6 +46,7 @@ export const SUBSCRIPTION_TIERS: ProductTier[] = [
         ],
         featured: true,
         discountCode: "",
+        defaultUnits: 5,
     },
     {
         name: "Enterprise",
@@ -61,6 +64,7 @@ export const SUBSCRIPTION_TIERS: ProductTier[] = [
         ],
         featured: false,
         discountCode: "",
+        defaultUnits: 10,
     },
 ];
 

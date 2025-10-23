@@ -7,6 +7,16 @@ import {
 } from "@/modules/creem/config/subscriptions";
 import { useBillingActions } from "@/modules/creem/hooks/use-billing-actions";
 
+function generateClientRequestId() {
+    if (
+        typeof crypto !== "undefined" &&
+        typeof crypto.randomUUID === "function"
+    ) {
+        return crypto.randomUUID();
+    }
+    return `checkout-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+}
+
 export default function BillingActions() {
     const { startCheckout, openCustomerPortal, isLoading, isBusy } =
         useBillingActions();
@@ -30,6 +40,7 @@ export default function BillingActions() {
                             featuredCreditTier.discountCode || undefined,
                         loadingKey: `${featuredCreditTier.id}-credits`,
                         friendlyErrorMessage: "无法创建积分结账，请稍后重试。",
+                        requestId: generateClientRequestId(),
                     });
                 }}
                 disabled={isBusy || !featuredCreditTier}
@@ -52,6 +63,11 @@ export default function BillingActions() {
                             featuredSubscriptionTier.discountCode || undefined,
                         loadingKey: `${featuredSubscriptionTier.id}-subscription`,
                         friendlyErrorMessage: "无法创建订阅结账，请稍后重试。",
+                        requestId: generateClientRequestId(),
+                        units:
+                            featuredSubscriptionTier.defaultUnits !== undefined
+                                ? featuredSubscriptionTier.defaultUnits
+                                : 1,
                     });
                 }}
                 disabled={isBusy || !featuredSubscriptionTier}

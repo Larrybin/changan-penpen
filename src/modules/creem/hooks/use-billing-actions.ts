@@ -18,6 +18,8 @@ type StartCheckoutOptions = BaseOptions & {
     productId?: string;
     productType: ProductType;
     discountCode?: string;
+    requestId?: string;
+    units?: number;
 };
 
 type CustomerPortalOptions = BaseOptions;
@@ -103,6 +105,8 @@ export function useBillingActions() {
             productId,
             productType,
             discountCode,
+            requestId,
+            units,
             friendlyErrorMessage,
             onRedirect,
         } = options;
@@ -114,6 +118,8 @@ export function useBillingActions() {
         if (tierId) body.tierId = tierId;
         if (productId) body.productId = productId;
         if (discountCode) body.discountCode = discountCode;
+        if (requestId) body.requestId = requestId;
+        if (typeof units === "number") body.units = units;
 
         const errorMessage =
             friendlyErrorMessage ?? "无法创建结账，请稍后重试。";
