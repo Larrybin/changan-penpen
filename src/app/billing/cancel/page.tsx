@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 type PageProps = {
-    searchParams?: Record<string, string | string[] | undefined>;
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 function resolveVerificationTone(state: VerificationState) {
@@ -35,7 +35,11 @@ function resolveVerificationTone(state: VerificationState) {
 
 export default async function Page({ searchParams }: PageProps) {
     const t = await getTranslations("BillingStatus.cancel");
-    const verification = await evaluateReturnRedirect(searchParams, "cancel");
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
+    const verification = await evaluateReturnRedirect(
+        resolvedSearchParams,
+        "cancel",
+    );
     const verificationMessage = t(`verification.${verification.state}`);
     const details = extractReturnDetails(verification.params);
     const detailEntries = (
