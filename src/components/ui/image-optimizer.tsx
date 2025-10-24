@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface ImageOptimizerProps {
@@ -129,7 +129,7 @@ export function ImageOptimizer({
         return (
             <div
                 className={cn(
-                    "flex items-center justify-center bg-muted border border-dashed border-border rounded-md",
+                    "flex items-center justify-center rounded-md border border-border border-dashed bg-muted",
                     className,
                 )}
                 style={{
@@ -153,7 +153,7 @@ export function ImageOptimizer({
             {isLoading && (
                 <div
                     className={cn(
-                        "absolute inset-0 bg-muted animate-pulse rounded-md",
+                        "absolute inset-0 animate-pulse rounded-md bg-muted",
                         className,
                     )}
                     aria-hidden="true"

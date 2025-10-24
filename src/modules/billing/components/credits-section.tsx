@@ -99,8 +99,27 @@ export default function CreditsSection() {
     const [refreshing, setRefreshing] = useState(false);
 
     const loadData = useCallback(async () => {
+        const parseResponse = async <
+            TResponse extends { success?: boolean; error?: unknown },
+        >(
+            response: Response,
+            fallbackMessage: string,
+        ): Promise<Extract<TResponse, { success: true }>> => {
+            const json = (await response.json()) as TResponse;
+            const success =
+                "success" in json ? Boolean(json.success) : response.ok;
+
+            if (!response.ok || !success) {
+                const errorMessage = extractErrorMessage(json);
+                throw new Error(errorMessage || fallbackMessage);
+            }
+
+            return json as Extract<TResponse, { success: true }>;
+        };
+
         setIsLoading(true);
         setError(null);
+
         try {
             const [balanceRes, historyRes] = await Promise.all([
                 fetch("/api/v1/credits/balance", {
@@ -113,18 +132,12 @@ export default function CreditsSection() {
                 }),
             ]);
 
-            const balanceJson = (await balanceRes.json()) as BalanceResponse;
-            if (!balanceRes.ok || !balanceJson.success) {
-                const errorMessage = extractErrorMessage(balanceJson);
-                throw new Error(errorMessage || "获取余额失败");
-            }
-            setBalance(balanceJson.data?.credits ?? 0);
+            const [balanceJson, historyJson] = await Promise.all([
+                parseResponse<BalanceResponse>(balanceRes, "获取余额失败"),
+                parseResponse<HistoryResponse>(historyRes, "获取交易历史失败"),
+            ]);
 
-            const historyJson = (await historyRes.json()) as HistoryResponse;
-            if (!historyRes.ok || !historyJson.success) {
-                const errorMessage = extractErrorMessage(historyJson);
-                throw new Error(errorMessage || "获取交易历史失败");
-            }
+            setBalance(balanceJson.data?.credits ?? 0);
             setTransactions(historyJson.data?.transactions ?? []);
         } catch (err) {
             console.error("[CreditsSection] fetch error:", err);
