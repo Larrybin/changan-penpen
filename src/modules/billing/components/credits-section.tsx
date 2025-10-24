@@ -33,8 +33,6 @@ interface BalanceSuccessResponse {
     error?: null;
 }
 
-type BalanceResponse = BalanceSuccessResponse | ApiErrorResponse;
-
 interface CreditTransaction {
     id: string;
     amount: number;
@@ -59,7 +57,42 @@ interface HistorySuccessResponse {
     error?: null;
 }
 
-type HistoryResponse = HistorySuccessResponse | ApiErrorResponse;
+async function requestJson<TSuccess extends { success: true }>(
+    input: RequestInfo,
+    init: RequestInit,
+    fallbackMessage: string,
+): Promise<TSuccess> {
+    const response = await fetch(input, init);
+    const json = (await response.json()) as TSuccess | ApiErrorResponse;
+    const success = "success" in json ? Boolean(json.success) : response.ok;
+
+    if (!response.ok || !success) {
+        const errorPayload =
+            "error" in json ? { error: json.error } : undefined;
+        const errorMessage = extractErrorMessage(errorPayload);
+        throw new Error(errorMessage || fallbackMessage);
+    }
+
+    return json as TSuccess;
+}
+
+const defaultHeaders = { "Content-Type": "application/json" } as const;
+
+function fetchBalanceData() {
+    return requestJson<BalanceSuccessResponse>(
+        "/api/v1/credits/balance",
+        { method: "GET", headers: defaultHeaders },
+        "获取余额失败",
+    );
+}
+
+function fetchHistoryData() {
+    return requestJson<HistorySuccessResponse>(
+        "/api/v1/credits/history?limit=10",
+        { method: "GET", headers: defaultHeaders },
+        "获取交易历史失败",
+    );
+}
 
 const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
@@ -99,42 +132,13 @@ export default function CreditsSection() {
     const [refreshing, setRefreshing] = useState(false);
 
     const loadData = useCallback(async () => {
-        const parseResponse = async <
-            TResponse extends { success?: boolean; error?: unknown },
-        >(
-            response: Response,
-            fallbackMessage: string,
-        ): Promise<Extract<TResponse, { success: true }>> => {
-            const json = (await response.json()) as TResponse;
-            const success =
-                "success" in json ? Boolean(json.success) : response.ok;
-
-            if (!response.ok || !success) {
-                const errorMessage = extractErrorMessage(json);
-                throw new Error(errorMessage || fallbackMessage);
-            }
-
-            return json as Extract<TResponse, { success: true }>;
-        };
-
         setIsLoading(true);
         setError(null);
 
         try {
-            const [balanceRes, historyRes] = await Promise.all([
-                fetch("/api/v1/credits/balance", {
-                    method: "GET",
-                    headers: { "Content-Type": "application/json" },
-                }),
-                fetch("/api/v1/credits/history?limit=10", {
-                    method: "GET",
-                    headers: { "Content-Type": "application/json" },
-                }),
-            ]);
-
             const [balanceJson, historyJson] = await Promise.all([
-                parseResponse<BalanceResponse>(balanceRes, "获取余额失败"),
-                parseResponse<HistoryResponse>(historyRes, "获取交易历史失败"),
+                fetchBalanceData(),
+                fetchHistoryData(),
             ]);
 
             setBalance(balanceJson.data?.credits ?? 0);

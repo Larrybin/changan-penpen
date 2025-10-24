@@ -30,7 +30,7 @@ function Separator({
                 "color-transition transition-[background-color,color] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                 // 微交互
                 "hover:bg-[var(--color-border,var(--color-muted-foreground)/25)]",
-                className
+                className,
             )}
             {...props}
         />
