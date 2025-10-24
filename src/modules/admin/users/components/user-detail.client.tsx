@@ -287,7 +287,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
 
             <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
-                    <div className="flex size-16 items-center justify-center rounded-full bg-muted text-lg font-semibold">
+                    <div className="flex size-16 items-center justify-center rounded-full bg-muted font-semibold text-lg">
                         {getInitials(detail.user.email ?? detail.user.name)}
                     </div>
                     <div className="flex flex-1 flex-col gap-1">
@@ -327,13 +327,13 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">邮箱</p>
+                        <p className="text-muted-foreground text-xs">邮箱</p>
                         <p className="text-sm">
                             {detail.user.email ?? "未填写"}
                         </p>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                             创建时间
                         </p>
                         <p className="text-sm">
@@ -341,7 +341,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                         </p>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                             最近更新
                         </p>
                         <p className="text-sm">
@@ -349,7 +349,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                         </p>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                             最新订阅状态
                         </p>
                         <p className="text-sm">{subscriptionSummary}</p>

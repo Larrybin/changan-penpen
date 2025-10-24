@@ -166,9 +166,9 @@ export default function CreditsSection() {
                     {isLoading ? (
                         <Skeleton className="h-10 w-32" />
                     ) : error ? (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <p className="text-destructive text-sm">{error}</p>
                     ) : (
-                        <p className="text-3xl font-semibold">
+                        <p className="font-semibold text-3xl">
                             {balanceDisplay}
                         </p>
                     )}
@@ -178,7 +178,7 @@ export default function CreditsSection() {
                     >
                         {refreshing ? "刷新中..." : "刷新积分"}
                     </Button>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                         手动刷新会重新请求积分余额，并触发月度免费积分发放逻辑（若满足时间条件）。
                     </p>
                 </CardContent>
@@ -199,15 +199,15 @@ export default function CreditsSection() {
                             <Skeleton className="h-8 w-full" />
                         </div>
                     ) : error ? (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <p className="text-destructive text-sm">{error}</p>
                     ) : transactions.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                             暂无交易记录。
                         </p>
                     ) : (
                         <div className="overflow-x-auto rounded-md border">
                             <table className="min-w-full text-sm">
-                                <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                                <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                                     <tr>
                                         <th className="px-3 py-2">时间</th>
                                         <th className="px-3 py-2">类型</th>
@@ -219,7 +219,7 @@ export default function CreditsSection() {
                                 <tbody>
                                     {transactions.map((item) => (
                                         <tr key={item.id} className="border-t">
-                                            <td className="px-3 py-2 text-xs text-muted-foreground">
+                                            <td className="px-3 py-2 text-muted-foreground text-xs">
                                                 {formatDateTime(item.createdAt)}
                                             </td>
                                             <td className="px-3 py-2 uppercase">
@@ -228,8 +228,8 @@ export default function CreditsSection() {
                                             <td
                                                 className={
                                                     item.amount >= 0
-                                                        ? "px-3 py-2 text-green-600 font-medium"
-                                                        : "px-3 py-2 text-destructive font-medium"
+                                                        ? "px-3 py-2 font-medium text-green-600"
+                                                        : "px-3 py-2 font-medium text-destructive"
                                                 }
                                             >
                                                 {item.amount}
@@ -237,7 +237,7 @@ export default function CreditsSection() {
                                             <td className="px-3 py-2">
                                                 {item.remainingAmount}
                                             </td>
-                                            <td className="px-3 py-2 text-xs text-muted-foreground">
+                                            <td className="px-3 py-2 text-muted-foreground text-xs">
                                                 {item.description}
                                             </td>
                                         </tr>

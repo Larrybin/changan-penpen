@@ -30,8 +30,8 @@ export default async function UsagePage() {
     });
     if (!session?.user) {
         return (
-            <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
-                <h1 className="text-title-sm font-bold mb-3">
+            <div className="mx-auto max-w-[var(--container-max-w)] px-[var(--container-px)] py-12">
+                <h1 className="mb-3 font-bold text-title-sm">
                     {t("loginRequiredTitle")}
                 </h1>
                 <p className="text-muted-foreground">
@@ -80,16 +80,16 @@ export default async function UsagePage() {
     });
 
     return (
-        <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
-            <h1 className="text-title-sm font-bold mb-6">{t("title")}</h1>
+        <div className="mx-auto max-w-[var(--container-max-w)] px-[var(--container-px)] py-12">
+            <h1 className="mb-6 font-bold text-title-sm">{t("title")}</h1>
             <div className="space-y-4">
                 {sortedDates.length === 0 ? (
                     <p className="text-muted-foreground">{t("empty")}</p>
                 ) : (
                     sortedDates.map((d) => (
-                        <div key={d} className="border rounded p-4">
-                            <div className="font-semibold mb-2">{d}</div>
-                            <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                        <div key={d} className="rounded border p-4">
+                            <div className="mb-2 font-semibold">{d}</div>
+                            <ul className="list-disc space-y-1 pl-5 text-muted-foreground text-sm">
                                 {byDate[d].map((it) => (
                                     <li key={`${d}-${it.feature}-${it.unit}`}>
                                         {t("entry", {

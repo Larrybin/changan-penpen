@@ -84,22 +84,22 @@ export default async function ContactPage() {
     }
 
     return (
-        <div className="mx-auto max-w-3xl px-[var(--container-px)] py-12 space-y-8">
+        <div className="mx-auto max-w-3xl space-y-8 px-[var(--container-px)] py-12">
             <header className="space-y-3 text-center">
-                <h1 className="text-title-sm font-bold">{t("title")}</h1>
-                <p className="text-muted-foreground text-balance">
+                <h1 className="font-bold text-title-sm">{t("title")}</h1>
+                <p className="text-balance text-muted-foreground">
                     {t("intro")}
                 </p>
             </header>
-            <section className="bg-muted/40 border border-border rounded-lg p-6">
-                <ul className="space-y-3 text-sm text-foreground">
+            <section className="rounded-lg border border-border bg-muted/40 p-6">
+                <ul className="space-y-3 text-foreground text-sm">
                     {details.map((detail) => (
                         <li
                             key={detail.label}
-                            className="flex flex-col xs:flex-row xs:items-center xs:justify-between"
+                            className="flex xs:flex-row flex-col xs:items-center xs:justify-between"
                         >
                             <span className="font-medium">{detail.label}</span>
-                            <span className="text-muted-foreground xs:text-right">
+                            <span className="xs:text-right text-muted-foreground">
                                 {detail.value}
                             </span>
                         </li>
@@ -109,10 +109,10 @@ export default async function ContactPage() {
             <div className="space-y-6">
                 {sections.map((section) => (
                     <section key={section.title} className="space-y-2">
-                        <h2 className="text-xl font-semibold text-foreground">
+                        <h2 className="font-semibold text-foreground text-xl">
                             {section.title}
                         </h2>
-                        <p className="text-muted-foreground text-balance">
+                        <p className="text-balance text-muted-foreground">
                             {section.description}
                         </p>
                     </section>
