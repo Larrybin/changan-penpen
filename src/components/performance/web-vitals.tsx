@@ -24,6 +24,20 @@ type ExtendedWebVitalsMetric = NextWebVitalsMetric & {
     rating?: "good" | "needs-improvement" | "poor";
 };
 
+type WarningMetricName = "LCP" | "INP" | "CLS";
+
+const PERFORMANCE_WARNING_MESSAGES: Record<
+    WarningMetricName,
+    (metric: ExtendedWebVitalsMetric) => string
+> = {
+    LCP: (metric) =>
+        `⚠️ LCP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
+    INP: (metric) =>
+        `⚠️ INP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
+    CLS: (metric) =>
+        `⚠️ CLS性能警告: ${metric.value.toFixed(4)} (${metric.rating})`,
+};
+
 /**
  * Core Web Vitals监控组件
  *
@@ -97,12 +111,12 @@ export function WebVitals() {
 
     const handleWebVital = useCallback(
         (metric: ExtendedWebVitalsMetric) => {
-            // 更新本地状态
+            const rating = metric.rating ?? "good";
             const newMetric: WebVitalsMetrics = {
                 id: metric.id,
                 name: metric.name,
                 value: metric.value,
-                rating: metric.rating ?? "good",
+                rating,
                 delta: metric.delta ?? 0,
                 timestamp: Date.now(),
             };
@@ -119,32 +133,16 @@ export function WebVitals() {
                 return [...prev, newMetric];
             });
 
-            // 发送到分析服务
-            sendToAnalytics(metric);
+            sendToAnalytics({ ...metric, rating });
 
-            // 特殊处理关键指标
-            switch (metric.name) {
-                case "LCP":
-                    if (metric.rating && metric.rating !== "good") {
-                        console.warn(
-                            `⚠️ LCP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
-                        );
-                    }
-                    break;
-                case "INP":
-                    if (metric.rating && metric.rating !== "good") {
-                        console.warn(
-                            `⚠️ INP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
-                        );
-                    }
-                    break;
-                case "CLS":
-                    if (metric.rating && metric.rating !== "good") {
-                        console.warn(
-                            `⚠️ CLS性能警告: ${metric.value.toFixed(4)} (${metric.rating})`,
-                        );
-                    }
-                    break;
+            if (rating !== "good") {
+                const warningBuilder =
+                    PERFORMANCE_WARNING_MESSAGES[
+                        metric.name as WarningMetricName
+                    ];
+                if (warningBuilder) {
+                    console.warn(warningBuilder({ ...metric, rating }));
+                }
             }
         },
         [sendToAnalytics],
