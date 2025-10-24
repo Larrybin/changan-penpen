@@ -8,16 +8,18 @@ const Table = React.forwardRef<
     HTMLTableElement,
     React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-    <div className={cn(
-        // 基础容器样式
-        "relative w-full overflow-auto",
-        // 圆角和边框
-        "rounded-[var(--token-radius-card,var(--token-radius-md))] border border-[var(--color-border,var(--color-muted-foreground)/10)]",
-        // 阴影
-        "shadow-[var(--shadow-sm)]",
-        // 渐入动画
-        "fade-in"
-    )}>
+    <div
+        className={cn(
+            // 基础容器样式
+            "relative w-full overflow-auto",
+            // 圆角和边框
+            "rounded-[var(--token-radius-card,var(--token-radius-md))] border border-[var(--color-border,var(--color-muted-foreground)/10)]",
+            // 阴影
+            "shadow-[var(--shadow-sm)]",
+            // 渐入动画
+            "fade-in",
+        )}
+    >
         <table
             ref={ref}
             className={cn(
@@ -29,7 +31,7 @@ const Table = React.forwardRef<
                 "border-separate border-spacing-0",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -47,10 +49,10 @@ const TableHeader = React.forwardRef<
             // 表头基础样式
             "bg-[var(--color-muted)]/30",
             // 边框样式
-            "[&_tr]:border-b-[var(--color-border,var(--color-muted-foreground)/10)] [&_tr:last-child]:border-b-0",
+            "[&_tr:last-child]:border-b-0 [&_tr]:border-b-[var(--color-border,var(--color-muted-foreground)/10)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -67,10 +69,10 @@ const TableBody = React.forwardRef<
             // 表体基础样式
             "[&_tr:last-child]:border-b-0",
             // 分割线样式
-            "[&_tr]:border-b border-[var(--color-border,var(--color-muted-foreground)/5)]",
+            "border-[var(--color-border,var(--color-muted-foreground)/5)] [&_tr]:border-b",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -85,18 +87,18 @@ const TableFooter = React.forwardRef<
         ref={ref}
         className={cn(
             // 表脚基础样式
-            "border-t border-[var(--color-border,var(--color-muted-foreground)/10)]",
+            "border-[var(--color-border,var(--color-muted-foreground)/10)] border-t",
             // 背景色
             "bg-[var(--color-muted)]/50",
             // 排版
             "font-[var(--token-font-weight-medium)] text-[var(--color-foreground)]",
             // 边框处理
-            "[&>tr]:last:border-b-0 [&>tr]:border-b border-[var(--color-border,var(--color-muted-foreground)/5)]",
+            "border-[var(--color-border,var(--color-muted-foreground)/5)] [&>tr]:border-b [&>tr]:last:border-b-0",
             // 内边距
-            "[&>tr>th]:p-[var(--token-spacing-4)] [&>tr>td]:p-[var(--token-spacing-4)]",
+            "[&>tr>td]:p-[var(--token-spacing-4)] [&>tr>th]:p-[var(--token-spacing-4)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -115,12 +117,12 @@ const TableRow = React.forwardRef<
             // 悬停状态
             "hover:bg-[var(--color-accent)]/40 data-[state=selected]:bg-[var(--color-accent)]/60",
             // 边框
-            "border-b border-[var(--color-border,var(--color-muted-foreground)/5)]",
+            "border-[var(--color-border,var(--color-muted-foreground)/5)] border-b",
             // 过渡动画
             "color-transition",
             // 最后一个行样式
             "last:border-b-0",
-            className
+            className,
         )}
         {...props}
     />
@@ -143,10 +145,10 @@ const TableHead = React.forwardRef<
             // 垂直居中
             "align-middle",
             // 特殊处理checkbox列
-            "[&:has([role=checkbox])]:pr-0 [&:has([role=checkbox])]:w-[var(--token-spacing-10)]",
+            "[&:has([role=checkbox])]:w-[var(--token-spacing-10)] [&:has([role=checkbox])]:pr-0",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -172,7 +174,7 @@ const TableCell = React.forwardRef<
             "[&:has([role=checkbox])]:pr-0",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -194,7 +196,7 @@ const TableCaption = React.forwardRef<
             "text-left",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -214,14 +216,14 @@ const TableActions = React.forwardRef<
             // 内边距
             "px-[var(--token-spacing-4)] py-[var(--token-spacing-3)]",
             // 边框
-            "border-b border-[var(--color-border,var(--color-muted-foreground)/10)]",
+            "border-[var(--color-border,var(--color-muted-foreground)/10)] border-b",
             // 背景色
             "bg-[var(--color-muted)]/20",
             // 圆角（仅顶部）
             "rounded-t-[var(--token-radius-card,var(--token-radius-md))]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -240,10 +242,10 @@ const TableEmpty = React.forwardRef<
             // 内边距
             "p-[var(--token-spacing-8)]",
             // 文本样式
-            "text-[var(--token-text-sm)] text-[var(--color-muted-foreground)] text-center",
+            "text-center text-[var(--color-muted-foreground)] text-[var(--token-text-sm)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -262,10 +264,10 @@ const TableLoading = React.forwardRef<
             // 内边距
             "p-[var(--token-spacing-6)]",
             // 文本样式
-            "text-[var(--token-text-sm)] text-[var(--color-muted-foreground)]",
+            "text-[var(--color-muted-foreground)] text-[var(--token-text-sm)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />

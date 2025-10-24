@@ -180,94 +180,167 @@ export function useServerAction<TInput = unknown, TOutput = unknown>({
 
     const execute = useCallback(
         async (input: TInput): Promise<TOutput | undefined> => {
-            let retryAttempts = 0;
-            let lastError: Error | null = null;
+            const normalizeToastConfig = () => {
+                if (typeof showToast === "object") {
+                    return {
+                        success: showToast.success !== false,
+                        error: showToast.error !== false,
+                    };
+                }
+
+                if (showToast === false) {
+                    return { success: false, error: false };
+                }
+
+                return { success: true, error: true };
+            };
+
+            const showLoadingToast = (config: {
+                success: boolean;
+                error: boolean;
+            }) => {
+                if (!config.success && !config.error) {
+                    return undefined;
+                }
+
+                const loadingMessage = toastMessages?.loading ?? "正在处理...";
+                return toast.loading(loadingMessage);
+            };
+
+            const resetQueryStatesIfNeeded = () => {
+                if (!resetQueryOnSuccess || queryKeys.length === 0) {
+                    return;
+                }
+
+                startTransition(() => {
+                    const resetStates: Record<string, null> = {};
+                    queryKeys.forEach((key) => {
+                        resetStates[key] = null;
+                    });
+                    setQueryStates(resetStates);
+                });
+            };
+
+            const resolveSuccessMessage = (result: TOutput) => {
+                if (!toastMessages?.success) {
+                    return "操作成功";
+                }
+
+                return typeof toastMessages.success === "function"
+                    ? toastMessages.success(result)
+                    : toastMessages.success;
+            };
+
+            const resolveErrorMessage = (error: Error) => {
+                if (!toastMessages?.error) {
+                    return error.message || "操作失败";
+                }
+
+                return typeof toastMessages.error === "function"
+                    ? toastMessages.error(error)
+                    : toastMessages.error;
+            };
+
+            const maybeShowSuccessToast = (
+                config: { success: boolean; error: boolean },
+                loadingToastId: string | number | undefined,
+                result: TOutput,
+            ) => {
+                if (!config.success || loadingToastId === undefined) {
+                    return;
+                }
+
+                toast.success(resolveSuccessMessage(result), {
+                    id: loadingToastId,
+                });
+            };
+
+            const maybeDismissLoadingToast = (
+                loadingToastId: string | number | undefined,
+            ) => {
+                if (loadingToastId === undefined) {
+                    return;
+                }
+
+                const dismiss = (toast as { dismiss?: typeof toast.dismiss })
+                    .dismiss;
+
+                if (typeof dismiss === "function") {
+                    dismiss(loadingToastId);
+                }
+            };
+
+            const maybeShowErrorToast = (
+                config: { success: boolean; error: boolean },
+                error: Error,
+            ) => {
+                if (!config.error) {
+                    return;
+                }
+
+                toast.error(resolveErrorMessage(error));
+            };
+
+            const normalizeError = (caughtError: unknown): Error =>
+                caughtError instanceof Error
+                    ? caughtError
+                    : new Error(String(caughtError));
+
+            const handleSuccess = async (
+                result: TOutput,
+                config: { success: boolean; error: boolean },
+                loadingToastId: string | number | undefined,
+            ) => {
+                setData(result);
+                setError(null);
+
+                if (onSuccess) {
+                    await onSuccess(result, input);
+                }
+
+                maybeShowSuccessToast(config, loadingToastId, result);
+                resetQueryStatesIfNeeded();
+            };
+
+            const handleError = async (
+                caughtError: unknown,
+                config: { success: boolean; error: boolean },
+                loadingToastId: string | number | undefined,
+            ) => {
+                const normalizedError = normalizeError(caughtError);
+
+                setError(normalizedError);
+                maybeDismissLoadingToast(loadingToastId);
+
+                if (onError) {
+                    await onError(normalizedError, input);
+                }
+
+                maybeShowErrorToast(config, normalizedError);
+
+                return normalizedError;
+            };
 
             const tryExecute = async (): Promise<TOutput | undefined> => {
+                const toastConfig = normalizeToastConfig();
+                const loadingToastId = showLoadingToast(toastConfig);
+
                 try {
                     setIsPending(true);
                     setIsExecuting(true);
                     setError(null);
-
-                    // 触发开始回调
                     onExecute?.(input);
 
-                    // 显示加载 toast
-                    const toastConfig =
-                        typeof showToast === "object"
-                            ? showToast
-                            : { success: true, error: true };
-                    const showSuccessToast = toastConfig.success !== false;
-                    const showErrorToast = toastConfig.error !== false;
-
-                    let loadingToastId: string | number | undefined;
-                    if (showSuccessToast || showErrorToast) {
-                        const loadingMessage =
-                            toastMessages?.loading || "正在处理...";
-                        loadingToastId = toast.loading(loadingMessage);
-                    }
-
-                    // 执行 Server Action
                     const result = await action(input);
-
-                    // 更新状态
-                    setData(result);
-                    setError(null);
-
-                    // 成功回调
-                    if (onSuccess) {
-                        await onSuccess(result, input);
-                    }
-
-                    // 成功 toast
-                    if (showSuccessToast && loadingToastId !== undefined) {
-                        const successMessage = toastMessages?.success
-                            ? typeof toastMessages.success === "function"
-                                ? toastMessages.success(result)
-                                : toastMessages.success
-                            : "操作成功";
-
-                        toast.success(successMessage, { id: loadingToastId });
-                    }
-
-                    // 重置查询参数
-                    if (resetQueryOnSuccess && queryKeys.length > 0) {
-                        startTransition(() => {
-                            const resetStates: Record<string, null> = {};
-                            queryKeys.forEach((key) => {
-                                resetStates[key] = null;
-                            });
-                            setQueryStates(resetStates);
-                        });
-                    }
-
+                    await handleSuccess(result, toastConfig, loadingToastId);
                     return result;
                 } catch (err) {
-                    lastError =
-                        err instanceof Error ? err : new Error(String(err));
-                    setError(lastError);
-
-                    // 错误回调
-                    if (onError) {
-                        await onError(lastError, input);
-                    }
-
-                    // 错误 toast
-                    const toastConfig =
-                        typeof showToast === "object"
-                            ? showToast
-                            : { success: true, error: true };
-                    if (toastConfig.error !== false) {
-                        const errorMessage = toastMessages?.error
-                            ? typeof toastMessages.error === "function"
-                                ? toastMessages.error(lastError)
-                                : toastMessages.error
-                            : lastError.message || "操作失败";
-
-                        toast.error(errorMessage);
-                    }
-
-                    throw lastError;
+                    const normalizedError = await handleError(
+                        err,
+                        toastConfig,
+                        loadingToastId,
+                    );
+                    throw normalizedError;
                 } finally {
                     setIsPending(false);
                     setIsExecuting(false);
@@ -275,7 +348,8 @@ export function useServerAction<TInput = unknown, TOutput = unknown>({
                 }
             };
 
-            // 重试逻辑
+            let retryAttempts = 0;
+
             while (retryAttempts <= retryCount) {
                 try {
                     return await tryExecute();
@@ -289,7 +363,6 @@ export function useServerAction<TInput = unknown, TOutput = unknown>({
                 }
             }
 
-            // 所有重试都失败了
             return undefined;
         },
         [
