@@ -1,4 +1,4 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 import { getActiveAppLocales, resolveAppUrl } from "@/lib/seo";
 import { generateSitemap } from "@/lib/seo/sitemap";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";

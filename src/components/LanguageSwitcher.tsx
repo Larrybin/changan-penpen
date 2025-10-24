@@ -47,7 +47,7 @@ export default function LanguageSwitcher() {
                     });
                 }
             }}
-            className="border rounded-md px-2 py-1 text-sm bg-white"
+            className="rounded-md border bg-white px-2 py-1 text-sm"
             aria-label={tCommon("languageSwitcherLabel")}
         >
             {options.map((option) => (
