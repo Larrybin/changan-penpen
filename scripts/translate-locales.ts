@@ -175,7 +175,7 @@ const getValueAtPath = (
 const ensureContainer = (
     parent: Record<string, unknown>,
     key: string,
-    next: PathSegment,
+    next?: PathSegment,
 ) => {
     if (isDangerousKey(key)) {
         // Skip creating containers for dangerous keys to prevent prototype pollution

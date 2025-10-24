@@ -4,9 +4,9 @@
  * 提升首屏加载性能
  */
 
-import { lazy, Suspense } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { lazy, Suspense } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // 基础骨架屏组件
 const TableSkeleton = () => (
@@ -57,51 +57,61 @@ const ChartSkeleton = () => (
 
 // 懒加载的核心业务组件
 export const LazyUserDetail = lazy(() =>
-    import('@/modules/admin/users/components/user-detail.client').then(module => ({
-        default: module.UserDetail
-    }))
+    import("@/modules/admin/users/components/user-detail.client").then(
+        (module) => ({
+            default: module.UserDetailClient,
+        }),
+    ),
 );
 
 export const LazyUsersListClient = lazy(() =>
-    import('@/modules/admin/users/components/users-list-client').then(module => ({
-        default: module.UsersListClient
-    }))
+    import("@/modules/admin/users/components/users-list-client").then(
+        (module) => ({
+            default: module.UsersListClient,
+        }),
+    ),
 );
 
 export const LazyTodoForm = lazy(() =>
-    import('@/modules/admin/todos/components/todo-form').then(module => ({
-        default: module.TodoForm
-    }))
+    import("@/modules/admin/todos/components/todo-form").then((module) => ({
+        default: module.AdminTodoForm,
+    })),
 );
 
 export const LazyProductForm = lazy(() =>
-    import('@/modules/admin/catalog/components/product-form').then(module => ({
-        default: module.ProductForm
-    }))
+    import("@/modules/admin/catalog/components/product-form").then(
+        (module) => ({
+            default: module.ProductForm,
+        }),
+    ),
 );
 
 export const LazyCouponForm = lazy(() =>
-    import('@/modules/admin/catalog/components/coupon-form').then(module => ({
-        default: module.CouponForm
-    }))
+    import("@/modules/admin/catalog/components/coupon-form").then((module) => ({
+        default: module.CouponForm,
+    })),
 );
 
 export const LazyContentPageForm = lazy(() =>
-    import('@/modules/admin/catalog/components/content-page-form').then(module => ({
-        default: module.ContentPageForm
-    }))
+    import("@/modules/admin/catalog/components/content-page-form").then(
+        (module) => ({
+            default: module.ContentPageForm,
+        }),
+    ),
 );
 
 export const LazyAdminResourceTable = lazy(() =>
-    import('@/modules/admin/components/admin-resource-table').then(module => ({
-        default: module.AdminResourceTable
-    }))
+    import("@/modules/admin/components/admin-resource-table").then(
+        (module) => ({
+            default: module.AdminResourceTable,
+        }),
+    ),
 );
 
 export const LazyAdminResourceForm = lazy(() =>
-    import('@/modules/admin/components/admin-resource-form').then(module => ({
-        default: module.AdminResourceForm
-    }))
+    import("@/modules/admin/components/admin-resource-form").then((module) => ({
+        default: module.AdminResourceForm,
+    })),
 );
 
 // 统一的懒加载包装器组件
@@ -114,11 +124,15 @@ interface LazyWrapperProps {
 export function LazyWrapper({
     children,
     fallback,
-    className = ""
+    className = "",
 }: LazyWrapperProps) {
     return (
         <div className={className}>
-            <Suspense fallback={fallback || <div className="animate-pulse">加载中...</div>}>
+            <Suspense
+                fallback={
+                    fallback || <div className="animate-pulse">加载中...</div>
+                }
+            >
                 {children}
             </Suspense>
         </div>
@@ -270,32 +284,38 @@ export const LazyAdminResourceFormWrapper = (props: any) => (
 // 组件预取函数
 export function prefetchComponent(componentName: string): void {
     // 在用户空闲时预取组件
-    if ('requestIdleCallback' in window) {
+    if ("requestIdleCallback" in window) {
         requestIdleCallback(() => {
             switch (componentName) {
-                case 'UserDetail':
-                    import('@/modules/admin/users/components/user-detail.client');
+                case "UserDetail":
+                    import(
+                        "@/modules/admin/users/components/user-detail.client"
+                    );
                     break;
-                case 'UsersList':
-                    import('@/modules/admin/users/components/users-list-client');
+                case "UsersList":
+                    import(
+                        "@/modules/admin/users/components/users-list-client"
+                    );
                     break;
-                case 'TodoForm':
-                    import('@/modules/admin/todos/components/todo-form');
+                case "TodoForm":
+                    import("@/modules/admin/todos/components/todo-form");
                     break;
-                case 'ProductForm':
-                    import('@/modules/admin/catalog/components/product-form');
+                case "ProductForm":
+                    import("@/modules/admin/catalog/components/product-form");
                     break;
-                case 'CouponForm':
-                    import('@/modules/admin/catalog/components/coupon-form');
+                case "CouponForm":
+                    import("@/modules/admin/catalog/components/coupon-form");
                     break;
-                case 'ContentPageForm':
-                    import('@/modules/admin/catalog/components/content-page-form');
+                case "ContentPageForm":
+                    import(
+                        "@/modules/admin/catalog/components/content-page-form"
+                    );
                     break;
-                case 'AdminResourceTable':
-                    import('@/modules/admin/components/admin-resource-table');
+                case "AdminResourceTable":
+                    import("@/modules/admin/components/admin-resource-table");
                     break;
-                case 'AdminResourceForm':
-                    import('@/modules/admin/components/admin-resource-form');
+                case "AdminResourceForm":
+                    import("@/modules/admin/components/admin-resource-form");
                     break;
             }
         });
@@ -304,13 +324,9 @@ export function prefetchComponent(componentName: string): void {
 
 // 批量预取常用组件
 export function prefetchCommonComponents(): void {
-    const commonComponents = [
-        'UserDetail',
-        'UsersList',
-        'AdminResourceTable',
-    ];
+    const commonComponents = ["UserDetail", "UsersList", "AdminResourceTable"];
 
-    commonComponents.forEach(component => {
+    commonComponents.forEach((component) => {
         prefetchComponent(component);
     });
 }
@@ -322,7 +338,8 @@ export { TableSkeleton, CardSkeleton, ChartSkeleton };
 export class ComponentLoadingManager {
     private static instance: ComponentLoadingManager;
     private loadingComponents: Set<string> = new Set();
-    private listeners: Map<string, Array<(loading: boolean) => void>> = new Map();
+    private listeners: Map<string, Array<(loading: boolean) => void>> =
+        new Map();
 
     static getInstance(): ComponentLoadingManager {
         if (!ComponentLoadingManager.instance) {
@@ -339,14 +356,17 @@ export class ComponentLoadingManager {
         }
 
         const listeners = this.listeners.get(componentName) || [];
-        listeners.forEach(listener => listener(loading));
+        listeners.forEach((listener) => listener(loading));
     }
 
     isLoading(componentName: string): boolean {
         return this.loadingComponents.has(componentName);
     }
 
-    subscribe(componentName: string, listener: (loading: boolean) => void): () => void {
+    subscribe(
+        componentName: string,
+        listener: (loading: boolean) => void,
+    ): () => void {
         if (!this.listeners.has(componentName)) {
             this.listeners.set(componentName, []);
         }
