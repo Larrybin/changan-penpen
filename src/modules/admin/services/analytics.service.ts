@@ -48,15 +48,14 @@ export interface DashboardMetricsResponse {
     };
 }
 
-export async function getDashboardMetrics(
-    options: DashboardMetricsOptions = {},
-): Promise<DashboardMetricsResponse> {
-    const db = await getDb();
-    const tenantCondition = options.tenantId
-        ? eq(customers.userId, options.tenantId)
-        : undefined;
+type DatabaseClient = Awaited<ReturnType<typeof getDb>>;
+type TenantCondition = SQL<unknown> | undefined;
 
-    const ordersQuery = db
+async function fetchOrdersSummary(
+    db: DatabaseClient,
+    tenantCondition: TenantCondition,
+) {
+    const baseQuery = db
         .select({
             revenueCents: sql<number>`coalesce(sum(${orders.amountCents}), 0)`,
             orderCount: sql<number>`count(*)`,
@@ -64,49 +63,60 @@ export async function getDashboardMetrics(
         .from(orders)
         .innerJoin(customers, eq(customers.id, orders.customerId));
 
-    const ordersResult = tenantCondition
-        ? await ordersQuery.where(tenantCondition)
-        : await ordersQuery;
-    const ordersSummary = ordersResult[0];
+    const builder = tenantCondition
+        ? baseQuery.where(tenantCondition)
+        : baseQuery;
 
-    const subscriptionQuery = db
+    const [summary] = await builder;
+    return summary;
+}
+
+async function fetchActiveSubscriptionSummary(
+    db: DatabaseClient,
+    tenantCondition: TenantCondition,
+) {
+    const condition = tenantCondition
+        ? and(eq(subscriptions.status, "active"), tenantCondition)
+        : eq(subscriptions.status, "active");
+
+    const [summary] = await db
         .select({ active: sql<number>`count(*)` })
         .from(subscriptions)
-        .innerJoin(customers, eq(customers.id, subscriptions.customerId));
+        .innerJoin(customers, eq(customers.id, subscriptions.customerId))
+        .where(condition);
 
-    const subscriptionResult = tenantCondition
-        ? await subscriptionQuery.where(
-              and(eq(subscriptions.status, "active"), tenantCondition),
-          )
-        : await subscriptionQuery.where(eq(subscriptions.status, "active"));
-    const subscriptionSummary = subscriptionResult[0];
+    return summary;
+}
 
-    const tenantSummary = await db
-        .select({ total: sql<number>`count(*)` })
-        .from(user);
-
-    const creditsQuery = db
+async function fetchTotalCredits(
+    db: DatabaseClient,
+    tenantCondition: TenantCondition,
+) {
+    const baseQuery = db
         .select({
             totalCredits: sql<number>`coalesce(sum(${customers.credits}), 0)`,
         })
         .from(customers);
 
-    const creditResult = tenantCondition
-        ? await creditsQuery.where(tenantCondition)
-        : await creditsQuery;
-    const creditSummary = creditResult[0];
+    const builder = tenantCondition
+        ? baseQuery.where(tenantCondition)
+        : baseQuery;
 
-    const usageFilters: SQL[] = [];
-    if (options.tenantId) {
-        usageFilters.push(eq(usageDaily.userId, options.tenantId));
-    }
-    if (options.from) {
-        usageFilters.push(gte(usageDaily.date, options.from));
-    }
+    const [summary] = await builder;
+    return summary;
+}
 
-    const usageWhere = usageFilters.length ? and(...usageFilters) : undefined;
+async function fetchUsageTrend(
+    db: DatabaseClient,
+    options: DashboardMetricsOptions,
+) {
+    const filters = [
+        options.tenantId ? eq(usageDaily.userId, options.tenantId) : null,
+        options.from ? gte(usageDaily.date, options.from) : null,
+    ].filter((clause): clause is SQL<unknown> => clause !== null);
 
-    const usageRowsQuery = db
+    const condition = filters.length ? and(...filters) : undefined;
+    const baseQuery = db
         .select({
             date: usageDaily.date,
             amount: sql<number>`sum(${usageDaily.totalAmount})`,
@@ -117,11 +127,15 @@ export async function getDashboardMetrics(
         .orderBy(usageDaily.date)
         .limit(30);
 
-    const usageRows = usageWhere
-        ? await usageRowsQuery.where(usageWhere)
-        : await usageRowsQuery;
+    const builder = condition ? baseQuery.where(condition) : baseQuery;
+    return builder;
+}
 
-    const latestOrdersQuery = db
+async function fetchLatestOrders(
+    db: DatabaseClient,
+    tenantCondition: TenantCondition,
+) {
+    const baseQuery = db
         .select({
             id: orders.id,
             amountCents: orders.amountCents,
@@ -135,11 +149,17 @@ export async function getDashboardMetrics(
         .orderBy(desc(orders.createdAt))
         .limit(5);
 
-    const latestOrdersRows = tenantCondition
-        ? await latestOrdersQuery.where(tenantCondition)
-        : await latestOrdersQuery;
+    const builder = tenantCondition
+        ? baseQuery.where(tenantCondition)
+        : baseQuery;
+    return builder;
+}
 
-    const recentCreditsQuery = db
+async function fetchRecentCredits(
+    db: DatabaseClient,
+    tenantCondition: TenantCondition,
+) {
+    const baseQuery = db
         .select({
             id: creditsHistory.id,
             amount: creditsHistory.amount,
@@ -152,27 +172,68 @@ export async function getDashboardMetrics(
         .orderBy(desc(creditsHistory.createdAt))
         .limit(5);
 
-    const recentCreditsRows = tenantCondition
-        ? await recentCreditsQuery.where(tenantCondition)
-        : await recentCreditsQuery;
+    const builder = tenantCondition
+        ? baseQuery.where(tenantCondition)
+        : baseQuery;
+    return builder;
+}
 
-    const productCount = await db
+async function fetchCatalogSummary(db: DatabaseClient) {
+    const [productCount, couponCount, contentCount] = await Promise.all([
+        db.select({ total: sql<number>`count(*)` }).from(products),
+        db.select({ total: sql<number>`count(*)` }).from(coupons),
+        db.select({ total: sql<number>`count(*)` }).from(contentPages),
+    ]);
+
+    return {
+        products: productCount[0]?.total ?? 0,
+        coupons: couponCount[0]?.total ?? 0,
+        contentPages: contentCount[0]?.total ?? 0,
+    };
+}
+
+async function fetchTenantTotal(db: DatabaseClient) {
+    const [summary] = await db
         .select({ total: sql<number>`count(*)` })
-        .from(products);
-    const couponCount = await db
-        .select({ total: sql<number>`count(*)` })
-        .from(coupons);
-    const contentCount = await db
-        .select({ total: sql<number>`count(*)` })
-        .from(contentPages);
+        .from(user);
+    return summary?.total ?? 0;
+}
+
+export async function getDashboardMetrics(
+    options: DashboardMetricsOptions = {},
+): Promise<DashboardMetricsResponse> {
+    const db = await getDb();
+    const tenantCondition = options.tenantId
+        ? eq(customers.userId, options.tenantId)
+        : undefined;
+
+    const [
+        ordersSummary,
+        subscriptionSummary,
+        totalCredits,
+        usageRows,
+        latestOrdersRows,
+        recentCreditsRows,
+        catalogSummary,
+        tenantTotal,
+    ] = await Promise.all([
+        fetchOrdersSummary(db, tenantCondition),
+        fetchActiveSubscriptionSummary(db, tenantCondition),
+        fetchTotalCredits(db, tenantCondition),
+        fetchUsageTrend(db, options),
+        fetchLatestOrders(db, tenantCondition),
+        fetchRecentCredits(db, tenantCondition),
+        fetchCatalogSummary(db),
+        fetchTenantTotal(db),
+    ]);
 
     return {
         totals: {
             revenueCents: ordersSummary?.revenueCents ?? 0,
             orderCount: ordersSummary?.orderCount ?? 0,
             activeSubscriptions: subscriptionSummary?.active ?? 0,
-            tenantCount: tenantSummary[0]?.total ?? 0,
-            totalCredits: creditSummary?.totalCredits ?? 0,
+            tenantCount: tenantTotal,
+            totalCredits: totalCredits?.totalCredits ?? 0,
         },
         usageTrend: usageRows.map((row) => ({
             date: row.date,
@@ -194,10 +255,6 @@ export async function getDashboardMetrics(
             customerEmail: row.customerEmail,
             type: row.type,
         })),
-        catalogSummary: {
-            products: productCount[0]?.total ?? 0,
-            coupons: couponCount[0]?.total ?? 0,
-            contentPages: contentCount[0]?.total ?? 0,
-        },
+        catalogSummary,
     };
 }

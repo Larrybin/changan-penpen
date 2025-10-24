@@ -96,36 +96,15 @@ function createAdminQueryClient() {
     return new QueryClient({
         queryCache: new QueryCache({
             onError: notifyError,
-            // 添加缓存统计
-            onSuccess: (data, query) => {
-                const dataKeys =
-                    data && typeof data === "object"
-                        ? Object.keys(data as Record<string, unknown>)
-                        : [];
-                console.debug(
-                    `[Query Cache] Cache hit for ${query.queryKey[0]}`,
-                    {
-                        queryKey: query.queryKey,
-                        dataKeys,
-                    },
-                );
+            // 添加缓存统计（暂不输出日志）
+            onSuccess: () => {
+                // 保留钩子，后续可接入统计系统
             },
         }),
         mutationCache: new MutationCache({
             onError: notifyError,
             // 变更成功后主动失效相关缓存
-            onSuccess: (data, variables, context, mutation) => {
-                const mutationKey =
-                    mutation.options.mutationKey?.[0] ?? "unknown";
-                const dataKeys =
-                    data && typeof data === "object"
-                        ? Object.keys(data as Record<string, unknown>)
-                        : [];
-                console.debug(`[Mutation Cache] Success: ${mutationKey}`, {
-                    variables,
-                    dataKeys,
-                });
-
+            onSuccess: (_data, _variables, _context, mutation) => {
                 // 基于变更类型触发缓存失效
                 handleMutationCacheInvalidation(mutation);
             },
@@ -190,7 +169,7 @@ function createAdminQueryClient() {
                 },
 
                 // 变更重试延迟
-                retryDelay: (attemptIndex) => {
+                retryDelay: (_attemptIndex) => {
                     return 1000 + Math.random() * 1000; // 1-2秒随机延迟
                 },
 
@@ -214,8 +193,6 @@ function handleMutationCacheInvalidation(
 
     if (!mutationKey || !queryClient) return;
 
-    console.debug(`[Cache Invalidation] Handling mutation: ${mutationKey}`);
-
     // 根据不同的变更类型失效相应的查询缓存
     const invalidationMap: Record<string, string[]> = {
         createOrder: ["dashboard", "orders:latest"],
@@ -238,7 +215,6 @@ function handleMutationCacheInvalidation(
     keysToInvalidate.forEach((key) => {
         // 失效相关查询缓存
         queryClient.invalidateQueries({ queryKey: [key] });
-        console.debug(`[Cache Invalidation] Invalidated queries: ${key}`);
     });
 
     // 特殊处理：如果是仪表盘相关变更，强制刷新

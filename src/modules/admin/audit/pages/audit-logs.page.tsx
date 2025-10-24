@@ -55,7 +55,7 @@ export function AuditLogsPage() {
             />
             <div className="overflow-x-auto rounded-md border">
                 <table className="min-w-full text-sm">
-                    <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                    <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                         <tr>
                             <th className="px-4 py-3">时间</th>
                             <th className="px-4 py-3">管理员</th>
@@ -90,7 +90,7 @@ export function AuditLogsPage() {
                         )}
                         {logs.map((log) => (
                             <tr key={log.id} className="border-t">
-                                <td className="px-4 py-3 text-xs text-muted-foreground">
+                                <td className="px-4 py-3 text-muted-foreground text-xs">
                                     {formatDateTime(log.createdAt)}
                                 </td>
                                 <td className="px-4 py-3">

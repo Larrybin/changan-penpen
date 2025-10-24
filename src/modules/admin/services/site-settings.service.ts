@@ -183,44 +183,46 @@ function shouldBypassDatabaseForStaticBuild() {
     return !hasCloudflareBindings(env);
 }
 
+function parseEnabledLanguages(raw: string | null | undefined): string[] {
+    if (!raw) {
+        return [];
+    }
+
+    try {
+        return JSON.parse(raw) as string[];
+    } catch (error) {
+        console.warn(
+            "Failed to parse enabled languages from site settings",
+            error,
+        );
+        return [];
+    }
+}
+
+function buildLocalizedSeoField(value: string | null | undefined) {
+    return sanitizeLocalizedInput({}, parseLocalizedJson(value));
+}
+
+function resolveSeoField(
+    explicit: string | null | undefined,
+    localized: LocalizedSeoFieldMap,
+    defaultLanguage: AppLocale,
+) {
+    return explicit ?? localized[defaultLanguage] ?? "";
+}
+
 function mapRowToPayload(
     row: typeof siteSettings.$inferSelect,
 ): SiteSettingsPayload {
     const defaultLanguage =
         toAppLocale(row.defaultLanguage) ?? EMPTY_SETTINGS.defaultLanguage;
+    const enabledLanguagesRaw = parseEnabledLanguages(row.enabledLanguages);
 
-    let enabledLanguagesRaw: string[] = [];
-    if (row.enabledLanguages) {
-        try {
-            enabledLanguagesRaw = JSON.parse(row.enabledLanguages);
-        } catch (error) {
-            console.warn(
-                "Failed to parse enabled languages from site settings",
-                error,
-            );
-            enabledLanguagesRaw = [];
-        }
-    }
-
-    const seoTitleLocalized = sanitizeLocalizedInput(
-        {},
-        parseLocalizedJson(row.seoTitleLocalized),
+    const seoTitleLocalized = buildLocalizedSeoField(row.seoTitleLocalized);
+    const seoDescriptionLocalized = buildLocalizedSeoField(
+        row.seoDescriptionLocalized,
     );
-    const seoDescriptionLocalized = sanitizeLocalizedInput(
-        {},
-        parseLocalizedJson(row.seoDescriptionLocalized),
-    );
-    const seoOgImageLocalized = sanitizeLocalizedInput(
-        {},
-        parseLocalizedJson(row.seoOgImageLocalized),
-    );
-
-    const resolvedSeoTitle =
-        row.seoTitle ?? seoTitleLocalized[defaultLanguage] ?? "";
-    const resolvedSeoDescription =
-        row.seoDescription ?? seoDescriptionLocalized[defaultLanguage] ?? "";
-    const resolvedSeoOgImage =
-        row.seoOgImage ?? seoOgImageLocalized[defaultLanguage] ?? "";
+    const seoOgImageLocalized = buildLocalizedSeoField(row.seoOgImageLocalized);
 
     return {
         id: row.id ?? undefined,
@@ -228,9 +230,21 @@ function mapRowToPayload(
         domain: row.domain ?? "",
         logoUrl: row.logoUrl ?? "",
         faviconUrl: row.faviconUrl ?? "",
-        seoTitle: resolvedSeoTitle,
-        seoDescription: resolvedSeoDescription,
-        seoOgImage: resolvedSeoOgImage,
+        seoTitle: resolveSeoField(
+            row.seoTitle,
+            seoTitleLocalized,
+            defaultLanguage,
+        ),
+        seoDescription: resolveSeoField(
+            row.seoDescription,
+            seoDescriptionLocalized,
+            defaultLanguage,
+        ),
+        seoOgImage: resolveSeoField(
+            row.seoOgImage,
+            seoOgImageLocalized,
+            defaultLanguage,
+        ),
         seoTitleLocalized,
         seoDescriptionLocalized,
         seoOgImageLocalized,

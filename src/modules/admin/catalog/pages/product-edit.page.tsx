@@ -34,7 +34,7 @@ export function ProductEditPage() {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader title="编辑商品" description="更新商品信息。" />
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-muted-foreground text-sm">
                     参数错误。
                 </div>
             </div>
@@ -59,7 +59,7 @@ export function ProductEditPage() {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader title="编辑商品" description="更新商品信息。" />
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-muted-foreground text-sm">
                     未找到该商品。
                 </div>
             </div>

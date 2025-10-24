@@ -121,7 +121,7 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
                         </Button>
                     }
                 />
-                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground text-sm">
                     未找到该租户。
                 </div>
             </div>
@@ -145,26 +145,26 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
 
             <section className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-lg border p-4">
-                    <p className="text-xs uppercase text-muted-foreground">
+                    <p className="text-muted-foreground text-xs uppercase">
                         积分
                     </p>
-                    <p className="mt-2 text-2xl font-semibold">
+                    <p className="mt-2 font-semibold text-2xl">
                         {tenant.credits}
                     </p>
                 </div>
                 <div className="rounded-lg border p-4">
-                    <p className="text-xs uppercase text-muted-foreground">
+                    <p className="text-muted-foreground text-xs uppercase">
                         最近订阅状态
                     </p>
-                    <p className="mt-2 text-lg font-semibold">
+                    <p className="mt-2 font-semibold text-lg">
                         {tenant.subscriptions?.[0]?.status ?? "无订阅"}
                     </p>
                 </div>
                 <div className="rounded-lg border p-4">
-                    <p className="text-xs uppercase text-muted-foreground">
+                    <p className="text-muted-foreground text-xs uppercase">
                         最近一次登录
                     </p>
-                    <p className="mt-2 text-sm font-medium">
+                    <p className="mt-2 font-medium text-sm">
                         {tenant.lastSignIn?.slice(0, 19) ?? "-"}
                     </p>
                 </div>
@@ -173,11 +173,11 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
             <section className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-lg border">
                     <div className="border-b px-4 py-3">
-                        <h2 className="text-sm font-semibold">积分流水</h2>
+                        <h2 className="font-semibold text-sm">积分流水</h2>
                     </div>
                     <div className="overflow-x-auto px-4 py-3">
                         <table className="min-w-full text-sm">
-                            <thead className="text-left text-xs uppercase text-muted-foreground">
+                            <thead className="text-left text-muted-foreground text-xs uppercase">
                                 <tr>
                                     <th className="py-2 pr-4">时间</th>
                                     <th className="py-2 pr-4">类型</th>
@@ -214,11 +214,11 @@ export function TenantDetailPage({ id }: TenantDetailPageProps) {
                 </div>
                 <div className="rounded-lg border">
                     <div className="border-b px-4 py-3">
-                        <h2 className="text-sm font-semibold">近期用量</h2>
+                        <h2 className="font-semibold text-sm">近期用量</h2>
                     </div>
                     <div className="overflow-x-auto px-4 py-3">
                         <table className="min-w-full text-sm">
-                            <thead className="text-left text-xs uppercase text-muted-foreground">
+                            <thead className="text-left text-muted-foreground text-xs uppercase">
                                 <tr>
                                     <th className="py-2 pr-4">日期</th>
                                     <th className="py-2 pr-4">数值</th>

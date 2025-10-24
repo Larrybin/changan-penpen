@@ -37,7 +37,7 @@ export function ContentPageEditPage() {
                     title="编辑内容页"
                     description="调整页面内容与发布状态。"
                 />
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-muted-foreground text-sm">
                     参数错误。
                 </div>
             </div>
@@ -68,7 +68,7 @@ export function ContentPageEditPage() {
                     title="编辑内容页"
                     description="调整页面内容与发布状态。"
                 />
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-muted-foreground text-sm">
                     未找到该内容页。
                 </div>
             </div>

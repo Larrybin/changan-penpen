@@ -20,6 +20,53 @@ type PrefetchDashboardData = {
     recentCredits?: Array<{ customerEmail?: string | null }>;
 } | null;
 
+function normalizeOrderId(order: {
+    id?: number | string | null;
+}): number | null {
+    if (!order?.id) {
+        return null;
+    }
+
+    if (typeof order.id === "number" && !Number.isNaN(order.id)) {
+        return order.id;
+    }
+
+    if (typeof order.id === "string") {
+        const parsed = Number.parseInt(order.id, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    return null;
+}
+
+function enqueueOrderPrefetchTasks(
+    tasks: Promise<void>[],
+    orders: PrefetchDashboardData["latestOrders"],
+    prefetchOrderDetails: (orderId: number) => Promise<void>,
+): void {
+    (orders ?? [])
+        .slice(0, 3)
+        .map(normalizeOrderId)
+        .filter((orderId): orderId is number => orderId != null)
+        .forEach((orderId) => {
+            tasks.push(prefetchOrderDetails(orderId));
+        });
+}
+
+function enqueueCreditPrefetchTasks(
+    tasks: Promise<void>[],
+    credits: PrefetchDashboardData["recentCredits"],
+    prefetchUserDetails: (userId: string) => Promise<void>,
+): void {
+    (credits ?? [])
+        .map((credit) => credit?.customerEmail)
+        .filter((email): email is string => Boolean(email))
+        .slice(0, 2)
+        .forEach((userId) => {
+            tasks.push(prefetchUserDetails(userId));
+        });
+}
+
 /**
  * 仪表盘数据预取Hook
  */
@@ -170,42 +217,26 @@ export function useDashboardPrefetch(options: PrefetchOptions = {}) {
                 const prefetchTasks: Promise<void>[] = [];
 
                 // 基于仪表盘数据智能预取
-                if (
-                    dashboardData?.latestOrders?.length &&
-                    userBehavior?.recentOrders !== false
-                ) {
-                    // 预取最近几个订单的详情
-                    dashboardData.latestOrders.slice(0, 3).forEach((order) => {
-                        if (!order?.id) {
-                            return;
-                        }
-
-                        const resolvedId =
-                            typeof order.id === "string"
-                                ? Number.parseInt(order.id, 10)
-                                : order.id;
-
-                        if (typeof resolvedId !== "number" || Number.isNaN(resolvedId)) {
-                            return;
-                        }
-
-                        prefetchTasks.push(prefetchOrderDetails(resolvedId));
-                    });
+                const shouldPrefetchOrders =
+                    userBehavior?.recentOrders !== false &&
+                    Boolean(dashboardData?.latestOrders?.length);
+                if (shouldPrefetchOrders) {
+                    enqueueOrderPrefetchTasks(
+                        prefetchTasks,
+                        dashboardData?.latestOrders,
+                        prefetchOrderDetails,
+                    );
                 }
 
-                if (
-                    dashboardData?.recentCredits?.length &&
-                    userBehavior?.userManagement !== false
-                ) {
-                    // 预取积分变动相关的用户详情
-                    const recentUserIds = dashboardData.recentCredits
-                        .map((credit) => credit?.customerEmail)
-                        .filter(Boolean)
-                        .slice(0, 2) as string[];
-
-                    recentUserIds.forEach((userId: string) => {
-                        prefetchTasks.push(prefetchUserDetails(userId));
-                    });
+                const shouldPrefetchCredits =
+                    userBehavior?.userManagement !== false &&
+                    Boolean(dashboardData?.recentCredits?.length);
+                if (shouldPrefetchCredits) {
+                    enqueueCreditPrefetchTasks(
+                        prefetchTasks,
+                        dashboardData?.recentCredits,
+                        prefetchUserDetails,
+                    );
                 }
 
                 // 根据优先级决定预取策略

@@ -11,6 +11,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+function createSequentialKeys(prefix: string, count: number): string[] {
+    return Array.from({ length: count }, (_, index) => `${prefix}-${index}`);
+}
+
 interface LoadingStateProps {
     isLoading: boolean;
     error?: Error | null;
@@ -66,11 +70,11 @@ export function EnhancedLoadingState({
         return (
             <Card className={cn("border-destructive/50", className)}>
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                    <h3 className="text-lg font-semibold text-destructive mb-2">
+                    <AlertCircle className="mb-4 h-12 w-12 text-destructive" />
+                    <h3 className="mb-2 font-semibold text-destructive text-lg">
                         加载失败
                     </h3>
-                    <p className="text-muted-foreground mb-4 max-w-md">
+                    <p className="mb-4 max-w-md text-muted-foreground">
                         {error.message || "数据加载失败，请稍后重试"}
                     </p>
                     {errorFallback ||
@@ -82,7 +86,7 @@ export function EnhancedLoadingState({
                             >
                                 <RefreshCw
                                     className={cn(
-                                        "h-4 w-4 mr-2",
+                                        "mr-2 h-4 w-4",
                                         isLoading && "animate-spin",
                                     )}
                                 />
@@ -109,12 +113,16 @@ export function EnhancedLoadingState({
  * 默认的加载回退组件
  */
 function DefaultLoadingFallback() {
+    const statsCardKeys = createSequentialKeys("default-stats-card", 4);
+    const chartSummaryKeys = createSequentialKeys("default-chart-summary", 3);
+    const tableCardKeys = createSequentialKeys("default-table-card", 2);
+
     return (
         <div className="space-y-6">
             {/* 模拟统计卡片加载 */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {Array.from({ length: 4 }, (_, i) => (
-                    <Card key={i}>
+                {statsCardKeys.map((cardKey) => (
+                    <Card key={cardKey}>
                         <CardHeader className="pb-2">
                             <Skeleton className="h-4 w-20" />
                         </CardHeader>
@@ -142,8 +150,11 @@ function DefaultLoadingFallback() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            {Array.from({ length: 3 }, (_, i) => (
-                                <div key={i} className="flex justify-between">
+                            {chartSummaryKeys.map((summaryKey) => (
+                                <div
+                                    key={summaryKey}
+                                    className="flex justify-between"
+                                >
                                     <Skeleton className="h-4 w-16" />
                                     <Skeleton className="h-4 w-8" />
                                 </div>
@@ -155,35 +166,39 @@ function DefaultLoadingFallback() {
 
             {/* 模拟表格加载 */}
             <div className="grid gap-4 lg:grid-cols-2">
-                {Array.from({ length: 2 }, (_, i) => (
-                    <Card key={i}>
-                        <CardHeader>
-                            <Skeleton className="h-6 w-32" />
-                            <Skeleton className="h-4 w-48" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                <div className="flex items-center space-x-4">
-                                    <Skeleton className="h-4 w-4" />
-                                    <Skeleton className="h-4 w-20" />
-                                    <Skeleton className="h-4 w-16" />
-                                    <Skeleton className="h-4 w-24" />
-                                </div>
-                                {Array.from({ length: 4 }, (_, j) => (
-                                    <div
-                                        key={j}
-                                        className="flex items-center space-x-4"
-                                    >
+                {tableCardKeys.map((cardKey) => {
+                    const rowKeys = createSequentialKeys(`${cardKey}-row`, 4);
+
+                    return (
+                        <Card key={cardKey}>
+                            <CardHeader>
+                                <Skeleton className="h-6 w-32" />
+                                <Skeleton className="h-4 w-48" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3">
+                                    <div className="flex items-center space-x-4">
                                         <Skeleton className="h-4 w-4" />
-                                        <Skeleton className="h-4 w-24" />
-                                        <Skeleton className="h-4 w-32" />
+                                        <Skeleton className="h-4 w-20" />
                                         <Skeleton className="h-4 w-16" />
+                                        <Skeleton className="h-4 w-24" />
                                     </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                                    {rowKeys.map((rowKey) => (
+                                        <div
+                                            key={rowKey}
+                                            className="flex items-center space-x-4"
+                                        >
+                                            <Skeleton className="h-4 w-4" />
+                                            <Skeleton className="h-4 w-24" />
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-4 w-16" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </div>
         </div>
     );
@@ -224,19 +239,19 @@ export function ProgressLoading({
             )}
         >
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground">{message}</p>
+            <div className="space-y-2 text-center">
+                <p className="text-muted-foreground text-sm">{message}</p>
                 {showPercentage && progress !== undefined && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                         {Math.round(displayProgress)}%
                     </p>
                 )}
             </div>
             {progress !== undefined && (
                 <div className="w-full max-w-sm">
-                    <div className="w-full bg-secondary rounded-full h-2">
+                    <div className="h-2 w-full rounded-full bg-secondary">
                         <div
-                            className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
+                            className="h-2 rounded-full bg-primary transition-all duration-300 ease-out"
                             style={{ width: `${displayProgress}%` }}
                         />
                     </div>
@@ -316,7 +331,7 @@ export function SmartLoader({
         : undefined;
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="flex min-h-[400px] flex-col items-center justify-center">
             <ProgressLoading
                 progress={progress}
                 message={message}
@@ -324,7 +339,7 @@ export function SmartLoader({
             />
             {isTimeout && (
                 <div className="mt-4 text-center">
-                    <p className="text-sm text-destructive mb-2">
+                    <p className="mb-2 text-destructive text-sm">
                         加载超时，您可以：
                     </p>
                     <Button
@@ -345,38 +360,60 @@ export function SmartLoader({
  */
 export const SkeletonLibrary = {
     // 统计卡片骨架屏
-    StatsCards: ({ count = 4 }: { count?: number }) => (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: count }, (_, i) => (
-                <Card key={i}>
-                    <CardHeader className="pb-2">
-                        <Skeleton className="h-4 w-20" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-8 w-16" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    ),
+    StatsCards: ({ count = 4 }: { count?: number }) => {
+        const keys = createSequentialKeys("skeleton-stats-card", count);
 
-    // 表格骨架屏
-    Table: ({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) => (
-        <div className="space-y-3">
-            <div className="flex items-center space-x-4">
-                {Array.from({ length: columns }, (_, i) => (
-                    <Skeleton key={i} className="h-4 w-20" />
+        return (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {keys.map((key) => (
+                    <Card key={key}>
+                        <CardHeader className="pb-2">
+                            <Skeleton className="h-4 w-20" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-8 w-16" />
+                        </CardContent>
+                    </Card>
                 ))}
             </div>
-            {Array.from({ length: rows }, (_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                    {Array.from({ length: columns }, (_, j) => (
-                        <Skeleton key={j} className="h-4 w-16" />
+        );
+    },
+
+    // 表格骨架屏
+    Table: ({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) => {
+        const headerKeys = createSequentialKeys(
+            "skeleton-table-header",
+            columns,
+        );
+        const rowKeys = createSequentialKeys("skeleton-table-row", rows);
+
+        return (
+            <div className="space-y-3">
+                <div className="flex items-center space-x-4">
+                    {headerKeys.map((headerKey) => (
+                        <Skeleton key={headerKey} className="h-4 w-20" />
                     ))}
                 </div>
-            ))}
-        </div>
-    ),
+                {rowKeys.map((rowKey) => {
+                    const cellKeys = createSequentialKeys(
+                        `${rowKey}-cell`,
+                        columns,
+                    );
+
+                    return (
+                        <div
+                            key={rowKey}
+                            className="flex items-center space-x-4"
+                        >
+                            {cellKeys.map((cellKey) => (
+                                <Skeleton key={cellKey} className="h-4 w-16" />
+                            ))}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    },
 
     // 图表骨架屏
     Chart: ({ height = 300 }: { height?: number }) => (
@@ -395,24 +432,28 @@ export const SkeletonLibrary = {
     ),
 
     // 表单骨架屏
-    Form: ({ fields = 3 }: { fields?: number }) => (
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {Array.from({ length: fields }, (_, i) => (
-                        <div key={i} className="space-y-2">
-                            <Skeleton className="h-4 w-20" />
-                            <Skeleton className="h-10 w-full" />
-                        </div>
-                    ))}
-                    <Skeleton className="h-10 w-20" />
-                </div>
-            </CardContent>
-        </Card>
-    ),
+    Form: ({ fields = 3 }: { fields?: number }) => {
+        const fieldKeys = createSequentialKeys("skeleton-form-field", fields);
+
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {fieldKeys.map((fieldKey) => (
+                            <div key={fieldKey} className="space-y-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        ))}
+                        <Skeleton className="h-10 w-20" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    },
 };
 
 export default EnhancedLoadingState;
