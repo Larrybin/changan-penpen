@@ -86,13 +86,13 @@ export function FormLabel({
         <label
             htmlFor={htmlFor}
             className={cn(
-                "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                "font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
                 className,
             )}
             {...props}
         >
             {children}
-            {required && <span className="text-destructive ml-1">*</span>}
+            {required && <span className="ml-1 text-destructive">*</span>}
         </label>
     );
 }
@@ -118,7 +118,7 @@ interface FormDescriptionProps
 export function FormDescription({ className, ...props }: FormDescriptionProps) {
     return (
         <p
-            className={cn("text-sm text-muted-foreground", className)}
+            className={cn("text-muted-foreground text-sm", className)}
             {...props}
         />
     );
@@ -220,7 +220,7 @@ export function FormSubmit({
         <button
             type="submit"
             className={cn(
-                "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4",
+                "inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
                 className,
             )}
             disabled={isDisabled}
@@ -245,7 +245,7 @@ export function FormError({ error, className, ...props }: FormErrorProps) {
     return (
         <div
             className={cn(
-                "rounded-md bg-destructive/15 p-3 text-sm text-destructive",
+                "rounded-md bg-destructive/15 p-3 text-destructive text-sm",
                 className,
             )}
             {...props}
@@ -270,7 +270,7 @@ export function FormSuccess({
     return (
         <div
             className={cn(
-                "rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200",
+                "rounded-md bg-green-50 p-3 text-green-800 text-sm dark:bg-green-900/20 dark:text-green-200",
                 className,
             )}
             {...props}
