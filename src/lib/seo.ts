@@ -161,7 +161,9 @@ function isAllowedUriScheme(url: string): boolean {
         const u = new URL(url, "https://example.com");
         const scheme = (u.protocol || "").toLowerCase();
         if (scheme === "http:" || scheme === "https:") return true;
-    } catch {}
+    } catch {
+        // Ignore invalid URLs and fall back to additional scheme checks.
+    }
     // data URL (only images)
     if (_isDataImageBase64(url)) return true;
     // allow mailto links
