@@ -44,6 +44,10 @@ function sleep(ms: number) {
     return new Promise((r) => setTimeout(r, ms));
 }
 
+type FetchAttemptResult =
+    | { kind: "success"; status: number; data: unknown }
+    | { kind: "failure"; status: number; text?: string; shouldRetry: boolean };
+
 function backoffWithJitter(attempt: number): number {
     return Math.min(5000, 1000 * 2 ** (attempt - 1)) + secureRandomInt(300);
 }
@@ -140,6 +144,36 @@ export async function GET(request: Request) {
     }
 }
 
+async function performFetchAttempt(
+    url: string,
+    init: RequestInit,
+    timeoutMs: number,
+): Promise<FetchAttemptResult> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const resp = await fetch(url, { ...init, signal: controller.signal });
+        clearTimeout(timer);
+        const ct = resp.headers.get("content-type") || "";
+        const isJson = ct.toLowerCase().includes("application/json");
+        if (resp.ok) {
+            const data = await readResponseBody(resp, isJson);
+            return { kind: "success", status: resp.status, data };
+        }
+        const text = await resp.text();
+        return {
+            kind: "failure",
+            status: resp.status,
+            text,
+            shouldRetry: isRetryableStatus(resp.status),
+        };
+    } catch (error) {
+        clearTimeout(timer);
+        const message = error instanceof Error ? error.message : String(error);
+        return { kind: "failure", status: 0, text: message, shouldRetry: true };
+    }
+}
+
 async function fetchWithRetry(
     url: string,
     init: RequestInit,
@@ -147,41 +181,30 @@ async function fetchWithRetry(
 ): Promise<{ ok: boolean; status: number; data?: unknown; text?: string }> {
     const maxAttempts = Math.max(1, options?.attempts ?? 3);
     const timeoutMs = Math.max(1000, options?.timeoutMs ?? 8000);
-    let lastText: string | undefined;
-    let lastStatus = 0;
+
+    let lastFailure: { status: number; text?: string } = {
+        status: 0,
+        text: undefined,
+    };
+
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-            const resp = await fetch(url, {
-                ...init,
-                signal: controller.signal,
-            });
-            clearTimeout(timer);
-            lastStatus = resp.status;
-            const ct = resp.headers.get("content-type") || "";
-            const isJson = ct.toLowerCase().includes("application/json");
-            if (resp.ok) {
-                const data = await readResponseBody(resp, isJson);
-                return { ok: true, status: resp.status, data };
-            }
-            lastText = await resp.text();
-            if (isRetryableStatus(resp.status) && attempt < maxAttempts) {
-                await sleep(backoffWithJitter(attempt));
-                continue;
-            }
-            return { ok: false, status: resp.status, text: lastText };
-        } catch (err) {
-            clearTimeout(timer);
-            if (attempt < maxAttempts) {
-                await sleep(backoffWithJitter(attempt));
-                continue;
-            }
-            const msg = err instanceof Error ? err.message : String(err);
-            return { ok: false, status: lastStatus || 0, text: msg };
+        const result = await performFetchAttempt(url, init, timeoutMs);
+        if (result.kind === "success") {
+            return { ok: true, status: result.status, data: result.data };
         }
+        lastFailure = { status: result.status, text: result.text };
+        const shouldRetry = result.shouldRetry && attempt < maxAttempts;
+        if (!shouldRetry) {
+            return {
+                ok: false,
+                status: lastFailure.status,
+                text: lastFailure.text,
+            };
+        }
+        await sleep(backoffWithJitter(attempt));
     }
-    return { ok: false, status: lastStatus || 0, text: lastText };
+
+    return { ok: false, status: lastFailure.status, text: lastFailure.text };
 }
 
 function secureRandomInt(maxExclusive: number): number {
@@ -205,6 +228,8 @@ function secureRandomInt(maxExclusive: number): number {
             rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
         } while (rand >= limit);
         return rand % maxExclusive;
-    } catch {}
+    } catch {
+        // Ignore: Node.js crypto module unavailable in this environment
+    }
     return 0;
 }
