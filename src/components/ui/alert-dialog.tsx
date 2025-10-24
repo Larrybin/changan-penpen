@@ -55,7 +55,7 @@ function AlertDialogOverlay({
                 // 背景模糊效果
                 "backdrop-blur-sm",
                 // 进场和出场动画
-                "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                "data-[state=closed]:animate-out data-[state=open]:animate-in",
                 "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                 // 过渡动画
                 "transition-[opacity,backdrop-filter] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
@@ -84,11 +84,11 @@ function AlertDialogContent({
                     // 内边距令牌
                     "p-[var(--token-spacing-6)]",
                     // 背景色和圆角令牌
-                    "bg-[var(--color-background)] rounded-[var(--token-radius-card,var(--token-radius-lg))]",
+                    "rounded-[var(--token-radius-card,var(--token-radius-lg))] bg-[var(--color-background)]",
                     // 边框和阴影令牌 - 警告对话框使用更强的阴影
                     "border border-[var(--color-destructive,var(--color-muted-foreground)/20)] shadow-[var(--shadow-2xl)]",
                     // 进场和出场动画
-                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                    "data-[state=closed]:animate-out data-[state=open]:animate-in",
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                     "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                     "data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2",
@@ -97,7 +97,7 @@ function AlertDialogContent({
                     // 渐入动画
                     "fade-in",
                     // 微交互
-                    "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
+                    "data-[state=closed]:scale-[0.95] data-[state=open]:scale-[1]",
                     className,
                 )}
                 {...props}
@@ -156,7 +156,7 @@ function AlertDialogTitle({
             data-slot="alert-dialog-title"
             className={cn(
                 // 排版令牌
-                "text-[var(--token-text-lg)] font-[var(--token-font-weight-semibold)] leading-[var(--token-line-height-tight)]",
+                "font-[var(--token-font-weight-semibold)] text-[var(--token-text-lg)] leading-[var(--token-line-height-tight)]",
                 // 颜色令牌 - 警告对话框标题使用警告色
                 "text-[var(--color-destructive-foreground,var(--color-foreground))]",
                 // 渐入动画

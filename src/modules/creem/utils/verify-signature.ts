@@ -150,43 +150,89 @@ export async function verifyCreemWebhookSignature(
 }
 
 function parseSignatureHeader(signature: string) {
-    const signatures = new Set<string>();
-    let timestamp: number | null = null;
-
-    const direct = signature.replace(/\s+/g, "");
-    if (direct && !direct.includes("=")) {
-        signatures.add(direct);
-    }
-
-    const parts = signature
-        .split(/[;,\s]/)
-        .map((part) => part.trim())
-        .filter(Boolean);
-
-    for (const part of parts) {
-        const [rawKey, ...rawValueParts] = part.split("=");
-        if (!rawKey || rawValueParts.length === 0) {
-            continue;
-        }
-        const value = rawValueParts.join("=");
-        if (!value) {
-            continue;
-        }
-        const normalizedKey = rawKey.toLowerCase();
-        if (normalizedKey === "t" || normalizedKey === "timestamp") {
-            const parsed = Number(value);
-            if (!Number.isNaN(parsed)) {
-                timestamp = parsed;
-            }
-        } else if (normalizedKey === "v1" || normalizedKey === "sig") {
-            signatures.add(value);
-        }
-    }
+    const signatures = collectSignatureValues(signature);
+    const timestamp = extractSignatureTimestamp(signature);
 
     return {
         timestamp,
         signatures: Array.from(signatures),
     } as const;
+}
+
+function collectSignatureValues(signature: string) {
+    const collected = new Set<string>();
+    addDirectSignature(signature, collected);
+
+    for (const part of splitSignatureParts(signature)) {
+        const entry = parseSignaturePart(part);
+        if (!entry) {
+            continue;
+        }
+        if (isSignatureKey(entry.key)) {
+            collected.add(entry.value);
+        }
+    }
+
+    return collected;
+}
+
+function extractSignatureTimestamp(signature: string) {
+    let timestamp: number | null = null;
+
+    for (const part of splitSignatureParts(signature)) {
+        const entry = parseSignaturePart(part);
+        if (!entry) {
+            continue;
+        }
+        if (!isTimestampKey(entry.key)) {
+            continue;
+        }
+        const parsed = parseTimestamp(entry.value);
+        if (parsed !== null) {
+            timestamp = parsed;
+        }
+    }
+
+    return timestamp;
+}
+
+function addDirectSignature(signature: string, target: Set<string>) {
+    const direct = signature.replace(/\s+/g, "");
+    if (direct && !direct.includes("=")) {
+        target.add(direct);
+    }
+}
+
+function splitSignatureParts(signature: string) {
+    return signature
+        .split(/[;,\s]/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+}
+
+function parseSignaturePart(part: string) {
+    const [rawKey, ...rawValueParts] = part.split("=");
+    if (!rawKey || rawValueParts.length === 0) {
+        return null;
+    }
+    const value = rawValueParts.join("=");
+    if (!value) {
+        return null;
+    }
+    return { key: rawKey.toLowerCase(), value } as const;
+}
+
+function isTimestampKey(key: string) {
+    return key === "t" || key === "timestamp";
+}
+
+function parseTimestamp(value: string) {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? null : parsed;
+}
+
+function isSignatureKey(key: string) {
+    return key === "v1" || key === "sig";
 }
 
 export function splitSignatureFromParams(
