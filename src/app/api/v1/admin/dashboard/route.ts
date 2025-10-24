@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
     AdminCacheKeyBuilder,
     getAdminCacheManager,
-    invalidateAdminCache,
     withAdminCache,
 } from "@/lib/cache/admin-cache";
 import type { DashboardMetricsResponse } from "@/modules/admin/services/analytics.service";
@@ -199,47 +198,4 @@ async function getDashboardMetricsWithCaching(
                 ? catalogSummaryResult.value.value
                 : baseMetrics.catalogSummary,
     };
-}
-
-/**
- * 刷新仪表盘缓存的辅助函数
- * 在数据变更时调用
- */
-export async function invalidateDashboardCache(options?: {
-    tenantId?: string;
-    resource?: "all" | "orders" | "credits" | "catalog";
-}): Promise<void> {
-    const resource = options?.resource ?? "all";
-
-    switch (resource) {
-        case "orders":
-            await invalidateAdminCache("orders:latest", {
-                tenantId: options?.tenantId,
-                level: "REALTIME",
-            });
-            break;
-        case "credits":
-            await invalidateAdminCache("credits:recent", {
-                tenantId: options?.tenantId,
-                level: "REALTIME",
-            });
-            break;
-        case "catalog":
-            await invalidateAdminCache("catalog:summary", { level: "STATIC" });
-            break;
-        default:
-            // 失效所有相关缓存
-            await Promise.all([
-                invalidateAdminCache("dashboard:*", { level: "USER" }),
-                invalidateAdminCache("orders:*", { level: "REALTIME" }),
-                invalidateAdminCache("credits:*", { level: "REALTIME" }),
-                invalidateAdminCache("catalog:*", { level: "STATIC" }),
-            ]);
-            break;
-    }
-
-    console.info("[Dashboard Cache] Cache invalidated", {
-        resource,
-        tenantId: options?.tenantId,
-    });
 }
