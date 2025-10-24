@@ -48,8 +48,6 @@ const nextConfig: NextConfig = {
         webVitalsAttribution: ["CLS", "LCP", "INP"],
         // Webpack内存优化（Next.js 15.0.0+）
         webpackMemoryOptimizations: true,
-        // 组件缓存支持
-        cacheComponents: true,
     },
     webpack: (config) => {
         config.resolve = config.resolve || {};
