@@ -109,6 +109,20 @@ function formatDateTime(value: string | null | undefined) {
     return dateTimeFormatter.format(date);
 }
 
+function loadCreditsSnapshot() {
+    return Promise.all([fetchBalanceData(), fetchHistoryData()]).then(
+        ([balanceJson, historyJson]) => ({
+            balance: balanceJson.data?.credits ?? 0,
+            transactions: historyJson.data?.transactions ?? [],
+        }),
+    );
+}
+
+function resolveLoadErrorMessage(error: unknown) {
+    if (error instanceof Error) return error.message;
+    return "无法获取积分信息，请稍后再试";
+}
+
 function extractErrorMessage(payload: { error?: unknown } | null | undefined) {
     if (!payload || !payload.error) return "";
     const { error } = payload;
@@ -136,20 +150,12 @@ export default function CreditsSection() {
         setError(null);
 
         try {
-            const [balanceJson, historyJson] = await Promise.all([
-                fetchBalanceData(),
-                fetchHistoryData(),
-            ]);
-
-            setBalance(balanceJson.data?.credits ?? 0);
-            setTransactions(historyJson.data?.transactions ?? []);
+            const snapshot = await loadCreditsSnapshot();
+            setBalance(snapshot.balance);
+            setTransactions(snapshot.transactions);
         } catch (err) {
             console.error("[CreditsSection] fetch error:", err);
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "无法获取积分信息，请稍后再试",
-            );
+            setError(resolveLoadErrorMessage(err));
         } finally {
             setIsLoading(false);
         }

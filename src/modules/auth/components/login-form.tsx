@@ -83,7 +83,7 @@ export function LoginForm({
             <Card>
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl">
-                        <h2 className="text-xl font-semibold">
+                        <h2 className="font-semibold text-xl">
                             {tLogin("title")}
                         </h2>
                     </CardTitle>
@@ -110,8 +110,8 @@ export function LoginForm({
                                     </svg>
                                     {tLogin("googleCta")}
                                 </Button>
-                                <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                                    <span className="bg-card text-muted-foreground relative z-10 px-2">
+                                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-border after:border-t">
+                                    <span className="relative z-10 bg-card px-2 text-muted-foreground">
                                         {tShared("continueWith")}
                                     </span>
                                 </div>
@@ -146,7 +146,7 @@ export function LoginForm({
                                         <button
                                             type="button"
                                             onClick={handleForgotPassword}
-                                            className="ml-auto text-left text-sm text-primary underline-offset-4 hover:underline"
+                                            className="ml-auto text-left text-primary text-sm underline-offset-4 hover:underline"
                                         >
                                             {tLogin("forgotPassword")}
                                         </button>
@@ -161,7 +161,7 @@ export function LoginForm({
                                     >
                                         {isSubmitting ? (
                                             <>
-                                                <Loader2 className="size-4 animate-spin mr-2" />
+                                                <Loader2 className="mr-2 size-4 animate-spin" />
                                                 {tShared("loading")}
                                             </>
                                         ) : (
@@ -183,7 +183,7 @@ export function LoginForm({
                     </Form>
                 </CardContent>
             </Card>
-            <div className="text-muted-foreground text-center text-xs text-balance">
+            <div className="text-balance text-center text-muted-foreground text-xs">
                 {tShared("agreement.prefix")}{" "}
                 <Link
                     href="/terms"

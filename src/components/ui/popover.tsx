@@ -70,9 +70,7 @@ const PopoverContent = React.forwardRef<
                     // 圆角令牌
                     "rounded-[var(--token-radius-card,var(--token-radius-md))]",
                     // 背景色和边框令牌
-                    "border",
-                    "border-[var(--color-border,var(--color-muted-foreground)/10)]",
-                    "bg-[var(--color-popover,var(--color-background))]",
+                    "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-popover,var(--color-background))]",
                     // 内边距令牌
                     "p-[var(--token-spacing-4)]",
                     // 文字颜色令牌
@@ -80,11 +78,7 @@ const PopoverContent = React.forwardRef<
                     // 阴影令牌
                     "shadow-[var(--shadow-lg)]",
                     // 焦点样式
-                    "focus-visible:outline-hidden",
-                    "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))]",
-                    "focus-visible:ring-[var(--token-focus-ring-width,2px)]",
-                    "focus-visible:ring-offset-[var(--color-background)]",
-                    "focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
+                    "focus-visible:outline-hidden focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                     // 进场和出场动画
                     "data-[state=closed]:animate-out data-[state=open]:animate-in",
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

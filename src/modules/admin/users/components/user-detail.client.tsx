@@ -13,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminQueryKeys } from "@/lib/query/keys";
+import { cn } from "@/lib/utils";
 import { fetchAdminRecord } from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminUserDetail } from "@/modules/admin/users/models";
@@ -210,65 +211,37 @@ function UserDetailSkeleton() {
     );
 }
 
-export function UserDetailClient({ userId }: UserDetailClientProps) {
-    const query = useQuery({
-        queryKey: adminQueryKeys.detail("users", userId),
-        queryFn: ({ signal }) =>
-            fetchAdminRecord<AdminUserDetail>({
-                resource: "users",
-                id: userId,
-                signal,
-            }),
-    });
+function UserDetailStatus({
+    breadcrumbLabel,
+    message,
+    tone = "muted",
+}: {
+    breadcrumbLabel: string;
+    message: string;
+    tone?: "muted" | "destructive";
+}) {
+    const toneClass =
+        tone === "destructive" ? "text-destructive" : "text-muted-foreground";
 
-    if (query.isLoading) {
-        return <UserDetailSkeleton />;
-    }
+    return (
+        <div className="flex flex-col gap-[var(--grid-gap-section)]">
+            <PageHeader
+                title="用户详情"
+                breadcrumbs={[
+                    {
+                        label: "Admin",
+                        href: adminRoutes.dashboard.overview,
+                    },
+                    { label: "用户管理", href: adminRoutes.users.list },
+                    { label: breadcrumbLabel },
+                ]}
+            />
+            <div className={cn("py-10 text-center", toneClass)}>{message}</div>
+        </div>
+    );
+}
 
-    if (query.error) {
-        return (
-            <div className="flex flex-col gap-[var(--grid-gap-section)]">
-                <PageHeader
-                    title="用户详情"
-                    breadcrumbs={[
-                        {
-                            label: "Admin",
-                            href: adminRoutes.dashboard.overview,
-                        },
-                        { label: "用户管理", href: adminRoutes.users.list },
-                        { label: "加载失败" },
-                    ]}
-                />
-                <div className="py-10 text-center text-destructive">
-                    加载用户数据时出现错误，请稍后重试。
-                </div>
-            </div>
-        );
-    }
-
-    const detail = query.data ?? null;
-
-    if (!detail) {
-        return (
-            <div className="flex flex-col gap-[var(--grid-gap-section)]">
-                <PageHeader
-                    title="用户详情"
-                    breadcrumbs={[
-                        {
-                            label: "Admin",
-                            href: adminRoutes.dashboard.overview,
-                        },
-                        { label: "用户管理", href: adminRoutes.users.list },
-                        { label: "未找到用户" },
-                    ]}
-                />
-                <div className="py-10 text-center text-muted-foreground">
-                    未找到该用户。
-                </div>
-            </div>
-        );
-    }
-
+function UserDetailContent({ detail }: { detail: AdminUserDetail }) {
     const subscriptionSummary = detail.subscriptions.length
         ? `最新订阅：${detail.subscriptions[0].status ?? "未知状态"}`
         : "暂无订阅记录";
@@ -368,15 +341,15 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-muted-foreground text-xs">
                                     当前积分
                                 </p>
-                                <p className="text-2xl font-semibold">
+                                <p className="font-semibold text-2xl">
                                     {detail.user.currentCredits}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-muted-foreground text-xs">
                                     积分刷新时间
                                 </p>
                                 <p className="text-sm">
@@ -388,17 +361,17 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                         </div>
                         <Separator />
                         <div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-muted-foreground text-xs">
                                 充值渠道（Creem）流水
                             </p>
                             {detail.creditsHistory.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                     暂无积分流水记录。
                                 </p>
                             ) : (
                                 <div className="overflow-x-auto rounded-md border">
                                     <table className="min-w-full text-sm">
-                                        <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                                        <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                                             <tr>
                                                 <th className="px-3 py-2">
                                                     类型
@@ -424,7 +397,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                                                         <td className="px-3 py-2">
                                                             {item.amount}
                                                         </td>
-                                                        <td className="px-3 py-2 text-xs text-muted-foreground">
+                                                        <td className="px-3 py-2 text-muted-foreground text-xs">
                                                             {formatDateTime(
                                                                 item.createdAt,
                                                             )}
@@ -439,17 +412,17 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                         </div>
                         <Separator />
                         <div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-muted-foreground text-xs">
                                 系统交易记录
                             </p>
                             {detail.transactions.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                     暂无系统交易记录。
                                 </p>
                             ) : (
                                 <div className="overflow-x-auto rounded-md border">
                                     <table className="min-w-full text-sm">
-                                        <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                                        <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                                             <tr>
                                                 <th className="px-3 py-2">
                                                     类型
@@ -483,10 +456,10 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                                                     <td className="px-3 py-2">
                                                         {item.remainingAmount}
                                                     </td>
-                                                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                                                    <td className="px-3 py-2 text-muted-foreground text-xs">
                                                         {item.description}
                                                     </td>
-                                                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                                                    <td className="px-3 py-2 text-muted-foreground text-xs">
                                                         {formatDateTime(
                                                             item.createdAt,
                                                         )}
@@ -510,13 +483,13 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                     </CardHeader>
                     <CardContent>
                         {detail.usage.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                                 暂无用量记录。
                             </p>
                         ) : (
                             <div className="overflow-x-auto rounded-md border">
                                 <table className="min-w-full text-sm">
-                                    <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                                    <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                                         <tr>
                                             <th className="px-3 py-2">日期</th>
                                             <th className="px-3 py-2">功能</th>
@@ -537,7 +510,7 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                                                 </td>
                                                 <td className="px-3 py-2">
                                                     {item.totalAmount}{" "}
-                                                    <span className="text-xs text-muted-foreground">
+                                                    <span className="text-muted-foreground text-xs">
                                                         {item.unit}
                                                     </span>
                                                 </td>
@@ -559,11 +532,50 @@ export function UserDetailClient({ userId }: UserDetailClientProps) {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                         当前项目未启用 Passkey，后续若有需要可在此扩展展示。
                     </p>
                 </CardContent>
             </Card>
         </div>
     );
+}
+
+export function UserDetailClient({ userId }: UserDetailClientProps) {
+    const query = useQuery({
+        queryKey: adminQueryKeys.detail("users", userId),
+        queryFn: ({ signal }) =>
+            fetchAdminRecord<AdminUserDetail>({
+                resource: "users",
+                id: userId,
+                signal,
+            }),
+    });
+
+    if (query.isLoading) {
+        return <UserDetailSkeleton />;
+    }
+
+    if (query.error) {
+        return (
+            <UserDetailStatus
+                breadcrumbLabel="加载失败"
+                message="加载用户数据时出现错误，请稍后重试。"
+                tone="destructive"
+            />
+        );
+    }
+
+    const detail = query.data ?? null;
+
+    if (!detail) {
+        return (
+            <UserDetailStatus
+                breadcrumbLabel="未找到用户"
+                message="未找到该用户。"
+            />
+        );
+    }
+
+    return <UserDetailContent detail={detail} />;
 }

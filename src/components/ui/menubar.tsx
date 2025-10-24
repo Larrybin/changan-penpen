@@ -21,9 +21,7 @@ const Menubar = React.forwardRef<
             // 圆角令牌
             "rounded-[var(--token-radius-card,var(--token-radius-md))]",
             // 背景色和边框令牌
-            "border",
-            "border-[var(--color-border,var(--color-muted-foreground)/10)]",
-            "bg-[var(--color-background)]",
+            "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-background)]",
             // 内边距令牌
             "p-[var(--token-spacing-1)]",
             // 阴影令牌
@@ -57,30 +55,20 @@ const MenubarTrigger = React.forwardRef<
             "interactive-base",
             "scale-active",
             // 布局和尺寸
-            "inline-flex",
-            "items-center",
-            "justify-center",
-            "gap-[var(--token-spacing-2)]",
+            "inline-flex items-center justify-center gap-[var(--token-spacing-2)]",
             // 最小宽度和高度
-            "h-8",
-            "min-w-[2.5rem]",
+            "h-8 min-w-[2.5rem]",
             // 圆角和内边距令牌
             "rounded-[var(--token-radius-button,var(--token-radius-md))]",
-            "px-[calc(var(--token-spacing-3)*0.75)]",
-            "py-[var(--token-spacing-1)]",
+            "px-[calc(var(--token-spacing-3)*0.75)] py-[var(--token-spacing-1)]",
             // 排版令牌
-            "font-[var(--token-font-weight-medium)]",
-            "text-[var(--token-text-sm)]",
-            "leading-[var(--token-line-height-tight)]",
+            "font-[var(--token-font-weight-medium)] text-[var(--token-text-sm)] leading-[var(--token-line-height-tight)]",
             // 过渡动画
             "transition-[color,background-color,transform]",
             "duration-[var(--token-motion-duration-normal)]",
             "ease-[var(--token-motion-ease-standard)]",
             // 焦点状态
-            "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))]",
-            "focus-visible:ring-[var(--token-focus-ring-width,2px)]",
-            "focus-visible:ring-offset-[var(--color-background)]",
-            "focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
+            "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
             // 状态样式
             "data-[state=open]:bg-[var(--color-accent)]/70",
             "data-[state=open]:text-[var(--color-accent-foreground)]",
@@ -169,9 +157,7 @@ const MenubarSubContent = React.forwardRef<
             // 圆角令牌
             "rounded-[var(--token-radius-card,var(--token-radius-md))]",
             // 背景色和边框令牌
-            "border",
-            "border-[var(--color-border,var(--color-muted-foreground)/10)]",
-            "bg-[var(--color-popover,var(--color-background))]",
+            "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-popover,var(--color-background))]",
             // 内边距令牌
             "p-[var(--token-spacing-1)]",
             // 文字颜色令牌
@@ -218,9 +204,7 @@ const MenubarContent = React.forwardRef<
             // 圆角令牌
             "rounded-[var(--token-radius-card,var(--token-radius-md))]",
             // 背景色和边框令牌
-            "border",
-            "border-[var(--color-border,var(--color-muted-foreground)/10)]",
-            "bg-[var(--color-popover,var(--color-background))]",
+            "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-popover,var(--color-background))]",
             // 内边距令牌
             "p-[var(--token-spacing-1)]",
             // 文字颜色令牌

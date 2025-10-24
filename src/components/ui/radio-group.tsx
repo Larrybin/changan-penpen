@@ -80,10 +80,7 @@ const RadioGroupItem = React.forwardRef<
                     "data-[state=checked]:border-[var(--color-primary)] data-[state=checked]:bg-[var(--color-primary)]",
                     "data-[state=checked]:shadow-[var(--shadow-button)]",
                     // 焦点状态
-                    "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))]",
-                    "focus-visible:ring-[var(--token-focus-ring-width,2px)]",
-                    "focus-visible:ring-offset-[var(--color-background)]",
-                    "focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
+                    "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                     // 过渡动画
                     "transition-[border-color,background-color,box-shadow,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                     // 禁用状态
