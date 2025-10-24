@@ -76,11 +76,11 @@ export default async function Page() {
         offers,
     };
     return (
-        <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
-            <div className="text-center mb-10">
-                <h1 className="text-title-sm font-bold mb-3">{t("title")}</h1>
+        <div className="mx-auto max-w-[var(--container-max-w)] px-[var(--container-px)] py-12">
+            <div className="mb-10 text-center">
+                <h1 className="mb-3 font-bold text-title-sm">{t("title")}</h1>
                 <p className="text-muted-foreground">{t("description")}</p>
-                <p className="text-muted-foreground mt-2">
+                <p className="mt-2 text-muted-foreground">
                     {t.rich("loginPrompt", {
                         login: (chunks) => (
                             <Link href="/login" className="underline">

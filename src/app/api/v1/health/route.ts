@@ -378,71 +378,105 @@ async function checkAppUrl({
     }
 }
 
+const EXTERNAL_ENDPOINT_CANDIDATES = ["/status", ""];
+const EXTERNAL_TIMEOUT_MS = 4000;
+
+function stripTrailingSlashes(value: string): string {
+    let end = value.length - 1;
+    while (end >= 0 && value.charCodeAt(end) === 47 /* '/' */) {
+        end--;
+    }
+    return value.slice(0, end + 1);
+}
+
+interface ExternalServiceConfig {
+    endpointBase: string;
+    headers: Record<string, string>;
+    timeoutMs: number;
+}
+
+function resolveExternalServiceConfig(
+    env: CloudflareBindings,
+): ExternalServiceConfig | null {
+    const base = String(
+        (env as unknown as { CREEM_API_URL?: string })?.CREEM_API_URL ?? "",
+    ).trim();
+    if (!base) {
+        return null;
+    }
+    const bearer = String(
+        (env as unknown as { CREEM_API_KEY?: string })?.CREEM_API_KEY ?? "",
+    ).trim();
+    if (!bearer) {
+        return null;
+    }
+    return {
+        endpointBase: stripTrailingSlashes(base),
+        headers: { authorization: `Bearer ${bearer}` },
+        timeoutMs: EXTERNAL_TIMEOUT_MS,
+    };
+}
+
+async function fetchWithTimeout(
+    url: string,
+    method: "HEAD" | "GET",
+    headers: Record<string, string>,
+    timeoutMs: number,
+): Promise<Response> {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, {
+            method,
+            headers,
+            signal: controller.signal,
+        });
+        return response;
+    } finally {
+        clearTimeout(id);
+    }
+}
+
+async function isEndpointReachable(
+    url: string,
+    config: ExternalServiceConfig,
+): Promise<boolean> {
+    try {
+        const headResponse = await fetchWithTimeout(
+            url,
+            "HEAD",
+            config.headers,
+            config.timeoutMs,
+        );
+        if (headResponse.status === 405 || headResponse.status === 404) {
+            const getResponse = await fetchWithTimeout(
+                url,
+                "GET",
+                config.headers,
+                config.timeoutMs,
+            );
+            return getResponse.status < 500;
+        }
+        return headResponse.status < 500;
+    } catch {
+        return false;
+    }
+}
+
 async function checkExternalServices(
     env: CloudflareBindings,
 ): Promise<CheckResult> {
     try {
-        const base = String(
-            (env as unknown as { CREEM_API_URL?: string })?.CREEM_API_URL ?? "",
-        ).trim();
-        if (!base) {
-            // 未配置则跳过，不阻断
+        const config = resolveExternalServiceConfig(env);
+        if (!config) {
             return { ok: true };
         }
-        const bearer = String(
-            (env as unknown as { CREEM_API_KEY?: string })?.CREEM_API_KEY ?? "",
-        ).trim();
-        // 缺少访问令牌时，不将外部服务作为阻断项
-        if (!bearer) {
-            return { ok: true };
-        }
-        const headers: Record<string, string> = {};
-        headers.authorization = `Bearer ${bearer}`;
 
-        // 避免使用正则修剪结尾斜杠，消除潜在回溯告警
-        let end = base.length - 1;
-        while (end >= 0 && base.charCodeAt(end) === 47 /* '/' */) {
-            end--;
-        }
-        const endpointBase = base.slice(0, end + 1);
-        const candidates = ["/status", ""]; // 优先尝试 /status，其次根路径
-
-        const timeoutMs = 4000;
-        const tryFetch = async (url: string, method: "HEAD" | "GET") => {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeoutMs);
-            try {
-                const res = await fetch(url, {
-                    method,
-                    headers,
-                    signal: controller.signal,
-                });
-                return res;
-            } finally {
-                clearTimeout(id);
-            }
-        };
-
-        for (const suffix of candidates) {
-            const url = `${endpointBase}${suffix}`;
-            try {
-                let res = await tryFetch(url, "HEAD");
-                if (res.status === 405 || res.status === 404) {
-                    res = await tryFetch(url, "GET");
-                }
-                // 2xx/3xx/401/403 视为连通；5xx 视为失败
-                if (res.status < 500) {
-                    return { ok: true };
-                }
-            } catch (_error) {
-                try {
-                    console.debug("external connectivity check failed", {
-                        url,
-                        error: _error,
-                    });
-                } catch {}
-                // 继续尝试下一个候选
-                // 继续尝试下一个候选
+        for (const suffix of EXTERNAL_ENDPOINT_CANDIDATES) {
+            const url = `${config.endpointBase}${suffix}`;
+            const reachable = await isEndpointReachable(url, config);
+            if (reachable) {
+                return { ok: true };
             }
         }
 
