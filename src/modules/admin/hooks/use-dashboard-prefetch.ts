@@ -15,10 +15,20 @@ interface PrefetchOptions {
     priority?: "high" | "normal" | "low";
 }
 
-type PrefetchDashboardData = {
-    latestOrders?: Array<{ id?: number | string | null }>;
-    recentCredits?: Array<{ customerEmail?: string | null }>;
-} | null;
+interface PrefetchOrderSummary {
+    id?: number | string | null;
+}
+
+interface PrefetchCreditSummary {
+    customerEmail?: string | null;
+}
+
+interface PrefetchDashboardSnapshot {
+    latestOrders?: PrefetchOrderSummary[] | null;
+    recentCredits?: PrefetchCreditSummary[] | null;
+}
+
+type PrefetchDashboardData = PrefetchDashboardSnapshot | null;
 
 function normalizeOrderId(order: {
     id?: number | string | null;
@@ -41,7 +51,7 @@ function normalizeOrderId(order: {
 
 function enqueueOrderPrefetchTasks(
     tasks: Promise<void>[],
-    orders: PrefetchDashboardData["latestOrders"],
+    orders: PrefetchDashboardSnapshot["latestOrders"],
     prefetchOrderDetails: (orderId: number) => Promise<void>,
 ): void {
     (orders ?? [])
@@ -55,7 +65,7 @@ function enqueueOrderPrefetchTasks(
 
 function enqueueCreditPrefetchTasks(
     tasks: Promise<void>[],
-    credits: PrefetchDashboardData["recentCredits"],
+    credits: PrefetchDashboardSnapshot["recentCredits"],
     prefetchUserDetails: (userId: string) => Promise<void>,
 ): void {
     (credits ?? [])
