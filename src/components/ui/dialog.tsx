@@ -67,7 +67,7 @@ function DialogOverlay({
                 // 背景模糊效果
                 "backdrop-blur-sm",
                 // 进场和出场动画
-                "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                "data-[state=closed]:animate-out data-[state=open]:animate-in",
                 "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                 // 过渡动画
                 "transition-[opacity,backdrop-filter] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
@@ -100,11 +100,11 @@ function DialogContent({
                     // 内边距令牌
                     "p-[var(--token-spacing-6)]",
                     // 背景色和圆角令牌
-                    "bg-[var(--color-background)] rounded-[var(--token-radius-card,var(--token-radius-lg))]",
+                    "rounded-[var(--token-radius-card,var(--token-radius-lg))] bg-[var(--color-background)]",
                     // 边框和阴影令牌
                     "border border-[var(--color-border,var(--color-muted-foreground)/10)] shadow-[var(--shadow-xl)]",
                     // 进场和出场动画
-                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                    "data-[state=closed]:animate-out data-[state=open]:animate-in",
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                     "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                     "data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2",
@@ -113,7 +113,7 @@ function DialogContent({
                     // 渐入动画
                     "fade-in",
                     // 微交互
-                    "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
+                    "data-[state=closed]:scale-[0.95] data-[state=open]:scale-[1]",
                     className,
                 )}
                 {...props}
@@ -134,13 +134,13 @@ function DialogContent({
                             // 悬停状态
                             "hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
                             // 焦点状态
-                            "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)]",
+                            "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                             // 过渡动画
                             "color-transition transition-[background-color,color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                             // 禁用状态
                             "disabled:pointer-events-none disabled:opacity-50",
                             // 图标样式
-                            "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4",
+                            "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
                         )}
                     >
                         <XIcon />
@@ -196,7 +196,7 @@ function DialogTitle({
             data-slot="dialog-title"
             className={cn(
                 // 排版令牌
-                "text-[var(--token-text-lg)] font-[var(--token-font-weight-semibold)] leading-[var(--token-line-height-tight)]",
+                "font-[var(--token-font-weight-semibold)] text-[var(--token-text-lg)] leading-[var(--token-line-height-tight)]",
                 // 颜色令牌
                 "text-[var(--color-foreground)]",
                 // 渐入动画
