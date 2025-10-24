@@ -73,21 +73,17 @@ function formatCurrency(cents: number) {
 }
 
 export function AdminDashboardPage() {
-    const query = useQuery({
+    const query = useQuery<DashboardMetricsPayload | null>({
         queryKey: [...adminQueryKeys.resource("dashboard"), "metrics"],
         queryFn: async () => {
             const response = await adminApiClient.get<{
                 data?: DashboardMetricsPayload;
-                meta?: {
-                    cacheHit?: boolean;
-                    responseTime?: number;
-                };
             }>("/dashboard");
             return response.data.data ?? null;
         },
         // 优化查询配置，配合后端缓存
         staleTime: 1000 * 30, // 30秒内认为数据新鲜
-        cacheTime: 1000 * 60 * 5, // 5分钟内存缓存
+        gcTime: 1000 * 60 * 5, // 5分钟内存缓存
         refetchOnWindowFocus: false, // 减少网络请求
         retry: 2, // 最多重试2次
 
@@ -100,34 +96,35 @@ export function AdminDashboardPage() {
     });
 
     const isLoading = query.isLoading;
-    const payload = query.data;
-    const hasTrendData = (payload?.usageTrend?.length ?? 0) > 0;
-    const _hasOrderData = (payload?.latestOrders?.length ?? 0) > 0;
-    const _hasCreditData = (payload?.recentCredits?.length ?? 0) > 0;
+    const payload = query.data ?? null;
+    const usageTrend = payload?.usageTrend ?? [];
+    const latestOrders = payload?.latestOrders ?? [];
+    const recentCredits = payload?.recentCredits ?? [];
     const catalogSummary = payload?.catalogSummary ?? {
         products: 0,
         coupons: 0,
         contentPages: 0,
     };
+    const hasTrendData = usageTrend.length > 0;
     const metricCards = [
         {
             label: "总营收",
-            value: formatCurrency(payload?.totals.revenueCents ?? 0),
+            value: formatCurrency(payload?.totals?.revenueCents ?? 0),
             skeletonClassName: "w-24",
         },
         {
             label: "订单数",
-            value: (payload?.totals.orderCount ?? 0).toString(),
+            value: (payload?.totals?.orderCount ?? 0).toString(),
             skeletonClassName: "w-16",
         },
         {
             label: "活跃订阅",
-            value: (payload?.totals.activeSubscriptions ?? 0).toString(),
+            value: (payload?.totals?.activeSubscriptions ?? 0).toString(),
             skeletonClassName: "w-16",
         },
         {
             label: "站点积分总额",
-            value: (payload?.totals.totalCredits ?? 0).toLocaleString(),
+            value: (payload?.totals?.totalCredits ?? 0).toLocaleString(),
             skeletonClassName: "w-24",
         },
     ] as const;
@@ -195,25 +192,21 @@ export function AdminDashboardPage() {
                             <Skeleton className="h-48 w-full rounded-lg" />
                         ) : hasTrendData ? (
                             <>
-                                <UsageSparkline
-                                    data={payload?.usageTrend ?? []}
-                                />
+                                <UsageSparkline data={usageTrend} />
                                 <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                                    {(payload?.usageTrend ?? [])
-                                        .slice(-3)
-                                        .map((item) => (
-                                            <div
-                                                key={item.date}
-                                                className="space-y-1"
-                                            >
-                                                <div className="text-muted-foreground">
-                                                    {item.date}
-                                                </div>
-                                                <div className="font-medium">
-                                                    {item.amount}
-                                                </div>
+                                    {usageTrend.slice(-3).map((item) => (
+                                        <div
+                                            key={item.date}
+                                            className="space-y-1"
+                                        >
+                                            <div className="text-muted-foreground">
+                                                {item.date}
                                             </div>
-                                        ))}
+                                            <div className="font-medium">
+                                                {item.amount}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </>
                         ) : (
@@ -315,40 +308,34 @@ export function AdminDashboardPage() {
                                                 </tr>
                                             ),
                                         )}
-                                    {(payload?.latestOrders ?? []).map(
-                                        (order) => (
-                                            <tr
-                                                key={order.id}
-                                                className="border-t"
+                                    {latestOrders.map((order) => (
+                                        <tr key={order.id} className="border-t">
+                                            <td className="py-2 pr-4">
+                                                #{order.id}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                                {order.customerEmail ?? "-"}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                                {formatCurrency(
+                                                    order.amountCents,
+                                                )}
+                                            </td>
+                                            <td className="py-2 pr-4 capitalize">
+                                                {order.status ?? "-"}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {!latestOrders.length && !isLoading && (
+                                        <tr>
+                                            <td
+                                                className="py-6 text-center text-muted-foreground"
+                                                colSpan={4}
                                             >
-                                                <td className="py-2 pr-4">
-                                                    #{order.id}
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    {order.customerEmail ?? "-"}
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    {formatCurrency(
-                                                        order.amountCents,
-                                                    )}
-                                                </td>
-                                                <td className="py-2 pr-4 capitalize">
-                                                    {order.status ?? "-"}
-                                                </td>
-                                            </tr>
-                                        ),
+                                                暂无订单数据。
+                                            </td>
+                                        </tr>
                                     )}
-                                    {!payload?.latestOrders?.length &&
-                                        !isLoading && (
-                                            <tr>
-                                                <td
-                                                    className="py-6 text-center text-muted-foreground"
-                                                    colSpan={4}
-                                                >
-                                                    暂无订单数据。
-                                                </td>
-                                            </tr>
-                                        )}
                                 </tbody>
                             </table>
                         </div>
@@ -401,38 +388,32 @@ export function AdminDashboardPage() {
                                                 </tr>
                                             ),
                                         )}
-                                    {(payload?.recentCredits ?? []).map(
-                                        (entry) => (
-                                            <tr
-                                                key={entry.id}
-                                                className="border-t"
+                                    {recentCredits.map((entry) => (
+                                        <tr key={entry.id} className="border-t">
+                                            <td className="py-2 pr-4">
+                                                #{entry.id}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                                {entry.customerEmail ?? "-"}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                                {entry.amount}
+                                            </td>
+                                            <td className="py-2 pr-4 uppercase">
+                                                {entry.type ?? "-"}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {!recentCredits.length && !isLoading && (
+                                        <tr>
+                                            <td
+                                                className="py-6 text-center text-muted-foreground"
+                                                colSpan={4}
                                             >
-                                                <td className="py-2 pr-4">
-                                                    #{entry.id}
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    {entry.customerEmail ?? "-"}
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    {entry.amount}
-                                                </td>
-                                                <td className="py-2 pr-4 uppercase">
-                                                    {entry.type ?? "-"}
-                                                </td>
-                                            </tr>
-                                        ),
+                                                暂无积分流水。
+                                            </td>
+                                        </tr>
                                     )}
-                                    {!payload?.recentCredits?.length &&
-                                        !isLoading && (
-                                            <tr>
-                                                <td
-                                                    className="py-6 text-center text-muted-foreground"
-                                                    colSpan={4}
-                                                >
-                                                    暂无积分流水。
-                                                </td>
-                                            </tr>
-                                        )}
                                 </tbody>
                             </table>
                         </div>

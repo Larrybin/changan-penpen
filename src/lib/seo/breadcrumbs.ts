@@ -1,6 +1,7 @@
 import type { AppLocale } from "@/i18n/config";
 import { getSupportedAppLocales } from "@/i18n/config";
-import { buildLocalizedPath, resolveAppUrl } from "../seo";
+import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
+import { buildLocalizedPath } from "../seo";
 
 const SUPPORTED_LOCALES = new Set<AppLocale>(getSupportedAppLocales());
 
@@ -44,165 +45,239 @@ export interface BreadcrumbConfig {
  * 获取面包屑配置
  * 根据当前路径生成对应的面包屑配置
  */
+type Translator = (key: string) => string;
+
+interface RouteDescriptor {
+    key: string;
+    fallback: string;
+    path: string;
+    showHome?: boolean;
+}
+
+interface BreadcrumbMatch {
+    items: BreadcrumbItem[];
+    showHome?: boolean;
+}
+
+const HOME_TRANSLATION_KEY = "Breadcrumbs.home";
+const HOME_FALLBACK_NAME = "首页";
+const AUTHENTICATION_PATHS = new Set(["login", "signup"]);
+const HIDDEN_PATHS = new Set(["/", "", "login", "signup", "404", "500"]);
+
+const STATIC_ROUTES: Record<string, RouteDescriptor> = {
+    about: {
+        key: "Pages.about.title",
+        fallback: "关于我们",
+        path: "/about",
+    },
+    contact: {
+        key: "Pages.contact.title",
+        fallback: "联系我们",
+        path: "/contact",
+    },
+    privacy: {
+        key: "Pages.privacy.title",
+        fallback: "隐私政策",
+        path: "/privacy",
+    },
+    terms: {
+        key: "Pages.terms.title",
+        fallback: "服务条款",
+        path: "/terms",
+    },
+    dashboard: {
+        key: "Dashboard.title",
+        fallback: "仪表板",
+        path: "/dashboard",
+    },
+    billing: {
+        key: "Billing.title",
+        fallback: "计费",
+        path: "/billing",
+    },
+};
+
+const ADMIN_SUB_ROUTES: Record<string, RouteDescriptor> = {
+    users: {
+        key: "Admin.users",
+        fallback: "用户管理",
+        path: "/admin/users",
+    },
+    todos: {
+        key: "Admin.todos",
+        fallback: "任务管理",
+        path: "/admin/todos",
+    },
+    reports: {
+        key: "Admin.reports",
+        fallback: "报表分析",
+        path: "/admin/reports",
+    },
+    settings: {
+        key: "Admin.settings",
+        fallback: "系统设置",
+        path: "/admin/settings",
+    },
+};
+
+function translate(t: Translator, key: string, fallback: string) {
+    const value = t(key);
+    return value && value.trim().length > 0 ? value : fallback;
+}
+
+function normalizePath(pathname: string) {
+    const trimmed = pathname.trim();
+    const withoutLeading = trimmed.replace(/^\/+/, "");
+    const normalized = withoutLeading || "/";
+    const segments =
+        normalized === "/" ? [] : normalized.split("/").filter(Boolean);
+    return { normalized, segments };
+}
+
+function createTranslatedItem(
+    locale: AppLocale,
+    descriptor: RouteDescriptor,
+    t: Translator,
+): BreadcrumbItem {
+    return {
+        name: translate(t, descriptor.key, descriptor.fallback),
+        url: buildLocalizedPath(locale, descriptor.path),
+    };
+}
+
+function resolveStaticBreadcrumb(
+    normalizedPath: string,
+    locale: AppLocale,
+    t: Translator,
+): BreadcrumbMatch | null {
+    const descriptor = STATIC_ROUTES[normalizedPath];
+    if (!descriptor) {
+        return null;
+    }
+    return {
+        items: [createTranslatedItem(locale, descriptor, t)],
+        showHome: descriptor.showHome,
+    };
+}
+
+function resolveDashboardTodosBreadcrumb(
+    segments: string[],
+    locale: AppLocale,
+    t: Translator,
+): BreadcrumbMatch | null {
+    if (segments[0] !== "dashboard" || segments[1] !== "todos") {
+        return null;
+    }
+
+    const items: BreadcrumbItem[] = [
+        createTranslatedItem(locale, STATIC_ROUTES.dashboard, t),
+        {
+            name: translate(t, "Todos.title", "任务管理"),
+            url: buildLocalizedPath(locale, "/dashboard/todos"),
+        },
+    ];
+
+    const action = segments[2];
+    if (action === "edit" && segments[3]) {
+        items.push({
+            name: translate(t, "Todos.edit", "编辑任务"),
+            url: buildLocalizedPath(
+                locale,
+                `/dashboard/todos/${segments[3]}/edit`,
+            ),
+        });
+    } else if (action === "new") {
+        items.push({
+            name: translate(t, "Todos.new", "新建任务"),
+            url: buildLocalizedPath(locale, "/dashboard/todos/new"),
+        });
+    }
+
+    return { items };
+}
+
+function resolveAdminBreadcrumb(
+    segments: string[],
+    locale: AppLocale,
+    t: Translator,
+): BreadcrumbMatch | null {
+    if (segments[0] !== "admin") {
+        return null;
+    }
+
+    const items: BreadcrumbItem[] = [
+        {
+            name: translate(t, "Admin.title", "管理后台"),
+            url: buildLocalizedPath(locale, "/admin"),
+        },
+    ];
+
+    const subRoute = segments[1];
+    const descriptor = subRoute ? ADMIN_SUB_ROUTES[subRoute] : undefined;
+    if (descriptor) {
+        items.push(createTranslatedItem(locale, descriptor, t));
+    }
+
+    return { items };
+}
+
 export function getBreadcrumbConfig(
     pathname: string,
     locale: string,
-    t: (key: string) => string,
-    siteSettings?: any,
+    t: Translator,
+    siteSettings?: SiteSettingsPayload | null,
 ): BreadcrumbConfig {
-    // 规范化路径
-    const normalizedPath = pathname.replace(/^\/+/, "") || "/";
-    const pathSegments = normalizedPath.split("/").filter(Boolean);
-
-    const baseUrl = resolveAppUrl(siteSettings, {});
+    const { normalized, segments } = normalizePath(pathname);
     const fallbackLocale: AppLocale = siteSettings?.defaultLanguage || "en";
     const activeLocale = normalizeLocale(locale, fallbackLocale);
+    const homeName = translate(t, HOME_TRANSLATION_KEY, HOME_FALLBACK_NAME);
 
-    // 默认配置
-    const config: BreadcrumbConfig = {
-        showHome: true,
-        homeName: t("Breadcrumbs.home") || "首页",
-        items: [],
-    };
-
-    // 根据路径生成面包屑
-    switch (normalizedPath) {
-        case "/":
-        case "":
-            // 首页不显示面包屑
-            config.showHome = false;
-            break;
-
-        case "about":
-            config.items = [
-                {
-                    name: t("Pages.about.title") || "关于我们",
-                    url: buildLocalizedPath(activeLocale, "/about"),
-                },
-            ];
-            break;
-
-        case "contact":
-            config.items = [
-                {
-                    name: t("Pages.contact.title") || "联系我们",
-                    url: buildLocalizedPath(activeLocale, "/contact"),
-                },
-            ];
-            break;
-
-        case "privacy":
-            config.items = [
-                {
-                    name: t("Pages.privacy.title") || "隐私政策",
-                    url: buildLocalizedPath(activeLocale, "/privacy"),
-                },
-            ];
-            break;
-
-        case "terms":
-            config.items = [
-                {
-                    name: t("Pages.terms.title") || "服务条款",
-                    url: buildLocalizedPath(activeLocale, "/terms"),
-                },
-            ];
-            break;
-
-        case "dashboard":
-            config.items = [
-                {
-                    name: t("Dashboard.title") || "仪表板",
-                    url: buildLocalizedPath(activeLocale, "/dashboard"),
-                },
-            ];
-            break;
-
-        case "billing":
-            config.items = [
-                {
-                    name: t("Billing.title") || "计费",
-                    url: buildLocalizedPath(activeLocale, "/billing"),
-                },
-            ];
-            break;
-
-        case "login":
-        case "signup":
-            // 认证页面通常不显示面包屑
-            config.showHome = false;
-            break;
-
-        default:
-            // 动态路由处理
-            if (
-                pathSegments[0] === "dashboard" &&
-                pathSegments[1] === "todos"
-            ) {
-                config.items = [
-                    {
-                        name: t("Dashboard.title") || "仪表板",
-                        url: buildLocalizedPath(activeLocale, "/dashboard"),
-                    },
-                    {
-                        name: t("Todos.title") || "任务管理",
-                        url: buildLocalizedPath(
-                            activeLocale,
-                            "/dashboard/todos",
-                        ),
-                    },
-                ];
-
-                // 编辑任务页面
-                if (pathSegments[2] === "edit") {
-                    config.items.push({
-                        name: t("Todos.edit") || "编辑任务",
-                        url: buildLocalizedPath(
-                            activeLocale,
-                            `/dashboard/todos/${pathSegments[3]}/edit`,
-                        ),
-                    });
-                } else if (pathSegments[2] === "new") {
-                    config.items.push({
-                        name: t("Todos.new") || "新建任务",
-                        url: buildLocalizedPath(
-                            activeLocale,
-                            "/dashboard/todos/new",
-                        ),
-                    });
-                }
-            } else if (pathSegments[0] === "admin") {
-                config.items = [
-                    {
-                        name: t("Admin.title") || "管理后台",
-                        url: buildLocalizedPath(activeLocale, "/admin"),
-                    },
-                ];
-
-                // 管理员子页面
-                if (pathSegments[1]) {
-                    const adminPageMap: Record<string, string> = {
-                        users: t("Admin.users") || "用户管理",
-                        todos: t("Admin.todos") || "任务管理",
-                        reports: t("Admin.reports") || "报表分析",
-                        settings: t("Admin.settings") || "系统设置",
-                    };
-
-                    if (adminPageMap[pathSegments[1]]) {
-                        config.items.push({
-                            name: adminPageMap[pathSegments[1]],
-                            url: buildLocalizedPath(
-                                activeLocale,
-                                `/admin/${pathSegments[1]}`,
-                            ),
-                        });
-                    }
-                }
-            }
-            break;
+    if (normalized === "/" || normalized === "") {
+        return {
+            items: [],
+            showHome: false,
+            homeName,
+        };
     }
 
-    return config;
+    const defaultShowHome = !AUTHENTICATION_PATHS.has(normalized);
+
+    const staticMatch = resolveStaticBreadcrumb(normalized, activeLocale, t);
+    if (staticMatch) {
+        return {
+            items: staticMatch.items,
+            homeName,
+            showHome: staticMatch.showHome ?? defaultShowHome,
+        };
+    }
+
+    const dashboardMatch = resolveDashboardTodosBreadcrumb(
+        segments,
+        activeLocale,
+        t,
+    );
+    if (dashboardMatch) {
+        return {
+            items: dashboardMatch.items,
+            homeName,
+            showHome: dashboardMatch.showHome ?? defaultShowHome,
+        };
+    }
+
+    const adminMatch = resolveAdminBreadcrumb(segments, activeLocale, t);
+    if (adminMatch) {
+        return {
+            items: adminMatch.items,
+            homeName,
+            showHome: adminMatch.showHome ?? defaultShowHome,
+        };
+    }
+
+    return {
+        items: [],
+        homeName,
+        showHome: !HIDDEN_PATHS.has(normalized) && defaultShowHome,
+    };
 }
 
 /**
@@ -211,9 +286,8 @@ export function getBreadcrumbConfig(
 export function generateBreadcrumbSchema(
     config: BreadcrumbConfig,
     locale: string,
-    siteSettings?: any,
+    siteSettings?: SiteSettingsPayload | null,
 ): BreadcrumbSchema {
-    const baseUrl = resolveAppUrl(siteSettings, {});
     const items = [];
     const fallbackLocale: AppLocale = siteSettings?.defaultLanguage || "en";
     const activeLocale = normalizeLocale(locale, fallbackLocale);
@@ -229,7 +303,7 @@ export function generateBreadcrumbSchema(
     }
 
     // 添加其他面包屑项
-    config.items.forEach((item, index) => {
+    config.items.forEach((item, _index) => {
         items.push({
             "@type": "ListItem" as const,
             position: items.length + 1,
@@ -262,54 +336,45 @@ export function generateBreadcrumbDataAttributes(config: BreadcrumbConfig) {
  * 面包屑工具类
  * 提供常用的面包屑操作方法
  */
-export class BreadcrumbUtils {
-    /**
-     * 检查路径是否需要面包屑
-     */
-    static shouldShowBreadcrumbs(pathname: string): boolean {
-        const noBreadcrumbPaths = ["/", "/login", "/signup", "/404", "/500"];
-
-        const normalizedPath = pathname.replace(/^\/+/, "") || "/";
-        return !noBreadcrumbPaths.includes(normalizedPath);
-    }
-
-    /**
-     * 获取面包屑的最后一项（当前页面）
-     */
-    static getCurrentPage(config: BreadcrumbConfig): BreadcrumbItem | null {
-        if (config.items.length === 0) {
-            const showHome = config.showHome ?? true;
-            return showHome
-                ? { name: config.homeName || "首页", url: "/" }
-                : null;
-        }
-        return config.items[config.items.length - 1];
-    }
-
-    /**
-     * 获取面包屑的父级页面
-     */
-    static getParentPage(config: BreadcrumbConfig): BreadcrumbItem | null {
-        if (config.items.length <= 1) {
-            return config.showHome
-                ? { name: config.homeName || "首页", url: "/" }
-                : null;
-        }
-        return config.items[config.items.length - 2];
-    }
-
-    /**
-     * 格式化面包屑为JSON-LD字符串
-     */
-    static toJSONLD(
-        config: BreadcrumbConfig,
-        locale: string,
-        siteSettings?: any,
-    ): string {
-        const schema = generateBreadcrumbSchema(config, locale, siteSettings);
-        return JSON.stringify(schema);
-    }
+function shouldShowBreadcrumbs(pathname: string) {
+    const { normalized } = normalizePath(pathname);
+    return !HIDDEN_PATHS.has(normalized);
 }
+
+function getCurrentPage(config: BreadcrumbConfig): BreadcrumbItem | null {
+    if (config.items.length === 0) {
+        const showHome = config.showHome ?? true;
+        return showHome
+            ? { name: config.homeName || HOME_FALLBACK_NAME, url: "/" }
+            : null;
+    }
+    return config.items[config.items.length - 1];
+}
+
+function getParentPage(config: BreadcrumbConfig): BreadcrumbItem | null {
+    if (config.items.length <= 1) {
+        return config.showHome
+            ? { name: config.homeName || HOME_FALLBACK_NAME, url: "/" }
+            : null;
+    }
+    return config.items[config.items.length - 2];
+}
+
+function toJSONLD(
+    config: BreadcrumbConfig,
+    locale: string,
+    siteSettings?: SiteSettingsPayload | null,
+): string {
+    const schema = generateBreadcrumbSchema(config, locale, siteSettings);
+    return JSON.stringify(schema);
+}
+
+export const BreadcrumbUtils = {
+    shouldShowBreadcrumbs,
+    getCurrentPage,
+    getParentPage,
+    toJSONLD,
+} as const;
 
 /**
  * 预定义的面包屑配置

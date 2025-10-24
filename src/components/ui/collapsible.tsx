@@ -14,7 +14,7 @@ function Collapsible({
             className={cn(
                 // 基础动画类
                 "fade-in",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -33,10 +33,10 @@ function CollapsibleTrigger({
                 // 过渡动画
                 "transition-[color,background-color,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                 // 焦点状态
-                "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)] rounded-[var(--token-radius-sm)]",
+                "rounded-[var(--token-radius-sm)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                 // 渐入动画
                 "fade-in",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -60,19 +60,21 @@ const CollapsibleContent = React.forwardRef<
                 "data-[state=closed]:grid-rows-[0fr] data-[state=open]:grid-rows-[1fr]",
                 "data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
                 // 微交互
-                "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.98]",
+                "data-[state=closed]:scale-[0.98] data-[state=open]:scale-[1]",
                 // 过渡动画
                 "color-transition",
-                className
+                className,
             )}
             {...props}
         >
-            <div className={cn(
-                // 内容容器样式
-                "min-h-0 overflow-hidden",
-                // 渐入动画
-                "fade-in"
-            )}>
+            <div
+                className={cn(
+                    // 内容容器样式
+                    "min-h-0 overflow-hidden",
+                    // 渐入动画
+                    "fade-in",
+                )}
+            >
                 {children}
             </div>
         </CollapsiblePrimitive.Content>

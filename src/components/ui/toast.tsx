@@ -35,7 +35,13 @@ import { cn } from "@/lib/utils";
 
 interface ToastProps {
     className?: string;
-    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top-center" | "bottom-center";
+    position?:
+        | "top-left"
+        | "top-right"
+        | "bottom-left"
+        | "bottom-right"
+        | "top-center"
+        | "bottom-center";
     expand?: boolean;
     richColors?: boolean;
     closeButton?: boolean;
@@ -48,7 +54,7 @@ export function Toast({
     expand = false,
     richColors = true,
     closeButton = true,
-    theme = "system"
+    theme = "system",
 }: ToastProps) {
     return (
         <Toaster
@@ -63,12 +69,14 @@ export function Toast({
                 {
                     "top-0 right-0": position === "top-right",
                     "top-0 left-0": position === "top-left",
-                    "bottom-0 right-0": position === "bottom-right",
+                    "right-0 bottom-0": position === "bottom-right",
                     "bottom-0 left-0": position === "bottom-left",
-                    "top-0 left-1/2 -translate-x-1/2": position === "top-center",
-                    "bottom-0 left-1/2 -translate-x-1/2": position === "bottom-center",
+                    "-translate-x-1/2 top-0 left-1/2":
+                        position === "top-center",
+                    "-translate-x-1/2 bottom-0 left-1/2":
+                        position === "bottom-center",
                 },
-                className
+                className,
             )}
             position={position}
             expand={expand}
@@ -92,7 +100,7 @@ export function Toast({
                         // 微交互
                         "hover:shadow-[var(--shadow-xl)] hover:border-[var(--color-border,var(--color-muted-foreground)/30)]",
                         // 组样式 - 确保在toaster容器中的样式继承
-                        "group-[.toaster]:bg-[var(--color-background)] group-[.toaster]:text-[var(--color-foreground)] group-[.toaster]:border-[var(--color-border)] group-[.toaster]:shadow-[var(--shadow-lg)]"
+                        "group-[.toaster]:bg-[var(--color-background)] group-[.toaster]:text-[var(--color-foreground)] group-[.toaster]:border-[var(--color-border)] group-[.toaster]:shadow-[var(--shadow-lg)]",
                     ),
                     // 描述文本样式
                     description: cn(
@@ -101,7 +109,7 @@ export function Toast({
                         // 颜色令牌
                         "text-[var(--color-muted-foreground)]",
                         // 组样式继承
-                        "group-[.toast]:text-[var(--color-muted-foreground)]"
+                        "group-[.toast]:text-[var(--color-muted-foreground)]",
                     ),
                     // 成功状态样式
                     success: cn(
@@ -110,7 +118,7 @@ export function Toast({
                         // 文本色
                         "text-[var(--color-success-foreground)]",
                         // 图标和强调色
-                        "[&>[data-icon]]:text-[var(--color-success)]"
+                        "[&>[data-icon]]:text-[var(--color-success)]",
                     ),
                     // 错误状态样式
                     error: cn(
@@ -119,7 +127,7 @@ export function Toast({
                         // 文本色
                         "text-[var(--color-destructive-foreground)]",
                         // 图标和强调色
-                        "[&>[data-icon]]:text-[var(--color-destructive)]"
+                        "[&>[data-icon]]:text-[var(--color-destructive)]",
                     ),
                     // 警告状态样式
                     warning: cn(
@@ -128,7 +136,7 @@ export function Toast({
                         // 文本色
                         "text-[var(--color-warning-foreground)]",
                         // 图标和强调色
-                        "[&>[data-icon]]:text-[var(--color-warning)]"
+                        "[&>[data-icon]]:text-[var(--color-warning)]",
                     ),
                     // 信息状态样式
                     info: cn(
@@ -137,7 +145,7 @@ export function Toast({
                         // 文本色
                         "text-[var(--color-info-foreground)]",
                         // 图标和强调色
-                        "[&>[data-icon]]:text-[var(--color-info)]"
+                        "[&>[data-icon]]:text-[var(--color-info)]",
                     ),
                     // 动作按钮样式
                     actionButton: cn(
@@ -153,7 +161,7 @@ export function Toast({
                         "scale-active color-transition transition-[background-color,color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                         "hover:bg-[var(--color-primary)]/90 focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)]",
                         // 组样式继承
-                        "group-[.toast]:bg-[var(--color-primary)] group-[.toast]:text-[var(--color-primary-foreground)]"
+                        "group-[.toast]:bg-[var(--color-primary)] group-[.toast]:text-[var(--color-primary-foreground)]",
                     ),
                     // 取消按钮样式
                     cancelButton: cn(
@@ -169,7 +177,7 @@ export function Toast({
                         "scale-active color-transition transition-[background-color,color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                         "hover:bg-[var(--color-muted)]/80 focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-muted-foreground))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)]",
                         // 组样式继承
-                        "group-[.toast]:bg-[var(--color-muted)] group-[.toast]:text-[var(--color-muted-foreground)]"
+                        "group-[.toast]:bg-[var(--color-muted)] group-[.toast]:text-[var(--color-muted-foreground)]",
                     ),
                     // 关闭按钮样式
                     closeButton: cn(
@@ -181,7 +189,7 @@ export function Toast({
                         "text-[var(--color-muted-foreground)]/60 hover:text-[var(--color-foreground)]",
                         // 微交互
                         "scale-active color-transition transition-[color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
-                        "hover:bg-[var(--color-muted)]/50 focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-muted-foreground))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]"
+                        "hover:bg-[var(--color-muted)]/50 focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-muted-foreground))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                     ),
                     // 标题样式
                     title: cn(
@@ -190,15 +198,15 @@ export function Toast({
                         // 颜色令牌
                         "text-[var(--color-foreground)]",
                         // 组样式继承
-                        "group-[.toast]:text-[var(--color-foreground)]"
+                        "group-[.toast]:text-[var(--color-foreground)]",
                     ),
                     // 图标样式
                     icon: cn(
                         // 尺寸和布局
                         "size-4 shrink-0",
                         // 颜色继承
-                        "text-[var(--color-foreground)]"
-                    )
+                        "text-[var(--color-foreground)]",
+                    ),
                 },
                 // 动画配置
                 duration: 4000,
@@ -207,8 +215,8 @@ export function Toast({
                     // 使用CSS变量确保主题一致性
                     "--toast-bg": "var(--color-background)",
                     "--toast-foreground": "var(--color-foreground)",
-                    "--toast-border": "var(--color-border)"
-                } as React.CSSProperties
+                    "--toast-border": "var(--color-border)",
+                } as React.CSSProperties,
             }}
         />
     );

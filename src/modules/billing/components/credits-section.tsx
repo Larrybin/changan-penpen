@@ -33,8 +33,6 @@ interface BalanceSuccessResponse {
     error?: null;
 }
 
-type BalanceResponse = BalanceSuccessResponse | ApiErrorResponse;
-
 interface CreditTransaction {
     id: string;
     amount: number;
@@ -59,7 +57,42 @@ interface HistorySuccessResponse {
     error?: null;
 }
 
-type HistoryResponse = HistorySuccessResponse | ApiErrorResponse;
+async function requestJson<TSuccess extends { success: true }>(
+    input: RequestInfo,
+    init: RequestInit,
+    fallbackMessage: string,
+): Promise<TSuccess> {
+    const response = await fetch(input, init);
+    const json = (await response.json()) as TSuccess | ApiErrorResponse;
+    const success = "success" in json ? Boolean(json.success) : response.ok;
+
+    if (!response.ok || !success) {
+        const errorPayload =
+            "error" in json ? { error: json.error } : undefined;
+        const errorMessage = extractErrorMessage(errorPayload);
+        throw new Error(errorMessage || fallbackMessage);
+    }
+
+    return json as TSuccess;
+}
+
+const defaultHeaders = { "Content-Type": "application/json" } as const;
+
+function fetchBalanceData() {
+    return requestJson<BalanceSuccessResponse>(
+        "/api/v1/credits/balance",
+        { method: "GET", headers: defaultHeaders },
+        "获取余额失败",
+    );
+}
+
+function fetchHistoryData() {
+    return requestJson<HistorySuccessResponse>(
+        "/api/v1/credits/history?limit=10",
+        { method: "GET", headers: defaultHeaders },
+        "获取交易历史失败",
+    );
+}
 
 const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
@@ -74,6 +107,20 @@ function formatDateTime(value: string | null | undefined) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return dateTimeFormatter.format(date);
+}
+
+function loadCreditsSnapshot() {
+    return Promise.all([fetchBalanceData(), fetchHistoryData()]).then(
+        ([balanceJson, historyJson]) => ({
+            balance: balanceJson.data?.credits ?? 0,
+            transactions: historyJson.data?.transactions ?? [],
+        }),
+    );
+}
+
+function resolveLoadErrorMessage(error: unknown) {
+    if (error instanceof Error) return error.message;
+    return "无法获取积分信息，请稍后再试";
 }
 
 function extractErrorMessage(payload: { error?: unknown } | null | undefined) {
@@ -101,38 +148,14 @@ export default function CreditsSection() {
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
+
         try {
-            const [balanceRes, historyRes] = await Promise.all([
-                fetch("/api/v1/credits/balance", {
-                    method: "GET",
-                    headers: { "Content-Type": "application/json" },
-                }),
-                fetch("/api/v1/credits/history?limit=10", {
-                    method: "GET",
-                    headers: { "Content-Type": "application/json" },
-                }),
-            ]);
-
-            const balanceJson = (await balanceRes.json()) as BalanceResponse;
-            if (!balanceRes.ok || !balanceJson.success) {
-                const errorMessage = extractErrorMessage(balanceJson);
-                throw new Error(errorMessage || "获取余额失败");
-            }
-            setBalance(balanceJson.data?.credits ?? 0);
-
-            const historyJson = (await historyRes.json()) as HistoryResponse;
-            if (!historyRes.ok || !historyJson.success) {
-                const errorMessage = extractErrorMessage(historyJson);
-                throw new Error(errorMessage || "获取交易历史失败");
-            }
-            setTransactions(historyJson.data?.transactions ?? []);
+            const snapshot = await loadCreditsSnapshot();
+            setBalance(snapshot.balance);
+            setTransactions(snapshot.transactions);
         } catch (err) {
             console.error("[CreditsSection] fetch error:", err);
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "无法获取积分信息，请稍后再试",
-            );
+            setError(resolveLoadErrorMessage(err));
         } finally {
             setIsLoading(false);
         }
@@ -166,9 +189,9 @@ export default function CreditsSection() {
                     {isLoading ? (
                         <Skeleton className="h-10 w-32" />
                     ) : error ? (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <p className="text-destructive text-sm">{error}</p>
                     ) : (
-                        <p className="text-3xl font-semibold">
+                        <p className="font-semibold text-3xl">
                             {balanceDisplay}
                         </p>
                     )}
@@ -178,7 +201,7 @@ export default function CreditsSection() {
                     >
                         {refreshing ? "刷新中..." : "刷新积分"}
                     </Button>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                         手动刷新会重新请求积分余额，并触发月度免费积分发放逻辑（若满足时间条件）。
                     </p>
                 </CardContent>
@@ -199,15 +222,15 @@ export default function CreditsSection() {
                             <Skeleton className="h-8 w-full" />
                         </div>
                     ) : error ? (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <p className="text-destructive text-sm">{error}</p>
                     ) : transactions.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                             暂无交易记录。
                         </p>
                     ) : (
                         <div className="overflow-x-auto rounded-md border">
                             <table className="min-w-full text-sm">
-                                <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                                <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                                     <tr>
                                         <th className="px-3 py-2">时间</th>
                                         <th className="px-3 py-2">类型</th>
@@ -219,7 +242,7 @@ export default function CreditsSection() {
                                 <tbody>
                                     {transactions.map((item) => (
                                         <tr key={item.id} className="border-t">
-                                            <td className="px-3 py-2 text-xs text-muted-foreground">
+                                            <td className="px-3 py-2 text-muted-foreground text-xs">
                                                 {formatDateTime(item.createdAt)}
                                             </td>
                                             <td className="px-3 py-2 uppercase">
@@ -228,8 +251,8 @@ export default function CreditsSection() {
                                             <td
                                                 className={
                                                     item.amount >= 0
-                                                        ? "px-3 py-2 text-green-600 font-medium"
-                                                        : "px-3 py-2 text-destructive font-medium"
+                                                        ? "px-3 py-2 font-medium text-green-600"
+                                                        : "px-3 py-2 font-medium text-destructive"
                                                 }
                                             >
                                                 {item.amount}
@@ -237,7 +260,7 @@ export default function CreditsSection() {
                                             <td className="px-3 py-2">
                                                 {item.remainingAmount}
                                             </td>
-                                            <td className="px-3 py-2 text-xs text-muted-foreground">
+                                            <td className="px-3 py-2 text-muted-foreground text-xs">
                                                 {item.description}
                                             </td>
                                         </tr>

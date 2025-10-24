@@ -359,7 +359,7 @@ export function generateSitemap(
             (entry, index, arr) =>
                 arr.findIndex((e) => e.url === entry.url) === index,
         )
-        .sort((a, b) => b.priority! - a.priority!);
+        .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 
     return uniqueEntries as MetadataRoute.Sitemap;
 }
@@ -469,8 +469,7 @@ export function getSitemapRecommendations(
     }
 
     // 检查更新频率分布
-    const dailyCount = stats.urlsByChangeFrequency["daily"] || 0;
-    const weeklyCount = stats.urlsByChangeFrequency["weekly"] || 0;
+    const dailyCount = stats.urlsByChangeFrequency.daily ?? 0;
 
     if (dailyCount > stats.totalUrls * 0.8) {
         suggestions.push("考虑降低非必要页面的更新频率，避免每日更新");

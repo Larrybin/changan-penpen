@@ -3,34 +3,57 @@ import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import type { ApiErrorDetails } from "@/lib/api-client";
 import { ApiError } from "@/lib/http-error";
 
+function appendDirectFieldErrors(
+    map: Map<string, string>,
+    fieldErrors: ApiErrorDetails["fieldErrors"] | undefined,
+) {
+    if (!fieldErrors) {
+        return;
+    }
+
+    for (const [field, message] of Object.entries(fieldErrors)) {
+        if (typeof message === "string" && message.length > 0) {
+            map.set(field, message);
+        }
+    }
+}
+
+function appendNestedFieldErrors(
+    map: Map<string, string>,
+    errors: ApiErrorDetails["errors"] | undefined,
+) {
+    if (!Array.isArray(errors)) {
+        return;
+    }
+
+    for (const item of errors) {
+        if (!item || typeof item !== "object") {
+            continue;
+        }
+
+        const { field, message } = item as {
+            field?: unknown;
+            message?: unknown;
+        };
+
+        if (
+            typeof field === "string" &&
+            typeof message === "string" &&
+            !map.has(field)
+        ) {
+            map.set(field, message);
+        }
+    }
+}
+
 function normalizeFieldErrors(details?: ApiErrorDetails) {
     const map = new Map<string, string>();
     if (!details) {
         return map;
     }
 
-    if (details.fieldErrors) {
-        for (const [field, message] of Object.entries(details.fieldErrors)) {
-            if (typeof message === "string" && message.length > 0) {
-                map.set(field, message);
-            }
-        }
-    }
-
-    if (Array.isArray(details.errors)) {
-        for (const item of details.errors) {
-            if (!item || typeof item !== "object") {
-                continue;
-            }
-            const field = item.field;
-            const message = item.message;
-            if (typeof field === "string" && typeof message === "string") {
-                if (!map.has(field)) {
-                    map.set(field, message);
-                }
-            }
-        }
-    }
+    appendDirectFieldErrors(map, details.fieldErrors);
+    appendNestedFieldErrors(map, details.errors);
 
     return map;
 }

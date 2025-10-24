@@ -79,7 +79,7 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
         <FormItemContext.Provider value={{ id }}>
             <div
                 data-slot="form-item"
-                className={cn("grid gap-2 space-y-token-sm fade-in", className)}
+                className={cn("fade-in grid gap-2 space-y-token-sm", className)}
                 {...props}
             />
         </FormItemContext.Provider>
@@ -97,8 +97,8 @@ function FormLabel({
             data-slot="form-label"
             data-error={!!error}
             className={cn(
-                "text-label focus-visible-enhanced color-transition data-[error=true]:text-[var(--color-danger-foreground)]",
-                className
+                "color-transition focus-visible-enhanced text-label data-[error=true]:text-[var(--color-danger-foreground)]",
+                className,
             )}
             htmlFor={formItemId}
             {...props}
@@ -115,14 +115,14 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
             data-slot="form-control"
             id={formItemId}
             aria-describedby={
-                !error
-                    ? `${formDescriptionId}`
-                    : `${formDescriptionId} ${formMessageId}`
+                error
+                    ? `${formDescriptionId} ${formMessageId}`
+                    : `${formDescriptionId}`
             }
             aria-invalid={!!error}
             className={cn(
                 "data-[error=true]:border-[var(--color-danger)] data-[error=true]:ring-[var(--color-danger)]/20",
-                error && "shake-on-error"
+                error && "shake-on-error",
             )}
             {...props}
         />
@@ -136,7 +136,10 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
         <p
             data-slot="form-description"
             id={formDescriptionId}
-            className={cn("text-caption text-[var(--muted-foreground)]", className)}
+            className={cn(
+                "text-[var(--muted-foreground)] text-caption",
+                className,
+            )}
             {...props}
         />
     );
@@ -155,8 +158,8 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
             data-slot="form-message"
             id={formMessageId}
             className={cn(
-                "text-caption text-[var(--color-danger-foreground)] fade-in",
-                className
+                "fade-in text-[var(--color-danger-foreground)] text-caption",
+                className,
             )}
             {...props}
         >

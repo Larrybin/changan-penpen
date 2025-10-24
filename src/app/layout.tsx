@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
-import { InjectedHtml } from "@/components/seo/custom-html";
 import { WebVitals } from "@/components/performance/web-vitals";
+import { InjectedHtml } from "@/components/seo/custom-html";
 import { resolveAppLocale } from "@/i18n/config";
 import { pickMessages } from "@/lib/intl";
 import { readCspNonce } from "@/lib/security/csp";
@@ -34,10 +34,10 @@ export default async function RootLayout({
             <head>
                 <InjectedHtml nodes={headNodes} nonce={nonce} />
             </head>
-            <body className="font-sans antialiased bg-gray-50 min-h-screen">
+            <body className="min-h-screen bg-gray-50 font-sans antialiased">
                 <a
                     href="#main-content"
-                    className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+                    className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
                 >
                     Skip to main content
                 </a>

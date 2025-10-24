@@ -20,7 +20,7 @@ const NavigationMenu = React.forwardRef<
             "flex max-w-max flex-1 justify-center",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -41,7 +41,7 @@ const NavigationMenuList = React.forwardRef<
             "gap-[var(--token-spacing-1)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -58,7 +58,7 @@ function NavigationMenuItem({
             className={cn(
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -98,7 +98,7 @@ const NavigationMenuTrigger = React.forwardRef<
             navigationMenuTriggerClasses,
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     >
@@ -111,9 +111,9 @@ const NavigationMenuTrigger = React.forwardRef<
                 // 过渡动画
                 "transition-transform duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                 // 状态动画
-                "group-data-[state=open]:rotate-180 group-data-[state=closed]:rotate-0",
+                "group-data-[state=closed]:rotate-0 group-data-[state=open]:rotate-180",
                 // 颜色
-                "text-[var(--color-muted-foreground)]/60"
+                "text-[var(--color-muted-foreground)]/60",
             )}
         />
     </NavigationMenuPrimitive.Trigger>
@@ -134,7 +134,7 @@ const NavigationMenuLink = React.forwardRef<
             navigationMenuTriggerClasses,
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -150,11 +150,11 @@ const NavigationMenuContent = React.forwardRef<
         data-slot="navigation-menu-content"
         className={cn(
             // 定位和布局
-            "left-0 top-0 w-full origin-[var(--radix-navigation-menu-content-transform-origin)]",
+            "top-0 left-0 w-full origin-[var(--radix-navigation-menu-content-transform-origin)]",
             // 圆角令牌
             "rounded-[var(--token-radius-card,var(--token-radius-md))]",
             // 背景色和边框
-            "bg-[var(--color-popover,var(--color-background))] border border-[var(--color-border,var(--color-muted-foreground)/10)]",
+            "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-popover,var(--color-background))]",
             // 内边距令牌
             "p-[var(--token-spacing-6)]",
             // 文字颜色
@@ -162,17 +162,17 @@ const NavigationMenuContent = React.forwardRef<
             // 阴影令牌
             "shadow-[var(--shadow-lg)]",
             // 进场和出场动画
-            "data-[motion=from-start]:animate-in data-[motion=from-end]:animate-in",
-            "data-[state=closed]:animate-out data-[motion=from-start]:fade-in-0 data-[motion=from-start]:slide-in-from-left-4",
+            "data-[motion=from-end]:animate-in data-[motion=from-start]:animate-in",
             "data-[motion=from-end]:fade-in-0 data-[motion=from-end]:slide-in-from-right-4",
-            "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            "data-[motion=from-start]:fade-in-0 data-[motion=from-start]:slide-in-from-left-4",
+            "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:animate-out",
             // 过渡动画
             "transition-[all,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
             // 渐入动画
             "fade-in",
             // 微交互
-            "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
-            className
+            "data-[state=closed]:scale-[0.95] data-[state=open]:scale-[1]",
+            className,
         )}
         {...props}
     />
@@ -183,12 +183,14 @@ const NavigationMenuViewport = React.forwardRef<
     React.ElementRef<typeof NavigationMenuPrimitive.Viewport>,
     React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Viewport>
 >(({ className, ...props }, ref) => (
-    <div className={cn(
-        // 绝对定位和居中
-        "absolute left-1/2 top-full flex w-full -translate-x-1/2 justify-center",
-        // 渐入动画
-        "fade-in"
-    )}>
+    <div
+        className={cn(
+            // 绝对定位和居中
+            "-translate-x-1/2 absolute top-full left-1/2 flex w-full justify-center",
+            // 渐入动画
+            "fade-in",
+        )}
+    >
         <NavigationMenuPrimitive.Viewport
             ref={ref}
             data-slot="navigation-menu-viewport"
@@ -200,17 +202,17 @@ const NavigationMenuViewport = React.forwardRef<
                 // 圆角和溢出
                 "overflow-hidden rounded-[var(--token-radius-card,var(--token-radius-md))]",
                 // 背景色和边框
-                "bg-[var(--color-popover,var(--color-background))] border border-[var(--color-border,var(--color-muted-foreground)/10)]",
+                "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-popover,var(--color-background))]",
                 // 阴影令牌
                 "shadow-[var(--shadow-lg)]",
                 // 过渡动画
                 "transition-[width,height,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                 // 进场和出场动画
-                "data-[state=closed]:animate-out data-[state=closed]:zoom-out-95",
-                "data-[state=open]:animate-in data-[state=open]:zoom-in-95",
+                "data-[state=closed]:zoom-out-95 data-[state=closed]:animate-out",
+                "data-[state=open]:zoom-in-95 data-[state=open]:animate-in",
                 // 微交互
-                "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
-                className
+                "data-[state=closed]:scale-[0.95] data-[state=open]:scale-[1]",
+                className,
             )}
             {...props}
         />
@@ -232,22 +234,24 @@ const NavigationMenuIndicator = React.forwardRef<
             // 过渡动画
             "transition-[width,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
             // 进场和出场动画
-            "data-[state=visible]:animate-in data-[state=visible]:fade-in-0",
-            "data-[state=hidden]:animate-out data-[state=hidden]:fade-out-0",
-            className
+            "data-[state=visible]:fade-in-0 data-[state=visible]:animate-in",
+            "data-[state=hidden]:fade-out-0 data-[state=hidden]:animate-out",
+            className,
         )}
         {...props}
     >
-        <div className={cn(
-            // 相对定位和样式
-            "relative top-[60%] h-2 w-2 rotate-45",
-            // 圆角
-            "rounded-tl-[var(--token-radius-xs,2px)]",
-            // 背景色和阴影
-            "bg-[var(--color-border,var(--color-muted-foreground)/30)] shadow-[var(--shadow-sm)]",
-            // 渐入动画
-            "fade-in"
-        )} />
+        <div
+            className={cn(
+                // 相对定位和样式
+                "relative top-[60%] h-2 w-2 rotate-45",
+                // 圆角
+                "rounded-tl-[var(--token-radius-xs,2px)]",
+                // 背景色和阴影
+                "bg-[var(--color-border,var(--color-muted-foreground)/30)] shadow-[var(--shadow-sm)]",
+                // 渐入动画
+                "fade-in",
+            )}
+        />
     </NavigationMenuPrimitive.Indicator>
 ));
 NavigationMenuIndicator.displayName =
@@ -262,7 +266,7 @@ function NavigationMenuSub({
             className={cn(
                 // 渐入动画
                 "fade-in",
-                props.className
+                props.className,
             )}
             {...props}
         />

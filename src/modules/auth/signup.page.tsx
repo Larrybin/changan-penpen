@@ -12,7 +12,7 @@ export default async function SignUpPage() {
     ]);
     return (
         <div
-            className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 xs:p-8 md:p-10"
+            className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 xs:p-8 md:p-10"
             style={
                 {
                     "--card-header-gap": "0.5rem",
@@ -27,21 +27,21 @@ export default async function SignUpPage() {
                 } as React.CSSProperties
             }
         >
-            <div className="flex w-full max-w-sm xs:max-w-md lg-narrow:max-w-lg flex-col gap-6">
+            <div className="flex w-full max-w-sm xs:max-w-md flex-col gap-6 lg-narrow:max-w-lg">
                 <Link
                     href="/"
                     className="flex items-center gap-2 self-center font-medium"
                 >
-                    <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+                    <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                         <GalleryVerticalEnd className="size-4" />
                     </div>
                     {tCommon("appName")}
                 </Link>
-                <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-semibold tracking-tight">
+                <div className="space-y-2 text-center">
+                    <h1 className="font-semibold text-3xl tracking-tight">
                         {tSignupPage("title")}
                     </h1>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                         {tSignupPage("subtitle")}
                     </p>
                 </div>

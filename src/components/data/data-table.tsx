@@ -140,7 +140,7 @@ export function DataTable<TData, TValue>({
         <div className={cn("space-y-4", className)}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{t("pageSize.label")}</p>
+                    <p className="font-medium text-sm">{t("pageSize.label")}</p>
                     <Select
                         value={`${pageSize}`}
                         onValueChange={(value) => {
@@ -163,7 +163,7 @@ export function DataTable<TData, TValue>({
                             ))}
                         </SelectContent>
                     </Select>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                         {t("pageSize.itemsLabel", { itemName: itemNamePlural })}
                     </span>
                 </div>
@@ -217,7 +217,7 @@ export function DataTable<TData, TValue>({
                                         (header: TableHeaderType<TData>) => (
                                             <TableHead
                                                 key={header.id}
-                                                className="bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                                                className="bg-muted/60 font-semibold text-muted-foreground text-xs uppercase tracking-wide"
                                             >
                                                 {header.isPlaceholder
                                                     ? null
@@ -249,7 +249,7 @@ export function DataTable<TData, TValue>({
                             <TableRow>
                                 <TableCell
                                     colSpan={visibleColumns.length || 1}
-                                    className="h-24 text-center text-sm text-muted-foreground"
+                                    className="h-24 text-center text-muted-foreground text-sm"
                                 >
                                     {emptyState ?? t("emptyState.default")}
                                 </TableCell>
@@ -334,7 +334,7 @@ export function DataTable<TData, TValue>({
                 </Table>
             </div>
 
-            <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 text-muted-foreground text-sm sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     {t("pagination.summary", {
                         page: pageIndex + 1,

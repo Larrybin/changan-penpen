@@ -4,11 +4,11 @@
  */
 
 import {
-    QueryClient,
+    type MutationFunction,
+    type QueryClient,
+    type QueryKey,
     useMutation,
     useQueryClient,
-    type MutationFunction,
-    type QueryKey,
 } from "@tanstack/react-query";
 
 import { toast } from "@/lib/toast";
@@ -43,7 +43,7 @@ interface OptimisticMutationOptions<TResult, TVariables> {
         serverData: TResult,
         variables: TVariables,
         optimisticContext?: unknown,
-    ) => unknown | void;
+    ) => unknown | undefined;
     /**
      * 可选：当请求失败时执行额外回滚逻辑。
      * 返回值将重新写入缓存；若返回 undefined 则使用原始 previousData。
@@ -52,7 +52,7 @@ interface OptimisticMutationOptions<TResult, TVariables> {
         previousValue: unknown,
         variables: TVariables,
         optimisticContext?: unknown,
-    ) => unknown | void;
+    ) => unknown | undefined;
     successMessage?: string;
     errorMessage?: string;
     onSuccess?: (data: TResult, variables: TVariables) => void;
@@ -64,7 +64,9 @@ interface OptimisticMutationOptions<TResult, TVariables> {
 }
 
 const toError = (error: unknown): Error =>
-    error instanceof Error ? error : new Error(String(error ?? "Unknown error"));
+    error instanceof Error
+        ? error
+        : new Error(String(error ?? "Unknown error"));
 
 const ensureArray = <T>(value: unknown): T[] =>
     Array.isArray(value) ? [...value] : [];
@@ -99,7 +101,10 @@ export function useOptimisticMutation<TResult, TVariables>(
             const error = toError(rawError);
 
             if (context?.previousData !== undefined) {
-                queryClient.setQueryData(options.queryKey, context.previousData);
+                queryClient.setQueryData(
+                    options.queryKey,
+                    context.previousData,
+                );
             }
 
             if (options.rollback) {
@@ -163,7 +168,7 @@ export function useOptimisticDelete<TResult = void>(
         queryKey,
         mutationFn: deleteFn,
         applyOptimistic: (currentValue, id) => {
-            const list = ensureArray<any>(currentValue);
+            const list = ensureArray<Record<string, unknown>>(currentValue);
             const next = list.filter((item) => item?.[idField] !== id);
             const removed = list.find((item) => item?.[idField] === id);
             return {
@@ -288,9 +293,7 @@ export function useOptimisticCreate<
             return list.map((item) => {
                 const isTempMatch =
                     item?._temp && (!tempId || item?.[idField] === tempId);
-                return isTempMatch
-                    ? { ...serverData, _temp: false }
-                    : item;
+                return isTempMatch ? { ...serverData, _temp: false } : item;
             });
         },
         successMessage: options?.successMessage,
@@ -313,7 +316,7 @@ export function useOptimisticBatch<TResult, TVariables>(
             currentValue: unknown,
             serverData: TResult,
             variables: TVariables,
-        ) => unknown | void;
+        ) => unknown | undefined;
         successMessage?: string;
         errorMessage?: string;
     },
@@ -370,9 +373,7 @@ export function useOptimisticToggle<TResult>(
 
             const list = ensureArray<Record<string, unknown>>(currentValue);
             return list.map((item) =>
-                item?.id === variables.id
-                    ? { ...item, ...serverData }
-                    : item,
+                item?.id === variables.id ? { ...item, ...serverData } : item,
             );
         },
         successMessage: options?.successMessage,
@@ -424,7 +425,7 @@ export const DashboardOptimisticUpdates = {
                     throw new Error("积分添加失败");
                 }
 
-                return response.json();
+                return (await response.json()) as Record<string, unknown>;
             },
             {
                 prepend: true,
@@ -450,7 +451,7 @@ export const DashboardOptimisticUpdates = {
                     throw new Error("产品更新失败");
                 }
 
-                return response.json();
+                return (await response.json()) as Record<string, unknown>;
             },
             {
                 successMessage: "产品信息已更新",
@@ -461,9 +462,11 @@ export const DashboardOptimisticUpdates = {
     useDeleteCoupon: () =>
         useOptimisticDelete(
             ["coupons"],
-            async (id: number) => {
+            async (id: string | number) => {
+                const numericId =
+                    typeof id === "string" ? Number.parseInt(id, 10) : id;
                 const response = await fetch(
-                    `/api/v1/admin/coupons/${id}`,
+                    `/api/v1/admin/coupons/${numericId}`,
                     { method: "DELETE" },
                 );
 
@@ -471,7 +474,7 @@ export const DashboardOptimisticUpdates = {
                     throw new Error("优惠券删除失败");
                 }
 
-                return response.json();
+                return undefined;
             },
             {
                 successMessage: "优惠券已删除",
@@ -481,11 +484,8 @@ export const DashboardOptimisticUpdates = {
 };
 
 interface ManagerExecuteConfig<TResult, TVariables>
-    extends Omit<
-        OptimisticMutationOptions<TResult, TVariables>,
-        "mutationFn"
-    > {
-    mutationFn: MutationFunction<TResult, TVariables>;
+    extends Omit<OptimisticMutationOptions<TResult, TVariables>, "mutationFn"> {
+    mutationFn: (variables: TVariables) => Promise<TResult>;
     variables: TVariables;
 }
 

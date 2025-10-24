@@ -70,10 +70,10 @@ export default async function Page({ searchParams }: PageProps) {
         verification.state === "verified" && detailEntries.length > 0;
 
     return (
-        <div className="mx-auto max-w-xl py-16 px-6 text-center space-y-6">
-            <h1 className="text-title-sm font-bold">{t("title")}</h1>
+        <div className="mx-auto max-w-xl space-y-6 px-6 py-16 text-center">
+            <h1 className="font-bold text-title-sm">{t("title")}</h1>
             <p className="text-muted-foreground">{t("description")}</p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex justify-center gap-3">
                 <Link href="/billing">
                     <Button>{t("primaryCta")}</Button>
                 </Link>
@@ -81,9 +81,9 @@ export default async function Page({ searchParams }: PageProps) {
                     <Button variant="outline">{t("secondaryCta")}</Button>
                 </Link>
             </div>
-            <div className="rounded-lg border bg-card px-6 py-5 text-left space-y-4">
+            <div className="space-y-4 rounded-lg border bg-card px-6 py-5 text-left">
                 <div className="space-y-2">
-                    <h2 className="text-base font-semibold">
+                    <h2 className="font-semibold text-base">
                         {t("verificationTitle")}
                     </h2>
                     <p
@@ -94,7 +94,7 @@ export default async function Page({ searchParams }: PageProps) {
                 </div>
                 {showDetails && (
                     <div className="space-y-3">
-                        <h3 className="text-sm font-medium">
+                        <h3 className="font-medium text-sm">
                             {t("detailsHeading")}
                         </h3>
                         <dl className="space-y-2 text-sm">
@@ -106,7 +106,7 @@ export default async function Page({ searchParams }: PageProps) {
                                     <dt className="text-muted-foreground">
                                         {entry.label}
                                     </dt>
-                                    <dd className="font-medium break-all text-right">
+                                    <dd className="break-all text-right font-medium">
                                         {entry.value}
                                     </dd>
                                 </div>

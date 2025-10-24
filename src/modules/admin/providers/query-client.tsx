@@ -1,6 +1,7 @@
 "use client";
 
 import {
+    type Mutation,
     MutationCache,
     QueryCache,
     QueryClient,
@@ -87,20 +88,6 @@ function notifyError(error: unknown) {
     });
 }
 
-function shouldRetry(error: unknown, failureCount: number) {
-    if (error instanceof ApiError) {
-        if (error.status === 401 || error.status === 403) {
-            return false;
-        }
-        if (error.status === 429) {
-            return false;
-        }
-        return failureCount < 2;
-    }
-
-    return failureCount < 3;
-}
-
 /**
  * Admin Dashboard Query Client
  * 优化的查询配置，配合后端缓存策略
@@ -111,30 +98,43 @@ function createAdminQueryClient() {
             onError: notifyError,
             // 添加缓存统计
             onSuccess: (data, query) => {
-                console.debug(`[Query Cache] Cache hit for ${query.queryKey[0]}`, {
-                    queryKey: query.queryKey,
-                    dataKeys: Object.keys(data as any),
-                });
+                const dataKeys =
+                    data && typeof data === "object"
+                        ? Object.keys(data as Record<string, unknown>)
+                        : [];
+                console.debug(
+                    `[Query Cache] Cache hit for ${query.queryKey[0]}`,
+                    {
+                        queryKey: query.queryKey,
+                        dataKeys,
+                    },
+                );
             },
         }),
         mutationCache: new MutationCache({
             onError: notifyError,
             // 变更成功后主动失效相关缓存
             onSuccess: (data, variables, context, mutation) => {
-                console.debug(`[Mutation Cache] Success: ${mutation.mutationKey}`, {
+                const mutationKey =
+                    mutation.options.mutationKey?.[0] ?? "unknown";
+                const dataKeys =
+                    data && typeof data === "object"
+                        ? Object.keys(data as Record<string, unknown>)
+                        : [];
+                console.debug(`[Mutation Cache] Success: ${mutationKey}`, {
                     variables,
-                    dataKeys: Object.keys(data as any),
+                    dataKeys,
                 });
 
                 // 基于变更类型触发缓存失效
-                handleMutationCacheInvalidation(mutation, variables);
+                handleMutationCacheInvalidation(mutation);
             },
         }),
         defaultOptions: {
             queries: {
                 // 智能缓存策略 - 配合后端TTL
                 staleTime: 1000 * 30, // 30秒内认为数据是新鲜的
-                cacheTime: 1000 * 60 * 5, // 5分钟后从内存清除
+                gcTime: 1000 * 60 * 5, // 5分钟后从内存清除
                 refetchOnWindowFocus: false, // 减少不必要的网络请求
                 refetchOnReconnect: true, // 重连时重新获取数据
                 refetchInterval: false, // 禁用自动轮询
@@ -163,14 +163,15 @@ function createAdminQueryClient() {
                 retryDelay: (attemptIndex) => {
                     const baseDelay = 1000; // 1秒基础延迟
                     const maxDelay = 10000; // 最大10秒延迟
-                    const delay = Math.min(baseDelay * 2 ** attemptIndex, maxDelay);
+                    const delay = Math.min(
+                        baseDelay * 2 ** attemptIndex,
+                        maxDelay,
+                    );
                     return delay + Math.random() * 1000; // 添加随机抖动
                 },
 
                 // 网络状态变化处理
-                networkMode: 'online',
-                // 错误边界处理
-                useErrorBoundary: false,
+                networkMode: "online",
             },
             mutations: {
                 // 变更重试策略
@@ -194,7 +195,7 @@ function createAdminQueryClient() {
                 },
 
                 // 网络状态变化处理
-                networkMode: 'online',
+                networkMode: "online",
             },
         },
     });
@@ -204,10 +205,11 @@ function createAdminQueryClient() {
  * 处理变更操作的缓存失效
  */
 function handleMutationCacheInvalidation(
-    mutation: any,
-    variables: any
+    mutation: Mutation<unknown, unknown, unknown, unknown>,
 ): void {
-    const mutationKey = mutation.mutationKey?.[0] as string;
+    const mutationKey = mutation.options?.mutationKey?.[0] as
+        | string
+        | undefined;
     const queryClient = getQueryClientInstance();
 
     if (!mutationKey || !queryClient) return;
@@ -216,33 +218,36 @@ function handleMutationCacheInvalidation(
 
     // 根据不同的变更类型失效相应的查询缓存
     const invalidationMap: Record<string, string[]> = {
-        'createOrder': ['dashboard', 'orders:latest'],
-        'updateOrder': ['dashboard', 'orders:latest', 'orders:detail'],
-        'createCredit': ['dashboard', 'credits:recent'],
-        'updateCredit': ['dashboard', 'credits:recent'],
-        'createProduct': ['dashboard', 'catalog'],
-        'updateProduct': ['dashboard', 'catalog', 'products:detail'],
-        'deleteProduct': ['dashboard', 'catalog', 'products:list'],
-        'createCoupon': ['dashboard', 'catalog'],
-        'updateCoupon': ['dashboard', 'catalog', 'coupons:detail'],
-        'deleteCoupon': ['dashboard', 'catalog', 'coupons:list'],
-        'createContent': ['dashboard', 'catalog'],
-        'updateContent': ['dashboard', 'catalog', 'content:detail'],
-        'deleteContent': ['dashboard', 'catalog', 'content:list'],
+        createOrder: ["dashboard", "orders:latest"],
+        updateOrder: ["dashboard", "orders:latest", "orders:detail"],
+        createCredit: ["dashboard", "credits:recent"],
+        updateCredit: ["dashboard", "credits:recent"],
+        createProduct: ["dashboard", "catalog"],
+        updateProduct: ["dashboard", "catalog", "products:detail"],
+        deleteProduct: ["dashboard", "catalog", "products:list"],
+        createCoupon: ["dashboard", "catalog"],
+        updateCoupon: ["dashboard", "catalog", "coupons:detail"],
+        deleteCoupon: ["dashboard", "catalog", "coupons:list"],
+        createContent: ["dashboard", "catalog"],
+        updateContent: ["dashboard", "catalog", "content:detail"],
+        deleteContent: ["dashboard", "catalog", "content:list"],
     };
 
     const keysToInvalidate = invalidationMap[mutationKey] || [];
 
-    keysToInvalidate.forEach(key => {
+    keysToInvalidate.forEach((key) => {
         // 失效相关查询缓存
         queryClient.invalidateQueries({ queryKey: [key] });
         console.debug(`[Cache Invalidation] Invalidated queries: ${key}`);
     });
 
     // 特殊处理：如果是仪表盘相关变更，强制刷新
-    if (mutationKey.includes('dashboard') || keysToInvalidate.includes('dashboard')) {
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-        queryClient.refetchQueries({ queryKey: ['dashboard'], type: 'active' });
+    if (
+        mutationKey.includes("dashboard") ||
+        keysToInvalidate.includes("dashboard")
+    ) {
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        queryClient.refetchQueries({ queryKey: ["dashboard"], type: "active" });
     }
 }
 
@@ -262,17 +267,17 @@ export function setQueryClientInstance(client: QueryClient): void {
  */
 export function invalidateAdminQueries(
     queryKeys: string[] | string,
-    options?: { refetch?: boolean }
+    options?: { refetch?: boolean },
 ): void {
     const client = getQueryClientInstance();
     if (!client) return;
 
     const keys = Array.isArray(queryKeys) ? queryKeys : [queryKeys];
 
-    keys.forEach(key => {
+    keys.forEach((key) => {
         if (options?.refetch) {
             client.invalidateQueries({ queryKey: [key] });
-            client.refetchQueries({ queryKey: [key], type: 'active' });
+            client.refetchQueries({ queryKey: [key], type: "active" });
         } else {
             client.invalidateQueries({ queryKey: [key] });
         }
@@ -285,7 +290,7 @@ export function invalidateAdminQueries(
 export async function prefetchAdminQuery<T>(
     queryKey: string[],
     queryFn: () => Promise<T>,
-    options?: { staleTime?: number }
+    options?: { staleTime?: number },
 ): Promise<void> {
     const client = getQueryClientInstance();
     if (!client) return;

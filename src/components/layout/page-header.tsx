@@ -42,13 +42,13 @@ export function PageHeader({
     return (
         <div
             className={cn(
-                "flex flex-col gap-4 pb-6 border-b border-border",
+                "flex flex-col gap-4 border-border border-b pb-6",
                 className,
             )}
             {...props}
         >
             {hasBreadcrumbs ? (
-                <Breadcrumb className="text-xs text-muted-foreground">
+                <Breadcrumb className="text-muted-foreground text-xs">
                     <BreadcrumbList>
                         {breadcrumbs?.map((crumb, index) => (
                             <React.Fragment key={`${crumb.label}-${index}`}>
@@ -75,19 +75,19 @@ export function PageHeader({
                 </Breadcrumb>
             ) : null}
 
-            <div className="flex flex-col gap-4 items-start justify-between md:flex-row md:items-center md:gap-6">
+            <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center md:gap-6">
                 <div className="flex flex-col gap-2">
                     {title ? (
-                        <h1 className="text-2xl font-semibold leading-tight text-foreground">
+                        <h1 className="font-semibold text-2xl text-foreground leading-tight">
                             {title}
                         </h1>
                     ) : lastCrumb ? (
-                        <h1 className="text-2xl font-semibold leading-tight text-foreground">
+                        <h1 className="font-semibold text-2xl text-foreground leading-tight">
                             {lastCrumb.label}
                         </h1>
                     ) : null}
                     {description ? (
-                        <p className="text-sm text-muted-foreground max-w-2xl">
+                        <p className="max-w-2xl text-muted-foreground text-sm">
                             {description}
                         </p>
                     ) : null}

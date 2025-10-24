@@ -1,5 +1,6 @@
 "use client";
 
+import type { NextWebVitalsMetric } from "next/app";
 import { useReportWebVitals } from "next/web-vitals";
 import { useCallback, useEffect, useState } from "react";
 
@@ -13,9 +14,79 @@ interface WebVitalsMetrics {
     id: string;
     name: string;
     value: number;
-    rating: "good" | "needs-improvement" | "poor";
+    rating: MetricRating;
     delta: number;
     timestamp: number;
+}
+
+type MetricRating = "good" | "needs-improvement" | "poor";
+
+type ExtendedWebVitalsMetric = NextWebVitalsMetric & {
+    delta?: number;
+    rating?: MetricRating;
+};
+
+type WarningMetricName = "LCP" | "INP" | "CLS";
+
+const PERFORMANCE_WARNING_MESSAGES: Record<
+    WarningMetricName,
+    (metric: ExtendedWebVitalsMetric) => string
+> = {
+    LCP: (metric) =>
+        `⚠️ LCP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
+    INP: (metric) =>
+        `⚠️ INP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
+    CLS: (metric) =>
+        `⚠️ CLS性能警告: ${metric.value.toFixed(4)} (${metric.rating})`,
+};
+
+function resolveMetricRating(metric: ExtendedWebVitalsMetric): MetricRating {
+    return metric.rating ?? "good";
+}
+
+function toWebVitalsMetric(
+    metric: ExtendedWebVitalsMetric,
+    rating: MetricRating,
+): WebVitalsMetrics {
+    return {
+        id: metric.id,
+        name: metric.name,
+        value: metric.value,
+        rating,
+        delta: metric.delta ?? 0,
+        timestamp: Date.now(),
+    };
+}
+
+function upsertMetric(
+    previousMetrics: WebVitalsMetrics[],
+    nextMetric: WebVitalsMetrics,
+): WebVitalsMetrics[] {
+    const existingIndex = previousMetrics.findIndex(
+        (metric) => metric.name === nextMetric.name,
+    );
+
+    if (existingIndex >= 0) {
+        const updatedMetrics = [...previousMetrics];
+        updatedMetrics[existingIndex] = nextMetric;
+        return updatedMetrics;
+    }
+
+    return [...previousMetrics, nextMetric];
+}
+
+function warnIfNeeded(
+    metric: ExtendedWebVitalsMetric & { rating: MetricRating },
+) {
+    if (metric.rating === "good") {
+        return;
+    }
+
+    const warningBuilder =
+        PERFORMANCE_WARNING_MESSAGES[metric.name as WarningMetricName];
+    if (warningBuilder) {
+        console.warn(warningBuilder(metric));
+    }
 }
 
 /**
@@ -41,7 +112,7 @@ export function WebVitals() {
     }, []);
 
     const sendToAnalytics = useCallback(
-        (metric: any) => {
+        (metric: ExtendedWebVitalsMetric) => {
             // 开发环境打印到控制台
             if (isDev) {
                 console.info(`📊 Core Web Vitals - ${metric.name}:`, {
@@ -65,8 +136,8 @@ export function WebVitals() {
                     ),
                     event_label: metric.id,
                     non_interaction: true,
-                    metric_rating: metric.rating,
-                    metric_delta: metric.delta,
+                    metric_rating: metric.rating ?? "unknown",
+                    metric_delta: metric.delta ?? 0,
                 });
             }
 
@@ -75,7 +146,7 @@ export function WebVitals() {
                 typeof window !== "undefined" &&
                 typeof navigator.sendBeacon === "function"
             ) {
-                const data = JSON.stringify({
+                const _payload = JSON.stringify({
                     ...metric,
                     url: window.location.href,
                     userAgent: navigator.userAgent,
@@ -90,56 +161,15 @@ export function WebVitals() {
     );
 
     const handleWebVital = useCallback(
-        (metric: any) => {
-            // 更新本地状态
-            const newMetric: WebVitalsMetrics = {
-                id: metric.id,
-                name: metric.name,
-                value: metric.value,
-                rating: metric.rating,
-                delta: metric.delta,
-                timestamp: Date.now(),
-            };
+        (metric: ExtendedWebVitalsMetric) => {
+            const rating = resolveMetricRating(metric);
+            const normalizedMetric = toWebVitalsMetric(metric, rating);
 
-            setMetrics((prev) => {
-                const existingIndex = prev.findIndex(
-                    (m) => m.name === metric.name,
-                );
-                if (existingIndex >= 0) {
-                    const updated = [...prev];
-                    updated[existingIndex] = newMetric;
-                    return updated;
-                }
-                return [...prev, newMetric];
-            });
+            setMetrics((prev) => upsertMetric(prev, normalizedMetric));
 
-            // 发送到分析服务
-            sendToAnalytics(metric);
-
-            // 特殊处理关键指标
-            switch (metric.name) {
-                case "LCP":
-                    if (metric.rating !== "good") {
-                        console.warn(
-                            `⚠️ LCP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
-                        );
-                    }
-                    break;
-                case "INP":
-                    if (metric.rating !== "good") {
-                        console.warn(
-                            `⚠️ INP性能警告: ${metric.value.toFixed(2)}ms (${metric.rating})`,
-                        );
-                    }
-                    break;
-                case "CLS":
-                    if (metric.rating !== "good") {
-                        console.warn(
-                            `⚠️ CLS性能警告: ${metric.value.toFixed(4)} (${metric.rating})`,
-                        );
-                    }
-                    break;
-            }
+            const enrichedMetric = { ...metric, rating };
+            sendToAnalytics(enrichedMetric);
+            warnIfNeeded(enrichedMetric);
         },
         [sendToAnalytics],
     );
@@ -152,8 +182,8 @@ export function WebVitals() {
     }
 
     return (
-        <div className="fixed bottom-4 right-4 bg-background border border-border rounded-lg p-4 shadow-lg z-50 max-w-sm">
-            <h3 className="font-semibold text-sm mb-2">📊 Core Web Vitals</h3>
+        <div className="fixed right-4 bottom-4 z-50 max-w-sm rounded-lg border border-border bg-background p-4 shadow-lg">
+            <h3 className="mb-2 font-semibold text-sm">📊 Core Web Vitals</h3>
             <div className="space-y-1 text-xs">
                 {metrics.length === 0 ? (
                     <div className="text-muted-foreground">等待性能数据...</div>
@@ -161,7 +191,7 @@ export function WebVitals() {
                     metrics.map((metric) => (
                         <div
                             key={metric.name}
-                            className="flex justify-between items-center"
+                            className="flex items-center justify-between"
                         >
                             <span className="font-medium">{metric.name}:</span>
                             <div className="flex items-center gap-2">
@@ -183,7 +213,7 @@ export function WebVitals() {
                                 </span>
                                 <div
                                     className={cn(
-                                        "w-2 h-2 rounded-full",
+                                        "h-2 w-2 rounded-full",
                                         metric.rating === "good" &&
                                             "bg-green-600",
                                         metric.rating === "needs-improvement" &&
@@ -197,7 +227,7 @@ export function WebVitals() {
                     ))
                 )}
             </div>
-            <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
+            <div className="mt-2 border-border border-t pt-2 text-muted-foreground text-xs">
                 <div className="flex justify-between">
                     <span>LCP &lt; 2.5s</span>
                     <span>INP &lt; 200ms</span>

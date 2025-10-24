@@ -21,7 +21,7 @@ const Menubar = React.forwardRef<
             // 圆角令牌
             "rounded-[var(--token-radius-card,var(--token-radius-md))]",
             // 背景色和边框令牌
-            "bg-[var(--color-background)] border border-[var(--color-border,var(--color-muted-foreground)/10)]",
+            "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-background)]",
             // 内边距令牌
             "p-[var(--token-spacing-1)]",
             // 阴影令牌
@@ -52,24 +52,31 @@ const MenubarTrigger = React.forwardRef<
         data-slot="menubar-trigger"
         className={cn(
             // 基础交互类
-            "interactive-base scale-active",
+            "interactive-base",
+            "scale-active",
             // 布局和尺寸
             "inline-flex items-center justify-center gap-[var(--token-spacing-2)]",
             // 最小宽度和高度
-            "min-w-[2.5rem] h-8",
+            "h-8 min-w-[2.5rem]",
             // 圆角和内边距令牌
-            "rounded-[var(--token-radius-button,var(--token-radius-md))] px-[calc(var(--token-spacing-3)*0.75)] py-[var(--token-spacing-1)]",
+            "rounded-[var(--token-radius-button,var(--token-radius-md))]",
+            "px-[calc(var(--token-spacing-3)*0.75)] py-[var(--token-spacing-1)]",
             // 排版令牌
-            "text-[var(--token-text-sm)] font-[var(--token-font-weight-medium)] leading-[var(--token-line-height-tight)]",
+            "font-[var(--token-font-weight-medium)] text-[var(--token-text-sm)] leading-[var(--token-line-height-tight)]",
             // 过渡动画
-            "transition-[color,background-color,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
+            "transition-[color,background-color,transform]",
+            "duration-[var(--token-motion-duration-normal)]",
+            "ease-[var(--token-motion-ease-standard)]",
             // 焦点状态
-            "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)]",
+            "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
             // 状态样式
-            "data-[state=open]:bg-[var(--color-accent)]/70 data-[state=open]:text-[var(--color-accent-foreground)]",
-            "hover:bg-[var(--color-accent)] hover:text-[var(--color-accent-foreground)]",
+            "data-[state=open]:bg-[var(--color-accent)]/70",
+            "data-[state=open]:text-[var(--color-accent-foreground)]",
+            "hover:bg-[var(--color-accent)]",
+            "hover:text-[var(--color-accent-foreground)]",
             // 禁用状态
-            "disabled:pointer-events-none disabled:opacity-50",
+            "disabled:pointer-events-none",
+            "disabled:opacity-50",
             // 渐入动画
             "fade-in",
             className,
@@ -88,19 +95,32 @@ const MenubarSubTrigger = React.forwardRef<
         data-slot="menubar-sub-trigger"
         className={cn(
             // 基础交互类
-            "interactive-base scale-active",
+            "interactive-base",
+            "scale-active",
             // 布局和样式
-            "flex cursor-default select-none items-center gap-[var(--token-spacing-2)]",
+            "flex",
+            "cursor-default",
+            "select-none",
+            "items-center",
+            "gap-[var(--token-spacing-2)]",
             // 圆角和内边距令牌
-            "rounded-[var(--token-radius-button,var(--token-radius-sm))] px-[var(--token-spacing-3)] py-[var(--token-spacing-2)]",
+            "rounded-[var(--token-radius-button,var(--token-radius-sm))]",
+            "px-[var(--token-spacing-3)]",
+            "py-[var(--token-spacing-2)]",
             // 排版令牌
-            "text-[var(--token-text-sm)] leading-[var(--token-line-height-normal)]",
+            "text-[var(--token-text-sm)]",
+            "leading-[var(--token-line-height-normal)]",
             // 焦点状态
-            "focus-visible:bg-[var(--color-accent)] focus-visible:text-[var(--color-accent-foreground)]",
+            "focus-visible:bg-[var(--color-accent)]",
+            "focus-visible:text-[var(--color-accent-foreground)]",
             // 状态样式
-            "data-[state=open]:bg-[var(--color-accent)]/70 data-[state=open]:text-[var(--color-accent-foreground)]",
+            "data-[state=open]:bg-[var(--color-accent)]/70",
+            "data-[state=open]:text-[var(--color-accent-foreground)]",
             // 过渡动画
-            "color-transition transition-[color,background-color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
+            "color-transition",
+            "transition-[color,background-color,transform]",
+            "duration-[var(--token-motion-duration-fast)]",
+            "ease-[var(--token-motion-ease-standard)]",
             // 渐入动画
             "fade-in",
             className,
@@ -111,7 +131,9 @@ const MenubarSubTrigger = React.forwardRef<
         <ChevronRightIcon
             className={cn(
                 // 图标样式
-                "ml-auto size-4 shrink-0",
+                "ml-auto",
+                "size-4",
+                "shrink-0",
                 // 过渡动画
                 "transition-transform duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                 // 颜色
@@ -135,7 +157,7 @@ const MenubarSubContent = React.forwardRef<
             // 圆角令牌
             "rounded-[var(--token-radius-card,var(--token-radius-md))]",
             // 背景色和边框令牌
-            "bg-[var(--color-popover,var(--color-background))] border border-[var(--color-border,var(--color-muted-foreground)/10)]",
+            "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-popover,var(--color-background))]",
             // 内边距令牌
             "p-[var(--token-spacing-1)]",
             // 文字颜色令牌
@@ -143,15 +165,21 @@ const MenubarSubContent = React.forwardRef<
             // 阴影令牌
             "shadow-[var(--shadow-lg)]",
             // 进场和出场动画
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
-            "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
+            "data-[state=closed]:animate-out",
+            "data-[state=open]:animate-in",
+            "data-[state=closed]:fade-out-0",
+            "data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95",
+            "data-[state=open]:zoom-in-95",
             // 过渡动画
-            "transition-[all,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
+            "transition-[all,transform]",
+            "duration-[var(--token-motion-duration-normal)]",
+            "ease-[var(--token-motion-ease-standard)]",
             // 渐入动画
             "fade-in",
             // 微交互
-            "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
+            "data-[state=closed]:scale-[0.95]",
+            "data-[state=open]:scale-[1]",
             className,
         )}
         {...props}
@@ -170,11 +198,13 @@ const MenubarContent = React.forwardRef<
         data-slot="menubar-content"
         className={cn(
             // 层级和基础样式
-            "z-[var(--z-dropdown,40)] min-w-[12rem] overflow-hidden",
+            "z-[var(--z-dropdown,40)]",
+            "min-w-[12rem]",
+            "overflow-hidden",
             // 圆角令牌
             "rounded-[var(--token-radius-card,var(--token-radius-md))]",
             // 背景色和边框令牌
-            "bg-[var(--color-popover,var(--color-background))] border border-[var(--color-border,var(--color-muted-foreground)/10)]",
+            "border border-[var(--color-border,var(--color-muted-foreground)/10)] bg-[var(--color-popover,var(--color-background))]",
             // 内边距令牌
             "p-[var(--token-spacing-1)]",
             // 文字颜色令牌
@@ -182,18 +212,26 @@ const MenubarContent = React.forwardRef<
             // 阴影令牌
             "shadow-[var(--shadow-lg)]",
             // 进场和出场动画
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
-            "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
+            "data-[state=closed]:animate-out",
+            "data-[state=open]:animate-in",
+            "data-[state=closed]:fade-out-0",
+            "data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95",
+            "data-[state=open]:zoom-in-95",
             // 方向动画
-            "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
-            "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+            "data-[side=bottom]:slide-in-from-top-2",
+            "data-[side=left]:slide-in-from-right-2",
+            "data-[side=right]:slide-in-from-left-2",
+            "data-[side=top]:slide-in-from-bottom-2",
             // 过渡动画
-            "transition-[all,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
+            "transition-[all,transform]",
+            "duration-[var(--token-motion-duration-normal)]",
+            "ease-[var(--token-motion-ease-standard)]",
             // 渐入动画
             "fade-in",
             // 微交互
-            "data-[state=open]:scale-[1] data-[state=closed]:scale-[0.95]",
+            "data-[state=closed]:scale-[0.95]",
+            "data-[state=open]:scale-[1]",
             className,
         )}
         {...props}
@@ -210,19 +248,33 @@ const MenubarItem = React.forwardRef<
         data-slot="menubar-item"
         className={cn(
             // 基础交互类
-            "interactive-base scale-active",
+            "interactive-base",
+            "scale-active",
             // 布局和样式
-            "relative flex cursor-default select-none items-center gap-[var(--token-spacing-2)]",
+            "relative",
+            "flex",
+            "cursor-default",
+            "select-none",
+            "items-center",
+            "gap-[var(--token-spacing-2)]",
             // 圆角和内边距令牌
-            "rounded-[var(--token-radius-button,var(--token-radius-sm))] px-[var(--token-spacing-3)] py-[var(--token-spacing-2)]",
+            "rounded-[var(--token-radius-button,var(--token-radius-sm))]",
+            "px-[var(--token-spacing-3)]",
+            "py-[var(--token-spacing-2)]",
             // 排版令牌
-            "text-[var(--token-text-sm)] leading-[var(--token-line-height-normal)]",
+            "text-[var(--token-text-sm)]",
+            "leading-[var(--token-line-height-normal)]",
             // 焦点状态
-            "focus-visible:bg-[var(--color-accent)] focus-visible:text-[var(--color-accent-foreground)]",
+            "focus-visible:bg-[var(--color-accent)]",
+            "focus-visible:text-[var(--color-accent-foreground)]",
             // 过渡动画
-            "color-transition transition-[color,background-color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
+            "color-transition",
+            "transition-[color,background-color,transform]",
+            "duration-[var(--token-motion-duration-fast)]",
+            "ease-[var(--token-motion-ease-standard)]",
             // 禁用状态
-            "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            "data-[disabled]:pointer-events-none",
+            "data-[disabled]:opacity-50",
             // 渐入动画
             "fade-in",
             className,
@@ -369,7 +421,11 @@ const MenubarLabel = React.forwardRef<
             // 内边距令牌
             "px-[var(--token-spacing-3)] py-[var(--token-spacing-2)]",
             // 排版令牌
-            "text-[var(--token-text-xs)] font-[var(--token-font-weight-semibold)] leading-[var(--token-line-height-tight)] uppercase tracking-[0.05em]",
+            "font-[var(--token-font-weight-semibold)]",
+            "text-[var(--token-text-xs)]",
+            "uppercase",
+            "leading-[var(--token-line-height-tight)]",
+            "tracking-[0.05em]",
             // 颜色令牌
             "text-[var(--color-muted-foreground)]",
             // 缩进样式
@@ -417,7 +473,11 @@ const MenubarShortcut = React.forwardRef<
             // 自动边距
             "ml-auto",
             // 排版令牌
-            "text-[var(--token-text-xs)] font-[var(--token-font-weight-medium)] leading-[var(--token-line-height-tight)] uppercase tracking-[0.05em]",
+            "font-[var(--token-font-weight-medium)]",
+            "text-[var(--token-text-xs)]",
+            "uppercase",
+            "leading-[var(--token-line-height-tight)]",
+            "tracking-[0.05em]",
             // 颜色令牌
             "text-[var(--color-muted-foreground)]/70",
             // 渐入动画

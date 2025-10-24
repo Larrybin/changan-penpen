@@ -14,7 +14,7 @@ export function Breadcrumb({ className, ...props }: BreadcrumbProps) {
                 "w-full",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -29,7 +29,7 @@ export const BreadcrumbList = React.forwardRef<
         ref={ref}
         className={cn(
             // 基础布局
-            "inline-flex items-center flex-wrap",
+            "inline-flex flex-wrap items-center",
             // 间距令牌
             "gap-[var(--token-spacing-1)]",
             // 排版令牌
@@ -38,7 +38,7 @@ export const BreadcrumbList = React.forwardRef<
             "text-[var(--color-muted-foreground)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -58,7 +58,7 @@ export const BreadcrumbItem = React.forwardRef<
             "gap-[var(--token-spacing-1)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -89,12 +89,12 @@ export const BreadcrumbLink = React.forwardRef<
                 "text-[var(--color-muted-foreground)]",
                 // 微交互
                 "transition-[color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
-                "hover:text-[var(--color-foreground)] hover:scale-[1.02]",
+                "hover:scale-[1.02] hover:text-[var(--color-foreground)]",
                 // 焦点状态
-                "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)] rounded-[var(--token-radius-sm)]",
+                "rounded-[var(--token-radius-sm)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -113,12 +113,12 @@ export const BreadcrumbPage = React.forwardRef<
             // 基础布局
             "inline-flex items-center",
             // 排版令牌
-            "text-[var(--token-text-sm)] font-[var(--token-font-weight-semibold)] leading-[var(--token-line-height-tight)]",
+            "font-[var(--token-font-weight-semibold)] text-[var(--token-text-sm)] leading-[var(--token-line-height-tight)]",
             // 颜色令牌
             "text-[var(--color-foreground)]",
             // 渐入动画
             "fade-in",
-            className
+            className,
         )}
         {...props}
     />
@@ -141,7 +141,7 @@ export function BreadcrumbSeparator({
                 "text-[var(--color-muted-foreground)]/60",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         >

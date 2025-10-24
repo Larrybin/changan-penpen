@@ -4,12 +4,12 @@
  * 提升用户体验和感知性能
  */
 
-import { useState, useEffect } from 'react';
-import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface LoadingStateProps {
     isLoading: boolean;
@@ -33,7 +33,7 @@ export function EnhancedLoadingState({
     errorFallback,
     showRetryButton = true,
     onRetry,
-    className
+    className,
 }: LoadingStateProps) {
     const [showDelay, setShowDelay] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -58,7 +58,7 @@ export function EnhancedLoadingState({
     }, [isLoading]);
 
     const handleRetry = () => {
-        setRetryCount(prev => prev + 1);
+        setRetryCount((prev) => prev + 1);
         onRetry?.();
     };
 
@@ -71,23 +71,24 @@ export function EnhancedLoadingState({
                         加载失败
                     </h3>
                     <p className="text-muted-foreground mb-4 max-w-md">
-                        {error.message || '数据加载失败，请稍后重试'}
+                        {error.message || "数据加载失败，请稍后重试"}
                     </p>
-                    {errorFallback || (
-                        showRetryButton && (
+                    {errorFallback ||
+                        (showRetryButton && (
                             <Button
                                 onClick={handleRetry}
                                 variant="outline"
                                 disabled={isLoading}
                             >
-                                <RefreshCw className={cn(
-                                    "h-4 w-4 mr-2",
-                                    isLoading && "animate-spin"
-                                )} />
+                                <RefreshCw
+                                    className={cn(
+                                        "h-4 w-4 mr-2",
+                                        isLoading && "animate-spin",
+                                    )}
+                                />
                                 重试 {retryCount > 0 && `(${retryCount})`}
                             </Button>
-                        )
-                    )}
+                        ))}
                 </CardContent>
             </Card>
         );
@@ -169,7 +170,10 @@ function DefaultLoadingFallback() {
                                     <Skeleton className="h-4 w-24" />
                                 </div>
                                 {Array.from({ length: 4 }, (_, j) => (
-                                    <div key={j} className="flex items-center space-x-4">
+                                    <div
+                                        key={j}
+                                        className="flex items-center space-x-4"
+                                    >
                                         <Skeleton className="h-4 w-4" />
                                         <Skeleton className="h-4 w-24" />
                                         <Skeleton className="h-4 w-32" />
@@ -199,7 +203,7 @@ export function ProgressLoading({
     progress,
     message = "加载中...",
     showPercentage = true,
-    className
+    className,
 }: ProgressLoadingProps) {
     const [displayProgress, setDisplayProgress] = useState(0);
 
@@ -213,7 +217,12 @@ export function ProgressLoading({
     }, [progress]);
 
     return (
-        <div className={cn("flex flex-col items-center space-y-4 py-8", className)}>
+        <div
+            className={cn(
+                "flex flex-col items-center space-y-4 py-8",
+                className,
+            )}
+        >
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">{message}</p>
@@ -254,7 +263,7 @@ export function SmartLoader({
     startTime = Date.now(),
     timeout = 10000, // 10秒超时
     onTimeout,
-    children
+    children,
 }: SmartLoaderProps) {
     const [elapsed, setElapsed] = useState(0);
     const [isTimeout, setIsTimeout] = useState(false);
@@ -302,7 +311,9 @@ export function SmartLoader({
         message = "加载时间过长，请检查网络连接";
     }
 
-    const progress = showProgress ? Math.min((elapsed / timeout) * 100, 100) : undefined;
+    const progress = showProgress
+        ? Math.min((elapsed / timeout) * 100, 100)
+        : undefined;
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -375,7 +386,10 @@ export const SkeletonLibrary = {
                 <Skeleton className="h-4 w-48" />
             </CardHeader>
             <CardContent>
-                <Skeleton className="w-full" style={{ height: `${height}px` }} />
+                <Skeleton
+                    className="w-full"
+                    style={{ height: `${height}px` }}
+                />
             </CardContent>
         </Card>
     ),

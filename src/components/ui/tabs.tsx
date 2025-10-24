@@ -13,7 +13,7 @@ function Tabs({ ...props }: React.ComponentProps<typeof TabsPrimitive.Root>) {
                 // 基础布局和动画
                 "fade-in grid gap-[var(--token-spacing-6)]",
                 "transition-[color,background-color,border-color,box-shadow] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
-                props.className
+                props.className,
             )}
             {...props}
         />
@@ -40,8 +40,8 @@ const TabsList = React.forwardRef<
                 // 过渡动画
                 "color-transition transition-[background-color,color,border-color,box-shadow,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                 // 微交互
-                "hover:shadow-[var(--shadow-md)] hover:border-[var(--color-border,var(--color-muted-foreground)/20)]",
-                className
+                "hover:border-[var(--color-border,var(--color-muted-foreground)/20)] hover:shadow-[var(--shadow-md)]",
+                className,
             )}
             {...props}
         />
@@ -65,19 +65,19 @@ const TabsTrigger = React.forwardRef<
                 // 圆角令牌
                 "rounded-[var(--token-radius-button,var(--token-radius-md))]",
                 // 排版令牌
-                "text-[var(--token-text-sm)] font-[var(--token-font-weight-medium)] leading-[var(--token-line-height-tight)]",
+                "font-[var(--token-font-weight-medium)] text-[var(--token-text-sm)] leading-[var(--token-line-height-tight)]",
                 // 状态样式 - 使用设计令牌
                 "data-[state=active]:bg-[var(--color-background)] data-[state=active]:text-[var(--color-foreground)] data-[state=active]:shadow-[var(--shadow-button)]",
-                "data-[state=inactive]:text-[var(--color-muted-foreground)] data-[state=inactive]:hover:text-[var(--color-foreground)] data-[state=inactive]:hover:bg-[var(--color-accent)]/50",
+                "data-[state=inactive]:text-[var(--color-muted-foreground)] data-[state=inactive]:hover:bg-[var(--color-accent)]/50 data-[state=inactive]:hover:text-[var(--color-foreground)]",
                 // 焦点状态
-                "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)]",
+                "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                 // 微交互动画
                 "scale-active transition-[background-color,color,box-shadow,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                 // 禁用状态
                 "disabled:pointer-events-none disabled:opacity-50",
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -98,12 +98,12 @@ const TabsContent = React.forwardRef<
                 "fade-in",
                 "mt-[var(--token-spacing-4)] focus-visible:outline-none",
                 // 焦点环样式
-                "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)]",
+                "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                 // 过渡动画
                 "color-transition transition-[color,background-color,border-color,box-shadow,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                 // 微交互
                 "data-[state=active]:scale-[1.02] data-[state=active]:shadow-[var(--shadow-sm)]",
-                className
+                className,
             )}
             {...props}
         />

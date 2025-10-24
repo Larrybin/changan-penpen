@@ -38,7 +38,7 @@ export default function PricingGrid() {
 
             {/* 订阅套餐 */}
             <section>
-                <h2 className="text-subtitle font-semibold mb-6 text-center">
+                <h2 className="mb-6 text-center font-semibold text-subtitle">
                     订阅套餐
                 </h2>
                 <div className="grid gap-6 md:grid-cols-3">
@@ -53,22 +53,22 @@ export default function PricingGrid() {
                                 <CardTitle className="flex items-center justify-between">
                                     <span>{tier.name}</span>
                                     {tier.featured ? (
-                                        <span className="text-xs rounded bg-primary text-primary-foreground px-2 py-0.5">
+                                        <span className="rounded bg-primary px-2 py-0.5 text-primary-foreground text-xs">
                                             推荐
                                         </span>
                                     ) : null}
                                 </CardTitle>
                                 <CardDescription>
-                                    <div className="text-2xl font-bold">
+                                    <div className="font-bold text-2xl">
                                         {tier.priceMonthly}
                                     </div>
-                                    <div className="mt-2 text-sm text-muted-foreground">
+                                    <div className="mt-2 text-muted-foreground text-sm">
                                         {tier.description}
                                     </div>
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                                <ul className="list-disc space-y-1 pl-5 text-muted-foreground text-sm">
                                     {(tier.features || []).map((feature) => (
                                         <li key={`${tier.id}-${feature}`}>
                                             {feature}
@@ -102,7 +102,7 @@ export default function PricingGrid() {
 
             {/* 积分套餐 */}
             <section>
-                <h2 className="text-subtitle font-semibold mb-6 text-center">
+                <h2 className="mb-6 text-center font-semibold text-subtitle">
                     积分套餐
                 </h2>
                 <div className="grid gap-6 md:grid-cols-3">
@@ -117,22 +117,22 @@ export default function PricingGrid() {
                                 <CardTitle className="flex items-center justify-between">
                                     <span>{tier.name}</span>
                                     {tier.featured ? (
-                                        <span className="text-xs rounded bg-primary text-primary-foreground px-2 py-0.5">
+                                        <span className="rounded bg-primary px-2 py-0.5 text-primary-foreground text-xs">
                                             热门
                                         </span>
                                     ) : null}
                                 </CardTitle>
                                 <CardDescription>
-                                    <div className="text-2xl font-bold">
+                                    <div className="font-bold text-2xl">
                                         {tier.priceMonthly}
                                     </div>
-                                    <div className="mt-2 text-sm text-muted-foreground">
+                                    <div className="mt-2 text-muted-foreground text-sm">
                                         {tier.description}
                                     </div>
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                                <ul className="list-disc space-y-1 pl-5 text-muted-foreground text-sm">
                                     <li>包含积分：{tier.creditAmount}</li>
                                     {(tier.features || []).map((feature) => (
                                         <li key={`${tier.id}-${feature}`}>

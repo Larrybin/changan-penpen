@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { TodoPriority, TodoStatus } from "@/modules/todos/models/todo.enum";
 import todosRoutes from "../todos.route";
 import { DeleteTodo } from "./delete-todo";
@@ -74,13 +75,26 @@ export function TodoCard({ todo }: TodoCardProps) {
                         </div>
                         <div className="min-w-0 flex-1">
                             <h3
-                                className={`font-semibold text-lg leading-tight ${todo.completed ? "line-through text-muted-foreground" : ""}`}
+                                className={cn(
+                                    "font-semibold",
+                                    "leading-tight",
+                                    "text-lg",
+                                    todo.completed && [
+                                        "line-through",
+                                        "text-muted-foreground",
+                                    ],
+                                )}
                             >
                                 {todo.title}
                             </h3>
                             {todo.description && (
                                 <p
-                                    className={`mt-1 text-sm text-muted-foreground${todo.completed ? " line-through" : ""}`}
+                                    className={cn(
+                                        "mt-1",
+                                        "text-muted-foreground",
+                                        "text-sm",
+                                        todo.completed && "line-through",
+                                    )}
                                 >
                                     {todo.description}
                                 </p>

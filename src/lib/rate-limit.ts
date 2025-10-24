@@ -228,40 +228,54 @@ function computeRetryAfterSeconds(
     return null;
 }
 
-function buildUpstashErrorResponse(
-    message: string | undefined,
+function setHeaderIfDefined(headers: Headers, key: string, value: unknown) {
+    if (value === null || value === undefined) {
+        return;
+    }
+    headers.set(key, String(value));
+}
+
+function resolveResetHeaderValue(reset: RateLimitMetadata["reset"]) {
+    if (!reset) {
+        return null;
+    }
+    if (reset instanceof Date) {
+        return Math.ceil(reset.getTime() / 1000);
+    }
+    if (typeof reset === "number") {
+        return Math.ceil(reset / 1000);
+    }
+    return reset;
+}
+
+function appendRateLimitHeaders(
+    headers: Headers,
     metadata: RateLimitMetadata,
     includeHeaders: boolean,
-): Response {
-    const headers = new Headers();
-    const retryAfterSeconds = computeRetryAfterSeconds(metadata.reset);
-
-    if (retryAfterSeconds !== null) {
-        headers.set("Retry-After", String(retryAfterSeconds));
+) {
+    if (!includeHeaders) {
+        return;
     }
 
-    if (includeHeaders) {
-        if (typeof metadata.limit === "number") {
-            headers.set("X-RateLimit-Limit", String(metadata.limit));
-        }
-        if (typeof metadata.remaining === "number") {
-            headers.set(
-                "X-RateLimit-Remaining",
-                String(Math.max(metadata.remaining, 0)),
-            );
-        }
-        if (metadata.reset) {
-            const resetValue =
-                metadata.reset instanceof Date
-                    ? Math.ceil(metadata.reset.getTime() / 1000)
-                    : typeof metadata.reset === "number"
-                      ? Math.ceil(metadata.reset / 1000)
-                      : metadata.reset;
-            headers.set("X-RateLimit-Reset", String(resetValue));
-        }
+    setHeaderIfDefined(headers, "X-RateLimit-Limit", metadata.limit);
+    if (typeof metadata.remaining === "number") {
+        setHeaderIfDefined(
+            headers,
+            "X-RateLimit-Remaining",
+            Math.max(metadata.remaining, 0),
+        );
     }
+    const resetHeader = resolveResetHeaderValue(metadata.reset);
+    if (resetHeader !== null) {
+        setHeaderIfDefined(headers, "X-RateLimit-Reset", resetHeader);
+    }
+}
 
-    const details = {
+function buildRateLimitDetails(
+    metadata: RateLimitMetadata,
+    retryAfterSeconds: number | null,
+) {
+    return {
         limit: metadata.limit ?? null,
         remaining: metadata.remaining ?? null,
         reset:
@@ -270,6 +284,34 @@ function buildUpstashErrorResponse(
                 : (metadata.reset ?? null),
         retryAfterSeconds: retryAfterSeconds ?? null,
     } as const;
+}
+
+function createRateLimitHeaders(
+    metadata: RateLimitMetadata,
+    includeHeaders: boolean,
+) {
+    const headers = new Headers();
+    const retryAfterSeconds = computeRetryAfterSeconds(metadata.reset);
+
+    if (retryAfterSeconds !== null) {
+        headers.set("Retry-After", String(retryAfterSeconds));
+    }
+
+    appendRateLimitHeaders(headers, metadata, includeHeaders);
+
+    return { headers, retryAfterSeconds };
+}
+
+function buildUpstashErrorResponse(
+    message: string | undefined,
+    metadata: RateLimitMetadata,
+    includeHeaders: boolean,
+): Response {
+    const { headers, retryAfterSeconds } = createRateLimitHeaders(
+        metadata,
+        includeHeaders,
+    );
+    const details = buildRateLimitDetails(metadata, retryAfterSeconds);
 
     return createApiErrorResponse({
         status: 429,
@@ -281,70 +323,74 @@ function buildUpstashErrorResponse(
     });
 }
 
-export async function applyRateLimit(
-    options: ApplyRateLimitOptions,
-): Promise<ApplyRateLimitResult> {
-    const { request, identifier, uniqueToken, message, upstash, waitUntil } =
-        options;
+function schedulePendingAnalytics(
+    pending: Promise<unknown> | undefined,
+    waitUntil: ((promise: Promise<unknown>) => void) | undefined,
+    identifier: string,
+) {
+    if (!pending) {
+        return;
+    }
 
-    const providedEnv = options.env;
-    const asyncContext = providedEnv
-        ? null
-        : await getCloudflareContext({ async: true });
-    const env = (providedEnv ?? asyncContext?.env) as
-        | RateLimiterEnv
-        | undefined;
+    if (typeof waitUntil === "function") {
+        waitUntil(pending);
+        return;
+    }
 
-    const compositeKey = resolveCompositeKey(
-        request,
-        identifier,
-        uniqueToken,
-        options.keyParts,
-    );
+    pending.catch((error: unknown) => {
+        console.warn("[rate-limit] pending analytics rejected", {
+            identifier,
+            error,
+        });
+    });
+}
 
-    const limiter = ensureUpstashLimiter(env, identifier, upstash);
-    if (limiter && upstash) {
-        const result = await limiter.limit(compositeKey);
-        if (result.pending) {
-            if (typeof waitUntil === "function") {
-                waitUntil(result.pending);
-            } else {
-                result.pending.catch((error: unknown) => {
-                    console.warn("[rate-limit] pending analytics rejected", {
-                        identifier,
-                        error,
-                    });
-                });
-            }
-        }
+async function tryApplyUpstashLimiter(
+    compositeKey: string,
+    identifier: string,
+    message: string | undefined,
+    upstash: ApplyRateLimitOptions["upstash"],
+    limiter: ReturnType<typeof ensureUpstashLimiter>,
+    waitUntil: ApplyRateLimitOptions["waitUntil"],
+): Promise<ApplyRateLimitResult | null> {
+    if (!limiter || !upstash) {
+        return null;
+    }
 
-        if (!result.success) {
-            const response = buildUpstashErrorResponse(
-                message,
-                {
-                    limit: result.limit,
-                    remaining: result.remaining,
-                    reset: result.reset,
-                },
-                upstash.includeHeaders ?? false,
-            );
-            return { ok: false, response };
-        }
+    const result = await limiter.limit(compositeKey);
+    schedulePendingAnalytics(result.pending, waitUntil, identifier);
 
-        return {
-            ok: true,
-            skipped: false,
-            meta: {
+    if (!result.success) {
+        const response = buildUpstashErrorResponse(
+            message,
+            {
                 limit: result.limit,
                 remaining: result.remaining,
                 reset: result.reset,
             },
-        };
+            upstash.includeHeaders ?? false,
+        );
+        return { ok: false, response };
     }
 
-    const rateLimiter = env?.RATE_LIMITER;
+    return {
+        ok: true,
+        skipped: false,
+        meta: {
+            limit: result.limit,
+            remaining: result.remaining,
+            reset: result.reset,
+        },
+    };
+}
+
+async function tryApplyLocalLimiter(
+    rateLimiter: RateLimiterEnv["RATE_LIMITER"] | undefined,
+    compositeKey: string,
+    message: string | undefined,
+): Promise<ApplyRateLimitResult | null> {
     if (!rateLimiter || typeof rateLimiter.limit !== "function") {
-        return { ok: true, skipped: true };
+        return null;
     }
 
     try {
@@ -369,4 +415,57 @@ export async function applyRateLimit(
             severity: "medium",
         }),
     };
+}
+
+export async function applyRateLimit(
+    options: ApplyRateLimitOptions,
+): Promise<ApplyRateLimitResult> {
+    const { request, identifier, uniqueToken, message, upstash, waitUntil } =
+        options;
+
+    const env = await resolveLimiterEnv(options.env);
+
+    const compositeKey = resolveCompositeKey(
+        request,
+        identifier,
+        uniqueToken,
+        options.keyParts,
+    );
+
+    const limiter = ensureUpstashLimiter(env, identifier, upstash);
+    const upstashResult = await tryApplyUpstashLimiter(
+        compositeKey,
+        identifier,
+        message,
+        upstash,
+        limiter,
+        waitUntil,
+    );
+    if (upstashResult) {
+        return upstashResult;
+    }
+
+    const localLimiterResult = await tryApplyLocalLimiter(
+        env?.RATE_LIMITER,
+        compositeKey,
+        message,
+    );
+    if (localLimiterResult) {
+        return localLimiterResult;
+    }
+
+    return { ok: true, skipped: true };
+}
+
+async function resolveLimiterEnv(env?: RateLimiterEnv) {
+    if (env) {
+        return env;
+    }
+
+    try {
+        const context = await getCloudflareContext({ async: true });
+        return (context?.env as RateLimiterEnv | undefined) ?? undefined;
+    } catch {
+        return undefined;
+    }
 }

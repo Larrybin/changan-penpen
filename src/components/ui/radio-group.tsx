@@ -24,7 +24,7 @@ const RadioGroup = React.forwardRef<
                 layoutClassName,
                 // 渐入动画
                 "fade-in",
-                className
+                className,
             )}
             {...props}
         />
@@ -59,7 +59,7 @@ const RadioGroupItem = React.forwardRef<
                 // 渐入动画
                 "fade-in",
                 // 过渡动画
-                "color-transition transition-[color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]"
+                "color-transition transition-[color,transform] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
             )}
         >
             <RadioGroupPrimitive.Item
@@ -80,14 +80,14 @@ const RadioGroupItem = React.forwardRef<
                     "data-[state=checked]:border-[var(--color-primary)] data-[state=checked]:bg-[var(--color-primary)]",
                     "data-[state=checked]:shadow-[var(--shadow-button)]",
                     // 焦点状态
-                    "focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)] focus-visible:ring-offset-[var(--color-background)]",
+                    "focus-visible:ring-[var(--token-focus-ring-color,var(--color-primary))] focus-visible:ring-[var(--token-focus-ring-width,2px)] focus-visible:ring-offset-[var(--color-background)] focus-visible:ring-offset-[var(--token-focus-ring-offset,2px)]",
                     // 过渡动画
                     "transition-[border-color,background-color,box-shadow,transform] duration-[var(--token-motion-duration-normal)] ease-[var(--token-motion-ease-standard)]",
                     // 禁用状态
                     "disabled:cursor-not-allowed disabled:opacity-50",
                     // 渐入动画
                     "fade-in",
-                    className
+                    className,
                 )}
                 {...props}
             >
@@ -97,17 +97,19 @@ const RadioGroupItem = React.forwardRef<
                         // 指示器布局
                         "flex size-full items-center justify-center",
                         // 渐入动画
-                        "fade-in"
+                        "fade-in",
                     )}
                 >
-                    <span className={cn(
-                        // 指示器样式
-                        "size-2.5 rounded-full bg-[var(--color-primary-foreground,var(--color-background))]",
-                        // 动画
-                        "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
-                        // 渐入动画
-                        "fade-in"
-                    )} />
+                    <span
+                        className={cn(
+                            // 指示器样式
+                            "size-2.5 rounded-full bg-[var(--color-primary-foreground,var(--color-background))]",
+                            // 动画
+                            "scale-active transition-transform duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
+                            // 渐入动画
+                            "fade-in",
+                        )}
+                    />
                 </RadioGroupPrimitive.Indicator>
             </RadioGroupPrimitive.Item>
             {labelContent && (
@@ -125,9 +127,10 @@ const RadioGroupItem = React.forwardRef<
                         // 过渡动画
                         "color-transition transition-[color] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                         // 微交互
-                        !isDisabled && "hover:text-[var(--color-foreground)]/80",
+                        !isDisabled &&
+                            "hover:text-[var(--color-foreground)]/80",
                         // 渐入动画
-                        "fade-in"
+                        "fade-in",
                     )}
                 >
                     {labelContent}

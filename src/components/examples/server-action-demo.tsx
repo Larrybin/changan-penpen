@@ -136,7 +136,7 @@ export function ServerActionDemo() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="mx-auto max-w-4xl space-y-6 p-6">
             <Card>
                 <CardHeader>
                     <CardTitle>Server Action 状态同步演示</CardTitle>
@@ -146,7 +146,7 @@ export function ServerActionDemo() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {/* 创建任务表单 */}
-                    <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                    <div className="space-y-4 rounded-lg border bg-gray-50 p-4">
                         <h3 className="font-semibold">创建新任务</h3>
                         <div className="grid gap-2">
                             <Input
@@ -186,7 +186,7 @@ export function ServerActionDemo() {
                         </div>
 
                         {createTodo.error && (
-                            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700">
+                            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
                                 错误: {createTodo.error.message}
                             </div>
                         )}
@@ -198,7 +198,7 @@ export function ServerActionDemo() {
                             任务列表 ({todos.length})
                         </h3>
                         {todos.length === 0 ? (
-                            <p className="text-gray-500 text-center py-8">
+                            <p className="py-8 text-center text-gray-500">
                                 暂无任务，创建一个试试吧！
                             </p>
                         ) : (
@@ -206,18 +206,18 @@ export function ServerActionDemo() {
                                 {todos.map((todo) => (
                                     <div
                                         key={todo.id}
-                                        className="p-3 border rounded-lg flex items-center justify-between"
+                                        className="flex items-center justify-between rounded-lg border p-3"
                                     >
                                         <div className="flex-1">
                                             <h4 className="font-medium">
                                                 {todo.title}
                                             </h4>
                                             {todo.description && (
-                                                <p className="text-sm text-gray-600">
+                                                <p className="text-gray-600 text-sm">
                                                     {todo.description}
                                                 </p>
                                             )}
-                                            <p className="text-xs text-gray-400">
+                                            <p className="text-gray-400 text-xs">
                                                 创建时间:{" "}
                                                 {new Date(
                                                     todo.createdAt,
@@ -264,12 +264,12 @@ export function ServerActionDemo() {
                     </div>
 
                     {/* 状态信息 */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 border rounded-lg">
+                    <div className="grid grid-cols-1 gap-4 rounded-lg border bg-blue-50 p-4 md:grid-cols-3">
                         <div className="text-center">
                             <h4 className="font-semibold text-blue-700">
                                 创建操作
                             </h4>
-                            <p className="text-sm text-blue-600">
+                            <p className="text-blue-600 text-sm">
                                 状态:{" "}
                                 {createTodo.isExecuting
                                     ? "执行中"
@@ -282,7 +282,7 @@ export function ServerActionDemo() {
                             <h4 className="font-semibold text-blue-700">
                                 更新操作
                             </h4>
-                            <p className="text-sm text-blue-600">
+                            <p className="text-blue-600 text-sm">
                                 状态:{" "}
                                 {updateTodo.isExecuting
                                     ? "执行中"
@@ -295,7 +295,7 @@ export function ServerActionDemo() {
                             <h4 className="font-semibold text-blue-700">
                                 删除操作
                             </h4>
-                            <p className="text-sm text-blue-600">
+                            <p className="text-blue-600 text-sm">
                                 状态:{" "}
                                 {deleteTodo.isExecuting
                                     ? "执行中"
@@ -307,8 +307,8 @@ export function ServerActionDemo() {
                     </div>
 
                     {/* 使用说明 */}
-                    <div className="p-4 bg-gray-50 border rounded-lg text-sm">
-                        <h4 className="font-semibold mb-2">功能说明:</h4>
+                    <div className="rounded-lg border bg-gray-50 p-4 text-sm">
+                        <h4 className="mb-2 font-semibold">功能说明:</h4>
                         <ul className="space-y-1 text-gray-600">
                             <li>• 自动显示加载状态和错误信息</li>
                             <li>• Toast 通知反馈操作结果</li>

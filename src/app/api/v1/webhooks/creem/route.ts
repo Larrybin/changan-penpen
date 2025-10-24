@@ -49,113 +49,169 @@ function isCreemCheckoutPayload(value: unknown): value is CreemCheckout {
     return true;
 }
 
+type WaitUntil = (promise: Promise<unknown>) => void;
+
+interface WebhookRequestContext {
+    rawBody: string;
+    signature: string;
+    env: CloudflareEnv;
+    waitUntil?: WaitUntil;
+}
+
+async function getWebhookRequestContext(
+    request: Request,
+): Promise<WebhookRequestContext> {
+    const rawBody = await request.text();
+    const signature = request.headers.get("creem-signature") ?? "";
+    const cfContext = await getCloudflareContext({ async: true });
+    const env = cfContext.env as unknown as CloudflareEnv;
+    const ctx = (cfContext as { ctx?: { waitUntil?: WaitUntil } }).ctx;
+    const waitUntil =
+        typeof ctx?.waitUntil === "function"
+            ? ctx.waitUntil.bind(ctx)
+            : undefined;
+    return { rawBody, signature, env, waitUntil };
+}
+
+async function enforceWebhookRateLimit(
+    request: Request,
+    context: WebhookRequestContext,
+): Promise<Response | null> {
+    const result = await applyRateLimit({
+        request,
+        identifier: "creem:webhook",
+        env: {
+            RATE_LIMITER: context.env.RATE_LIMITER,
+            UPSTASH_REDIS_REST_URL: context.env.UPSTASH_REDIS_REST_URL,
+            UPSTASH_REDIS_REST_TOKEN: context.env.UPSTASH_REDIS_REST_TOKEN,
+        },
+        message: "Too many webhook requests",
+        upstash: {
+            strategy: { type: "fixed", requests: 60, window: "60 s" },
+            prefix: "@ratelimit/webhook",
+            includeHeaders: true,
+        },
+        waitUntil: context.waitUntil,
+    });
+    return result.ok ? null : result.response;
+}
+
+function logWebhookSignature(signature: string, env: CloudflareEnv) {
+    const envMode = String(env.NEXTJS_ENV ?? "").toLowerCase();
+    if (env.CREEM_LOG_WEBHOOK_SIGNATURE === "1" && envMode !== "production") {
+        console.info("[creem webhook] signature:", signature);
+    }
+}
+
+function assertWebhookSecret(env: CloudflareEnv): string {
+    if (!env.CREEM_WEBHOOK_SECRET) {
+        console.error("[creem webhook] missing CREEM_WEBHOOK_SECRET");
+        throw new ApiError("Missing webhook secret", {
+            status: 500,
+            code: "SERVICE_CONFIGURATION_ERROR",
+            severity: "high",
+        });
+    }
+    return env.CREEM_WEBHOOK_SECRET;
+}
+
+function createReplayProtectionStore(env: CloudflareEnv) {
+    const redis = getRedisClient({
+        UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
+        UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    return redis
+        ? createRedisReplayProtectionStore({
+              set: (key, value, options) =>
+                  redis.set(`creem:webhook:replay:${key}`, value, options),
+          })
+        : undefined;
+}
+
+async function verifyWebhookPayload(
+    payload: string,
+    signature: string,
+    secret: string,
+    replayStore:
+        | ReturnType<typeof createRedisReplayProtectionStore>
+        | undefined,
+) {
+    const valid = await verifyCreemWebhookSignature(
+        payload,
+        signature,
+        secret,
+        {
+            replayStore,
+            toleranceSeconds: 5 * 60,
+        },
+    );
+    if (!valid) {
+        throw new ApiError("Invalid signature", {
+            status: 401,
+            code: "INVALID_SIGNATURE",
+            severity: "high",
+        });
+    }
+}
+
+function parseWebhookEvent(rawBody: string): CreemWebhookEvent {
+    const parsed = JSON.parse(rawBody) as unknown;
+    if (!isRecord(parsed) || typeof parsed.eventType !== "string") {
+        throw new Error("Invalid webhook payload");
+    }
+    return {
+        eventType: parsed.eventType,
+        object: parsed.object,
+    } satisfies CreemWebhookEvent;
+}
+
+async function dispatchWebhookEvent(event: CreemWebhookEvent) {
+    switch (event.eventType) {
+        case "checkout.completed":
+            if (!isCreemCheckoutPayload(event.object)) {
+                throw new Error("Invalid checkout payload");
+            }
+            await onCheckoutCompleted(event.object);
+            break;
+        case "subscription.active":
+        case "subscription.paid":
+        case "subscription.canceled":
+        case "subscription.expired":
+        case "subscription.trialing":
+            if (!isCreemSubscriptionPayload(event.object)) {
+                throw new Error("Invalid subscription payload");
+            }
+            await onSubscriptionChanged(event.object);
+            break;
+        default:
+            console.info(`[creem webhook] unhandled: ${event.eventType}`);
+    }
+}
+
 export async function POST(request: Request) {
     try {
-        const raw = await request.text();
-        const signature = request.headers.get("creem-signature") || "";
-        const cfContext = await getCloudflareContext({ async: true });
-        const env = cfContext.env as unknown as CloudflareEnv;
-        const maybeCtx = (
-            cfContext as {
-                ctx?: { waitUntil?: (promise: Promise<unknown>) => void };
-            }
-        ).ctx;
-        const waitUntil =
-            typeof maybeCtx?.waitUntil === "function"
-                ? maybeCtx.waitUntil.bind(maybeCtx)
-                : undefined;
-
-        const rateLimitResult = await applyRateLimit({
+        const context = await getWebhookRequestContext(request);
+        const rateLimitedResponse = await enforceWebhookRateLimit(
             request,
-            identifier: "creem:webhook",
-            env: {
-                RATE_LIMITER: env.RATE_LIMITER,
-                UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
-                UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
-            },
-            message: "Too many webhook requests",
-            upstash: {
-                strategy: { type: "fixed", requests: 60, window: "60 s" },
-                prefix: "@ratelimit/webhook",
-                includeHeaders: true,
-            },
-            waitUntil,
-        });
-        if (!rateLimitResult.ok) {
-            return rateLimitResult.response;
-        }
-
-        const envMode = String(env.NEXTJS_ENV ?? "").toLowerCase();
-        if (
-            env.CREEM_LOG_WEBHOOK_SIGNATURE === "1" &&
-            envMode !== "production"
-        ) {
-            console.info("[creem webhook] signature:", signature);
-        }
-
-        if (!env.CREEM_WEBHOOK_SECRET) {
-            console.error("[creem webhook] missing CREEM_WEBHOOK_SECRET");
-            throw new ApiError("Missing webhook secret", {
-                status: 500,
-                code: "SERVICE_CONFIGURATION_ERROR",
-                severity: "high",
-            });
-        }
-        const redis = getRedisClient({
-            UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
-            UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
-        });
-        const replayStore = redis
-            ? createRedisReplayProtectionStore({
-                  set: (key, value, options) =>
-                      redis.set(`creem:webhook:replay:${key}`, value, options),
-              })
-            : undefined;
-        const valid = await verifyCreemWebhookSignature(
-            raw,
-            signature,
-            env.CREEM_WEBHOOK_SECRET,
-            {
-                replayStore,
-                toleranceSeconds: 5 * 60,
-            },
+            context,
         );
-        if (!valid) {
-            throw new ApiError("Invalid signature", {
-                status: 401,
-                code: "INVALID_SIGNATURE",
-                severity: "high",
-            });
+        if (rateLimitedResponse) {
+            return rateLimitedResponse;
         }
 
-        const parsed = JSON.parse(raw) as unknown;
-        if (!isRecord(parsed) || typeof parsed.eventType !== "string") {
-            throw new Error("Invalid webhook payload");
-        }
-        const event: CreemWebhookEvent = {
-            eventType: parsed.eventType,
-            object: parsed.object,
-        };
-        switch (event.eventType) {
-            case "checkout.completed":
-                if (!isCreemCheckoutPayload(event.object)) {
-                    throw new Error("Invalid checkout payload");
-                }
-                await onCheckoutCompleted(event.object);
-                break;
-            case "subscription.active":
-            case "subscription.paid":
-            case "subscription.canceled":
-            case "subscription.expired":
-            case "subscription.trialing":
-                if (!isCreemSubscriptionPayload(event.object)) {
-                    throw new Error("Invalid subscription payload");
-                }
-                await onSubscriptionChanged(event.object);
-                break;
-            default:
-                console.info(`[creem webhook] unhandled: ${event.eventType}`);
-        }
+        logWebhookSignature(context.signature, context.env);
+
+        const secret = assertWebhookSecret(context.env);
+        const replayStore = createReplayProtectionStore(context.env);
+        await verifyWebhookPayload(
+            context.rawBody,
+            context.signature,
+            secret,
+            replayStore,
+        );
+
+        const event = parseWebhookEvent(context.rawBody);
+        await dispatchWebhookEvent(event);
 
         return new Response(JSON.stringify({ received: true }), {
             status: 200,

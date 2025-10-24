@@ -19,6 +19,46 @@ type Body = {
 
 const REQUEST_ID_REGEX = /^[A-Za-z0-9:_-]{8,128}$/;
 
+type CheckoutEnv = Pick<
+    CloudflareEnv,
+    | "RATE_LIMITER"
+    | "CREEM_API_URL"
+    | "CREEM_API_KEY"
+    | "CREEM_SUCCESS_URL"
+    | "CREEM_CANCEL_URL"
+    | "UPSTASH_REDIS_REST_URL"
+    | "UPSTASH_REDIS_REST_TOKEN"
+>;
+
+type AuthSession = {
+    user?: {
+        id: string;
+        email?: string | null;
+    } | null;
+};
+
+type SessionUser = {
+    id: string;
+    email: string;
+};
+
+type CheckoutRequestBody = {
+    product_id: string;
+    customer: { email: string };
+    metadata: {
+        user_id: string;
+        product_type: "subscription" | "credits";
+        credits: number;
+        request_id?: string;
+        units?: number;
+    };
+    success_url?: string;
+    cancel_url?: string;
+    discount_code?: string;
+    request_id?: string;
+    units?: number;
+};
+
 function normalizeRequestId(input: unknown): string | undefined {
     if (typeof input !== "string") {
         return undefined;
@@ -72,7 +112,9 @@ function generateRequestId(): string {
         ) {
             return crypto.randomUUID();
         }
-    } catch {}
+    } catch {
+        // Ignore: browser crypto not available in this environment
+    }
     try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const nodeCrypto =
@@ -80,7 +122,9 @@ function generateRequestId(): string {
         if (typeof nodeCrypto.randomUUID === "function") {
             return nodeCrypto.randomUUID();
         }
-    } catch {}
+    } catch {
+        // Ignore: node crypto fallback not available
+    }
     return `req_${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`;
 }
 
@@ -178,212 +222,286 @@ function _ensureCheckoutUrl(data: unknown): string | undefined {
     return typeof url === "string" && url ? url : undefined;
 }
 
+type FetchAttemptResult =
+    | {
+          kind: "success";
+          status: number;
+          data: unknown;
+          contentType: string | null;
+      }
+    | {
+          kind: "failure";
+          status: number;
+          text?: string;
+          contentType: string | null;
+          shouldRetry: boolean;
+      };
+
+async function resolveCheckoutContext(request: Request): Promise<{
+    env: CheckoutEnv;
+    waitUntil?: (promise: Promise<unknown>) => void;
+    origin: string | null;
+}> {
+    const cfContext = await getCloudflareContext({ async: true });
+    const env = cfContext.env as unknown as CheckoutEnv;
+    const maybeCtx = (
+        cfContext as {
+            ctx?: { waitUntil?: (promise: Promise<unknown>) => void };
+        }
+    ).ctx;
+    const waitUntil =
+        typeof maybeCtx?.waitUntil === "function"
+            ? maybeCtx.waitUntil.bind(maybeCtx)
+            : undefined;
+
+    return {
+        env,
+        waitUntil,
+        origin: request.headers.get("origin"),
+    };
+}
+
+async function requireSessionUser(request: Request): Promise<SessionUser> {
+    const auth = await getAuthInstance();
+    const session = (await auth.api.getSession({
+        headers: request.headers,
+    })) as AuthSession;
+    const user = session?.user;
+    if (!user) {
+        throw new ApiError("Authentication required", {
+            status: 401,
+            code: "UNAUTHORIZED",
+            severity: "high",
+        });
+    }
+
+    const email = user.email;
+    if (!email) {
+        throw new ApiError("User email required", {
+            status: 400,
+            code: "INVALID_REQUEST",
+            severity: "medium",
+        });
+    }
+
+    return { id: user.id, email };
+}
+
+async function enforceCheckoutRateLimit(
+    request: Request,
+    env: CheckoutEnv,
+    waitUntil?: (promise: Promise<unknown>) => void,
+): Promise<Response | undefined> {
+    const rateLimitResult = await applyRateLimit({
+        request,
+        identifier: "creem:create-checkout",
+        env: {
+            RATE_LIMITER: env.RATE_LIMITER,
+            UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL,
+            UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN,
+        },
+        message: "Too many checkout attempts",
+        upstash: {
+            strategy: { type: "sliding", requests: 3, window: "10 s" },
+            analytics: true,
+            prefix: "@ratelimit/checkout",
+            includeHeaders: true,
+        },
+        waitUntil,
+    });
+
+    return rateLimitResult.ok ? undefined : rateLimitResult.response;
+}
+
+function createCheckoutRequestPayload(options: {
+    body: Body;
+    user: SessionUser;
+    env: CheckoutEnv;
+    origin: string | null;
+}): {
+    requestBody: CheckoutRequestBody;
+    productId: string;
+    productType: "subscription" | "credits";
+    requestId: string;
+    units?: number;
+} {
+    if (isEnvMissing(options.env)) {
+        throw new ApiError("Missing CREEM_API_URL or CREEM_API_KEY", {
+            status: 503,
+            code: "SERVICE_UNAVAILABLE",
+            severity: "high",
+        });
+    }
+
+    const normalizedType = (options.body.productType || "").toLowerCase();
+    const isSubscription = normalizedType === "subscription";
+    const { productId, creditsAmount } = selectProduct(
+        { productId: options.body.productId, tierId: options.body.tierId },
+        isSubscription,
+    );
+    const allowed = allowedProductIds();
+
+    if (!productId || !allowed.has(productId)) {
+        throw new ApiError("Invalid or missing productId/tierId", {
+            status: 400,
+            code: "INVALID_REQUEST",
+            details: {
+                productId,
+                tierId: options.body.tierId ?? null,
+            },
+            severity: "medium",
+        });
+    }
+
+    const productType: "subscription" | "credits" = isSubscription
+        ? "subscription"
+        : "credits";
+    const requestId =
+        normalizeRequestId(options.body.requestId) ?? generateRequestId();
+    const units = normalizeUnits(options.body.units);
+
+    const requestBody: CheckoutRequestBody = {
+        product_id: productId,
+        customer: { email: options.user.email },
+        metadata: {
+            user_id: options.user.id,
+            product_type: productType,
+            credits: productType === "credits" ? (creditsAmount ?? 0) : 0,
+        },
+    };
+    requestBody.metadata.request_id = requestId;
+    requestBody.request_id = requestId;
+
+    const { successUrl, cancelUrl } = buildRedirectUrls(
+        options.env,
+        options.origin,
+    );
+    if (successUrl) requestBody.success_url = successUrl;
+    if (cancelUrl) requestBody.cancel_url = cancelUrl;
+    if (options.body.discountCode) {
+        requestBody.discount_code = options.body.discountCode;
+    }
+    if (typeof units === "number") {
+        requestBody.units = units;
+        requestBody.metadata.units = units;
+    }
+
+    return { requestBody, productId, productType, requestId, units };
+}
+
+async function sendCheckoutRequest(
+    env: CheckoutEnv,
+    requestBody: CheckoutRequestBody,
+): Promise<{ checkoutUrl: string; raw: unknown }> {
+    const { ok, status, data, text, attempts, contentType } =
+        await fetchWithRetry(`${env.CREEM_API_URL}/checkouts`, {
+            method: "POST",
+            headers: {
+                "x-api-key": env.CREEM_API_KEY,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+    if (!ok) {
+        const snippet = (text || "").slice(0, 300);
+        const isClientError =
+            status === 400 || status === 404 || status === 422;
+        const errorMessage = isClientError
+            ? "Create checkout failed due to invalid request"
+            : "Create checkout failed";
+        const mapped = _mapUpstreamToHttp(status);
+        throw new ApiError(errorMessage, {
+            status: mapped,
+            code: isClientError ? "UPSTREAM_BAD_REQUEST" : "UPSTREAM_FAILURE",
+            details: {
+                status,
+                attempts,
+                contentType: contentType || null,
+                upstreamBodySnippet: snippet,
+                isClientError,
+            },
+            severity: isClientError ? "medium" : "high",
+        });
+    }
+
+    const checkoutUrl = _ensureCheckoutUrl(data);
+    if (!checkoutUrl) {
+        throw new ApiError(
+            "Invalid response from Creem: missing checkout_url",
+            {
+                status: 502,
+                code: "UPSTREAM_INVALID_RESPONSE",
+                details: { data },
+                severity: "high",
+            },
+        );
+    }
+
+    return { checkoutUrl, raw: data };
+}
+
+function buildCheckoutSuccessResponse(options: {
+    checkoutUrl: string;
+    raw: unknown;
+    requestId: string;
+}): Response {
+    return new Response(
+        JSON.stringify({
+            success: true,
+            data: { checkoutUrl: options.checkoutUrl },
+            error: null,
+            meta: { raw: options.raw, requestId: options.requestId },
+        }),
+        {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+        },
+    );
+}
+
 export async function POST(request: Request) {
     try {
-        const auth = await getAuthInstance();
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-            throw new ApiError("Authentication required", {
-                status: 401,
-                code: "UNAUTHORIZED",
-                severity: "high",
-            });
-        }
-
-        const cfContext = await getCloudflareContext({ async: true });
-        const cf = cfContext.env as unknown as Pick<
-            CloudflareEnv,
-            | "RATE_LIMITER"
-            | "CREEM_API_URL"
-            | "CREEM_API_KEY"
-            | "CREEM_SUCCESS_URL"
-            | "CREEM_CANCEL_URL"
-            | "UPSTASH_REDIS_REST_URL"
-            | "UPSTASH_REDIS_REST_TOKEN"
-        >;
-        const maybeCtx = (
-            cfContext as {
-                ctx?: { waitUntil?: (promise: Promise<unknown>) => void };
-            }
-        ).ctx;
-        const waitUntil =
-            typeof maybeCtx?.waitUntil === "function"
-                ? maybeCtx.waitUntil.bind(maybeCtx)
-                : undefined;
-
-        const rateLimitResult = await applyRateLimit({
+        const user = await requireSessionUser(request);
+        const context = await resolveCheckoutContext(request);
+        const rateLimitResponse = await enforceCheckoutRateLimit(
             request,
-            identifier: "creem:create-checkout",
-            env: {
-                RATE_LIMITER: cf.RATE_LIMITER,
-                UPSTASH_REDIS_REST_URL: cf.UPSTASH_REDIS_REST_URL,
-                UPSTASH_REDIS_REST_TOKEN: cf.UPSTASH_REDIS_REST_TOKEN,
-            },
-            message: "Too many checkout attempts",
-            upstash: {
-                strategy: { type: "sliding", requests: 3, window: "10 s" },
-                analytics: true,
-                prefix: "@ratelimit/checkout",
-                includeHeaders: true,
-            },
-            waitUntil,
-        });
-        if (!rateLimitResult.ok) {
-            return rateLimitResult.response;
-        }
-        const origin = request.headers.get("origin");
-        const body = (await request.json()) as Body;
-
-        // 必要环境变量校验（缺失则直接失败，避免上游 503 混淆）
-        if (isEnvMissing(cf)) {
-            throw new ApiError("Missing CREEM_API_URL or CREEM_API_KEY", {
-                status: 503,
-                code: "SERVICE_UNAVAILABLE",
-                severity: "high",
-            });
-        }
-
-        const normalizedType = (body.productType || "").toLowerCase();
-        const isSubscription = normalizedType === "subscription";
-        const { productId, creditsAmount } = selectProduct(
-            { productId: body.productId, tierId: body.tierId },
-            isSubscription,
+            context.env,
+            context.waitUntil,
         );
-        const allowed = allowedProductIds();
+        if (rateLimitResponse) {
+            return rateLimitResponse;
+        }
 
-        if (!productId || !allowed.has(productId)) {
-            throw new ApiError("Invalid or missing productId/tierId", {
-                status: 400,
-                code: "INVALID_REQUEST",
-                details: {
-                    productId,
-                    tierId: body.tierId ?? null,
-                },
-                severity: "medium",
+        const body = (await request.json()) as Body;
+        const { requestBody, productId, productType, requestId, units } =
+            createCheckoutRequestPayload({
+                body,
+                user,
+                env: context.env,
+                origin: context.origin,
             });
-        }
-
-        const productType: "subscription" | "credits" = isSubscription
-            ? "subscription"
-            : "credits";
-        const email = session.user.email;
-        if (!email) {
-            throw new ApiError("User email required", {
-                status: 400,
-                code: "INVALID_REQUEST",
-                severity: "medium",
-            });
-        }
-
-        const requestId =
-            normalizeRequestId(body.requestId) ?? generateRequestId();
-        const units = normalizeUnits(body.units);
-
-        const requestBody: {
-            product_id: string;
-            customer: { email: string };
-            metadata: {
-                user_id: string;
-                product_type: "subscription" | "credits";
-                credits: number;
-                request_id?: string;
-                units?: number;
-            };
-            success_url?: string;
-            cancel_url?: string;
-            discount_code?: string;
-            request_id?: string;
-            units?: number;
-        } = {
-            product_id: productId,
-            customer: { email },
-            metadata: {
-                user_id: session.user.id,
-                product_type: productType,
-                credits: productType === "credits" ? (creditsAmount ?? 0) : 0,
-            },
-        };
-        requestBody.metadata.request_id = requestId;
-        requestBody.request_id = requestId;
-        const { successUrl, cancelUrl } = buildRedirectUrls(cf, origin);
-        if (successUrl) requestBody.success_url = successUrl;
-        if (cancelUrl) requestBody.cancel_url = cancelUrl;
-        if (body.discountCode) requestBody.discount_code = body.discountCode;
-        if (typeof units === "number") {
-            requestBody.units = units;
-            requestBody.metadata.units = units;
-        }
 
         console.info("[api/creem/create-checkout] creating checkout", {
             requestId,
-            userId: session.user.id,
+            userId: user.id,
             productId,
             productType,
             units: units ?? null,
         });
 
         // 涓婃父璇锋眰锛氬鍔犺秴鏃躲€侀噸璇曪紙鎸囨暟閫€閬?+ 鎶栧姩锛変笌閿欒褰掑洜
-        const { ok, status, data, text, attempts, contentType } =
-            await fetchWithRetry(`${cf.CREEM_API_URL}/checkouts`, {
-                method: "POST",
-                headers: {
-                    "x-api-key": cf.CREEM_API_KEY,
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                },
-                body: JSON.stringify(requestBody),
-            });
-
-        if (!ok) {
-            const snippet = (text || "").slice(0, 300);
-            const isClientError =
-                status === 400 || status === 404 || status === 422;
-            const errorMessage = isClientError
-                ? "Create checkout failed due to invalid request"
-                : "Create checkout failed";
-            const mapped = _mapUpstreamToHttp(status);
-            throw new ApiError(errorMessage, {
-                status: mapped,
-                code: isClientError
-                    ? "UPSTREAM_BAD_REQUEST"
-                    : "UPSTREAM_FAILURE",
-                details: {
-                    status,
-                    attempts,
-                    contentType: contentType || null,
-                    upstreamBodySnippet: snippet,
-                    isClientError,
-                },
-                severity: isClientError ? "medium" : "high",
-            });
-        }
-
-        const checkoutUrl = _ensureCheckoutUrl(data);
-        if (!checkoutUrl) {
-            throw new ApiError(
-                "Invalid response from Creem: missing checkout_url",
-                {
-                    status: 502,
-                    code: "UPSTREAM_INVALID_RESPONSE",
-                    details: { data },
-                    severity: "high",
-                },
-            );
-        }
-        // 标准化字段：data.checkoutUrl；附带 meta.raw 便于调试
-        const json = data as { checkout_url?: string };
-        return new Response(
-            JSON.stringify({
-                success: true,
-                data: { checkoutUrl },
-                error: null,
-                meta: { raw: json, requestId },
-            }),
-            {
-                status: 200,
-                headers: { "Content-Type": "application/json" },
-            },
+        const { checkoutUrl, raw } = await sendCheckoutRequest(
+            context.env,
+            requestBody,
         );
+
+        return buildCheckoutSuccessResponse({
+            checkoutUrl,
+            raw,
+            requestId,
+        });
     } catch (error) {
         console.error("[api/creem/create-checkout] error", error);
         return handleApiError(error);
@@ -391,6 +509,53 @@ export async function POST(request: Request) {
 }
 
 // 内部：带超时与重试的 fetch（针对 Workers 环境）
+async function performFetchAttempt(
+    url: string,
+    init: RequestInit,
+    timeoutMs: number,
+): Promise<FetchAttemptResult> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const resp = await fetch(url, { ...init, signal: controller.signal });
+        clearTimeout(timer);
+
+        const contentType = resp.headers.get("content-type") || null;
+        const isJson = (contentType || "")
+            .toLowerCase()
+            .includes("application/json");
+
+        if (resp.ok) {
+            const data = await readResponseBody(resp, isJson);
+            return {
+                kind: "success",
+                status: resp.status,
+                data,
+                contentType,
+            };
+        }
+
+        const text = await resp.text();
+        return {
+            kind: "failure",
+            status: resp.status,
+            text,
+            contentType,
+            shouldRetry: isRetryableStatus(resp.status),
+        };
+    } catch (error) {
+        clearTimeout(timer);
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+            kind: "failure",
+            status: 0,
+            text: message,
+            contentType: null,
+            shouldRetry: true,
+        };
+    }
+}
+
 async function fetchWithRetry(
     url: string,
     init: RequestInit,
@@ -406,75 +571,55 @@ async function fetchWithRetry(
     const maxAttempts = Math.max(1, options?.attempts ?? 3);
     const timeoutMs = Math.max(1000, options?.timeoutMs ?? 8000);
 
-    let lastText: string | undefined;
-    let lastStatus = 0;
-    let lastContentType: string | undefined | null;
+    let lastFailure: {
+        status: number;
+        text?: string;
+        contentType: string | null;
+    } = {
+        status: 0,
+        text: undefined,
+        contentType: null,
+    };
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-            const resp = await fetch(url, {
-                ...init,
-                signal: controller.signal,
-            });
-            clearTimeout(timer);
+        const result = await performFetchAttempt(url, init, timeoutMs);
 
-            lastStatus = resp.status;
-            lastContentType = resp.headers.get("content-type") || undefined;
-
-            const isJson = (lastContentType || "")
-                .toLowerCase()
-                .includes("application/json");
-            if (resp.ok) {
-                const data = await readResponseBody(resp, isJson);
-                return {
-                    ok: true,
-                    status: resp.status,
-                    data,
-                    attempts: attempt,
-                    contentType: lastContentType || null,
-                };
-            }
-
-            // 读取文本用于诊断；对 5xx/429 进行重试
-            lastText = await resp.text();
-            if (isRetryableStatus(resp.status) && attempt < maxAttempts) {
-                await sleep(backoffWithJitter(attempt));
-                continue;
-            }
-
+        if (result.kind === "success") {
             return {
-                ok: false,
-                status: resp.status,
-                text: lastText,
+                ok: true,
+                status: result.status,
+                data: result.data,
                 attempts: attempt,
-                contentType: lastContentType || null,
-            };
-        } catch (err) {
-            clearTimeout(timer);
-            // 缃戠粶/瓒呮椂閿欒锛氶噸璇?
-            if (attempt < maxAttempts) {
-                await sleep(backoffWithJitter(attempt));
-                continue;
-            }
-            const msg = err instanceof Error ? err.message : String(err);
-            return {
-                ok: false,
-                status: lastStatus || 0,
-                text: msg,
-                attempts: attempt,
-                contentType: lastContentType || null,
+                contentType: result.contentType,
             };
         }
+
+        lastFailure = {
+            status: result.status,
+            text: result.text,
+            contentType: result.contentType,
+        };
+
+        const shouldRetry = result.shouldRetry && attempt < maxAttempts;
+        if (!shouldRetry) {
+            return {
+                ok: false,
+                status: lastFailure.status,
+                text: lastFailure.text,
+                attempts: attempt,
+                contentType: lastFailure.contentType,
+            };
+        }
+
+        await sleep(backoffWithJitter(attempt));
     }
 
     return {
         ok: false,
-        status: lastStatus || 0,
-        text: lastText,
+        status: lastFailure.status,
+        text: lastFailure.text,
         attempts: maxAttempts,
-        contentType: lastContentType || null,
+        contentType: lastFailure.contentType,
     };
 }
 
@@ -508,7 +653,9 @@ function secureRandomInt(maxExclusive: number): number {
             rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
         } while (rand >= limit);
         return rand % maxExclusive;
-    } catch {}
+    } catch {
+        // Ignore: unable to access Node.js crypto in this environment
+    }
     return 0;
 }
 

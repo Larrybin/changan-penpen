@@ -94,7 +94,7 @@ function SelectTrigger({
                 // 统一表单基础类
                 "form-control-base",
                 // Select特定样式
-                "w-fit text-sm whitespace-nowrap",
+                "w-fit whitespace-nowrap text-sm",
                 // 尺寸变体
                 "data-[size=sm]:h-[calc(var(--token-height-control-sm))]",
                 // 占位符样式
@@ -110,7 +110,7 @@ function SelectTrigger({
                 // 渐入动画
                 "fade-in",
                 // 图标样式
-                "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                "[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
                 className,
             )}
             {...props}
@@ -124,7 +124,7 @@ function SelectTrigger({
                         // 颜色样式
                         "text-[var(--color-muted-foreground)]/60",
                         // 动画状态
-                        "data-[state=open]:rotate-180 data-[state=closed]:rotate-0",
+                        "data-[state=closed]:rotate-0 data-[state=open]:rotate-180",
                     )}
                 />
             </SelectPrimitive.Icon>
@@ -176,14 +176,14 @@ function SelectContent({
                 data-layout={resolvedLayout}
                 className={cn(
                     // 基础样式
-                    "overflow-x-hidden overflow-y-auto",
+                    "overflow-y-auto overflow-x-hidden",
                     // 背景色和圆角令牌
                     "bg-[var(--color-popover,var(--color-background))] text-[var(--color-popover-foreground,var(--color-foreground))]",
                     "rounded-[var(--token-radius-card,var(--token-radius-md))]",
                     // 边框和阴影令牌
                     "border border-[var(--color-border,var(--color-muted-foreground)/10)] shadow-[var(--shadow-lg)]",
                     // 进场和出场动画
-                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                    "data-[state=closed]:animate-out data-[state=open]:animate-in",
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                     "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                     // 过渡动画
@@ -199,13 +199,13 @@ function SelectContent({
                     ],
                     resolvedLayout === "popover" &&
                         position === "popper" && [
-                            "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1",
-                            "data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+                            "data-[side=left]:-translate-x-1 data-[side=bottom]:translate-y-1",
+                            "data-[side=top]:-translate-y-1 data-[side=right]:translate-x-1",
                         ],
                     // Sheet布局样式
                     resolvedLayout === "sheet" && [
-                        "fixed inset-x-3 bottom-4 left-1/2 top-auto z-[var(--z-modal,50)]",
-                        "w-[calc(100%-1.5rem)] translate-x-[-50%] translate-y-0 origin-bottom",
+                        "fixed inset-x-3 top-auto bottom-4 left-1/2 z-[var(--z-modal,50)]",
+                        "w-[calc(100%-1.5rem)] origin-bottom translate-x-[-50%] translate-y-0",
                         "bg-[var(--color-background)] shadow-[var(--shadow-xl)]",
                         "data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2",
                     ],
@@ -251,7 +251,7 @@ function SelectLabel({
             data-slot="select-label"
             className={cn(
                 // 排版令牌
-                "text-[var(--token-text-xs)] font-[var(--token-font-weight-medium)] leading-[var(--token-line-height-tight)]",
+                "font-[var(--token-font-weight-medium)] text-[var(--token-text-xs)] leading-[var(--token-line-height-tight)]",
                 // 颜色令牌
                 "text-[var(--color-muted-foreground)]",
                 // 内边距令牌
@@ -291,7 +291,7 @@ function SelectItem({
                 "color-transition transition-[background-color,color] duration-[var(--token-motion-duration-fast)] ease-[var(--token-motion-ease-standard)]",
                 // 图标样式
                 "[&_svg:not([class*='text-'])]:text-[var(--color-muted-foreground)]",
-                "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                "[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
                 // 特殊布局处理
                 "*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-[var(--token-spacing-2)]",
                 className,
@@ -340,7 +340,7 @@ function SelectSeparator({
             data-slot="select-separator"
             className={cn(
                 // 分隔线样式
-                "bg-[var(--color-border,var(--color-muted-foreground)/10)] pointer-events-none",
+                "pointer-events-none bg-[var(--color-border,var(--color-muted-foreground)/10)]",
                 // 位置和尺寸
                 "-mx-[var(--token-spacing-1)] my-[var(--token-spacing-1)] h-px",
                 // 渐入动画

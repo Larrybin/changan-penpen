@@ -96,76 +96,110 @@ function logFailure(context: string, details: Record<string, unknown>) {
     console.error(`[useBillingActions] ${context}`, details);
 }
 
+function buildCheckoutLogContext(options: StartCheckoutOptions) {
+    return {
+        tierId: options.tierId ?? null,
+        productId: options.productId ?? null,
+        productType: options.productType,
+    } as const;
+}
+
+function createCheckoutBody(options: StartCheckoutOptions) {
+    const { productType, tierId, productId, discountCode, requestId, units } =
+        options;
+
+    const body: Record<string, unknown> = { productType };
+    const optionalEntries: Array<[string, unknown]> = [
+        ["tierId", tierId],
+        ["productId", productId],
+        ["discountCode", discountCode],
+        ["requestId", requestId],
+        ["units", typeof units === "number" ? units : undefined],
+    ];
+
+    optionalEntries.forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+            body[key] = value;
+        }
+    });
+
+    return body;
+}
+
+function resolveCheckoutLoadingKey(options: StartCheckoutOptions) {
+    const fallback = [
+        "checkout",
+        options.productType,
+        options.tierId ?? options.productId ?? "unknown",
+    ].join(":");
+    return buildLoadingKey(options, fallback);
+}
+
+async function performCheckoutRequest(body: Record<string, unknown>) {
+    const response = await fetch("/api/v1/creem/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    const payload = await parseResponseBody(response);
+    return { response, payload } as const;
+}
+
+function notifyCheckoutFailure(
+    reason: string,
+    message: string,
+    context: Record<string, unknown>,
+) {
+    logFailure(reason, context);
+    toast.error(message);
+}
+
 export function useBillingActions() {
     const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
     const startCheckout = useCallback(async (options: StartCheckoutOptions) => {
-        const {
-            tierId,
-            productId,
-            productType,
-            discountCode,
-            requestId,
-            units,
-            friendlyErrorMessage,
-            onRedirect,
-        } = options;
-        const fallbackKey = `checkout:${productType}:${tierId ?? productId ?? "unknown"}`;
-        const key = buildLoadingKey(options, fallbackKey);
+        const { friendlyErrorMessage, onRedirect } = options;
+        const key = resolveCheckoutLoadingKey(options);
         setLoadingKey(key);
 
-        const body: Record<string, unknown> = { productType };
-        if (tierId) body.tierId = tierId;
-        if (productId) body.productId = productId;
-        if (discountCode) body.discountCode = discountCode;
-        if (requestId) body.requestId = requestId;
-        if (typeof units === "number") body.units = units;
-
+        const logContext = buildCheckoutLogContext(options);
         const errorMessage =
             friendlyErrorMessage ?? "无法创建结账，请稍后重试。";
 
         try {
-            const resp = await fetch("/api/v1/creem/create-checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-            });
+            const { response, payload } = await performCheckoutRequest(
+                createCheckoutBody(options),
+            );
 
-            const payload = await parseResponseBody(resp);
-            if (!resp.ok) {
-                logFailure("checkout request failed", {
-                    status: resp.status,
-                    tierId: tierId ?? null,
-                    productId: productId ?? null,
-                    productType,
+            if (!response.ok) {
+                notifyCheckoutFailure("checkout request failed", errorMessage, {
+                    ...logContext,
+                    status: response.status,
                     error: readErrorMessage(payload) ?? null,
                     payload,
                 });
-                toast.error(errorMessage);
                 return;
             }
 
             const checkoutUrl = readUrl(payload, "checkoutUrl");
             if (!checkoutUrl) {
-                logFailure("checkout response missing url", {
-                    tierId: tierId ?? null,
-                    productId: productId ?? null,
-                    productType,
-                    payload,
-                });
-                toast.error(errorMessage);
+                notifyCheckoutFailure(
+                    "checkout response missing url",
+                    errorMessage,
+                    {
+                        ...logContext,
+                        payload,
+                    },
+                );
                 return;
             }
 
             (onRedirect ?? defaultRedirect)(checkoutUrl);
         } catch (error) {
-            logFailure("checkout call threw", {
+            notifyCheckoutFailure("checkout call threw", errorMessage, {
+                ...logContext,
                 error,
-                tierId: tierId ?? null,
-                productId: productId ?? null,
-                productType,
             });
-            toast.error(errorMessage);
         } finally {
             setLoadingKey(null);
         }

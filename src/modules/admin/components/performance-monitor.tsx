@@ -4,14 +4,15 @@
  * 实时监控缓存命中率和响应时间
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { RefreshCw, TrendingUp, TrendingDown, Activity } from 'lucide-react';
-import { getAdminCacheManager } from '@/lib/cache/admin-cache';
-import { getCacheInvalidationManager } from '@/lib/cache/cache-invalidation';
+import { Activity, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { getAdminCacheManager } from "@/lib/cache/admin-cache";
+import { getCacheInvalidationManager } from "@/lib/cache/cache-invalidation";
+import { cn } from "@/lib/utils";
 
 interface PerformanceMetrics {
     cacheStats: {
@@ -48,7 +49,7 @@ export function PerformanceMonitor() {
 
             const [cacheStats, invalidationStats] = await Promise.all([
                 manager.getStats(),
-                invalidationManager.getInvalidationStats('hour'),
+                invalidationManager.getInvalidationStats("hour"),
             ]);
 
             // 模拟响应时间统计（实际项目中可以从监控服务获取）
@@ -66,7 +67,7 @@ export function PerformanceMonitor() {
                 timestamp: new Date().toISOString(),
             });
         } catch (error) {
-            console.error('Failed to fetch performance metrics:', error);
+            console.error("Failed to fetch performance metrics:", error);
         } finally {
             setIsLoading(false);
         }
@@ -82,15 +83,15 @@ export function PerformanceMonitor() {
     }, [autoRefresh]);
 
     const getHitRateColor = (hitRate: number) => {
-        if (hitRate >= 80) return 'text-green-600';
-        if (hitRate >= 60) return 'text-yellow-600';
-        return 'text-red-600';
+        if (hitRate >= 80) return "text-green-600";
+        if (hitRate >= 60) return "text-yellow-600";
+        return "text-red-600";
     };
 
     const getResponseTimeColor = (time: number) => {
-        if (time <= 200) return 'text-green-600';
-        if (time <= 500) return 'text-yellow-600';
-        return 'text-red-600';
+        if (time <= 200) return "text-green-600";
+        if (time <= 500) return "text-yellow-600";
+        return "text-red-600";
     };
 
     if (!metrics) {
@@ -99,7 +100,9 @@ export function PerformanceMonitor() {
                 <CardContent className="flex items-center justify-center py-12">
                     <div className="text-center">
                         <Activity className="h-8 w-8 animate-pulse mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-muted-foreground">加载性能指标中...</p>
+                        <p className="text-muted-foreground">
+                            加载性能指标中...
+                        </p>
                     </div>
                 </CardContent>
             </Card>
@@ -117,7 +120,7 @@ export function PerformanceMonitor() {
                         size="sm"
                         onClick={() => setAutoRefresh(!autoRefresh)}
                     >
-                        {autoRefresh ? '停止' : '开始'} 自动刷新
+                        {autoRefresh ? "停止" : "开始"} 自动刷新
                     </Button>
                     <Button
                         variant="outline"
@@ -125,10 +128,12 @@ export function PerformanceMonitor() {
                         onClick={fetchMetrics}
                         disabled={isLoading}
                     >
-                        <RefreshCw className={cn(
-                            "h-4 w-4 mr-1",
-                            isLoading && "animate-spin"
-                        )} />
+                        <RefreshCw
+                            className={cn(
+                                "h-4 w-4 mr-1",
+                                isLoading && "animate-spin",
+                            )}
+                        />
                         刷新
                     </Button>
                 </div>
@@ -144,10 +149,12 @@ export function PerformanceMonitor() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center space-x-2">
-                            <span className={cn(
-                                "text-2xl font-bold",
-                                getHitRateColor(metrics.cacheStats.hitRate)
-                            )}>
+                            <span
+                                className={cn(
+                                    "text-2xl font-bold",
+                                    getHitRateColor(metrics.cacheStats.hitRate),
+                                )}
+                            >
                                 {metrics.cacheStats.hitRate}%
                             </span>
                             {metrics.cacheStats.hitRate >= 80 ? (
@@ -161,7 +168,8 @@ export function PerformanceMonitor() {
                             className="mt-2"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                            {metrics.cacheStats.hits} 次命中 / {metrics.cacheStats.misses} 次未命中
+                            {metrics.cacheStats.hits} 次命中 /{" "}
+                            {metrics.cacheStats.misses} 次未命中
                         </p>
                     </CardContent>
                 </Card>
@@ -174,10 +182,14 @@ export function PerformanceMonitor() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center space-x-2">
-                            <span className={cn(
-                                "text-2xl font-bold",
-                                getResponseTimeColor(metrics.responseTime.average)
-                            )}>
+                            <span
+                                className={cn(
+                                    "text-2xl font-bold",
+                                    getResponseTimeColor(
+                                        metrics.responseTime.average,
+                                    ),
+                                )}
+                            >
                                 {Math.round(metrics.responseTime.average)}ms
                             </span>
                             <Badge variant="outline" className="text-xs">
@@ -185,8 +197,12 @@ export function PerformanceMonitor() {
                             </Badge>
                         </div>
                         <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                            <span>最快: {Math.round(metrics.responseTime.min)}ms</span>
-                            <span>最慢: {Math.round(metrics.responseTime.max)}ms</span>
+                            <span>
+                                最快: {Math.round(metrics.responseTime.min)}ms
+                            </span>
+                            <span>
+                                最慢: {Math.round(metrics.responseTime.max)}ms
+                            </span>
                         </div>
                     </CardContent>
                 </Card>
@@ -204,13 +220,21 @@ export function PerformanceMonitor() {
                         <p className="text-xs text-muted-foreground mt-1">
                             过去1小时
                         </p>
-                        {Object.keys(metrics.invalidationStats.eventsByType).length > 0 && (
+                        {Object.keys(metrics.invalidationStats.eventsByType)
+                            .length > 0 && (
                             <div className="mt-2 space-y-1">
-                                {Object.entries(metrics.invalidationStats.eventsByType)
+                                {Object.entries(
+                                    metrics.invalidationStats.eventsByType,
+                                )
                                     .slice(0, 3)
                                     .map(([event, count]) => (
-                                        <div key={event} className="flex justify-between text-xs">
-                                            <span className="text-muted-foreground">{event}</span>
+                                        <div
+                                            key={event}
+                                            className="flex justify-between text-xs"
+                                        >
+                                            <span className="text-muted-foreground">
+                                                {event}
+                                            </span>
                                             <span>{count}</span>
                                         </div>
                                     ))}
@@ -228,10 +252,13 @@ export function PerformanceMonitor() {
                     <CardContent>
                         <div className="flex items-center space-x-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            <span className="text-sm font-medium">运行正常</span>
+                            <span className="text-sm font-medium">
+                                运行正常
+                            </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            更新时间: {new Date(metrics.timestamp).toLocaleTimeString()}
+                            更新时间:{" "}
+                            {new Date(metrics.timestamp).toLocaleTimeString()}
                         </p>
                     </CardContent>
                 </Card>
@@ -246,36 +273,49 @@ export function PerformanceMonitor() {
                     <div className="space-y-3">
                         {metrics.cacheStats.hitRate < 80 && (
                             <div className="flex items-start space-x-2">
-                                <Badge variant="outline" className="text-yellow-600 bg-yellow-50">
+                                <Badge
+                                    variant="outline"
+                                    className="text-yellow-600 bg-yellow-50"
+                                >
                                     建议优化
                                 </Badge>
                                 <p className="text-sm text-muted-foreground">
-                                    缓存命中率偏低({metrics.cacheStats.hitRate}%)，建议增加缓存时间或优化缓存策略
+                                    缓存命中率偏低({metrics.cacheStats.hitRate}
+                                    %)，建议增加缓存时间或优化缓存策略
                                 </p>
                             </div>
                         )}
 
                         {metrics.responseTime.average > 500 && (
                             <div className="flex items-start space-x-2">
-                                <Badge variant="outline" className="text-red-600 bg-red-50">
+                                <Badge
+                                    variant="outline"
+                                    className="text-red-600 bg-red-50"
+                                >
                                     需要关注
                                 </Badge>
                                 <p className="text-sm text-muted-foreground">
-                                    平均响应时间较长({Math.round(metrics.responseTime.average)}ms)，建议检查数据库查询或API性能
+                                    平均响应时间较长(
+                                    {Math.round(metrics.responseTime.average)}
+                                    ms)，建议检查数据库查询或API性能
                                 </p>
                             </div>
                         )}
 
-                        {metrics.cacheStats.hitRate >= 80 && metrics.responseTime.average <= 200 && (
-                            <div className="flex items-start space-x-2">
-                                <Badge variant="outline" className="text-green-600 bg-green-50">
-                                    性能良好
-                                </Badge>
-                                <p className="text-sm text-muted-foreground">
-                                    系统性能表现优异，缓存命中率和响应时间都在合理范围内
-                                </p>
-                            </div>
-                        )}
+                        {metrics.cacheStats.hitRate >= 80 &&
+                            metrics.responseTime.average <= 200 && (
+                                <div className="flex items-start space-x-2">
+                                    <Badge
+                                        variant="outline"
+                                        className="text-green-600 bg-green-50"
+                                    >
+                                        性能良好
+                                    </Badge>
+                                    <p className="text-sm text-muted-foreground">
+                                        系统性能表现优异，缓存命中率和响应时间都在合理范围内
+                                    </p>
+                                </div>
+                            )}
                     </div>
                 </CardContent>
             </Card>
@@ -308,9 +348,9 @@ export function PerformanceBadge() {
     if (hitRate === null) return null;
 
     const getVariant = () => {
-        if (hitRate >= 80) return 'default';
-        if (hitRate >= 60) return 'secondary';
-        return 'destructive';
+        if (hitRate >= 80) return "default";
+        if (hitRate >= 60) return "secondary";
+        return "destructive";
     };
 
     return (
@@ -319,9 +359,4 @@ export function PerformanceBadge() {
         </Badge>
     );
 }
-
-function cn(...classes: string[]) {
-    return classes.filter(Boolean).join(' ');
-}
-
 export default PerformanceMonitor;

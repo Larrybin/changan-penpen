@@ -75,19 +75,19 @@ export default async function Dashboard() {
     }
 
     return (
-        <div className="mx-auto max-w-[var(--container-max-w)] py-12 px-[var(--container-px)]">
-            <div className="text-center mb-12">
-                <h1 className="text-title-sm font-bold mb-4">
+        <div className="mx-auto max-w-[var(--container-max-w)] px-[var(--container-px)] py-12">
+            <div className="mb-12 text-center">
+                <h1 className="mb-4 font-bold text-title-sm">
                     Welcome to TodoApp
                 </h1>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                <p className="mx-auto max-w-2xl text-muted-foreground text-xl">
                     A simple and elegant todo application built with Next.js 15,
                     TailwindCSS, and shadcn/ui components.
                 </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-[var(--grid-gap-section)] max-w-4xl mx-auto">
-                <Card className="hover:shadow-lg transition-shadow">
+            <div className="mx-auto grid max-w-4xl gap-[var(--grid-gap-section)] md:grid-cols-2">
+                <Card className="transition-shadow hover:shadow-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center">
                             <List className="mr-2 h-5 w-5" />
@@ -107,7 +107,7 @@ export default async function Dashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow">
+                <Card className="transition-shadow hover:shadow-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center">
                             <CreditCard className="mr-2 h-5 w-5" />
@@ -119,17 +119,17 @@ export default async function Dashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-muted-foreground text-sm">
                                 当前订阅：
                                 <span className="font-medium">{planName}</span>
                                 （{subStatus}）
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-muted-foreground text-sm">
                                 剩余积分：
                                 <span className="font-medium">{credits}</span>
                             </div>
                             <Link href="/billing">
-                                <Button className="w-full mt-2">
+                                <Button className="mt-2 w-full">
                                     前往套餐页
                                 </Button>
                             </Link>
@@ -137,7 +137,7 @@ export default async function Dashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow">
+                <Card className="transition-shadow hover:shadow-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center">
                             <Plus className="mr-2 h-5 w-5" />
@@ -159,31 +159,31 @@ export default async function Dashboard() {
             </div>
 
             <div className="mt-16 text-center">
-                <h2 className="text-subtitle font-semibold mb-4">Features</h2>
-                <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                <h2 className="mb-4 font-semibold text-subtitle">Features</h2>
+                <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-3">
                     <div className="text-center">
-                        <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
                             <CheckSquare className="h-6 w-6 text-blue-600" />
                         </div>
-                        <h3 className="font-semibold mb-2">Task Management</h3>
+                        <h3 className="mb-2 font-semibold">Task Management</h3>
                         <p className="text-muted-foreground text-sm">
                             Create, edit, and delete todos with ease
                         </p>
                     </div>
                     <div className="text-center">
-                        <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                             <List className="h-6 w-6 text-green-600" />
                         </div>
-                        <h3 className="font-semibold mb-2">Categories</h3>
+                        <h3 className="mb-2 font-semibold">Categories</h3>
                         <p className="text-muted-foreground text-sm">
                             Organize your todos with custom categories
                         </p>
                     </div>
                     <div className="text-center">
-                        <div className="bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
                             <Plus className="h-6 w-6 text-purple-600" />
                         </div>
-                        <h3 className="font-semibold mb-2">Rich Features</h3>
+                        <h3 className="mb-2 font-semibold">Rich Features</h3>
                         <p className="text-muted-foreground text-sm">
                             Priorities, due dates, images, and more
                         </p>

@@ -4,25 +4,64 @@
  * 在数据变更时自动清理相关缓存
  */
 
-import { invalidateAdminCache, getAdminCacheManager } from './admin-cache';
+import { getAdminCacheManager, invalidateAdminCache } from "./admin-cache";
+
+type CacheInvalidationStats = {
+    totalEvents: number;
+    eventsByType: Record<CacheInvalidationEvent, number>;
+    topTenants: Array<{ tenantId: string; count: number }>;
+};
+
+const isCacheInvalidationStats = (
+    value: unknown,
+): value is CacheInvalidationStats => {
+    if (!value || typeof value !== "object") {
+        return false;
+    }
+
+    const stats = value as Partial<CacheInvalidationStats>;
+    if (typeof stats.totalEvents !== "number") {
+        return false;
+    }
+
+    if (
+        !stats.eventsByType ||
+        typeof stats.eventsByType !== "object" ||
+        Array.isArray(stats.eventsByType)
+    ) {
+        return false;
+    }
+
+    if (!Array.isArray(stats.topTenants)) {
+        return false;
+    }
+
+    return stats.topTenants.every(
+        (tenant) =>
+            Boolean(tenant) &&
+            typeof tenant === "object" &&
+            typeof (tenant as { tenantId?: unknown }).tenantId === "string" &&
+            typeof (tenant as { count?: unknown }).count === "number",
+    );
+};
 
 // 缓存失效事件类型
 export type CacheInvalidationEvent =
-    | 'order_created'
-    | 'order_updated'
-    | 'credit_added'
-    | 'credit_deducted'
-    | 'product_created'
-    | 'product_updated'
-    | 'product_deleted'
-    | 'coupon_created'
-    | 'coupon_updated'
-    | 'coupon_deleted'
-    | 'content_created'
-    | 'content_updated'
-    | 'content_deleted'
-    | 'user_registered'
-    | 'user_updated';
+    | "order_created"
+    | "order_updated"
+    | "credit_added"
+    | "credit_deducted"
+    | "product_created"
+    | "product_updated"
+    | "product_deleted"
+    | "coupon_created"
+    | "coupon_updated"
+    | "coupon_deleted"
+    | "content_created"
+    | "content_updated"
+    | "content_deleted"
+    | "user_registered"
+    | "user_updated";
 
 interface CacheInvalidationPayload {
     event: CacheInvalidationEvent;
@@ -30,7 +69,7 @@ interface CacheInvalidationPayload {
     resourceId?: string | number;
     tenantId?: string;
     userId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 /**
@@ -42,63 +81,69 @@ export class CacheInvalidationManager {
      * 处理缓存失效事件
      */
     async handleInvalidation(payload: CacheInvalidationPayload): Promise<void> {
-        const { event, resource, resourceId, tenantId, userId } = payload;
+        const { event, resource, resourceId, tenantId } = payload;
 
-        console.info('[Cache Invalidation] Processing event', { event, resource, resourceId, tenantId });
+        console.info("[Cache Invalidation] Processing event", {
+            event,
+            resource,
+            resourceId,
+            tenantId,
+        });
 
         try {
             switch (event) {
                 // 订单相关事件
-                case 'order_created':
-                case 'order_updated':
+                case "order_created":
+                case "order_updated":
                     await this.invalidateOrderRelatedCache(tenantId);
                     break;
 
                 // 积分相关事件
-                case 'credit_added':
-                case 'credit_deducted':
+                case "credit_added":
+                case "credit_deducted":
                     await this.invalidateCreditRelatedCache(tenantId);
                     break;
 
                 // 产品相关事件
-                case 'product_created':
-                case 'product_updated':
-                case 'product_deleted':
+                case "product_created":
+                case "product_updated":
+                case "product_deleted":
                     await this.invalidateCatalogCache();
                     break;
 
                 // 优惠券相关事件
-                case 'coupon_created':
-                case 'coupon_updated':
-                case 'coupon_deleted':
+                case "coupon_created":
+                case "coupon_updated":
+                case "coupon_deleted":
                     await this.invalidateCatalogCache();
                     break;
 
                 // 内容页面相关事件
-                case 'content_created':
-                case 'content_updated':
-                case 'content_deleted':
+                case "content_created":
+                case "content_updated":
+                case "content_deleted":
                     await this.invalidateCatalogCache();
                     break;
 
                 // 用户相关事件
-                case 'user_registered':
-                case 'user_updated':
+                case "user_registered":
+                case "user_updated":
                     await this.invalidateUserRelatedCache(tenantId);
                     break;
 
                 default:
-                    console.warn('[Cache Invalidation] Unknown event type', { event });
+                    console.warn("[Cache Invalidation] Unknown event type", {
+                        event,
+                    });
                     await this.invalidateAllCache(tenantId);
             }
 
             // 记录失效事件到审计日志
             await this.logInvalidationEvent(payload);
-
         } catch (error) {
-            console.error('[Cache Invalidation] Failed to process event', {
+            console.error("[Cache Invalidation] Failed to process event", {
                 event,
-                error: error instanceof Error ? error.message : String(error)
+                error: error instanceof Error ? error.message : String(error),
             });
         }
     }
@@ -106,32 +151,48 @@ export class CacheInvalidationManager {
     /**
      * 失效订单相关缓存
      */
-    private async invalidateOrderRelatedCache(tenantId?: string): Promise<void> {
+    private async invalidateOrderRelatedCache(
+        tenantId?: string,
+    ): Promise<void> {
         await Promise.all([
             // 失效实时订单数据
-            invalidateAdminCache('orders:latest', { tenantId, level: 'REALTIME' }),
+            invalidateAdminCache("orders:latest", {
+                tenantId,
+                level: "REALTIME",
+            }),
 
             // 失效基本统计（订单数量、营收）
-            invalidateAdminCache('dashboard:totals', { tenantId, level: 'USER' }),
+            invalidateAdminCache("dashboard:totals", {
+                tenantId,
+                level: "USER",
+            }),
 
             // 失效整体仪表盘缓存
-            invalidateAdminCache('dashboard:*', { tenantId, level: 'USER' }),
+            invalidateAdminCache("dashboard:*", { tenantId, level: "USER" }),
         ]);
     }
 
     /**
      * 失效积分相关缓存
      */
-    private async invalidateCreditRelatedCache(tenantId?: string): Promise<void> {
+    private async invalidateCreditRelatedCache(
+        tenantId?: string,
+    ): Promise<void> {
         await Promise.all([
             // 失效实时积分数据
-            invalidateAdminCache('credits:recent', { tenantId, level: 'REALTIME' }),
+            invalidateAdminCache("credits:recent", {
+                tenantId,
+                level: "REALTIME",
+            }),
 
             // 失效基本统计（总积分）
-            invalidateAdminCache('dashboard:totals', { tenantId, level: 'USER' }),
+            invalidateAdminCache("dashboard:totals", {
+                tenantId,
+                level: "USER",
+            }),
 
             // 失效整体仪表盘缓存
-            invalidateAdminCache('dashboard:*', { tenantId, level: 'USER' }),
+            invalidateAdminCache("dashboard:*", { tenantId, level: "USER" }),
         ]);
     }
 
@@ -141,10 +202,10 @@ export class CacheInvalidationManager {
     private async invalidateCatalogCache(): Promise<void> {
         await Promise.all([
             // 失效目录概况（产品数、优惠券数、内容页数）
-            invalidateAdminCache('catalog:summary', { level: 'STATIC' }),
+            invalidateAdminCache("catalog:summary", { level: "STATIC" }),
 
             // 失效所有用户的基本统计（可能影响统计计算）
-            invalidateAdminCache('dashboard:totals', { level: 'USER' }),
+            invalidateAdminCache("dashboard:totals", { level: "USER" }),
         ]);
     }
 
@@ -154,12 +215,18 @@ export class CacheInvalidationManager {
     private async invalidateUserRelatedCache(tenantId?: string): Promise<void> {
         await Promise.all([
             // 失效租户统计
-            invalidateAdminCache('dashboard:totals', { tenantId, level: 'USER' }),
+            invalidateAdminCache("dashboard:totals", {
+                tenantId,
+                level: "USER",
+            }),
 
             // 如果是租户变更，需要失效所有缓存
             tenantId
-                ? invalidateAdminCache('dashboard:*', { tenantId, level: 'USER' })
-                : invalidateAdminCache('dashboard:totals', { level: 'USER' }),
+                ? invalidateAdminCache("dashboard:*", {
+                      tenantId,
+                      level: "USER",
+                  })
+                : invalidateAdminCache("dashboard:totals", { level: "USER" }),
         ]);
     }
 
@@ -170,7 +237,7 @@ export class CacheInvalidationManager {
         const manager = getAdminCacheManager();
 
         const patterns = [
-            'admin:*', // 所有admin缓存
+            "admin:*", // 所有admin缓存
         ];
 
         if (tenantId) {
@@ -178,14 +245,16 @@ export class CacheInvalidationManager {
         }
 
         await Promise.all(
-            patterns.map(pattern => manager.invalidatePattern(pattern))
+            patterns.map((pattern) => manager.invalidatePattern(pattern)),
         );
     }
 
     /**
      * 记录缓存失效事件
      */
-    private async logInvalidationEvent(payload: CacheInvalidationPayload): Promise<void> {
+    private async logInvalidationEvent(
+        payload: CacheInvalidationPayload,
+    ): Promise<void> {
         const manager = getAdminCacheManager();
         const logKey = `admin:cache:invalidation:${Date.now()}`;
 
@@ -201,18 +270,16 @@ export class CacheInvalidationManager {
     /**
      * 获取缓存失效统计
      */
-    async getInvalidationStats(timeRange: 'hour' | 'day' | 'week' = 'day'): Promise<{
-        totalEvents: number;
-        eventsByType: Record<CacheInvalidationEvent, number>;
-        topTenants: Array<{ tenantId: string; count: number }>;
-    }> {
+    async getInvalidationStats(
+        timeRange: "hour" | "day" | "week" = "day",
+    ): Promise<CacheInvalidationStats> {
         const manager = getAdminCacheManager();
 
         // 这里简化实现，实际可以基于时间范围扫描日志
         const statsKey = `admin:cache:invalidation:stats:${timeRange}`;
         const stats = await manager.get(statsKey);
 
-        if (stats) {
+        if (isCacheInvalidationStats(stats)) {
             return stats;
         }
 
@@ -246,8 +313,8 @@ export async function triggerCacheInvalidation(
         resourceId?: string | number;
         tenantId?: string;
         userId?: string;
-        metadata?: Record<string, any>;
-    }
+        metadata?: Record<string, unknown>;
+    },
 ): Promise<void> {
     const manager = getCacheInvalidationManager();
 
@@ -268,19 +335,60 @@ export async function batchInvalidateCache(
         resourceId?: string | number;
         tenantId?: string;
         userId?: string;
-        metadata?: Record<string, any>;
-    }>
+        metadata?: Record<string, unknown>;
+    }>,
 ): Promise<void> {
     const manager = getCacheInvalidationManager();
 
     await Promise.allSettled(
-        events.map(event =>
-            manager.handleInvalidation(event).catch(error =>
-                console.error('[Cache Invalidation] Batch operation failed', { event, error })
-            )
-        )
+        events.map((event) =>
+            manager
+                .handleInvalidation(event)
+                .catch((error) =>
+                    console.error(
+                        "[Cache Invalidation] Batch operation failed",
+                        { event, error },
+                    ),
+                ),
+        ),
     );
 }
+
+/**
+ * 仪表盘缓存失效工具，供预热函数复用
+ */
+const invalidateDashboardCacheForWarmup = async (options?: {
+    tenantId?: string;
+    resource?: "all" | "orders" | "credits" | "catalog";
+}) => {
+    const resource = options?.resource ?? "all";
+
+    switch (resource) {
+        case "orders":
+            await invalidateAdminCache("orders:latest", {
+                tenantId: options?.tenantId,
+                level: "REALTIME",
+            });
+            break;
+        case "credits":
+            await invalidateAdminCache("credits:recent", {
+                tenantId: options?.tenantId,
+                level: "REALTIME",
+            });
+            break;
+        case "catalog":
+            await invalidateAdminCache("catalog:summary", { level: "STATIC" });
+            break;
+        default:
+            await Promise.all([
+                invalidateAdminCache("dashboard:*", { level: "USER" }),
+                invalidateAdminCache("orders:*", { level: "REALTIME" }),
+                invalidateAdminCache("credits:*", { level: "REALTIME" }),
+                invalidateAdminCache("catalog:*", { level: "STATIC" }),
+            ]);
+            break;
+    }
+};
 
 /**
  * 缓存预热函数
@@ -288,35 +396,45 @@ export async function batchInvalidateCache(
  */
 export async function warmupCache(
     resources: Array<{
-        type: 'dashboard' | 'catalog' | 'orders' | 'credits';
+        type: "dashboard" | "catalog" | "orders" | "credits";
         tenantId?: string;
-        params?: Record<string, any>;
-    }>
+        params?: Record<string, unknown>;
+    }>,
 ): Promise<void> {
-    console.info('[Cache Warmup] Starting cache warmup', { resourceCount: resources.length });
+    console.info("[Cache Warmup] Starting cache warmup", {
+        resourceCount: resources.length,
+    });
 
     // 这里可以调用相应的API来预热缓存
     // 例如调用 /api/v1/admin/dashboard?bypassCache=true 来强制刷新缓存
 
     const results = await Promise.allSettled(
         resources.map(async ({ type, tenantId, params }) => {
-            const url = new URL('/api/v1/admin/dashboard', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+            const url = new URL(
+                "/api/v1/admin/dashboard",
+                process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
+            );
 
-            if (tenantId) url.searchParams.set('tenantId', tenantId);
+            if (tenantId) url.searchParams.set("tenantId", tenantId);
             if (params) {
                 Object.entries(params).forEach(([key, value]) => {
                     url.searchParams.set(key, String(value));
                 });
             }
 
-            url.searchParams.set('bypassCache', 'true');
+            url.searchParams.set("bypassCache", "true");
 
-            // 在服务器端直接调用API，避免HTTP请求
-            const { invalidateDashboardCache } = await import('../app/api/v1/admin/dashboard/route');
-            await invalidateDashboardCache({ tenantId, resource: type as any });
-        })
+            const resource: "all" | "orders" | "credits" | "catalog" =
+                type === "dashboard" ? "all" : type;
+            await invalidateDashboardCacheForWarmup({
+                tenantId,
+                resource,
+            });
+        }),
     );
 
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    console.info(`[Cache Warmup] Completed - ${successCount}/${resources.length} resources warmed up`);
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
+    console.info(
+        `[Cache Warmup] Completed - ${successCount}/${resources.length} resources warmed up`,
+    );
 }

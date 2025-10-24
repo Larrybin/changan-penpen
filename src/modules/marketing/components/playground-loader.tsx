@@ -5,14 +5,14 @@ import dynamic from "next/dynamic";
 const Playground = dynamic(() => import("./playground"), {
     loading: () => (
         <div
-            className="bg-muted/10 border border-dashed border-border/60 rounded-xl h-[28rem] w-full flex flex-col items-center justify-center text-center"
+            className="flex h-[28rem] w-full flex-col items-center justify-center rounded-xl border border-border/60 border-dashed bg-muted/10 text-center"
             aria-busy="true"
             aria-live="polite"
         >
-            <span className="text-sm font-medium text-muted-foreground">
+            <span className="font-medium text-muted-foreground text-sm">
                 Loading interactive demo…
             </span>
-            <span className="text-xs text-muted-foreground mt-2">
+            <span className="mt-2 text-muted-foreground text-xs">
                 Preparing the playground experience
             </span>
         </div>
