@@ -29,37 +29,17 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 2
+      - name: Load workflow configuration
+        uses: ./.github/actions/load-workflow-config
       - name: Compute docs-only flag
         id: diff
         shell: bash
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" != "push" ]; then
-            echo "Non-push event detected; forcing docs_only=false"
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          base="${{ github.event.before }}"
-          if [ -z "${base}" ]; then
-            base=$(git rev-list HEAD~1 -n 1 || true)
-          fi
-          if [ -z "${base}" ]; then
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          files=$(git diff --name-only "${base}"...HEAD | tr -d '\r' || true)
-          echo "Changed files:"; echo "$files"
-          if [ -z "${files}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Anything outside docs/ or README.md is considered non-docs
-          non_docs=$(echo "$files" | grep -Ev '^(README\.md|docs/)' || true)
-          if [ -z "${non_docs}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-          fi
+          scripts/workflows/detect-docs-only.sh --base "${GITHUB_EVENT_BEFORE}" >/dev/null
+          cat docs_only.txt >> "$GITHUB_OUTPUT"
 
   sonarcloud:
     name: SonarCloud
@@ -72,6 +52,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Load workflow configuration
+        uses: ./.github/actions/load-workflow-config
+
       - name: Cache SonarCloud packages
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
@@ -83,12 +66,12 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@36de12bed180fa130ed56a35e7344f2fa7a820ab
         with:
-          version: 10
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Install dependencies

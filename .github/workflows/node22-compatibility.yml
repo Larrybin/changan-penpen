@@ -1,0 +1,36 @@
+name: Node 22 compatibility
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Load workflow configuration
+        uses: ./.github/actions/load-workflow-config
+
+      - name: Setup Node.js 22 and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '22'
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          cache-key-suffix: '-compat-node22'
+
+      - name: Install dependencies (composite)
+        uses: ./.github/actions/install-and-heal
+
+      - name: Type check (Node 22)
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint (Biome)
+        run: pnpm exec biome check .

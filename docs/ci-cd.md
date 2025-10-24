@@ -4,19 +4,26 @@
 ## 工作流概览
 - CI（`.github/workflows/ci.yml`）
   - 触发：push / pull_request（忽略 main 的纯文档变更），以及 `workflow_call`（被部署复用）
-- Jobs：
-    - `lint-docs`：Biome、OpenAPI 快照校验（`pnpm openapi:check`）、Spectral 校验、链接检查，同时确保 i18n 字段规范化
+  - Jobs：
+    - `lint-docs`：在仓库配置的默认 Node 版本下运行，执行 Biome、OpenAPI 快照校验（`pnpm openapi:check`）、Spectral 校验、链接检查，并确保 i18n 字段规范化
     - `typecheck`：TypeScript `tsc --noEmit`
-    - `supply-chain`：PR 环境执行 gitleaks、`pnpm dedupe --check`、`pnpm audit --prod`
-    - `build`：复用 `.next/cache` 执行 `pnpm build`
+    - `supply-chain`：PR 环境执行官方 `gitleaks/gitleaks-action`、`pnpm dedupe --check`、带网络重试的 `pnpm audit --prod`
+    - `build`：复用 `.next/cache` 执行 `pnpm build`，并将 `.next` 关键目录打包为 `next-build` Artifact 供部署流程复用
 - 部署（`.github/workflows/deploy.yml`）
   - 触发：push 到 main、pull_request 到 main、`workflow_dispatch`（手动）
   - 生产部署 Job 条件：push 到 main 且非文档-only，或手动触发；并且质量门成功
-  - Secrets/Vars：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`BETTER_AUTH_SECRET`、`GOOGLE_CLIENT_ID/SECRET`、`CLOUDFLARE_R2_URL`、`CREEM_API_KEY/WEBHOOK_SECRET`、`NEXT_PUBLIC_APP_URL`；`OPENAI_API_KEY`（可选）
+  - Jobs：
+    - `package-artifacts`：复用 CI 产物（若存在），否则本地构建一次 Next.js → OpenNext，将 `.open-next` 打包为 Artifact
+    - `database-prep`：独立导出 D1 备份并执行迁移/校验，与打包 Job 并行
+    - `deploy-production`：下载 OpenNext Artifact、校验所需 Secrets、部署 Wrangler、可选同步 Secrets、执行动态健康检查与邮件通知
+  - Secrets/Vars：集中维护于 `config/workflow-config.json`；部署流程读取 JSON 列表以校验/同步必需 Secrets
+- Node 22 兼容性（`.github/workflows/node22-compatibility.yml`）
+  - 触发：每周一 06:00 UTC 的定时任务 + 手动 `workflow_dispatch`
+  - 单独在 Node 22 环境运行 TypeScript 检查与 Biome，作为次要运行时的回归保障
 - Build（`.github/workflows/build.yml`）
   - 触发：push（仅 main 分支）、`workflow_call`、`workflow_run`（CI 成功后接力）
   - Jobs：
-    - `changes`：检测是否为 docs-only 变更，为后续 Job 决策（`workflow_run` 场景直接视为非文档改动）
+    - `changes`：调用共享脚本检测 docs-only 变更，为后续 Job 决策（`workflow_run` 场景直接视为非文档改动）
     - `sonarcloud`：执行 SonarCloud 静态分析（无测试覆盖率输入）
     - `docs-only`：当仅有文档改动时快速跳过重型步骤
 - Dependabot Auto‑Merge（`.github/workflows/dependabot-automerge.yml`）
@@ -60,12 +67,21 @@
 | CI | workflow_dispatch, push, pull_request, workflow_call | .github/workflows/ci.yml |
 | Dependabot Auto‑Merge | pull_request_target | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare | workflow_dispatch, push, pull_request | .github/workflows/deploy.yml |
+| Node 22 compatibility | workflow_dispatch, schedule | .github/workflows/node22-compatibility.yml |
 <!-- DOCSYNC:WORKFLOWS_TABLE END -->
 
 <!-- sync: workflows updated in build.yml; table kept in sync by autogen -->
 
-## 部署流程更新说明（2025-10-13）
-- deploy.yml 已在“Deploy to Production (code)”之前新增“Build OpenNext bundle (Cloudflare)”步骤，执行 `npx @opennextjs/cloudflare build` 以生成 `.open-next/worker`，确保 Wrangler 部署的脚本包含有效的 `fetch` 处理器并避免 10068 错误。
+## 部署流程更新说明（2026-02-22）
+- 部署流程拆分为“打包应用”“数据库准备”“生产部署”三个 Job，通过 Artifact 共享 OpenNext 产物，避免重复构建。
+- 健康检查去除固定 45 秒等待，改为可配置的初始延迟 + 重试逻辑；健康检查失败时通过 SMTP 发送邮件通知（无自动回滚）。
+- Secrets 校验/同步改为读取 `config/workflow-config.json`，减少多处配置漂移。
+- 新增定期 Node 22 兼容性工作流，日常 CI 仅使用主支持版本。
+
+## CI 流程更新说明（2026-02-22）
+- `lint-docs`/`typecheck` 统一在默认 Node 版本运行，Node 22 兼容性改由独立工作流按周巡检。
+- `supply-chain` Job 切换到官方 `gitleaks` Action，并为 `pnpm audit` 增加网络重试与中危告警。
+- `build` Job 在成功构建后上传 `next-build` Artifact，为部署流程提供复用入口。
 
 ## CI 流程更新说明（2025-10-15）
 - 仓库已移除单元测试、UI 回归测试与覆盖率步骤，CI 仅保留 lint、类型检查、供应链扫描与构建。

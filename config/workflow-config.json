@@ -1,0 +1,15 @@
+{
+  "nodeVersion": "20",
+  "pnpmVersion": "10",
+  "productionSecrets": [
+    "CLOUDFLARE_API_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "BETTER_AUTH_SECRET",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "CLOUDFLARE_R2_URL",
+    "CREEM_API_KEY",
+    "CREEM_WEBHOOK_SECRET",
+    "OPENAI_API_KEY"
+  ]
+}

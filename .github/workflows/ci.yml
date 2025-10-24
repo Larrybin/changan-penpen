@@ -24,32 +24,28 @@ on:
   workflow_call:
 
 env:
-  NODE_VERSION: '20'
-  PNPM_VERSION: '10'
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 jobs:
   lint-docs:
-    name: Lint & docs (Node ${{ matrix.node-version }})
+    name: Lint & docs
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ['20', '22']
-    env:
-      NODE_VERSION: ${{ matrix.node-version }}
     steps:
       - &checkout
         name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - &load-config
+        name: Load workflow configuration
+        uses: ./.github/actions/load-workflow-config
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
           pnpm-version: ${{ env.PNPM_VERSION }}
-          cache-key-suffix: "-ci-${{ matrix.node-version }}"
+          cache-key-suffix: "-ci-${{ env.NODE_VERSION }}"
 
       - &install
         name: Install dependencies (composite)
@@ -80,23 +76,18 @@ jobs:
         run: pnpm run check:links
 
   typecheck:
-    name: Type check (Node ${{ matrix.node-version }})
+    name: Type check
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ['20', '22']
-    env:
-      NODE_VERSION: ${{ matrix.node-version }}
     steps:
       - *checkout
+      - *load-config
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
           pnpm-version: ${{ env.PNPM_VERSION }}
-          cache-key-suffix: "-typecheck-${{ matrix.node-version }}"
+          cache-key-suffix: "-typecheck-${{ env.NODE_VERSION }}"
       - *install
       - name: Type check (tsc)
         run: pnpm exec tsc --noEmit
@@ -107,6 +98,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - *checkout
+      - *load-config
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
@@ -115,24 +107,11 @@ jobs:
           cache-key-suffix: "-security"
 
       - name: Secret scan (gitleaks)
-        env:
-          GITLEAKS_VERSION: '8.18.2'
-        run: |
-          set -euo pipefail
-          echo "::group::Installing Gitleaks"
-          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-            -o /tmp/gitleaks.tar.gz
-          tar -xzf /tmp/gitleaks.tar.gz -C /tmp
-          echo "::endgroup::"
-
-          echo "::group::Running Gitleaks secret detection"
-          if /tmp/gitleaks detect --source . --no-banner --redact --verbose; then
-            echo "✅ No secrets detected"
-          else
-            echo "::error::Secrets detected in repository! Please review and fix before merging."
-            exit 1
-          fi
-          echo "::endgroup::"
+        uses: gitleaks/gitleaks-action@bf2dc8e55639c1e091e9b45970152e4313705814
+        with:
+          verbose: "true"
+          redaction: "true"
+          args: "detect --source ."
 
       - name: Check for duplicate dependencies
         run: |
@@ -148,26 +127,34 @@ jobs:
         run: |
           echo "::group::Running security audit on production dependencies"
 
-          # First check for high/critical vulnerabilities
-          high_vulns=$(pnpm audit --prod --audit-level high --json | jq -r '.vulnerabilities | length' 2>/dev/null || echo "0")
+          attempts=0
+          max_attempts=3
+          while true; do
+            attempts=$((attempts + 1))
+            if audit_output=$(pnpm audit --prod --audit-level high --json 2>/tmp/audit-error.log); then
+              break
+            fi
+            if grep -qiE 'ENOTFOUND|ETIMEDOUT|ECONNRESET' /tmp/audit-error.log && [[ $attempts -lt $max_attempts ]]; then
+              echo "::warning::pnpm audit network error (attempt $attempts/$max_attempts), retrying in 5s"
+              sleep 5
+              continue
+            fi
+            cat /tmp/audit-error.log >&2 || true
+            exit 1
+          done
+
+          high_vulns=$(echo "$audit_output" | jq -r '.vulnerabilities | length' 2>/dev/null || echo "0")
 
           if [[ "$high_vulns" -gt 0 ]]; then
             echo "::error::Found $high_vulns high/critical vulnerabilities:"
-            pnpm audit --prod --audit-level high
-            echo ""
-            echo "🔧 To fix vulnerabilities:"
-            echo "  1. Run 'pnpm audit --fix' locally"
-            echo "  2. Or manually update affected packages"
-            echo "  3. For more info: https://pnpm.io/cli/audit"
+            echo "$audit_output" | jq '.'
             exit 1
           fi
 
-          # Check for moderate vulnerabilities and warn
-          if pnpm audit --prod --audit-level moderate 2>/dev/null | grep -q "vulnerabilities"; then
-            echo "::warning::Moderate vulnerabilities detected. Consider updating dependencies."
-            pnpm audit --prod --audit-level moderate
-          else
+          if ! pnpm audit --prod --audit-level moderate 2>/dev/null | tee /tmp/audit-moderate.log | grep -q "vulnerabilities"; then
             echo "✅ No production vulnerabilities found"
+          else
+            echo "::warning::Moderate vulnerabilities detected. See details above."
           fi
 
           echo "::endgroup::"
@@ -190,6 +177,7 @@ jobs:
       - typecheck
     steps:
       - *checkout
+      - *load-config
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
@@ -211,3 +199,26 @@ jobs:
 
       - name: Build (Next.js)
         run: pnpm build
+
+      - name: Archive Next.js build output
+        run: |
+          set -euo pipefail
+          files=()
+          for dir in .next/standalone .next/static .next/cache; do
+            if [[ -d "$dir" ]]; then
+              files+=("$dir")
+            fi
+          done
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "::warning::No Next.js build output found to archive"
+            exit 0
+          fi
+          tar -czf next-build.tar.gz "${files[@]}"
+
+      - name: Upload Next.js build artifacts
+        if: hashFiles('next-build.tar.gz') != ''
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: next-build
+          path: next-build.tar.gz
+          retention-days: 3

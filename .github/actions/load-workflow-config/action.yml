@@ -1,0 +1,35 @@
+name: Load workflow configuration
+
+runs:
+  using: composite
+  steps:
+    - name: Read config
+      id: read
+      shell: bash
+      run: |
+        set -euo pipefail
+        config_file="${{ github.workspace }}/config/workflow-config.json"
+        if [[ ! -f "$config_file" ]]; then
+          echo "::error::Missing workflow configuration at $config_file" >&2
+          exit 1
+        fi
+        node_version=$(jq -r '.nodeVersion' "$config_file")
+        pnpm_version=$(jq -r '.pnpmVersion' "$config_file")
+        secrets_json=$(jq -c '.productionSecrets' "$config_file")
+        if [[ -z "$node_version" || "$node_version" == "null" ]]; then
+          echo "::error::nodeVersion not defined in $config_file" >&2
+          exit 1
+        fi
+        if [[ -z "$pnpm_version" || "$pnpm_version" == "null" ]]; then
+          echo "::error::pnpmVersion not defined in $config_file" >&2
+          exit 1
+        fi
+        if [[ -z "$secrets_json" || "$secrets_json" == "null" ]]; then
+          secrets_json='[]'
+        fi
+        echo "NODE_VERSION=$node_version" >> "$GITHUB_ENV"
+        echo "PNPM_VERSION=$pnpm_version" >> "$GITHUB_ENV"
+        echo "PRODUCTION_SECRETS_JSON=$secrets_json" >> "$GITHUB_ENV"
+        echo "node-version=$node_version" >> "$GITHUB_OUTPUT"
+        echo "pnpm-version=$pnpm_version" >> "$GITHUB_OUTPUT"
+        echo "production-secrets=$secrets_json" >> "$GITHUB_OUTPUT"

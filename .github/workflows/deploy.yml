@@ -33,32 +33,17 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 2
+      - name: Load workflow configuration
+        uses: ./.github/actions/load-workflow-config
       - name: Compute docs-only flag
         id: diff
         shell: bash
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          base="${{ github.event.before }}"
-          if [ -z "${base}" ]; then
-            base=$(git rev-list HEAD~1 -n 1 || true)
-          fi
-          if [ -z "${base}" ]; then
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          files=$(git diff --name-only "${base}"...HEAD | tr -d '\r' || true)
-          echo "Changed files:"; echo "$files"
-          if [ -z "${files}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Anything outside docs/ or README.md is considered non-docs
-          non_docs=$(echo "$files" | grep -Ev '^(README\.md|docs/)' || true)
-          if [ -z "${non_docs}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-          fi
+          scripts/workflows/detect-docs-only.sh --base "${GITHUB_EVENT_BEFORE}" >/dev/null
+          cat docs_only.txt >> "$GITHUB_OUTPUT"
   # Quality gate — CI
   quality-gate-reusable:
     name: Quality Gate
@@ -67,93 +52,63 @@ jobs:
     uses: ./.github/workflows/ci.yml
     secrets: inherit
 
-  deploy-production:
-    name: Deploy Production
+  package-artifacts:
+    name: Build deployment bundle
     if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') && needs.changes.outputs.docs_only != 'true'
     needs: [quality-gate-reusable, changes]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
+    env:
+      NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+    outputs:
+      build_source: ${{ steps.build_source.outputs.source }}
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 0
 
+      - name: Load workflow configuration
+        uses: ./.github/actions/load-workflow-config
+
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
           pnpm-version: ${{ env.PNPM_VERSION }}
-          cache-key-suffix: "-deploy"
-
-      - name: Check required secrets (Production)
-        run: |
-          set -euo pipefail
-
-          # Define required secrets
-          declare -A required_secrets=(
-            ["CLOUDFLARE_API_TOKEN"]="${CLOUDFLARE_API_TOKEN:-}"
-            ["CLOUDFLARE_ACCOUNT_ID"]="${CLOUDFLARE_ACCOUNT_ID:-}"
-            ["BETTER_AUTH_SECRET"]="${BETTER_AUTH_SECRET:-}"
-            ["GOOGLE_CLIENT_ID"]="${GOOGLE_CLIENT_ID:-}"
-            ["GOOGLE_CLIENT_SECRET"]="${GOOGLE_CLIENT_SECRET:-}"
-            ["CLOUDFLARE_R2_URL"]="${CLOUDFLARE_R2_URL:-}"
-            ["CREEM_API_KEY"]="${CREEM_API_KEY:-}"
-            ["CREEM_WEBHOOK_SECRET"]="${CREEM_WEBHOOK_SECRET:-}"
-          )
-
-          # Check for missing secrets
-          missing=()
-          for secret_name in "${!required_secrets[@]}"; do
-            secret_value="${required_secrets[$secret_name]}"
-            if [[ -z "$secret_value" ]]; then
-              missing+=("$secret_name")
-              echo "::warning::Missing required secret: $secret_name"
-            else
-              # Mask the secret value to prevent logging
-              echo "::add-mask::$secret_value"
-            fi
-          done
-
-          if [[ ${#missing[@]} -eq 0 ]]; then
-            echo "✅ All required production secrets are present (${#required_secrets[@]} secrets)"
-            exit 0
-          fi
-
-          echo "::error::Production deployment aborted. Missing ${#missing[@]} required secrets: ${missing[*]}"
-          exit 1
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
-          CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
-          CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
-
-      - name: Validate Production Inputs
-        uses: ./.github/actions/validate-inputs
-        with:
-          app-url: ${{ vars.NEXT_PUBLIC_APP_URL }}
-          creem-api-url: ${{ vars.CREEM_API_URL || vars.CREEM_API_URL_PRODUCTION }}
-          allow-localhost: 'false'
-
-      - name: Cache Next.js build
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: |
-            .next/cache
-            .next/standalone
-            .next/static
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('next.config.*', 'package.json', 'tsconfig.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
-            ${{ runner.os }}-nextjs-
+          cache-key-suffix: "-deploy-package"
 
       - name: Install dependencies (composite)
         uses: ./.github/actions/install-and-heal
+
+      - name: Download CI Next.js build artifact
+        id: download_ci_build
+        uses: dawidd6/action-download-artifact@688efa90a08f3552e7c1420c8313e215164e8b14
+        with:
+          workflow: ci.yml
+          commit: ${{ github.sha }}
+          name: next-build
+          path: artifacts/ci
+          if_no_artifact_found: warn
+
+      - name: Extract Next.js build artifact
+        if: steps.download_ci_build.outputs.found_artifact == 'true'
+        run: |
+          set -euo pipefail
+          tar -xzf artifacts/ci/next-build.tar.gz
+
+      - name: Determine build source
+        id: build_source
+        run: |
+          if [[ '${{ steps.download_ci_build.outputs.found_artifact }}' == 'true' ]]; then
+            echo "source=ci-artifact" >> "$GITHUB_OUTPUT"
+          else
+            echo "source=local" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Next.js (fallback)
+        if: steps.download_ci_build.outputs.found_artifact != 'true'
+        run: pnpm build
 
       - name: Generate Cloudflare types
         run: pnpm run cf-typegen
@@ -161,12 +116,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Build Next.js (diagnostic)
-        run: pnpm run build
-        env:
-          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
-
-      - name: Build application
+      - name: Build Cloudflare bundle
         run: pnpm run build:cf
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
@@ -176,9 +126,33 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
+      - name: Archive OpenNext bundle
+        run: |
+          set -euo pipefail
+          if [[ ! -d .open-next ]]; then
+            echo "::error::OpenNext bundle missing after build"
+            exit 1
+          fi
+          tar -czf open-next-bundle.tar.gz .open-next
+
+      - name: Upload OpenNext bundle
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: open-next-bundle
+          path: open-next-bundle.tar.gz
+          retention-days: 3
+
+  database-prep:
+    name: Prepare database
+    if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') && needs.changes.outputs.docs_only != 'true'
+    needs: [quality-gate-reusable, changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
       - name: Generate backup filename
         id: backup
         run: |
+          set -euo pipefail
           ts=$(date -u +%Y%m%d-%H%M%S)
           echo "filename=db-backup-${ts}.sql" >> "$GITHUB_OUTPUT"
 
@@ -192,7 +166,7 @@ jobs:
 
       - name: Upload production DB backup
         if: steps.backup.outcome == 'success'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: ${{ steps.backup.outputs.filename }}
           path: ${{ steps.backup.outputs.filename }}
@@ -225,13 +199,89 @@ jobs:
           wranglerVersion: '4.42.1'
           command: d1 execute next-cf-app --env production --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name='site_settings';"
 
-      - name: Build OpenNext bundle (Cloudflare)
+  deploy-production:
+    name: Deploy Production
+    if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') && needs.changes.outputs.docs_only != 'true'
+    needs:
+      - package-artifacts
+      - database-prep
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
+      CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
+      CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 0
+
+      - name: Load workflow configuration
+        uses: ./.github/actions/load-workflow-config
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          cache-key-suffix: "-deploy"
+
+      - name: Install dependencies (composite)
+        uses: ./.github/actions/install-and-heal
+
+      - name: Download OpenNext bundle
+        uses: actions/download-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: open-next-bundle
+          path: artifacts/opennext
+
+      - name: Extract OpenNext bundle
         run: |
           set -euo pipefail
-          npx @opennextjs/cloudflare build
-        env:
-          # Ensure Next.js gets prod URL for correct routing during OpenNext build
-          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
+          tar -xzf artifacts/opennext/open-next-bundle.tar.gz
+
+      - name: Check required secrets (Production)
+        run: |
+          set -eo pipefail
+          secrets_json="${PRODUCTION_SECRETS_JSON:-[]}" || secrets_json='[]'
+          mapfile -t required_secrets < <(echo "$secrets_json" | jq -r '.[]')
+          total=${#required_secrets[@]}
+          if [[ $total -eq 0 ]]; then
+            echo "::error::No production secrets configured in config/workflow-config.json"
+            exit 1
+          fi
+          missing=()
+          for secret_name in "${required_secrets[@]}"; do
+            value="${!secret_name-}"
+            if [[ -z "${value:-}" ]]; then
+              missing+=("$secret_name")
+              echo "::warning::Missing required secret: $secret_name"
+            else
+              echo "::add-mask::$value"
+            fi
+          done
+          if [[ ${#missing[@]} -eq 0 ]]; then
+            echo "✅ All required production secrets are present ($total secrets)"
+          else
+            echo "::error::Production deployment aborted. Missing ${#missing[@]} required secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Validate Production Inputs
+        uses: ./.github/actions/validate-inputs
+        with:
+          app-url: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          creem-api-url: ${{ vars.CREEM_API_URL || vars.CREEM_API_URL_PRODUCTION }}
+          allow-localhost: 'false'
 
       - name: Deploy to Production (code)
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
@@ -258,41 +308,21 @@ jobs:
       - name: Sync Production secrets
         if: ${{ vars.SYNC_PRODUCTION_SECRETS != 'false' }}
         run: |
-          set -euo pipefail
-          sync_if_set () {
-            local key="$1"
-            # Use parameter expansion to avoid unbound variable under set -u
-            local value="${2-}"
-            if [ -z "${value:-}" ]; then
-              echo "::notice::Skipping secret $key: not provided"
-              return 0
+          set -eo pipefail
+          secrets_json="${PRODUCTION_SECRETS_JSON:-[]}" || secrets_json='[]'
+          mapfile -t required_secrets < <(echo "$secrets_json" | jq -r '.[]')
+          for secret_name in "${required_secrets[@]}"; do
+            value="${!secret_name-}"
+            if [[ -z "${value:-}" ]]; then
+              echo "::notice::Skipping secret $secret_name: not provided"
+              continue
             fi
-            printf '%s' "$value" | pnpm exec wrangler secret put "$key" --env production --name next-cf-app
-          }
-          sync_if_set BETTER_AUTH_SECRET "${BETTER_AUTH_SECRET-}"
-          sync_if_set GOOGLE_CLIENT_ID "${GOOGLE_CLIENT_ID-}"
-          sync_if_set GOOGLE_CLIENT_SECRET "${GOOGLE_CLIENT_SECRET-}"
-          sync_if_set CLOUDFLARE_R2_URL "${CLOUDFLARE_R2_URL-}"
-          sync_if_set CREEM_API_KEY "${CREEM_API_KEY-}"
-          sync_if_set CREEM_WEBHOOK_SECRET "${CREEM_WEBHOOK_SECRET-}"
-          sync_if_set OPENAI_API_KEY "${OPENAI_API_KEY-}"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          CLOUDFLARE_R2_URL: ${{ secrets.CLOUDFLARE_R2_URL }}
-          CREEM_API_KEY: ${{ secrets.CREEM_API_KEY }}
-          CREEM_WEBHOOK_SECRET: ${{ secrets.CREEM_WEBHOOK_SECRET }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            printf '%s' "$value" | pnpm exec wrangler secret put "$secret_name" --env production --name next-cf-app
+          done
 
       - name: Skip production secret sync (disabled)
         if: ${{ vars.SYNC_PRODUCTION_SECRETS == 'false' }}
         run: echo "Skipping production secret sync (set vars.SYNC_PRODUCTION_SECRETS to 'true' to enable)."
-
-      - name: Wait for deployment
-        run: sleep 45
 
       - name: Production health check
         env:
@@ -301,12 +331,19 @@ jobs:
           DEPLOY_HEALTH_RETRIES: ${{ vars.DEPLOY_HEALTH_RETRIES }}
           DEPLOY_HEALTH_RETRY_DELAY: ${{ vars.DEPLOY_HEALTH_RETRY_DELAY }}
           DEPLOY_HEALTH_TIMEOUT: ${{ vars.DEPLOY_HEALTH_TIMEOUT }}
+          DEPLOY_HEALTH_INITIAL_DELAY: ${{ vars.DEPLOY_HEALTH_INITIAL_DELAY }}
         run: |
           set -euo pipefail
 
           retries="${DEPLOY_HEALTH_RETRIES:-5}"
           delay="${DEPLOY_HEALTH_RETRY_DELAY:-5}"
           timeout="${DEPLOY_HEALTH_TIMEOUT:-25}"
+          initial_delay="${DEPLOY_HEALTH_INITIAL_DELAY:-10}"
+
+          if [[ "$initial_delay" -gt 0 ]]; then
+            echo "Waiting $initial_delay second(s) before starting health checks"
+            sleep "$initial_delay"
+          fi
 
           url="${HC_SECRET:-${HC_VAR:-}}"
           if [ -z "$url" ]; then
@@ -345,6 +382,25 @@ jobs:
           printf '### Production health check\n\n- URL: [%s](%s)\n- Attempts: %s\n- Status: %s\n' \
             "$url" "$url" "$attempt/$retries" "$status" >> "$GITHUB_STEP_SUMMARY"
           cat "$tmp"
+
+      - name: Notify deployment failure by email
+        if: failure() && secrets.DEPLOY_ALERT_SMTP_SERVER != '' && vars.DEPLOY_ALERT_RECIPIENTS != ''
+        uses: dawidd6/action-send-mail@5d2f5abd00207aef5c29e26e9471a8c1cd01f17b
+        with:
+          server_address: ${{ secrets.DEPLOY_ALERT_SMTP_SERVER }}
+          server_port: ${{ secrets.DEPLOY_ALERT_SMTP_PORT }}
+          username: ${{ secrets.DEPLOY_ALERT_SMTP_USERNAME }}
+          password: ${{ secrets.DEPLOY_ALERT_SMTP_PASSWORD }}
+          subject: "[Deploy] Production health check failed"
+          to: ${{ vars.DEPLOY_ALERT_RECIPIENTS }}
+          from: ${{ vars.DEPLOY_ALERT_FROM || secrets.DEPLOY_ALERT_SMTP_USERNAME }}
+          body: |
+            Production deployment for ${{ github.repository }} (run ${{ github.run_id }}) failed the health check stage.
+            Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Health check notification not configured
+        if: failure() && (secrets.DEPLOY_ALERT_SMTP_SERVER == '' || vars.DEPLOY_ALERT_RECIPIENTS == '')
+        run: echo "::warning::Deployment health check failed but email notification is not configured."
 
       - name: 生成部署审计摘要
         id: deployment_audit
