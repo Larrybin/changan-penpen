@@ -14,14 +14,16 @@ interface WebVitalsMetrics {
     id: string;
     name: string;
     value: number;
-    rating: "good" | "needs-improvement" | "poor";
+    rating: MetricRating;
     delta: number;
     timestamp: number;
 }
 
+type MetricRating = "good" | "needs-improvement" | "poor";
+
 type ExtendedWebVitalsMetric = NextWebVitalsMetric & {
     delta?: number;
-    rating?: "good" | "needs-improvement" | "poor";
+    rating?: MetricRating;
 };
 
 type WarningMetricName = "LCP" | "INP" | "CLS";
@@ -37,6 +39,55 @@ const PERFORMANCE_WARNING_MESSAGES: Record<
     CLS: (metric) =>
         `⚠️ CLS性能警告: ${metric.value.toFixed(4)} (${metric.rating})`,
 };
+
+function resolveMetricRating(metric: ExtendedWebVitalsMetric): MetricRating {
+    return metric.rating ?? "good";
+}
+
+function toWebVitalsMetric(
+    metric: ExtendedWebVitalsMetric,
+    rating: MetricRating,
+): WebVitalsMetrics {
+    return {
+        id: metric.id,
+        name: metric.name,
+        value: metric.value,
+        rating,
+        delta: metric.delta ?? 0,
+        timestamp: Date.now(),
+    };
+}
+
+function upsertMetric(
+    previousMetrics: WebVitalsMetrics[],
+    nextMetric: WebVitalsMetrics,
+): WebVitalsMetrics[] {
+    const existingIndex = previousMetrics.findIndex(
+        (metric) => metric.name === nextMetric.name,
+    );
+
+    if (existingIndex >= 0) {
+        const updatedMetrics = [...previousMetrics];
+        updatedMetrics[existingIndex] = nextMetric;
+        return updatedMetrics;
+    }
+
+    return [...previousMetrics, nextMetric];
+}
+
+function warnIfNeeded(
+    metric: ExtendedWebVitalsMetric & { rating: MetricRating },
+) {
+    if (metric.rating === "good") {
+        return;
+    }
+
+    const warningBuilder =
+        PERFORMANCE_WARNING_MESSAGES[metric.name as WarningMetricName];
+    if (warningBuilder) {
+        console.warn(warningBuilder(metric));
+    }
+}
 
 /**
  * Core Web Vitals监控组件
@@ -111,39 +162,14 @@ export function WebVitals() {
 
     const handleWebVital = useCallback(
         (metric: ExtendedWebVitalsMetric) => {
-            const rating = metric.rating ?? "good";
-            const newMetric: WebVitalsMetrics = {
-                id: metric.id,
-                name: metric.name,
-                value: metric.value,
-                rating,
-                delta: metric.delta ?? 0,
-                timestamp: Date.now(),
-            };
+            const rating = resolveMetricRating(metric);
+            const normalizedMetric = toWebVitalsMetric(metric, rating);
 
-            setMetrics((prev) => {
-                const existingIndex = prev.findIndex(
-                    (m) => m.name === metric.name,
-                );
-                if (existingIndex >= 0) {
-                    const updated = [...prev];
-                    updated[existingIndex] = newMetric;
-                    return updated;
-                }
-                return [...prev, newMetric];
-            });
+            setMetrics((prev) => upsertMetric(prev, normalizedMetric));
 
-            sendToAnalytics({ ...metric, rating });
-
-            if (rating !== "good") {
-                const warningBuilder =
-                    PERFORMANCE_WARNING_MESSAGES[
-                        metric.name as WarningMetricName
-                    ];
-                if (warningBuilder) {
-                    console.warn(warningBuilder({ ...metric, rating }));
-                }
-            }
+            const enrichedMetric = { ...metric, rating };
+            sendToAnalytics(enrichedMetric);
+            warnIfNeeded(enrichedMetric);
         },
         [sendToAnalytics],
     );
