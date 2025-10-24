@@ -1,19 +1,19 @@
 "use client";
 
+import {
+    ArrowRightIcon,
+    BookOpenIcon,
+    FileTextIcon,
+    SettingsIcon,
+    TagIcon,
+    UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import {
-    ArrowRightIcon,
-    BookOpenIcon,
-    UsersIcon,
-    SettingsIcon,
-    FileTextIcon,
-    TagIcon,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface RelatedContentItem {
     title: string;
@@ -105,7 +105,7 @@ export function RelatedContent({
         >
             {title && (
                 <h2 id="related-content-title" className={titleClasses}>
-                    <FileTextIcon className="w-6 h-6" />
+                    <FileTextIcon className="h-6 w-6" />
                     {title}
                 </h2>
             )}
@@ -117,7 +117,7 @@ export function RelatedContent({
                         href={item.href}
                         className={cn(
                             cardClasses[cardStyle],
-                            "block no-underline text-foreground hover:text-primary transition-colors",
+                            "block text-foreground no-underline transition-colors hover:text-primary",
                         )}
                         aria-labelledby={`related-item-${index}-title`}
                     >
@@ -132,26 +132,26 @@ export function RelatedContent({
                         {/* 标题 */}
                         <h3
                             id={`related-item-${index}-title`}
-                            className="font-semibold text-lg leading-tight mb-2 group-hover:text-primary transition-colors"
+                            className="mb-2 font-semibold text-lg leading-tight transition-colors group-hover:text-primary"
                         >
                             {item.title}
                         </h3>
 
                         {/* 描述 */}
-                        <p className="text-sm text-muted-foreground line-clamp-3 mb-3 flex-1">
+                        <p className="mb-3 line-clamp-3 flex-1 text-muted-foreground text-sm">
                             {item.description}
                         </p>
 
                         {/* 标签 */}
                         {showTags && item.tags && item.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-3">
+                            <div className="mb-3 flex flex-wrap gap-1">
                                 {item.tags.slice(0, 3).map((tag) => (
                                     <Badge
                                         key={tag}
                                         variant="outline"
                                         className="text-xs"
                                     >
-                                        <TagIcon className="w-3 h-3 mr-1" />
+                                        <TagIcon className="mr-1 h-3 w-3" />
                                         {tag}
                                     </Badge>
                                 ))}
@@ -167,14 +167,14 @@ export function RelatedContent({
                         )}
 
                         {/* 底部信息 */}
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between text-muted-foreground text-xs">
                             {showReadTime && item.readTime && (
                                 <div className="flex items-center gap-1">
-                                    <BookOpenIcon className="w-3 h-3" />
+                                    <BookOpenIcon className="h-3 w-3" />
                                     <span>{item.readTime}</span>
                                 </div>
                             )}
-                            <ArrowRightIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ArrowRightIcon className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
                         </div>
 
                         {/* 特色标记 */}
@@ -191,13 +191,13 @@ export function RelatedContent({
 
             {/* 查看更多链接 */}
             {relatedItems.length >= maxItems && (
-                <div className="text-center pt-6">
+                <div className="pt-6 text-center">
                     <Link
                         href="/blog" // 这里应该是相关内容的聚合页面
-                        className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                        className="inline-flex items-center gap-2 text-primary text-sm hover:underline"
                     >
                         查看更多相关内容
-                        <ArrowRightIcon className="w-4 h-4" />
+                        <ArrowRightIcon className="h-4 w-4" />
                     </Link>
                 </div>
             )}
@@ -208,20 +208,20 @@ export function RelatedContent({
 // 根据分类返回图标
 function getCategoryIcon(category: string): React.ReactNode {
     const iconMap: Record<string, React.ReactNode> = {
-        功能: <SettingsIcon className="w-3 h-3" />,
-        教程: <BookOpenIcon className="w-3 h-3" />,
-        案例: <UsersIcon className="w-3 h-3" />,
-        团队: <UsersIcon className="w-3 h-3" />,
-        产品: <SettingsIcon className="w-3 h-3" />,
+        功能: <SettingsIcon className="h-3 w-3" />,
+        教程: <BookOpenIcon className="h-3 w-3" />,
+        案例: <UsersIcon className="h-3 w-3" />,
+        团队: <UsersIcon className="h-3 w-3" />,
+        产品: <SettingsIcon className="h-3 w-3" />,
     };
 
-    return iconMap[category] || <FileTextIcon className="w-3 h-3" />;
+    return iconMap[category] || <FileTextIcon className="h-3 w-3" />;
 }
 
 // 根据当前路径生成相关内容
 function generateRelatedContent(
     pathname: string,
-    t: (key: string) => string,
+    _t: (key: string) => string,
 ): RelatedContentItem[] {
     const currentPath = pathname.replace(/^\/+/, "");
 
@@ -237,7 +237,7 @@ function generateRelatedContent(
                 tags: ["任务管理", "团队协作", "数据分析"],
                 readTime: "5分钟阅读",
                 featured: true,
-                icon: <SettingsIcon className="w-5 h-5" />,
+                icon: <SettingsIcon className="h-5 w-5" />,
             },
             {
                 title: "价格方案",
@@ -247,7 +247,7 @@ function generateRelatedContent(
                 category: "产品",
                 tags: ["订阅", "价格", "方案"],
                 readTime: "3分钟阅读",
-                icon: <UsersIcon className="w-5 h-5" />,
+                icon: <UsersIcon className="h-5 w-5" />,
             },
             {
                 title: "用户指南",
@@ -257,7 +257,7 @@ function generateRelatedContent(
                 category: "教程",
                 tags: ["指南", "教程", "帮助"],
                 readTime: "8分钟阅读",
-                icon: <BookOpenIcon className="w-5 h-5" />,
+                icon: <BookOpenIcon className="h-5 w-5" />,
             },
         ],
 
@@ -269,7 +269,7 @@ function generateRelatedContent(
                 category: "团队",
                 tags: ["团队", "文化", "价值观"],
                 readTime: "4分钟阅读",
-                icon: <UsersIcon className="w-5 h-5" />,
+                icon: <UsersIcon className="h-5 w-5" />,
             },
             {
                 title: "公司历史",
@@ -278,7 +278,7 @@ function generateRelatedContent(
                 category: "案例",
                 tags: ["历史", "里程碑", "发展"],
                 readTime: "6分钟阅读",
-                icon: <FileTextIcon className="w-5 h-5" />,
+                icon: <FileTextIcon className="h-5 w-5" />,
             },
             {
                 title: "联系方式",
@@ -287,7 +287,7 @@ function generateRelatedContent(
                 category: "功能",
                 tags: ["联系", "支持", "服务"],
                 readTime: "2分钟阅读",
-                icon: <SettingsIcon className="w-5 h-5" />,
+                icon: <SettingsIcon className="h-5 w-5" />,
             },
         ],
 
@@ -299,7 +299,7 @@ function generateRelatedContent(
                 category: "教程",
                 tags: ["FAQ", "问题", "解答"],
                 readTime: "10分钟阅读",
-                icon: <BookOpenIcon className="w-5 h-5" />,
+                icon: <BookOpenIcon className="h-5 w-5" />,
             },
             {
                 title: "技术支持",
@@ -309,7 +309,7 @@ function generateRelatedContent(
                 category: "功能",
                 tags: ["支持", "技术", "帮助"],
                 readTime: "3分钟阅读",
-                icon: <SettingsIcon className="w-5 h-5" />,
+                icon: <SettingsIcon className="h-5 w-5" />,
             },
         ],
 
@@ -321,7 +321,7 @@ function generateRelatedContent(
                 category: "功能",
                 tags: ["任务", "管理", "跟踪"],
                 readTime: "7分钟阅读",
-                icon: <SettingsIcon className="w-5 h-5" />,
+                icon: <SettingsIcon className="h-5 w-5" />,
             },
             {
                 title: "团队协作",
@@ -330,7 +330,7 @@ function generateRelatedContent(
                 category: "教程",
                 tags: ["协作", "团队", "效率"],
                 readTime: "6分钟阅读",
-                icon: <UsersIcon className="w-5 h-5" />,
+                icon: <UsersIcon className="h-5 w-5" />,
             },
             {
                 title: "数据分析",
@@ -339,7 +339,7 @@ function generateRelatedContent(
                 category: "案例",
                 tags: ["数据", "分析", "报告"],
                 readTime: "8分钟阅读",
-                icon: <FileTextIcon className="w-5 h-5" />,
+                icon: <FileTextIcon className="h-5 w-5" />,
             },
         ],
 
@@ -351,7 +351,7 @@ function generateRelatedContent(
                 category: "案例",
                 tags: ["统计", "使用", "分析"],
                 readTime: "4分钟阅读",
-                icon: <FileTextIcon className="w-5 h-5" />,
+                icon: <FileTextIcon className="h-5 w-5" />,
             },
             {
                 title: "订阅管理",
@@ -360,7 +360,7 @@ function generateRelatedContent(
                 category: "教程",
                 tags: ["订阅", "管理", "计划"],
                 readTime: "5分钟阅读",
-                icon: <BookOpenIcon className="w-5 h-5" />,
+                icon: <BookOpenIcon className="h-5 w-5" />,
             },
             {
                 title: "支付方式",
@@ -369,7 +369,7 @@ function generateRelatedContent(
                 category: "功能",
                 tags: ["支付", "安全", "方式"],
                 readTime: "3分钟阅读",
-                icon: <SettingsIcon className="w-5 h-5" />,
+                icon: <SettingsIcon className="h-5 w-5" />,
             },
         ],
     };
@@ -464,12 +464,12 @@ export const RelatedContentPresets = {
     ],
 } as const;
 
-// 内容推荐工具类
-export class RelatedContentUtils {
+// 内容推荐工具集
+export const relatedContentUtils = {
     /**
      * 根据页面类型获取推荐内容
      */
-    static getRecommendations(
+    getRecommendations(
         pageType: string,
         limit: number = 6,
     ): RelatedContentItem[] {
@@ -478,34 +478,34 @@ export class RelatedContentUtils {
                 pageType as keyof typeof RelatedContentPresets
             ];
         return preset ? preset.slice(0, limit) : [];
-    }
+    },
 
     /**
      * 根据标签获取相关内容
      */
-    static getByTags(
+    getByTags(
         tags: string[],
         items: RelatedContentItem[],
     ): RelatedContentItem[] {
-        return items.filter(
-            (item) => item.tags && item.tags.some((tag) => tags.includes(tag)),
+        return items.filter((item) =>
+            item.tags?.some((tag) => tags.includes(tag)),
         );
-    }
+    },
 
     /**
      * 根据分类获取相关内容
      */
-    static getByCategory(
+    getByCategory(
         category: string,
         items: RelatedContentItem[],
     ): RelatedContentItem[] {
         return items.filter((item) => item.category === category);
-    }
+    },
 
     /**
      * 计算内容相关性分数
      */
-    static calculateRelevance(
+    calculateRelevance(
         item1: RelatedContentItem,
         item2: RelatedContentItem,
     ): number {
@@ -525,12 +525,12 @@ export class RelatedContentUtils {
         }
 
         return score;
-    }
+    },
 
     /**
      * 验证内容项
      */
-    static validateItem(item: RelatedContentItem): {
+    validateItem(item: RelatedContentItem): {
         valid: boolean;
         errors: string[];
     } {
@@ -552,5 +552,5 @@ export class RelatedContentUtils {
             valid: errors.length === 0,
             errors,
         };
-    }
-}
+    },
+} as const;
