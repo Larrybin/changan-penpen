@@ -15,17 +15,17 @@ export default function Playground() {
 
     return (
         <section
-            className="border border-yellow-400/30 rounded-lg p-4 md:p-6 bg-black/40 text-yellow-50"
+            className="rounded-lg border border-yellow-400/30 bg-black/40 p-4 text-yellow-50 md:p-6"
             aria-labelledby="playground-heading"
         >
-            <div className="flex flex-col gap-2 mb-4 xs:flex-row xs:items-center xs:justify-between">
+            <div className="mb-4 flex xs:flex-row flex-col xs:items-center xs:justify-between gap-2">
                 <h2
                     id="playground-heading"
                     className="font-semibold tracking-wide"
                 >
                     {tPlayground("title")}
                 </h2>
-                <div className="flex flex-wrap gap-x-2 gap-y-1 text-[10px] md:text-xs text-yellow-200/70">
+                <div className="flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-yellow-200/70 md:text-xs">
                     {badges.map((badge, _index) => (
                         <span
                             key={badge}
@@ -37,10 +37,10 @@ export default function Playground() {
                 </div>
             </div>
 
-            <div className="grid lg-narrow:grid-cols-2 gap-[var(--grid-gap-section)]">
+            <div className="grid gap-[var(--grid-gap-section)] lg-narrow:grid-cols-2">
                 <div className="space-y-4">
                     <div>
-                        <div className="flex items-center justify-between text-xs text-yellow-200/80 mb-1">
+                        <div className="mb-1 flex items-center justify-between text-xs text-yellow-200/80">
                             <span>{tPlayground("uploadLabel")}</span>
                             <span>{tPlayground("uploadSecondary")}</span>
                         </div>
@@ -62,14 +62,14 @@ export default function Playground() {
                     </div>
 
                     <div>
-                        <div className="flex items-start justify-between text-xs text-yellow-200/80 mb-1 gap-2">
+                        <div className="mb-1 flex items-start justify-between gap-2 text-xs text-yellow-200/80">
                             <span className="pt-1">
                                 {tPlayground("instructionsLabel")}
                             </span>
                             <div className="flex flex-col items-end gap-1 text-right">
                                 <button
                                     type="button"
-                                    className="text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300 active:text-primary/80"
+                                    className="text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 focus-visible:outline-offset-2 active:text-primary/80"
                                 >
                                     {tPlayground("usageGuide")}
                                 </button>
@@ -82,12 +82,12 @@ export default function Playground() {
                             placeholder={tPlayground("promptPlaceholder")}
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
-                            className="min-h-24 bg-black/50 border-yellow-400/30 text-yellow-50 placeholder:text-yellow-100/40"
+                            className="min-h-24 border-yellow-400/30 bg-black/50 text-yellow-50 placeholder:text-yellow-100/40"
                         />
                     </div>
 
                     <fieldset>
-                        <legend className="text-xs text-yellow-200/80 mb-2">
+                        <legend className="mb-2 text-xs text-yellow-200/80">
                             {tPlayground("aspectRatioLabel")}
                         </legend>
                         <div
@@ -101,7 +101,7 @@ export default function Playground() {
                                 return (
                                     <label
                                         key={r}
-                                        className={`flex min-w-[4.5rem] items-center justify-center rounded border px-3 py-1 text-center text-xs transition cursor-pointer focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-yellow-300 ${
+                                        className={`flex min-w-[4.5rem] cursor-pointer items-center justify-center rounded border px-3 py-1 text-center text-xs transition focus-within:outline focus-within:outline-2 focus-within:outline-yellow-300 focus-within:outline-offset-2 ${
                                             isActive
                                                 ? "border-yellow-400 bg-yellow-400 text-black"
                                                 : "border-yellow-400/30 text-yellow-100/80 hover:border-yellow-400/60"
@@ -136,10 +136,10 @@ export default function Playground() {
                     </div>
                 </div>
 
-                <div className="hidden lg-narrow:flex items-center justify-center">
+                <div className="hidden items-center justify-center lg-narrow:flex">
                     <div className="text-center">
-                        <div className="text-7xl mb-4">🍌</div>
-                        <p className="text-yellow-200/80 text-sm">
+                        <div className="mb-4 text-7xl">🍌</div>
+                        <p className="text-sm text-yellow-200/80">
                             {tPlayground("sideDescription")}
                         </p>
                     </div>
