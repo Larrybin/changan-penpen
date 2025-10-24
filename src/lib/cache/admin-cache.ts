@@ -15,48 +15,52 @@ interface CacheEnv {
 // 缓存层级配置
 export const CACHE_LEVELS = {
     // L1缓存：静态数据（目录概况、站点设置）
-    STATIC: { ttl: 300, prefix: 'admin:static' }, // 5分钟
+    STATIC: { ttl: 300, prefix: "admin:static" }, // 5分钟
     // L2缓存：用户会话级数据（基本统计、历史数据）
-    USER: { ttl: 60, prefix: 'admin:user' }, // 1分钟
+    USER: { ttl: 60, prefix: "admin:user" }, // 1分钟
     // L3缓存：实时数据（最新订单、积分变动）
-    REALTIME: { ttl: 10, prefix: 'admin:realtime' }, // 10秒
+    REALTIME: { ttl: 10, prefix: "admin:realtime" }, // 10秒
 } as const;
 
+type CacheKeyParams = Record<string, unknown> | undefined;
+
 // 缓存键生成策略
-export class AdminCacheKeyBuilder {
-    static staticKey(resource: string): string {
+export const AdminCacheKeyBuilder = {
+    staticKey(resource: string): string {
         return `${CACHE_LEVELS.STATIC.prefix}:${resource}`;
-    }
-
-    static userKey(resource: string, userId?: string, params?: Record<string, any>): string {
-        const userIdHash = userId || 'anonymous';
-        const paramString = params ? `:${JSON.stringify(params)}` : '';
+    },
+    userKey(
+        resource: string,
+        userId?: string,
+        params?: CacheKeyParams,
+    ): string {
+        const userIdHash = userId || "anonymous";
+        const paramString = params ? `:${JSON.stringify(params)}` : "";
         return `${CACHE_LEVELS.USER.prefix}:${resource}:${userIdHash}${paramString}`;
-    }
-
-    static realtimeKey(resource: string, params?: Record<string, any>): string {
-        const paramString = params ? `:${JSON.stringify(params)}` : '';
+    },
+    realtimeKey(resource: string, params?: CacheKeyParams): string {
+        const paramString = params ? `:${JSON.stringify(params)}` : "";
         return `${CACHE_LEVELS.REALTIME.prefix}:${resource}${paramString}`;
-    }
-
+    },
     // 为仪表盘生成聚合缓存键
-    static dashboardMetrics(tenantId?: string, from?: string): string {
+    dashboardMetrics(tenantId?: string, from?: string): string {
         const params = { tenantId, from };
-        return this.userKey('dashboard:metrics', 'global', params);
-    }
-
-    static catalogSummary(): string {
-        return this.staticKey('catalog:summary');
-    }
-
-    static latestOrders(tenantId?: string): string {
-        return this.realtimeKey('orders:latest', { tenantId });
-    }
-
-    static recentCredits(tenantId?: string): string {
-        return this.realtimeKey('credits:recent', { tenantId });
-    }
-}
+        return AdminCacheKeyBuilder.userKey(
+            "dashboard:metrics",
+            "global",
+            params,
+        );
+    },
+    catalogSummary(): string {
+        return AdminCacheKeyBuilder.staticKey("catalog:summary");
+    },
+    latestOrders(tenantId?: string): string {
+        return AdminCacheKeyBuilder.realtimeKey("orders:latest", { tenantId });
+    },
+    recentCredits(tenantId?: string): string {
+        return AdminCacheKeyBuilder.realtimeKey("credits:recent", { tenantId });
+    },
+} as const;
 
 // 智能缓存管理器
 export class AdminCacheManager {
@@ -75,10 +79,14 @@ export class AdminCacheManager {
             ? null
             : await getCloudflareContext({ async: true }).catch(() => null);
 
-        const resolvedEnv = this.env ?? (context?.env as CacheEnv | undefined) ?? undefined;
+        const resolvedEnv =
+            this.env ?? (context?.env as CacheEnv | undefined) ?? undefined;
 
-        if (!resolvedEnv?.UPSTASH_REDIS_REST_URL || !resolvedEnv?.UPSTASH_REDIS_REST_TOKEN) {
-            console.warn('[AdminCache] Upstash Redis configuration missing');
+        if (
+            !resolvedEnv?.UPSTASH_REDIS_REST_URL ||
+            !resolvedEnv?.UPSTASH_REDIS_REST_TOKEN
+        ) {
+            console.warn("[AdminCache] Upstash Redis configuration missing");
             return;
         }
 
@@ -101,7 +109,7 @@ export class AdminCacheManager {
 
             return JSON.parse(cached) as T;
         } catch (error) {
-            console.warn('[AdminCache] Cache get failed', { key, error });
+            console.warn("[AdminCache] Cache get failed", { key, error });
             return null;
         }
     }
@@ -118,17 +126,18 @@ export class AdminCacheManager {
                 await this.redis.set(key, serialized);
             }
         } catch (error) {
-            console.warn('[AdminCache] Cache set failed', { key, error });
+            console.warn("[AdminCache] Cache set failed", { key, error });
         }
     }
 
     // 批量获取（利用自动管道化）
     async mget<T>(keys: string[]): Promise<(T | null)[]> {
-        if (!this.redis || keys.length === 0) return new Array(keys.length).fill(null);
+        if (!this.redis || keys.length === 0)
+            return new Array(keys.length).fill(null);
 
         try {
             const values = await this.redis.mget<string[]>(...keys);
-            return values.map(value => {
+            return values.map((value) => {
                 if (!value) return null;
                 try {
                     return JSON.parse(value) as T;
@@ -137,13 +146,15 @@ export class AdminCacheManager {
                 }
             });
         } catch (error) {
-            console.warn('[AdminCache] Batch get failed', { keys, error });
+            console.warn("[AdminCache] Batch get failed", { keys, error });
             return new Array(keys.length).fill(null);
         }
     }
 
     // 批量设置（利用自动管道化）
-    async mset<T>(entries: Array<{ key: string; value: T; ttl?: number }>): Promise<void> {
+    async mset<T>(
+        entries: Array<{ key: string; value: T; ttl?: number }>,
+    ): Promise<void> {
         if (!this.redis || entries.length === 0) return;
 
         try {
@@ -160,7 +171,7 @@ export class AdminCacheManager {
 
             await pipeline.exec();
         } catch (error) {
-            console.warn('[AdminCache] Batch set failed', { entries, error });
+            console.warn("[AdminCache] Batch set failed", { entries, error });
         }
     }
 
@@ -171,28 +182,31 @@ export class AdminCacheManager {
         try {
             await this.redis.del(key);
         } catch (error) {
-            console.warn('[AdminCache] Cache delete failed', { key, error });
+            console.warn("[AdminCache] Cache delete failed", { key, error });
         }
     }
 
     // 模式匹配删除（用于失效策略）
     async invalidatePattern(pattern: string): Promise<void> {
-        if (!this.redis) return;
+        const redis = this.redis;
+        if (!redis) {
+            return;
+        }
 
         try {
             let cursor = "0";
             const deletions: Promise<unknown>[] = [];
 
             do {
-                const [nextCursor, keys] = await this.redis.scan(cursor, {
+                const [nextCursor, keys] = await redis.scan(cursor, {
                     match: pattern,
                     count: 100,
                 });
 
                 if (Array.isArray(keys) && keys.length > 0) {
-                    keys.forEach(key => {
-                        if (typeof key === 'string' && key) {
-                            deletions.push(this.redis!.del(key));
+                    keys.forEach((key) => {
+                        if (typeof key === "string" && key) {
+                            deletions.push(redis.del(key));
                         }
                     });
                 }
@@ -202,10 +216,15 @@ export class AdminCacheManager {
 
             if (deletions.length > 0) {
                 await Promise.allSettled(deletions);
-                console.info(`[AdminCache] Invalidated ${deletions.length} keys matching pattern: ${pattern}`);
+                console.info(
+                    `[AdminCache] Invalidated ${deletions.length} keys matching pattern: ${pattern}`,
+                );
             }
         } catch (error) {
-            console.warn('[AdminCache] Pattern invalidation failed', { pattern, error });
+            console.warn("[AdminCache] Pattern invalidation failed", {
+                pattern,
+                error,
+            });
         }
     }
 
@@ -216,7 +235,7 @@ export class AdminCacheManager {
         try {
             return await this.redis.incrby(key, amount);
         } catch (error) {
-            console.warn('[AdminCache] Increment failed', { key, error });
+            console.warn("[AdminCache] Increment failed", { key, error });
             return 0;
         }
     }
@@ -227,8 +246,8 @@ export class AdminCacheManager {
         misses: number;
         hitRate: number;
     }> {
-        const hitsKey = 'admin:cache:stats:hits';
-        const missesKey = 'admin:cache:stats:misses';
+        const hitsKey = "admin:cache:stats:hits";
+        const missesKey = "admin:cache:stats:misses";
 
         const [hits, misses] = await Promise.all([
             this.increment(hitsKey, 0), // 读取当前值
@@ -253,7 +272,7 @@ export function getAdminCacheManager(env?: CacheEnv): AdminCacheManager {
 }
 
 // 便捷的缓存装饰器函数
-export function withAdminCache<T>(
+export async function withAdminCache<T>(
     level: keyof typeof CACHE_LEVELS,
     keyBuilder: () => string,
     compute: () => Promise<T>,
@@ -261,41 +280,29 @@ export function withAdminCache<T>(
         tenantId?: string;
         userId?: string;
         customTtl?: number;
-    }
+    },
 ): Promise<{ value: T; hit: boolean }> {
     const manager = getAdminCacheManager();
     const cacheConfig = CACHE_LEVELS[level];
     const key = keyBuilder();
     const ttl = options?.customTtl ?? cacheConfig.ttl;
 
-    return new Promise(async (resolve) => {
-        try {
-            // 尝试从缓存获取
-            const cached = await manager.get<T>(key);
-            if (cached !== null) {
-                // 缓存命中，记录统计
-                await manager.increment('admin:cache:stats:hits');
-                resolve({ value: cached, hit: true });
-                return;
-            }
-
-            // 缓存未命中，执行计算
-            const value = await compute();
-
-            // 存入缓存
-            await manager.set(key, value, ttl);
-
-            // 记录统计
-            await manager.increment('admin:cache:stats:misses');
-
-            resolve({ value, hit: false });
-        } catch (error) {
-            console.error('[AdminCache] Cache operation failed', { key, error });
-            // 出错时直接执行计算
-            const value = await compute();
-            resolve({ value, hit: false });
+    try {
+        const cached = await manager.get<T>(key);
+        if (cached !== null) {
+            await manager.increment("admin:cache:stats:hits");
+            return { value: cached, hit: true };
         }
-    });
+
+        const value = await compute();
+        await manager.set(key, value, ttl);
+        await manager.increment("admin:cache:stats:misses");
+        return { value, hit: false };
+    } catch (error) {
+        console.error("[AdminCache] Cache operation failed", { key, error });
+        const value = await compute();
+        return { value, hit: false };
+    }
 }
 
 // 智能缓存失效函数
@@ -305,23 +312,31 @@ export async function invalidateAdminCache(
         tenantId?: string;
         userId?: string;
         level?: keyof typeof CACHE_LEVELS;
-    }
+    },
 ): Promise<void> {
     const manager = getAdminCacheManager();
-    const level = options?.level ?? 'USER';
+    const level = options?.level ?? "USER";
 
-    if (level === 'STATIC') {
+    if (level === "STATIC") {
         // 失效静态缓存
-        await manager.invalidatePattern(`${CACHE_LEVELS.STATIC.prefix}:${resource}:*`);
-    } else if (level === 'USER') {
+        await manager.invalidatePattern(
+            `${CACHE_LEVELS.STATIC.prefix}:${resource}:*`,
+        );
+    } else if (level === "USER") {
         // 失效用户缓存
         if (options?.tenantId) {
-            await manager.invalidatePattern(`${CACHE_LEVELS.USER.prefix}:${resource}:*:${options.tenantId}*`);
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.USER.prefix}:${resource}:*:${options.tenantId}*`,
+            );
         } else {
-            await manager.invalidatePattern(`${CACHE_LEVELS.USER.prefix}:${resource}:*`);
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.USER.prefix}:${resource}:*`,
+            );
         }
-    } else if (level === 'REALTIME') {
+    } else if (level === "REALTIME") {
         // 失效实时缓存
-        await manager.invalidatePattern(`${CACHE_LEVELS.REALTIME.prefix}:${resource}:*`);
+        await manager.invalidatePattern(
+            `${CACHE_LEVELS.REALTIME.prefix}:${resource}:*`,
+        );
     }
 }

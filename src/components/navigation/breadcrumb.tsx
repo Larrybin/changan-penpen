@@ -64,19 +64,16 @@ export function Breadcrumb({
         // 获取当前语言环境
         const currentLocale = document.documentElement.lang || "en";
 
-        // 在实际应用中，这里应该从上下文获取locale和设置
-        // 为了演示，我们使用模拟数据
-        const mockSettings = {
-            siteName: "SaaS应用",
-            defaultLanguage: "en",
-        };
+        // 在实际应用中，这里应该从上下文获取locale和站点设置
+        // 为了演示，我们跳过设置，交由面包屑逻辑回退到默认配置
+        const siteSettings = null;
 
         try {
             const config = getBreadcrumbConfig(
                 pathname,
                 currentLocale,
                 t,
-                mockSettings,
+                siteSettings,
             );
             const items =
                 config.showHome && showHome
@@ -93,7 +90,7 @@ export function Breadcrumb({
                 const breadcrumbSchema = generateBreadcrumbSchema(
                     config,
                     currentLocale,
-                    mockSettings,
+                    siteSettings,
                 );
 
                 // 创建或更新结构化数据script标签

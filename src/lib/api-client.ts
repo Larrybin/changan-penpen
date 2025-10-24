@@ -179,6 +179,95 @@ function normalizeErrors(errors: unknown): ApiErrorFieldDetail[] | undefined {
     return normalized.length > 0 ? normalized : undefined;
 }
 
+type FieldErrorMap = Record<string, string>;
+
+function setFieldError(target: FieldErrorMap, key: unknown, message: unknown) {
+    if (
+        typeof key === "string" &&
+        typeof message === "string" &&
+        key.length > 0
+    ) {
+        target[key] = message;
+    }
+}
+
+function setFieldErrorIfMissing(
+    target: FieldErrorMap,
+    key: unknown,
+    message: unknown,
+) {
+    if (
+        typeof key === "string" &&
+        typeof message === "string" &&
+        !(key in target)
+    ) {
+        target[key] = message;
+    }
+}
+
+function collectArrayErrors(entries: unknown, target: FieldErrorMap) {
+    if (!Array.isArray(entries)) {
+        return;
+    }
+
+    for (const entry of entries) {
+        if (!entry || typeof entry !== "object") {
+            continue;
+        }
+        const node = entry as Record<string, unknown>;
+        setFieldError(target, node.field, node.message);
+    }
+}
+
+function collectFieldErrorRecord(source: unknown, target: FieldErrorMap) {
+    if (!isRecord(source)) {
+        return;
+    }
+
+    Object.entries(source).forEach(([key, value]) => {
+        if (typeof value === "string") {
+            target[key] = value;
+        }
+    });
+}
+
+function collectIssueErrors(issues: unknown, target: FieldErrorMap) {
+    if (!Array.isArray(issues)) {
+        return;
+    }
+
+    for (const issue of issues) {
+        if (!issue || typeof issue !== "object") {
+            continue;
+        }
+        const issueRecord = issue as Record<string, unknown>;
+        const path = issueRecord.path;
+        const message = issueRecord.message;
+        if (Array.isArray(path) && path.length > 0) {
+            setFieldErrorIfMissing(target, path.join("."), message);
+        }
+    }
+}
+
+function collectDetailErrors(
+    details: unknown,
+    record: Record<string, unknown>,
+    target: FieldErrorMap,
+) {
+    if (!isRecord(details)) {
+        return;
+    }
+
+    if (isRecord(details.fieldErrors)) {
+        collectFieldErrorRecord(details.fieldErrors, target);
+    }
+
+    const fallbackMessage = record.message ?? details.message;
+    setFieldErrorIfMissing(target, details.field, fallbackMessage);
+
+    collectIssueErrors(details.issues, target);
+}
+
 function extractFieldErrors(
     source: unknown,
 ): Record<string, string> | undefined {
@@ -187,63 +276,48 @@ function extractFieldErrors(
     }
 
     const record = source as Record<string, unknown>;
-    const aggregate: Record<string, string> = {};
+    const aggregate: FieldErrorMap = {};
 
-    if (Array.isArray(record.errors)) {
-        for (const entry of record.errors) {
-            if (!entry || typeof entry !== "object") {
-                continue;
-            }
-            const node = entry as Record<string, unknown>;
-            const field = node.field;
-            const message = node.message;
-            if (typeof field === "string" && typeof message === "string") {
-                aggregate[field] = message;
-            }
-        }
-    }
-
-    if (isRecord(record.details)) {
-        const details = record.details;
-        if (isRecord(details.fieldErrors)) {
-            Object.entries(details.fieldErrors).forEach(([key, value]) => {
-                if (typeof value === "string") {
-                    aggregate[key] = value;
-                }
-            });
-        }
-        const field = details.field;
-        const message = record.message ?? details.message;
-        if (
-            typeof field === "string" &&
-            typeof message === "string" &&
-            !(field in aggregate)
-        ) {
-            aggregate[field] = message;
-        }
-        if (Array.isArray(details.issues)) {
-            for (const issue of details.issues) {
-                if (!issue || typeof issue !== "object") {
-                    continue;
-                }
-                const issueRecord = issue as Record<string, unknown>;
-                const path = issueRecord.path;
-                const issueMessage = issueRecord.message;
-                if (
-                    Array.isArray(path) &&
-                    path.length > 0 &&
-                    typeof issueMessage === "string"
-                ) {
-                    const key = path.join(".");
-                    if (!(key in aggregate)) {
-                        aggregate[key] = issueMessage;
-                    }
-                }
-            }
-        }
-    }
+    collectArrayErrors(record.errors, aggregate);
+    collectDetailErrors(record.details, record, aggregate);
 
     return Object.keys(aggregate).length > 0 ? aggregate : undefined;
+}
+
+function extractErrorCode(
+    payload: Record<string, unknown>,
+    errorNode?: Record<string, unknown>,
+): string {
+    const directCode = payload.code;
+    if (typeof directCode === "string" && directCode.length > 0) {
+        return directCode;
+    }
+
+    if (errorNode && typeof errorNode.code === "string") {
+        return errorNode.code;
+    }
+
+    if (typeof payload.success === "boolean" && !payload.success) {
+        return "REQUEST_FAILED";
+    }
+
+    return "UNKNOWN_ERROR";
+}
+
+function extractErrorMessage(
+    payload: Record<string, unknown>,
+    errorNode?: Record<string, unknown>,
+): string {
+    const directMessage = payload.message;
+    if (typeof directMessage === "string" && directMessage.length > 0) {
+        return directMessage;
+    }
+
+    if (errorNode && typeof errorNode.message === "string") {
+        return errorNode.message;
+    }
+
+    return "Request failed";
 }
 
 function extractError(payload: unknown): ErrorExtractionResult {
@@ -255,46 +329,18 @@ function extractError(payload: unknown): ErrorExtractionResult {
 
     if (!isRecord(payload)) {
         if (typeof payload === "string" && payload.length > 0) {
-            return {
-                code: "UNKNOWN_ERROR",
-                message: payload,
-                body: payload,
-            };
+            return { ...fallback, message: payload };
         }
         return fallback;
     }
 
-    const directCode = payload.code;
-    const directMessage = payload.message;
-
     const errorNode = isRecord(payload.error) ? payload.error : undefined;
-    const successFlag = payload.success;
 
-    const code =
-        (typeof directCode === "string" && directCode.length > 0
-            ? directCode
-            : undefined) ??
-        (errorNode && typeof errorNode.code === "string"
-            ? errorNode.code
-            : undefined) ??
-        (typeof successFlag === "boolean" && !successFlag
-            ? "REQUEST_FAILED"
-            : undefined) ??
-        "UNKNOWN_ERROR";
-
-    const message =
-        (typeof directMessage === "string" && directMessage.length > 0
-            ? directMessage
-            : undefined) ??
-        (errorNode && typeof errorNode.message === "string"
-            ? errorNode.message
-            : undefined) ??
-        "Request failed";
-
+    const code = extractErrorCode(payload, errorNode);
+    const message = extractErrorMessage(payload, errorNode);
     const errors =
         normalizeErrors(payload.errors) ??
         (errorNode ? normalizeErrors(errorNode.errors) : undefined);
-
     const fieldErrors =
         extractFieldErrors(payload) ??
         (errorNode ? extractFieldErrors(errorNode) : undefined);
@@ -384,6 +430,83 @@ function buildApiError({ response, parsedBody, rawBody }: BuildErrorOptions) {
     });
 }
 
+function resolveRuntimeFetch(fetchImplementation?: typeof fetch) {
+    const runtimeFetch = fetchImplementation ?? globalThis.fetch;
+    if (typeof runtimeFetch !== "function") {
+        throw new Error(
+            "Fetch API is not available in the current environment",
+        );
+    }
+    return runtimeFetch;
+}
+
+function buildHeadersAndBody(
+    baseHeaders: Headers,
+    optionHeaders: HeadersInit | undefined,
+    json: unknown,
+    optionBody: BodyInit | null | undefined,
+) {
+    const headers = new Headers(baseHeaders);
+    applyHeaders(headers, optionHeaders);
+
+    if (json !== undefined) {
+        const payload = JSON.stringify(json);
+        if (!headers.has("Content-Type")) {
+            headers.set("Content-Type", "application/json");
+        }
+        return { headers, body: payload as BodyInit };
+    }
+
+    if (optionBody !== undefined && optionBody !== null) {
+        return { headers, body: optionBody as BodyInit };
+    }
+
+    return { headers, body: undefined };
+}
+
+function buildRequestInit(
+    method: string,
+    headers: Headers,
+    body: BodyInit | undefined,
+    credentials: RequestCredentials | undefined,
+    rest: Omit<
+        ApiRequestOptions,
+        "method" | "json" | "body" | "headers" | "credentials"
+    >,
+): RequestInit {
+    const requestInit: RequestInit = {
+        ...rest,
+        method,
+    };
+
+    if (body !== undefined) {
+        requestInit.body = body;
+    }
+
+    const headersRecord = headersToRequestRecord(headers);
+    if (Object.keys(headersRecord).length > 0) {
+        requestInit.headers = headersRecord;
+    }
+
+    if (credentials) {
+        requestInit.credentials = credentials;
+    }
+
+    return requestInit;
+}
+
+function parseResponseBody(rawBody: string) {
+    if (!rawBody) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(rawBody) as unknown;
+    } catch {
+        return rawBody;
+    }
+}
+
 export function createApiClient(config: ApiClientConfig = {}) {
     const baseHeaders = new Headers();
     applyHeaders(baseHeaders, config.defaultHeaders);
@@ -402,59 +525,29 @@ export function createApiClient(config: ApiClientConfig = {}) {
             ...rest
         } = options;
 
-        const headers = new Headers(baseHeaders);
-        applyHeaders(headers, optionHeaders);
-
         const method = (optionMethod ?? "GET").toString().toUpperCase();
-
-        let body: BodyInit | undefined;
-        if (json !== undefined) {
-            body = JSON.stringify(json);
-            if (!headers.has("Content-Type")) {
-                headers.set("Content-Type", "application/json");
-            }
-        } else if (optionBody !== undefined && optionBody !== null) {
-            body = optionBody;
-        }
-
+        const { headers, body } = buildHeadersAndBody(
+            baseHeaders,
+            optionHeaders,
+            json,
+            optionBody,
+        );
         const credentials = optionCredentials ?? config.credentials;
-        const requestInit: RequestInit = {
-            ...rest,
+        const requestInit = buildRequestInit(
             method,
-        };
-        if (body !== undefined) {
-            requestInit.body = body;
-        }
-        const headersRecord = headersToRequestRecord(headers);
-        if (Object.keys(headersRecord).length > 0) {
-            requestInit.headers = headersRecord;
-        }
-        if (credentials) {
-            requestInit.credentials = credentials;
-        }
+            headers,
+            body,
+            credentials,
+            rest,
+        );
 
         const urlWithBase = joinBaseAndPath(config.baseUrl, path);
         const url = appendSearchParams(urlWithBase, searchParams);
 
-        const runtimeFetch = config.fetchImplementation ?? globalThis.fetch;
-        if (typeof runtimeFetch !== "function") {
-            throw new Error(
-                "Fetch API is not available in the current environment",
-            );
-        }
-
+        const runtimeFetch = resolveRuntimeFetch(config.fetchImplementation);
         const response = await runtimeFetch(url, requestInit);
         const rawBody = await response.text();
-        const parsedBody = (() => {
-            if (!rawBody) {
-                return null;
-            }
-            try {
-                return JSON.parse(rawBody) as unknown;
-            } catch {
-                return rawBody;
-            }
-        })();
+        const parsedBody = parseResponseBody(rawBody);
 
         if (!response.ok) {
             buildApiError({ response, parsedBody, rawBody });

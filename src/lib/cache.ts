@@ -97,6 +97,67 @@ async function removeIndexedKey(redis: Redis, key: string) {
     }
 }
 
+async function resolveRedisForEnv<Env extends CacheEnv>(env?: Env) {
+    const providedEnv = env;
+    const context = providedEnv
+        ? null
+        : await getCloudflareContext({ async: true }).catch(() => null);
+    const resolvedEnv =
+        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
+    return getRedisClient(resolvedEnv);
+}
+
+async function invalidateUsingIndexedSet(redis: Redis, prefix: string) {
+    const members = await redis.smembers<string[]>(CACHE_INDEX_KEY);
+    const keys = Array.isArray(members) ? members : [];
+    const targets = keys.filter((key) => key.startsWith(prefix));
+    if (targets.length === 0) {
+        return;
+    }
+
+    await Promise.allSettled(
+        targets.map(async (key) => {
+            await redis.del(key);
+            await removeIndexedKey(redis, key);
+        }),
+    );
+}
+
+async function invalidateUsingScan(redis: Redis, prefix: string) {
+    const deletions: Promise<unknown>[] = [];
+    let cursor = "0";
+    const pattern = `${prefix}*`;
+
+    do {
+        const [nextCursor, rawKeys]: [string, string[]] = await redis.scan(
+            cursor,
+            { match: pattern, count: 100 },
+        );
+        const keys = Array.isArray(rawKeys) ? rawKeys : [];
+        for (const key of keys) {
+            if (typeof key !== "string" || !key) {
+                continue;
+            }
+            deletions.push(
+                redis
+                    .del(key)
+                    .then(() => removeIndexedKey(redis, key))
+                    .catch((error) =>
+                        console.warn("[cache] failed to delete key", {
+                            key,
+                            error,
+                        }),
+                    ),
+            );
+        }
+        cursor = nextCursor;
+    } while (cursor !== "0");
+
+    if (deletions.length > 0) {
+        await Promise.allSettled(deletions);
+    }
+}
+
 export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     options: WithCacheOptions<Env>,
     compute: () => Promise<T>,
@@ -161,68 +222,18 @@ export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
         return;
     }
 
-    const providedEnv = env;
-    const context = providedEnv
-        ? null
-        : await getCloudflareContext({ async: true }).catch(() => null);
-    const resolvedEnv =
-        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
-    const redis = getRedisClient(resolvedEnv);
+    const redis = await resolveRedisForEnv(env);
     if (!redis) {
         return;
     }
 
     try {
-        if (typeof redis.scan !== "function") {
-            const members = await redis.smembers<string[]>(CACHE_INDEX_KEY);
-            const keys = Array.isArray(members) ? members : [];
-            const targets = keys.filter((key) => key.startsWith(prefix));
-            if (targets.length === 0) {
-                return;
-            }
-            await Promise.allSettled(
-                targets.map(async (key) => {
-                    await redis.del(key);
-                    await removeIndexedKey(redis, key);
-                }),
-            );
+        if (typeof redis.scan === "function") {
+            await invalidateUsingScan(redis, prefix);
             return;
         }
 
-        const deletions: Promise<unknown>[] = [];
-        let cursor = "0";
-        const pattern = `${prefix}*`;
-
-        do {
-            const [nextCursor, rawKeys]: [string, string[]] = await redis.scan(
-                cursor,
-                {
-                    match: pattern,
-                    count: 100,
-                },
-            );
-            const keys = Array.isArray(rawKeys) ? rawKeys : [];
-            for (const key of keys) {
-                if (typeof key === "string" && key) {
-                    deletions.push(
-                        redis
-                            .del(key)
-                            .then(() => removeIndexedKey(redis, key))
-                            .catch((error) =>
-                                console.warn("[cache] failed to delete key", {
-                                    key,
-                                    error,
-                                }),
-                            ),
-                    );
-                }
-            }
-            cursor = nextCursor;
-        } while (cursor !== "0");
-
-        if (deletions.length > 0) {
-            await Promise.allSettled(deletions);
-        }
+        await invalidateUsingIndexedSet(redis, prefix);
     } catch (error) {
         console.warn("[cache] failed to invalidate keys", { prefix, error });
     }
