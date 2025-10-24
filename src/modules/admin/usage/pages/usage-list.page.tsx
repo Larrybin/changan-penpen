@@ -84,7 +84,7 @@ export function UsageListPage() {
             />
             <div className="overflow-x-auto rounded-md border">
                 <table className="min-w-full text-sm">
-                    <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                    <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                         <tr>
                             <th className="px-4 py-3">日期</th>
                             <th className="px-4 py-3">租户</th>
@@ -131,7 +131,7 @@ export function UsageListPage() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <div>{item.email ?? "-"}</div>
-                                        <div className="text-xs text-muted-foreground">
+                                        <div className="text-muted-foreground text-xs">
                                             {item.userId ?? "-"}
                                         </div>
                                     </td>
