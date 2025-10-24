@@ -158,6 +158,15 @@ async function invalidateUsingScan(redis: Redis, prefix: string) {
     }
 }
 
+async function invalidateByPrefix(redis: Redis, prefix: string) {
+    if (typeof redis.scan === "function") {
+        await invalidateUsingScan(redis, prefix);
+        return;
+    }
+
+    await invalidateUsingIndexedSet(redis, prefix);
+}
+
 export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     options: WithCacheOptions<Env>,
     compute: () => Promise<T>,
@@ -228,12 +237,7 @@ export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
     }
 
     try {
-        if (typeof redis.scan === "function") {
-            await invalidateUsingScan(redis, prefix);
-            return;
-        }
-
-        await invalidateUsingIndexedSet(redis, prefix);
+        await invalidateByPrefix(redis, prefix);
     } catch (error) {
         console.warn("[cache] failed to invalidate keys", { prefix, error });
     }

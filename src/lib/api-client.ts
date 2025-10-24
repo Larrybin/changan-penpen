@@ -181,105 +181,128 @@ function normalizeErrors(errors: unknown): ApiErrorFieldDetail[] | undefined {
 
 type FieldErrorMap = Record<string, string>;
 
-function setFieldError(target: FieldErrorMap, key: unknown, message: unknown) {
+interface FieldErrorEntry {
+    key: string;
+    message: string;
+}
+
+function createFieldErrorEntry(
+    key: unknown,
+    message: unknown,
+): FieldErrorEntry | null {
     if (
         typeof key === "string" &&
         typeof message === "string" &&
         key.length > 0
     ) {
-        target[key] = message;
+        return { key, message };
     }
+    return null;
 }
 
-function setFieldErrorIfMissing(
-    target: FieldErrorMap,
-    key: unknown,
-    message: unknown,
-) {
-    if (
-        typeof key === "string" &&
-        typeof message === "string" &&
-        !(key in target)
-    ) {
-        target[key] = message;
-    }
-}
-
-function collectArrayErrors(entries: unknown, target: FieldErrorMap) {
+function entriesFromArrayErrors(entries: unknown): FieldErrorEntry[] {
     if (!Array.isArray(entries)) {
-        return;
+        return [];
     }
 
+    const collected: FieldErrorEntry[] = [];
     for (const entry of entries) {
-        if (!entry || typeof entry !== "object") {
+        if (!isRecord(entry)) {
             continue;
         }
-        const node = entry as Record<string, unknown>;
-        setFieldError(target, node.field, node.message);
+        const candidate = createFieldErrorEntry(entry.field, entry.message);
+        if (candidate) {
+            collected.push(candidate);
+        }
     }
+    return collected;
 }
 
-function collectFieldErrorRecord(source: unknown, target: FieldErrorMap) {
-    if (!isRecord(source)) {
-        return;
+function entriesFromFieldErrors(node: unknown): FieldErrorEntry[] {
+    if (!isRecord(node)) {
+        return [];
     }
-
-    Object.entries(source).forEach(([key, value]) => {
-        if (typeof value === "string") {
-            target[key] = value;
+    const result: FieldErrorEntry[] = [];
+    Object.entries(node).forEach(([key, value]) => {
+        if (typeof value === "string" && value.length > 0) {
+            result.push({ key, message: value });
         }
     });
+    return result;
 }
 
-function collectIssueErrors(issues: unknown, target: FieldErrorMap) {
+function entriesFromIssues(issues: unknown): FieldErrorEntry[] {
     if (!Array.isArray(issues)) {
-        return;
+        return [];
     }
-
+    const collected: FieldErrorEntry[] = [];
     for (const issue of issues) {
-        if (!issue || typeof issue !== "object") {
+        if (!isRecord(issue)) {
             continue;
         }
-        const issueRecord = issue as Record<string, unknown>;
-        const path = issueRecord.path;
-        const message = issueRecord.message;
-        if (Array.isArray(path) && path.length > 0) {
-            setFieldErrorIfMissing(target, path.join("."), message);
+        const path = issue.path;
+        if (!Array.isArray(path) || path.length === 0) {
+            continue;
+        }
+        const candidate = createFieldErrorEntry(path.join("."), issue.message);
+        if (candidate) {
+            collected.push(candidate);
         }
     }
+    return collected;
 }
 
-function collectDetailErrors(
-    details: unknown,
-    record: Record<string, unknown>,
-    target: FieldErrorMap,
-) {
-    if (!isRecord(details)) {
-        return;
+function entriesFromDetails(
+    source: Record<string, unknown>,
+): FieldErrorEntry[] {
+    const detailsNode = isRecord(source.details) ? source.details : null;
+    if (!detailsNode) {
+        return [];
     }
 
-    if (isRecord(details.fieldErrors)) {
-        collectFieldErrorRecord(details.fieldErrors, target);
+    const entries: FieldErrorEntry[] = [];
+    const detailMessage =
+        typeof detailsNode.message === "string"
+            ? detailsNode.message
+            : typeof source.message === "string"
+              ? source.message
+              : undefined;
+    const detailEntry = createFieldErrorEntry(detailsNode.field, detailMessage);
+    if (detailEntry) {
+        entries.push(detailEntry);
     }
 
-    const fallbackMessage = record.message ?? details.message;
-    setFieldErrorIfMissing(target, details.field, fallbackMessage);
+    entries.push(...entriesFromFieldErrors(detailsNode.fieldErrors));
+    entries.push(...entriesFromIssues(detailsNode.issues));
+    return entries;
+}
 
-    collectIssueErrors(details.issues, target);
+function gatherFieldErrorEntries(source: unknown): FieldErrorEntry[] {
+    if (!isRecord(source)) {
+        return [];
+    }
+    const record = source as Record<string, unknown>;
+    return [
+        ...entriesFromFieldErrors(record.fieldErrors),
+        ...entriesFromArrayErrors(record.errors),
+        ...entriesFromDetails(record),
+    ];
 }
 
 function extractFieldErrors(
     source: unknown,
 ): Record<string, string> | undefined {
-    if (!source || typeof source !== "object") {
+    const entries = gatherFieldErrorEntries(source);
+    if (entries.length === 0) {
         return undefined;
     }
 
-    const record = source as Record<string, unknown>;
     const aggregate: FieldErrorMap = {};
-
-    collectArrayErrors(record.errors, aggregate);
-    collectDetailErrors(record.details, record, aggregate);
+    for (const entry of entries) {
+        if (!(entry.key in aggregate)) {
+            aggregate[entry.key] = entry.message;
+        }
+    }
 
     return Object.keys(aggregate).length > 0 ? aggregate : undefined;
 }

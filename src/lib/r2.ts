@@ -181,6 +181,103 @@ async function writeCachedObject(
     }
 }
 
+function extractCachedMetadata(object: R2ObjectBody): CachedR2Metadata {
+    return {
+        size: object.size,
+        etag: object.etag ?? null,
+        uploaded:
+            typeof object.uploaded === "string"
+                ? object.uploaded
+                : (object.uploaded?.toISOString?.() ?? null),
+        httpMetadata: object.httpMetadata ?? null,
+        customMetadata: object.customMetadata ?? null,
+    };
+}
+
+function buildResultFromMetadata(
+    metadata: CachedR2Metadata,
+    arrayBuffer: ArrayBuffer,
+): R2ObjectResult {
+    return {
+        body: arrayBuffer,
+        size: metadata.size,
+        etag: metadata.etag ?? undefined,
+        uploaded: metadata.uploaded ?? undefined,
+        httpMetadata: metadata.httpMetadata ?? undefined,
+        customMetadata: metadata.customMetadata ?? undefined,
+    } satisfies R2ObjectResult;
+}
+
+async function resolveCacheState(
+    options: GetFromR2Options,
+): Promise<{ cache: Cache | null; ttl: number }> {
+    const cacheTtl = options.cacheTtlSeconds ?? DEFAULT_R2_CACHE_TTL_SECONDS;
+    if (options.bypassCache === true || cacheTtl <= 0) {
+        return { cache: null, ttl: cacheTtl };
+    }
+
+    try {
+        const cache = await getCache();
+        return { cache, ttl: cacheTtl };
+    } catch (error) {
+        console.warn("Unable to access cache for R2 fetch", error);
+        return { cache: null, ttl: cacheTtl };
+    }
+}
+
+async function maybeReadCached(
+    cache: Cache | null,
+    key: string,
+): Promise<R2ObjectResult | null> {
+    if (!cache) return null;
+    return readCachedObject(cache, key);
+}
+
+async function maybeWriteCached(
+    cache: Cache | null,
+    key: string,
+    object: R2ObjectBody,
+    metadata: CachedR2Metadata,
+    ttlSeconds: number,
+    arrayBuffer: ArrayBuffer,
+): Promise<void> {
+    if (!cache) return;
+    await writeCachedObject(
+        cache,
+        key,
+        object,
+        metadata,
+        ttlSeconds,
+        arrayBuffer,
+    );
+}
+
+async function fetchAndCacheR2Object(
+    bucket: R2BucketLike,
+    key: string,
+    cache: Cache | null,
+    ttlSeconds: number,
+): Promise<R2ObjectResult | null> {
+    const object = (await bucket.get(key)) as R2ObjectBody | null;
+    if (!object) {
+        return null;
+    }
+
+    const metadata = extractCachedMetadata(object);
+    const arrayBuffer = await object.arrayBuffer();
+
+    await maybeWriteCached(
+        cache,
+        key,
+        object,
+        metadata,
+        ttlSeconds,
+        arrayBuffer,
+    );
+
+    return buildResultFromMetadata(metadata, arrayBuffer);
+}
+
 function normalizeFolder(folder: string | undefined) {
     const val = (folder ?? "uploads").trim();
     let start = 0;
@@ -217,7 +314,9 @@ function createRandomId() {
         const nodeCrypto =
             require("node:crypto") as typeof import("node:crypto");
         return nodeCrypto.randomBytes(16).toString("hex");
-    } catch {}
+    } catch {
+        // Ignore and fall back to timestamp-based identifier
+    }
     // 鏈€鍚庡厹搴曪細浣跨敤鏃堕棿鎴筹紝閬垮厤渚濊禆闈炲畨鍏ㄩ殢鏈?    return `${Date.now()}-${performance?.now?.() ?? 0}`;
 }
 
@@ -459,55 +558,14 @@ export async function getFromR2(
     try {
         const { env } = await getCloudflareContext({ async: true });
         const bucket = getR2Bucket(env);
-        const cacheTtl =
-            options.cacheTtlSeconds ?? DEFAULT_R2_CACHE_TTL_SECONDS;
-        const bypassCache = options.bypassCache === true || cacheTtl <= 0;
-        const cache = bypassCache ? null : await getCache();
+        const { cache, ttl } = await resolveCacheState(options);
 
-        if (cache) {
-            const cached = await readCachedObject(cache, key);
-            if (cached) {
-                return cached;
-            }
+        const cached = await maybeReadCached(cache, key);
+        if (cached) {
+            return cached;
         }
 
-        const object = (await bucket.get(key)) as R2ObjectBody | null;
-        if (!object) {
-            return null;
-        }
-
-        const metadata: CachedR2Metadata = {
-            size: object.size,
-            etag: object.etag ?? null,
-            uploaded:
-                typeof object.uploaded === "string"
-                    ? object.uploaded
-                    : (object.uploaded?.toISOString?.() ?? null),
-            httpMetadata: object.httpMetadata ?? null,
-            customMetadata: object.customMetadata ?? null,
-        };
-
-        const arrayBuffer = await object.arrayBuffer();
-
-        if (cache) {
-            await writeCachedObject(
-                cache,
-                key,
-                object,
-                metadata,
-                cacheTtl,
-                arrayBuffer,
-            );
-        }
-
-        return {
-            body: arrayBuffer,
-            size: metadata.size,
-            etag: metadata.etag ?? undefined,
-            uploaded: metadata.uploaded ?? undefined,
-            httpMetadata: metadata.httpMetadata ?? undefined,
-            customMetadata: metadata.customMetadata ?? undefined,
-        } satisfies R2ObjectResult;
+        return await fetchAndCacheR2Object(bucket, key, cache, ttl);
     } catch (error) {
         console.error("Error getting data from R2", error);
         return null;

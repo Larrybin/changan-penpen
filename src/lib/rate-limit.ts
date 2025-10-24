@@ -286,11 +286,10 @@ function buildRateLimitDetails(
     } as const;
 }
 
-function buildUpstashErrorResponse(
-    message: string | undefined,
+function createRateLimitHeaders(
     metadata: RateLimitMetadata,
     includeHeaders: boolean,
-): Response {
+) {
     const headers = new Headers();
     const retryAfterSeconds = computeRetryAfterSeconds(metadata.reset);
 
@@ -300,6 +299,18 @@ function buildUpstashErrorResponse(
 
     appendRateLimitHeaders(headers, metadata, includeHeaders);
 
+    return { headers, retryAfterSeconds };
+}
+
+function buildUpstashErrorResponse(
+    message: string | undefined,
+    metadata: RateLimitMetadata,
+    includeHeaders: boolean,
+): Response {
+    const { headers, retryAfterSeconds } = createRateLimitHeaders(
+        metadata,
+        includeHeaders,
+    );
     const details = buildRateLimitDetails(metadata, retryAfterSeconds);
 
     return createApiErrorResponse({
@@ -412,13 +423,7 @@ export async function applyRateLimit(
     const { request, identifier, uniqueToken, message, upstash, waitUntil } =
         options;
 
-    const providedEnv = options.env;
-    const asyncContext = providedEnv
-        ? null
-        : await getCloudflareContext({ async: true });
-    const env = (providedEnv ?? asyncContext?.env) as
-        | RateLimiterEnv
-        | undefined;
+    const env = await resolveLimiterEnv(options.env);
 
     const compositeKey = resolveCompositeKey(
         request,
@@ -450,4 +455,17 @@ export async function applyRateLimit(
     }
 
     return { ok: true, skipped: true };
+}
+
+async function resolveLimiterEnv(env?: RateLimiterEnv) {
+    if (env) {
+        return env;
+    }
+
+    try {
+        const context = await getCloudflareContext({ async: true });
+        return (context?.env as RateLimiterEnv | undefined) ?? undefined;
+    } catch {
+        return undefined;
+    }
 }

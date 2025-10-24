@@ -1,4 +1,5 @@
-import { buildLocalizedPath, resolveAppUrl } from "../seo";
+import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
+import { resolveAppUrl } from "../seo";
 
 /**
  * 产品/服务结构化数据生成工具
@@ -186,7 +187,7 @@ export function generateSoftwareApplicationSchema(
         locale?: string;
         appUrl?: string;
     },
-    siteSettings?: any,
+    siteSettings?: SiteSettingsPayload | null,
 ): SoftwareApplicationSchema {
     const baseUrl = resolveAppUrl(
         siteSettings,
@@ -285,7 +286,7 @@ export function generateServiceSchema(
         locale?: string;
         appUrl?: string;
     },
-    siteSettings?: any,
+    siteSettings?: SiteSettingsPayload | null,
 ): ServiceSchema {
     const baseUrl = resolveAppUrl(
         siteSettings,
@@ -362,7 +363,7 @@ export function generateProductSchema(
         locale?: string;
         appUrl?: string;
     },
-    siteSettings?: any,
+    siteSettings?: SiteSettingsPayload | null,
 ): ProductSchema {
     const baseUrl = resolveAppUrl(
         siteSettings,
@@ -502,55 +503,62 @@ export const SaasProductPresets = {
 /**
  * 结构化数据工具类
  */
-export class SchemaUtils {
-    /**
-     * 格式化价格为结构化数据格式
-     */
-    static formatPrice(price: number, currency: string): string {
-        return price.toFixed(2);
+export type JsonLdSchema = Record<string, unknown>;
+
+/**
+ * 格式化价格为结构化数据格式
+ */
+export function formatSchemaPrice(price: number, _currency: string): string {
+    return price.toFixed(2);
+}
+
+/**
+ * 生成结构化数据的JSON-LD字符串
+ */
+export function toJSONLD(schema: JsonLdSchema): string {
+    return JSON.stringify(schema);
+}
+
+/**
+ * 验证结构化数据
+ */
+export function validateSchema(schema: JsonLdSchema): {
+    valid: boolean;
+    errors: string[];
+} {
+    const errors: string[] = [];
+
+    if (!schema["@context"]) {
+        errors.push("缺少 @context 字段");
     }
 
-    /**
-     * 生成结构化数据的JSON-LD字符串
-     */
-    static toJSONLD(schema: any): string {
-        return JSON.stringify(schema);
+    if (!schema["@type"]) {
+        errors.push("缺少 @type 字段");
     }
 
-    /**
-     * 验证结构化数据
-     */
-    static validateSchema(schema: any): { valid: boolean; errors: string[] } {
-        const errors: string[] = [];
-
-        if (!schema["@context"]) {
-            errors.push("缺少 @context 字段");
-        }
-
-        if (!schema["@type"]) {
-            errors.push("缺少 @type 字段");
-        }
-
-        if (schema["@type"] === "SoftwareApplication" && !schema.name) {
-            errors.push("SoftwareApplication 必须包含 name 字段");
-        }
-
-        if (schema["@type"] === "Product" && !schema.name) {
-            errors.push("Product 必须包含 name 字段");
-        }
-
-        return {
-            valid: errors.length === 0,
-            errors,
-        };
+    if (schema["@type"] === "SoftwareApplication" && !schema.name) {
+        errors.push("SoftwareApplication 必须包含 name 字段");
     }
 
-    /**
-     * 合并多个结构化数据
-     */
-    static mergeSchemas(...schemas: any[]): any {
-        return schemas.reduce((merged, schema) => {
-            return { ...merged, ...schema };
-        }, {});
+    if (schema["@type"] === "Product" && !schema.name) {
+        errors.push("Product 必须包含 name 字段");
     }
+
+    return {
+        valid: errors.length === 0,
+        errors,
+    };
+}
+
+/**
+ * 合并多个结构化数据
+ */
+export function mergeSchemas(...schemas: JsonLdSchema[]): JsonLdSchema {
+    const merged: JsonLdSchema = {};
+    for (const schema of schemas) {
+        for (const [key, value] of Object.entries(schema)) {
+            merged[key] = value;
+        }
+    }
+    return merged;
 }
