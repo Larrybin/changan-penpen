@@ -1,0 +1,74 @@
+name: 'Docs-only change detector'
+description: 'Determines whether the changes in the current commit range touch only documentation files.'
+inputs:
+  event-name:
+    description: 'GitHub event name (e.g., push, pull_request)'
+    required: false
+  before-sha:
+    description: 'Base commit SHA to diff against (e.g., github.event.before)'
+    required: false
+  head-sha:
+    description: 'Head commit SHA (defaults to current HEAD)'
+    required: false
+  docs-regex:
+    description: 'Regular expression that matches documentation-only paths'
+    required: false
+    default: '^(README\\.md|docs/)'
+  require-push-event:
+    description: 'If true, any non-push event automatically returns docs_only=false'
+    required: false
+    default: 'false'
+outputs:
+  docs_only:
+    description: '"true" when only documentation files changed, "false" otherwise.'
+    value: ${{ steps.detect.outputs.docs_only }}
+runs:
+  using: 'composite'
+  steps:
+    - id: detect
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        event_name="${{ inputs.event-name }}"
+        require_push="${{ inputs.require-push-event }}"
+        if [ "${require_push}" = "true" ] && [ "${event_name}" != "push" ]; then
+          echo "docs_only=false" >>"$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        head="${{ inputs.head-sha }}"
+        if [ -z "${head}" ]; then
+          head=$(git rev-parse HEAD 2>/dev/null || true)
+        fi
+
+        base="${{ inputs.before-sha }}"
+        if [ -z "${base}" ]; then
+          if [ -n "${head}" ] && git rev-parse "${head}^" >/dev/null 2>&1; then
+            base=$(git rev-parse "${head}^")
+          fi
+        fi
+
+        if [ -z "${base}" ] || [ -z "${head}" ]; then
+          echo "docs_only=false" >>"$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        files=$(git diff --name-only "${base}"..."${head}" | tr -d '\r' || true)
+        echo "Changed files:"; echo "${files}"
+
+        if [ -z "${files}" ]; then
+          echo "docs_only=true" >>"$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        docs_regex="${{ inputs.docs-regex }}"
+        if [ -z "${docs_regex}" ]; then
+          docs_regex='^(README\\.md|docs/)'
+        fi
+
+        if echo "${files}" | grep -Ev "${docs_regex}" >/dev/null 2>&1; then
+          echo "docs_only=false" >>"$GITHUB_OUTPUT"
+        else
+          echo "docs_only=true" >>"$GITHUB_OUTPUT"
+        fi

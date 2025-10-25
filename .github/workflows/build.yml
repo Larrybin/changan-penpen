@@ -31,35 +31,12 @@ jobs:
           fetch-depth: 2
       - name: Compute docs-only flag
         id: diff
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" != "push" ]; then
-            echo "Non-push event detected; forcing docs_only=false"
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          base="${{ github.event.before }}"
-          if [ -z "${base}" ]; then
-            base=$(git rev-list HEAD~1 -n 1 || true)
-          fi
-          if [ -z "${base}" ]; then
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          files=$(git diff --name-only "${base}"...HEAD | tr -d '\r' || true)
-          echo "Changed files:"; echo "$files"
-          if [ -z "${files}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Anything outside docs/ or README.md is considered non-docs
-          non_docs=$(echo "$files" | grep -Ev '^(README\.md|docs/)' || true)
-          if [ -z "${non_docs}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-          fi
+        uses: ./.github/actions/docs-only-check
+        with:
+          event-name: ${{ github.event_name }}
+          before-sha: ${{ github.event.before }}
+          head-sha: ${{ github.sha }}
+          require-push-event: 'true'
 
   sonarcloud:
     name: SonarCloud

@@ -35,30 +35,11 @@ jobs:
           fetch-depth: 2
       - name: Compute docs-only flag
         id: diff
-        shell: bash
-        run: |
-          set -euo pipefail
-          base="${{ github.event.before }}"
-          if [ -z "${base}" ]; then
-            base=$(git rev-list HEAD~1 -n 1 || true)
-          fi
-          if [ -z "${base}" ]; then
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          files=$(git diff --name-only "${base}"...HEAD | tr -d '\r' || true)
-          echo "Changed files:"; echo "$files"
-          if [ -z "${files}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Anything outside docs/ or README.md is considered non-docs
-          non_docs=$(echo "$files" | grep -Ev '^(README\.md|docs/)' || true)
-          if [ -z "${non_docs}" ]; then
-            echo "docs_only=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-          fi
+        uses: ./.github/actions/docs-only-check
+        with:
+          event-name: ${{ github.event_name }}
+          before-sha: ${{ github.event.before }}
+          head-sha: ${{ github.sha }}
   # Quality gate — CI
   quality-gate-reusable:
     name: Quality Gate
@@ -79,6 +60,26 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 0
+
+      - name: Download Next.js build artifact
+        id: download-next
+        uses: actions/download-artifact@9a10427d13e721bc1f1f39a19a91eb03b5e394e4
+        with:
+          name: next-build
+          path: .
+          if-no-files-found: ignore
+
+      - name: Detect downloaded Next.js build
+        id: next-build
+        run: |
+          set -euo pipefail
+          if [ -d ".next" ]; then
+            echo "Reusing Next.js build artifact"
+            echo "from_artifact=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "CI build artifact not found; performing fresh build"
+            echo "from_artifact=false" >>"$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -162,12 +163,29 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Build Next.js (diagnostic)
+        if: steps.next-build.outputs.from_artifact != 'true'
         run: pnpm run build
         env:
           NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
+      - name: Build OpenNext bundle (reusing CI build)
+        if: steps.next-build.outputs.from_artifact == 'true'
+        run: |
+          rm -rf .open-next
+          npx @opennextjs/cloudflare build --skipNextBuild
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
+
       - name: Build application
-        run: pnpm run build:cf
+        if: steps.next-build.outputs.from_artifact != 'true'
+        run: |
+          rm -rf .open-next
+          pnpm run build:cf
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -224,14 +242,6 @@ jobs:
           environment: production
           wranglerVersion: '4.42.1'
           command: d1 execute next-cf-app --env production --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name='site_settings';"
-
-      - name: Build OpenNext bundle (Cloudflare)
-        run: |
-          set -euo pipefail
-          npx @opennextjs/cloudflare build
-        env:
-          # Ensure Next.js gets prod URL for correct routing during OpenNext build
-          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Deploy to Production (code)
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65
@@ -291,9 +301,6 @@ jobs:
         if: ${{ vars.SYNC_PRODUCTION_SECRETS == 'false' }}
         run: echo "Skipping production secret sync (set vars.SYNC_PRODUCTION_SECRETS to 'true' to enable)."
 
-      - name: Wait for deployment
-        run: sleep 45
-
       - name: Production health check
         env:
           HC_SECRET: ${{ secrets.PRODUCTION_HEALTHCHECK_URL }}
@@ -301,12 +308,14 @@ jobs:
           DEPLOY_HEALTH_RETRIES: ${{ vars.DEPLOY_HEALTH_RETRIES }}
           DEPLOY_HEALTH_RETRY_DELAY: ${{ vars.DEPLOY_HEALTH_RETRY_DELAY }}
           DEPLOY_HEALTH_TIMEOUT: ${{ vars.DEPLOY_HEALTH_TIMEOUT }}
+          DEPLOY_HEALTH_INITIAL_DELAY: ${{ vars.DEPLOY_HEALTH_INITIAL_DELAY }}
         run: |
           set -euo pipefail
 
           retries="${DEPLOY_HEALTH_RETRIES:-5}"
           delay="${DEPLOY_HEALTH_RETRY_DELAY:-5}"
           timeout="${DEPLOY_HEALTH_TIMEOUT:-25}"
+          initial_delay="${DEPLOY_HEALTH_INITIAL_DELAY:-15}"
 
           url="${HC_SECRET:-${HC_VAR:-}}"
           if [ -z "$url" ]; then
@@ -321,6 +330,10 @@ jobs:
           tmp="$(mktemp)"
           attempt=1
           status="000"
+          if [[ "$initial_delay" =~ ^[0-9]+$ ]] && [ "$initial_delay" -gt 0 ]; then
+            echo "Waiting $initial_delay second(s) before first health check attempt"
+            sleep "$initial_delay"
+          fi
           while [ "$attempt" -le "$retries" ]; do
             echo "Attempt $attempt of $retries"
             status=$(curl -sS --connect-timeout 5 --max-time "$timeout" \
