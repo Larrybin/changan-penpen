@@ -3,6 +3,8 @@ import createBundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { buildRedirects } from "./config/redirects";
+
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withBundleAnalyzer = createBundleAnalyzer({
     enabled: process.env.ANALYZE === "true",
@@ -10,6 +12,9 @@ const withBundleAnalyzer = createBundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
+    async redirects() {
+        return buildRedirects();
+    },
     // 图片优化配置
     images: {
         // 优先使用AVIF格式，回退到WebP

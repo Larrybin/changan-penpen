@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -11,6 +12,19 @@ import { pickMessages } from "@/lib/intl";
 import { readCspNonce } from "@/lib/security/csp";
 import { sanitizeCustomHtml } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({
+    subsets: ["latin"],
+    display: "swap",
+    variable: "--font-inter",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+    subsets: ["latin"],
+    display: "swap",
+    variable: "--font-geist-mono",
+});
 
 const SHARED_NAMESPACES = [
     "Common",
@@ -40,7 +54,13 @@ export default async function RootLayout({
             <head>
                 <InjectedHtml nodes={headNodes} nonce={nonce} />
             </head>
-            <body className="min-h-screen bg-gray-50 font-sans antialiased">
+            <body
+                className={cn(
+                    "min-h-screen bg-gray-50 font-sans antialiased",
+                    inter.variable,
+                    jetBrainsMono.variable,
+                )}
+            >
                 <a
                     href="#main-content"
                     className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"

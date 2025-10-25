@@ -8,20 +8,27 @@ import {
     localePrefix,
     setRuntimeI18nConfig,
 } from "./src/i18n/config";
-import { getSiteSettingsPayload } from "./src/modules/admin/services/site-settings.service";
 import { CSP_NONCE_HEADER, generateCspNonce } from "./src/lib/security/csp";
+import { resolveAppUrl } from "./src/lib/seo";
+import { getSiteSettingsPayload } from "./src/modules/admin/services/site-settings.service";
+
+type SiteSettingsPayload = Awaited<ReturnType<typeof getSiteSettingsPayload>>;
 
 let cachedI18nKey: string | null = null;
 let cachedI18nMiddleware:
     | ReturnType<typeof createMiddleware>
     | null = null;
 
-async function handleI18nRouting(request: NextRequest) {
+async function handleI18nRouting(
+    request: NextRequest,
+    settings?: SiteSettingsPayload,
+) {
     try {
-        const settings = await getSiteSettingsPayload();
+        const resolvedSettings =
+            settings ?? (await getSiteSettingsPayload());
         setRuntimeI18nConfig({
-            locales: settings.enabledLanguages,
-            defaultLocale: settings.defaultLanguage,
+            locales: resolvedSettings.enabledLanguages,
+            defaultLocale: resolvedSettings.defaultLanguage,
         });
         const config = getRuntimeI18nConfig();
         const key = `${config.defaultLocale}|${config.locales.join(",")}`;
@@ -64,6 +71,80 @@ function buildContentSecurityPolicy(nonce: string): string {
         "base-uri 'self'",
         "object-src 'none'",
     ].join("; ");
+}
+
+function pickForwardedHeader(
+    headers: Headers,
+    key: string,
+): string | undefined {
+    const raw = headers.get(key);
+    if (!raw) {
+        return undefined;
+    }
+    return raw.split(",")[0]?.trim();
+}
+
+function normalizeProtocol(value: string): string {
+    return value.replace(/:$/, "").toLowerCase();
+}
+
+function resolveCanonicalOrigin(
+    settings: SiteSettingsPayload,
+): URL | null {
+    const envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const appUrl = resolveAppUrl(settings, { envAppUrl });
+    try {
+        return new URL(appUrl);
+    } catch (error) {
+        console.warn("Unable to resolve canonical origin", { error, appUrl });
+        return null;
+    }
+}
+
+function shouldEnforceOrigin(origin: URL | null): origin is URL {
+    if (!origin) {
+        return false;
+    }
+
+    return !["localhost", "127.0.0.1"].includes(origin.hostname);
+}
+
+function enforceCanonicalOrigin(
+    request: NextRequest,
+    settings: SiteSettingsPayload,
+    nonce: string,
+): NextResponse | null {
+    const origin = resolveCanonicalOrigin(settings);
+    if (!shouldEnforceOrigin(origin)) {
+        return null;
+    }
+
+    const forwardedProto =
+        pickForwardedHeader(request.headers, "x-forwarded-proto") ??
+        request.nextUrl.protocol;
+    const forwardedHost =
+        pickForwardedHeader(request.headers, "x-forwarded-host") ??
+        request.nextUrl.host;
+
+    const requestProtocol = normalizeProtocol(forwardedProto);
+    const canonicalProtocol = normalizeProtocol(origin.protocol);
+    const requestHost = forwardedHost.toLowerCase();
+    const canonicalHost = origin.host.toLowerCase();
+
+    if (requestProtocol !== canonicalProtocol || requestHost !== canonicalHost) {
+        const redirectUrl = new URL(request.nextUrl.href);
+        redirectUrl.protocol = origin.protocol;
+        redirectUrl.host = origin.host;
+        const isApi = redirectUrl.pathname.startsWith("/api");
+        const redirect = NextResponse.redirect(redirectUrl, 308);
+        return applySecurityHeaders(
+            redirect,
+            { isApi, apiVersion: isApi ? CURRENT_API_VERSION : undefined },
+            nonce,
+        );
+    }
+
+    return null;
 }
 
 function applySecurityHeaders(
@@ -121,6 +202,16 @@ export async function middleware(request: NextRequest) {
     const forwardedHeaders = new Headers(request.headers);
     forwardedHeaders.set(CSP_NONCE_HEADER, nonce);
     const { pathname } = request.nextUrl;
+    const siteSettings = await getSiteSettingsPayload();
+
+    const canonicalRedirect = enforceCanonicalOrigin(
+        request,
+        siteSettings,
+        nonce,
+    );
+    if (canonicalRedirect) {
+        return canonicalRedirect;
+    }
 
     if (pathname.startsWith("/api")) {
         if (pathname === "/api" || pathname === "/api/") {
@@ -143,7 +234,7 @@ export async function middleware(request: NextRequest) {
         }, nonce);
     }
 
-    let response = await handleI18nRouting(request);
+    let response = await handleI18nRouting(request, siteSettings);
     const runtimeLocales = getLocales();
 
     const segments = pathname.split("/").filter(Boolean);

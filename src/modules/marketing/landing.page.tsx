@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { resolveAppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
+import { serializeJsonLd } from "@/lib/seo/jsonld";
 import Playground from "./components/playground-loader";
 import PublicFooter from "./components/public-footer";
 import PublicHeader from "./components/public-header";
@@ -414,7 +415,7 @@ export default function MarketingLandingPage({
                 type="application/ld+json"
                 nonce={nonce}
             >
-                {JSON.stringify(structuredDataPayload)}
+                {serializeJsonLd(structuredDataPayload)}
             </Script>
         </div>
     );

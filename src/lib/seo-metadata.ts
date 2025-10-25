@@ -306,6 +306,48 @@ type OpenGraphInput = CoreMetadataContent & {
     absoluteCanonical: string;
 };
 
+function trimToLength(value: string, max: number): string {
+    const normalized = value.trim();
+    if (normalized.length <= max) {
+        return normalized;
+    }
+    return normalized.slice(0, max);
+}
+
+function resolveShareImageUrl(
+    context: MetadataContext,
+    content: CoreMetadataContent,
+    options: CreateMetadataOptions,
+    canonicalInfo: CanonicalInfo,
+): string {
+    const hasCustomImages = Boolean(
+        options.openGraph?.images?.length || options.twitter?.images?.length,
+    );
+
+    if (hasCustomImages) {
+        return context.shareImage;
+    }
+
+    const params = new URLSearchParams();
+    params.set("title", trimToLength(content.title, 120));
+    params.set("description", trimToLength(content.description, 200));
+    params.set("locale", context.locale);
+
+    const siteName = context.settings.siteName?.trim().length
+        ? context.settings.siteName.trim()
+        : content.siteName;
+    params.set("siteName", trimToLength(siteName, 80));
+
+    if (options.path) {
+        params.set("path", canonicalInfo.canonical);
+    }
+
+    return ensureAbsoluteUrl(
+        `/opengraph-image?${params.toString()}`,
+        context.appUrl,
+    );
+}
+
 type TypedOpenGraph = Extract<
     NonNullable<Metadata["openGraph"]>,
     { type: string }
@@ -586,17 +628,26 @@ export function createMetadata(
     context: MetadataContext,
     options: CreateMetadataOptions = {},
 ): Metadata {
-    const { canonical, languages, absoluteCanonical, defaultCanonical } =
-        resolveCanonicalInfo(context, options.path);
+    const canonicalInfo = resolveCanonicalInfo(context, options.path);
     const content = resolveContent(context, options);
-    const openGraph = buildOpenGraphMetadata({
+    const shareImageUrl = resolveShareImageUrl(
         context,
+        content,
+        options,
+        canonicalInfo,
+    );
+    const shareImageContext: MetadataContext = {
+        ...context,
+        shareImage: shareImageUrl,
+    };
+    const openGraph = buildOpenGraphMetadata({
+        context: shareImageContext,
         options,
         ...content,
-        absoluteCanonical,
+        absoluteCanonical: canonicalInfo.absoluteCanonical,
     });
     const twitter = buildTwitterMetadata({
-        context,
+        context: shareImageContext,
         options,
         ...content,
     });
@@ -621,10 +672,10 @@ export function createMetadata(
         description: content.description,
         keywords: content.keywords,
         alternates: {
-            canonical,
+            canonical: canonicalInfo.canonical,
             languages: {
-                ...languages,
-                "x-default": defaultCanonical,
+                ...canonicalInfo.languages,
+                "x-default": canonicalInfo.defaultCanonical,
             },
         },
         openGraph,
