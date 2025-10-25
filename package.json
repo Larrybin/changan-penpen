@@ -64,7 +64,7 @@
         "performance:lighthouse": "ANALYZE=true pnpm exec next build",
         "seo:audit": "pnpm exec tsx scripts/seo-audit.ts",
         "seo:validate": "pnpm run seo:audit && pnpm run performance:validate",
-        "pre-deploy:check": "pnpm run quality:check && pnpm run performance:validate && pnpm run seo:audit",
+        "pre-deploy:check": "pnpm run quality:check && pnpm run performance:validate && pnpm run seo:audit"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.1.0",
