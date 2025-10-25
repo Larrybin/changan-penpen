@@ -1,17 +1,18 @@
 import { ImageResponse } from "next/og";
+import type { NextRequest } from "next/server";
 
 const width = 1200;
 const height = 630;
 
 export const runtime = "edge";
-export const contentType = "image/png";
-export const size = { width, height };
 
-function getParam(value: string | string[] | undefined, fallback = ""): string {
-    if (Array.isArray(value)) {
-        return value[0] ?? fallback;
+function getParam(params: URLSearchParams, key: string, fallback = ""): string {
+    const value = params.getAll(key);
+    const candidate = value[0];
+    if (candidate && candidate.length > 0) {
+        return candidate;
     }
-    return value ?? fallback;
+    return fallback;
 }
 
 function truncate(value: string, max: number): string {
@@ -22,22 +23,16 @@ function truncate(value: string, max: number): string {
     return `${normalized.slice(0, max - 1)}…`;
 }
 
-export default function OgImage({
-    searchParams,
-}: {
-    searchParams: Record<string, string | string[] | undefined>;
-}) {
-    const title = truncate(getParam(searchParams.title, "Changan Penpen"), 120);
+export function GET(request: NextRequest) {
+    const params = request.nextUrl.searchParams;
+    const title = truncate(getParam(params, "title", "Changan Penpen"), 120);
     const description = truncate(
-        getParam(searchParams.description, "Collaborative design workspace"),
+        getParam(params, "description", "Collaborative design workspace"),
         180,
     );
-    const siteName = truncate(getParam(searchParams.siteName, "Penpen"), 80);
-    const locale = truncate(
-        getParam(searchParams.locale, "en"),
-        8,
-    ).toUpperCase();
-    const path = truncate(getParam(searchParams.path, ""), 60);
+    const siteName = truncate(getParam(params, "siteName", "Penpen"), 80);
+    const locale = truncate(getParam(params, "locale", "en"), 8).toUpperCase();
+    const path = truncate(getParam(params, "path", ""), 60);
 
     return new ImageResponse(
         <div

@@ -12,7 +12,7 @@ config.functions = {
     ogImage: {
         runtime: "edge",
         routes: ["app/opengraph-image/route"],
-        patterns: ["/opengraph-image"],
+        patterns: ["/opengraph-image*"],
     },
 };
 
