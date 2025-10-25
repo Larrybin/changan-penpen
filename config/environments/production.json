@@ -14,18 +14,23 @@
     "defaultTtlSeconds": 300
   },
   "database": {
-    "host": "${CLOUDFLARE_D1_HOST}",
-    "port": 5432,
-    "ssl_enabled": true,
-    "pool_size": 20,
-    "max_connections": 50,
-    "timeout": "10s",
-    "connection_timeout": "5s",
-    "idle_timeout": "300s",
+    "binding": "next_cf_app",
+    "environment_label": "production",
+    "remote_management": {
+      "account_id_env": "CLOUDFLARE_ACCOUNT_ID",
+      "database_id_env": "CLOUDFLARE_D1_DATABASE_ID",
+      "token_env": "CLOUDFLARE_D1_TOKEN"
+    },
+    "migrations": {
+      "apply_command": "pnpm db:migrate:prod",
+      "requires_token": true
+    },
     "health_check": {
       "enabled": true,
-      "interval": "30s"
-    }
+      "interval": "30s",
+      "endpoint": "/api/v1/health"
+    },
+    "database_name": "next-cf-app"
   },
   "security": {
     "encryption_algorithm": "AES-256-GCM",
@@ -46,13 +51,27 @@
     },
     "cors": {
       "enabled": true,
-      "allowed_origins": ["${NEXT_PUBLIC_APP_URL}"],
-      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "allowed_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+      "allowed_origins": [
+        "${NEXT_PUBLIC_APP_URL}"
+      ],
+      "allowed_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "allowed_headers": [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With"
+      ],
       "credentials": true
     },
     "authentication": {
-      "providers": ["google"],
+      "providers": [
+        "google"
+      ],
       "session_name": "next-cf-prod-session",
       "cookie_secure": true,
       "cookie_http_only": true,
@@ -117,7 +136,10 @@
     },
     "notifications": {
       "enabled": true,
-      "channels": ["email", "webhook"],
+      "channels": [
+        "email",
+        "webhook"
+      ],
       "queue_size": 5000,
       "retry_policy": {
         "max_attempts": 3,
@@ -135,7 +157,10 @@
   "logging": {
     "level": "warn",
     "format": "json",
-    "outputs": ["console", "file"],
+    "outputs": [
+      "console",
+      "file"
+    ],
     "retention": "90d",
     "structured_logging": {
       "enabled": true,
@@ -165,7 +190,10 @@
     },
     "alerts": {
       "enabled": true,
-      "channels": ["email", "slack"],
+      "channels": [
+        "email",
+        "slack"
+      ],
       "thresholds": {
         "error_rate": 0.01,
         "response_time_p95": 2000,
@@ -176,7 +204,10 @@
     "health_checks": {
       "enabled": true,
       "interval": "60s",
-      "endpoints": ["/api/health", "/api/health/db"]
+      "endpoints": [
+        "/api/health",
+        "/api/health/db"
+      ]
     }
   },
   "compliance": {

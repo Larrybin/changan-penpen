@@ -119,6 +119,7 @@ Admin APIs
 
 | Path | Method | Module | Description | Auth | Rate limit |
 | --- | --- | --- | --- | --- | --- |
+| `/api/v1/admin/login` | `POST` | Admin | Authenticate admin user & seed entry cookie | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/session` | `GET` | Admin | Admin session check | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/audit-logs` | `GET` | Admin | List audit logs | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/site-settings` | `GET/POST` | Admin | Get/update site settings | Admin only | Admin console only — throttle TBD |
@@ -135,9 +136,12 @@ Admin APIs
 | `/api/v1/admin/content-pages/[id]` | `GET` | Admin | Content page by id | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/tenants` | `GET/POST` | Admin | List/create tenants | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/tenants/[id]` | `GET` | Admin | Tenant by id | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/users` | `GET` | Admin | List/search admin users | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/users/[id]` | `GET` | Admin | Admin user detail | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/todos` | `GET/POST` | Admin | List/create admin todos | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/todos/[id]` | `GET` | Admin | Admin todo by id | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/credits-history` | `GET` | Admin | Credits history | Admin only | Admin console only — throttle TBD |
+| `/api/v1/admin/performance` | `GET/POST` | Admin | Fetch & refresh performance metrics | Admin only | Admin console only — throttle TBD |
 | `/api/v1/openapi` | `GET` | Docs | Generate OpenAPI 3.1 文档（需管理员登录） | Admin only | Admin console only — throttle TBD |
 | `/api/v1/admin/dashboard` | `GET` | Admin | Dashboard metrics | Admin only | Admin console only — throttle TBD |
 
@@ -178,15 +182,19 @@ Appendix: Full API route files (scan)
 - src/app/api/v1/admin/coupons/route.ts
 - src/app/api/v1/admin/credits-history/route.ts
 - src/app/api/v1/admin/dashboard/route.ts
+- src/app/api/v1/admin/login/route.ts
 - src/app/api/v1/admin/orders/[id]/route.ts
 - src/app/api/v1/admin/orders/route.ts
 - src/app/api/v1/admin/products/[id]/route.ts
 - src/app/api/v1/admin/products/route.ts
+- src/app/api/v1/admin/performance/route.ts
 - src/app/api/v1/credits/balance/route.ts
 - src/app/api/v1/credits/history/route.ts
 - src/app/api/v1/admin/reports/route.ts
 - src/app/api/v1/admin/session/route.ts
 - src/app/api/v1/admin/site-settings/route.ts
+- src/app/api/v1/admin/users/[id]/route.ts
+- src/app/api/v1/admin/users/route.ts
 - src/app/api/v1/admin/tenants/[id]/route.ts
 - src/app/api/v1/admin/tenants/route.ts
 - src/app/api/v1/admin/todos/[id]/route.ts
@@ -238,8 +246,10 @@ Please keep this file, `docs/00-index.md`, and any module READMEs in sync when a
 | /api/v1/admin/coupons | GET, POST | src/app/api/v1/admin/coupons/route.ts |
 | /api/v1/admin/credits-history | GET | src/app/api/v1/admin/credits-history/route.ts |
 | /api/v1/admin/dashboard | GET | src/app/api/v1/admin/dashboard/route.ts |
+| /api/v1/admin/login | POST | src/app/api/v1/admin/login/route.ts |
 | /api/v1/admin/orders/[id] | GET | src/app/api/v1/admin/orders/[id]/route.ts |
 | /api/v1/admin/orders | GET | src/app/api/v1/admin/orders/route.ts |
+| /api/v1/admin/performance | GET, POST | src/app/api/v1/admin/performance/route.ts |
 | /api/v1/admin/products/[id] | DELETE, GET, PATCH | src/app/api/v1/admin/products/[id]/route.ts |
 | /api/v1/admin/products | GET, POST | src/app/api/v1/admin/products/route.ts |
 | /api/v1/admin/reports | GET, POST | src/app/api/v1/admin/reports/route.ts |
@@ -247,6 +257,8 @@ Please keep this file, `docs/00-index.md`, and any module READMEs in sync when a
 | /api/v1/admin/site-settings | GET, PATCH | src/app/api/v1/admin/site-settings/route.ts |
 | /api/v1/admin/tenants/[id] | GET | src/app/api/v1/admin/tenants/[id]/route.ts |
 | /api/v1/admin/tenants | GET | src/app/api/v1/admin/tenants/route.ts |
+| /api/v1/admin/users/[id] | GET | src/app/api/v1/admin/users/[id]/route.ts |
+| /api/v1/admin/users | GET | src/app/api/v1/admin/users/route.ts |
 | /api/v1/admin/todos/[id] | DELETE, GET, PATCH | src/app/api/v1/admin/todos/[id]/route.ts |
 | /api/v1/admin/todos | GET, POST | src/app/api/v1/admin/todos/route.ts |
 | /api/v1/admin/usage | GET | src/app/api/v1/admin/usage/route.ts |

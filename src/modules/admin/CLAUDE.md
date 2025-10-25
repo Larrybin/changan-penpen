@@ -142,6 +142,29 @@ interface AdminUser extends User {
 - **系统审计**: `audit/pages/audit-logs.page.tsx`
 - **操作记录**: 用户行为追踪
 
+### 10. 性能监控 (Performance)
+Admin Performance 子模块提供端到端的站点可观测性能力，涵盖实时性能、系统健康与 SEO 质量检测。完整说明见 [`docs/admin-performance.md`](../../../docs/admin-performance.md)。
+
+#### 页面与路由
+| 路由 | 页面文件 | 描述 | 关键组件 |
+|------|----------|------|----------|
+| `/admin/performance` | `performance/pages/performance-overview.page.tsx` | 综合仪表盘，聚合核心指标、数据刷新与外部工具链接 | `SystemPerformanceOverview`、`PerformanceMonitor` |
+| `/admin/performance/web-vitals` | `performance/pages/web-vitals.page.tsx` | Core Web Vitals 历史趋势、实时阈值告警 | `WebVitalsDashboard` |
+| `/admin/performance/seo` | `performance/pages/seo.page.tsx` | SEO 体检、问题分类与修复建议 | `SEOTechnicalDashboard`、`PerformanceMonitor` |
+| `/admin/performance/system-health` | `performance/pages/system-health.page.tsx` | Workers 运行状况、数据库延迟、缓存命中率 | `SystemPerformanceOverview` |
+
+#### 服务与数据源
+- `services/performance-data.service.ts`：聚合 Web Vitals、SEO 与系统健康指标，内建 30s 缓存并支持 `timeframe`/`tenantId` 查询。
+- `services/seo-scanner.ts`：执行页面抓取、阈值校验与建议生成，结果以等级（A-F）与问题清单呈现。
+- `components/performance-monitor.tsx`：统一的实时监控状态栏，负责轮询 API 并渲染状态徽章。
+- `components/system-performance-overview.tsx`：可视化系统健康状况与快速指标。
+- `components/web-vitals-dashboard.tsx`、`components/seo-technical-dashboard.tsx`：针对核心性能与 SEO 细分面板。
+
+#### API 集成
+- `GET /api/v1/admin/performance`：经 `requireAdminRequest` 保护的综合指标接口，支持 `timeframe`、`metrics`、`tenantId` 参数，并通过 `withAdminCache` 管理缓存。
+- `POST /api/v1/admin/performance`：强制刷新性能数据缓存，返回最新聚合指标。
+- API 层委托 `getAdminPerformanceMetrics` -> `PerformanceDataService` -> （可选）`SEOScanner` 完成数据收集，响应统一包含 `meta.cacheHit` 与 `meta.responseTime`。
+
 ## 服务层架构
 
 ### 核心服务

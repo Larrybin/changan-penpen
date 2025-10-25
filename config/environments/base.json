@@ -13,19 +13,21 @@
     "defaultTtlSeconds": 60
   },
   "database": {
-    "type": "postgresql",
-    "host": "localhost",
-    "port": 5432,
-    "database_name": "next_cf_app",
-    "ssl_enabled": false,
-    "pool_size": 5,
-    "max_connections": 20,
-    "timeout": "15s",
-    "retry_attempts": 3,
-    "retry_delay": "1s",
+    "provider": "cloudflare_d1",
+    "binding": "next_cf_app",
+    "database_name": "next-cf-app",
+    "description": "Cloudflare D1 (SQLite) 通过 Wrangler 绑定提供，运行时使用 env.next_cf_app 访问",
     "migrations": {
       "auto_run": true,
-      "backup_before_migrate": true
+      "backup_before_migrate": true,
+      "directory": "src/drizzle",
+      "tool": "drizzle-kit",
+      "driver": "d1-http"
+    },
+    "runtime": {
+      "client": "drizzle",
+      "entrypoint": "src/db/index.ts",
+      "connection_source": "@opennextjs/cloudflare getCloudflareContext().env.next_cf_app"
     }
   },
   "security": {
@@ -44,12 +46,24 @@
     },
     "cors": {
       "enabled": true,
-      "allowed_origins": ["http://localhost:3000"],
-      "allowed_methods": ["GET", "POST", "PUT", "DELETE"],
-      "allowed_headers": ["Content-Type", "Authorization"]
+      "allowed_origins": [
+        "http://localhost:3000"
+      ],
+      "allowed_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "allowed_headers": [
+        "Content-Type",
+        "Authorization"
+      ]
     },
     "authentication": {
-      "providers": ["google"],
+      "providers": [
+        "google"
+      ],
       "session_name": "next-cf-session",
       "cookie_secure": false
     }
@@ -99,7 +113,9 @@
     },
     "notifications": {
       "enabled": false,
-      "channels": ["email"],
+      "channels": [
+        "email"
+      ],
       "queue_size": 1000
     },
     "analytics": {
@@ -111,7 +127,9 @@
   "logging": {
     "level": "info",
     "format": "json",
-    "outputs": ["console"],
+    "outputs": [
+      "console"
+    ],
     "retention": "7d",
     "structured_logging": {
       "enabled": true,
