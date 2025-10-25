@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
             },
         ],
     },
+    // OpenNext 构建需要 Next.js standalone 输出
+    output: "standalone",
     // 实验性功能配置
     experimental: {
         // Core Web Vitals调试支持
