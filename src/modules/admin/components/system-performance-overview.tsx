@@ -55,6 +55,49 @@ interface QuickStats {
     cacheHitRate: number;
 }
 
+type HealthCheckStatus = "pass" | "warning" | "fail";
+
+interface HealthCheckComponentStatus {
+    status?: HealthCheckStatus;
+}
+
+interface HealthCheckResponse {
+    status?: unknown;
+    issues?: unknown;
+    components?: {
+        database?: HealthCheckComponentStatus | null;
+        cache?: HealthCheckComponentStatus | null;
+        api?: HealthCheckComponentStatus | null;
+        storage?: HealthCheckComponentStatus | null;
+    } | null;
+}
+
+function normalizeHealthStatus(
+    value: unknown,
+): "healthy" | "warning" | "critical" {
+    if (value === "healthy" || value === "warning" || value === "critical") {
+        return value;
+    }
+
+    return "warning";
+}
+
+function normalizeComponentStatus(status: unknown): HealthCheckStatus {
+    if (status === "pass" || status === "warning" || status === "fail") {
+        return status;
+    }
+
+    return "pass";
+}
+
+function normalizeIssues(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value.map((item) => String(item));
+    }
+
+    return [];
+}
+
 /**
  * 系统性能评分组件
  */
@@ -299,17 +342,27 @@ function SystemHealthIndicator() {
         const checkHealth = async () => {
             try {
                 const response = await fetch("/api/v1/health");
-                const data = await response.json();
+                const payload = (await response
+                    .json()
+                    .catch(() => null)) as HealthCheckResponse | null;
 
                 // 这里应该根据实际健康检查数据更新状态
                 setHealthStatus({
-                    status: data.status === "healthy" ? "healthy" : "warning",
-                    issues: data.issues || [],
+                    status: normalizeHealthStatus(payload?.status),
+                    issues: normalizeIssues(payload?.issues),
                     checks: {
-                        database: data.components?.database?.status || "pass",
-                        cache: data.components?.cache?.status || "pass",
-                        api: data.components?.api?.status || "pass",
-                        storage: data.components?.storage?.status || "pass",
+                        database: normalizeComponentStatus(
+                            payload?.components?.database?.status,
+                        ),
+                        cache: normalizeComponentStatus(
+                            payload?.components?.cache?.status,
+                        ),
+                        api: normalizeComponentStatus(
+                            payload?.components?.api?.status,
+                        ),
+                        storage: normalizeComponentStatus(
+                            payload?.components?.storage?.status,
+                        ),
                     },
                 });
             } catch (_error) {

@@ -43,6 +43,7 @@ interface APIResponse<T = unknown> {
         responseTime?: number;
         timestamp: string;
         timeframe?: string;
+        refreshed?: boolean;
     };
 }
 
@@ -57,6 +58,28 @@ function isValidTimeframe(value: unknown): value is PerformanceTimeframe {
  * GET /api/v1/admin/performance
  * 获取综合性能数据
  */
+function buildErrorResponse(
+    code: string,
+    message: string,
+    init?: ResponseInit,
+    details?: unknown,
+): NextResponse<APIResponse> {
+    return NextResponse.json<APIResponse>(
+        {
+            success: false,
+            error: {
+                code,
+                message,
+                details,
+            },
+            meta: {
+                timestamp: new Date().toISOString(),
+            },
+        },
+        init,
+    );
+}
+
 export async function GET(
     request: Request,
 ): Promise<NextResponse<APIResponse>> {
@@ -65,24 +88,18 @@ export async function GET(
     // 权限验证
     const authResult = await requireAdminRequest(request);
     if (authResult.response) {
-        return authResult.response;
+        return buildErrorResponse("UNAUTHORIZED", "Unauthorized", {
+            status: authResult.response.status,
+        });
     }
 
     // 解析查询参数
     const url = new URL(request.url);
     const timeframeParam = url.searchParams.get("timeframe");
     if (timeframeParam !== null && !isValidTimeframe(timeframeParam)) {
-        return NextResponse.json(
-            {
-                success: false,
-                error: {
-                    code: "INVALID_TIMEFRAME",
-                    message: `Invalid timeframe. Must be one of: ${VALID_TIMEFRAMES.join(", ")}`,
-                },
-                meta: {
-                    timestamp: new Date().toISOString(),
-                },
-            } as APIResponse,
+        return buildErrorResponse(
+            "INVALID_TIMEFRAME",
+            `Invalid timeframe. Must be one of: ${VALID_TIMEFRAMES.join(", ")}`,
             { status: 400 },
         );
     }
@@ -137,7 +154,7 @@ export async function GET(
             },
         );
 
-        return NextResponse.json({
+        return NextResponse.json<APIResponse<PerformanceMetrics>>({
             success: true,
             data: performanceData,
             meta: {
@@ -146,7 +163,7 @@ export async function GET(
                 timestamp: new Date().toISOString(),
                 timeframe: params.timeframe,
             },
-        } as APIResponse);
+        });
     } catch (error) {
         console.error("[Performance API] Error fetching performance metrics", {
             error: error instanceof Error ? error.message : String(error),
@@ -154,19 +171,11 @@ export async function GET(
             tenantId: params.tenantId,
         });
 
-        return NextResponse.json(
-            {
-                success: false,
-                error: {
-                    code: "PERFORMANCE_DATA_ERROR",
-                    message: "Failed to fetch performance metrics",
-                    details: error instanceof Error ? error.stack : undefined,
-                },
-                meta: {
-                    timestamp: new Date().toISOString(),
-                },
-            } as APIResponse,
+        return buildErrorResponse(
+            "PERFORMANCE_DATA_ERROR",
+            "Failed to fetch performance metrics",
             { status: 500 },
+            error instanceof Error ? error.stack : undefined,
         );
     }
 }
@@ -183,7 +192,9 @@ export async function POST(
     // 权限验证
     const authResult = await requireAdminRequest(request);
     if (authResult.response) {
-        return authResult.response;
+        return buildErrorResponse("UNAUTHORIZED", "Unauthorized", {
+            status: authResult.response.status,
+        });
     }
 
     try {
@@ -193,17 +204,9 @@ export async function POST(
         >;
         const timeframeValue = body.timeframe;
         if (timeframeValue !== undefined && !isValidTimeframe(timeframeValue)) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: {
-                        code: "INVALID_TIMEFRAME",
-                        message: `Invalid timeframe. Must be one of: ${VALID_TIMEFRAMES.join(", ")}`,
-                    },
-                    meta: {
-                        timestamp: new Date().toISOString(),
-                    },
-                } as APIResponse,
+            return buildErrorResponse(
+                "INVALID_TIMEFRAME",
+                `Invalid timeframe. Must be one of: ${VALID_TIMEFRAMES.join(", ")}`,
                 { status: 400 },
             );
         }
@@ -237,7 +240,7 @@ export async function POST(
             },
         );
 
-        return NextResponse.json({
+        return NextResponse.json<APIResponse<PerformanceMetrics>>({
             success: true,
             data: performanceData,
             meta: {
@@ -247,25 +250,17 @@ export async function POST(
                 timeframe: params.timeframe,
                 refreshed: true,
             },
-        } as APIResponse);
+        });
     } catch (error) {
         console.error("[Performance API] Error refreshing performance data", {
             error: error instanceof Error ? error.message : String(error),
         });
 
-        return NextResponse.json(
-            {
-                success: false,
-                error: {
-                    code: "REFRESH_ERROR",
-                    message: "Failed to refresh performance data",
-                    details: error instanceof Error ? error.stack : undefined,
-                },
-                meta: {
-                    timestamp: new Date().toISOString(),
-                },
-            } as APIResponse,
+        return buildErrorResponse(
+            "REFRESH_ERROR",
+            "Failed to refresh performance data",
             { status: 500 },
+            error instanceof Error ? error.stack : undefined,
         );
     }
 }

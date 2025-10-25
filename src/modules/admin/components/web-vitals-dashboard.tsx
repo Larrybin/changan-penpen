@@ -54,6 +54,19 @@ interface PerformanceSummary {
     lastUpdated: string;
 }
 
+const METRIC_ABBREVIATIONS = ["LCP", "INP", "CLS", "FCP", "TTFB"] as const;
+type MetricAbbreviation = (typeof METRIC_ABBREVIATIONS)[number];
+const METRIC_KEY_MAP: Record<
+    MetricAbbreviation,
+    keyof PerformanceSummary["metrics"]
+> = {
+    LCP: "lcp",
+    INP: "inp",
+    CLS: "cls",
+    FCP: "fcp",
+    TTFB: "ttfb",
+};
+
 // Web Vitals阈值配置
 const WEB_VITALS_THRESHOLDS = {
     LCP: { good: 2500, needsImprovement: 4000 },
@@ -309,6 +322,10 @@ function PerformanceScoreOverview({
         return <AlertTriangle className="h-8 w-8 text-red-500" />;
     };
 
+    const monitoredCount = Object.values(summary.metrics).filter(
+        (metric): metric is WebVitalData => metric !== null,
+    ).length;
+
     return (
         <Card>
             <CardHeader>
@@ -339,7 +356,7 @@ function PerformanceScoreOverview({
                     </div>
                     <div className="text-right">
                         <div className="mb-1 font-bold text-2xl">
-                            {summary.metrics.filter((m) => m !== null).length}/5
+                            {monitoredCount}/5
                         </div>
                         <div className="text-muted-foreground text-xs">
                             监控指标
@@ -351,28 +368,24 @@ function PerformanceScoreOverview({
 
                 {/* 核心指标状态 */}
                 <div className="grid grid-cols-5 gap-2 text-center">
-                    {(["LCP", "INP", "CLS", "FCP", "TTFB"] as const).map(
-                        (metric) => {
-                            const vital = summary.metrics[metric];
-                            const isGood = vital?.rating === "good";
+                    {METRIC_ABBREVIATIONS.map((metric) => {
+                        const vital = summary.metrics[METRIC_KEY_MAP[metric]];
+                        const isGood = vital?.rating === "good";
 
-                            return (
-                                <div key={metric} className="space-y-1">
-                                    <div className="font-medium text-xs">
-                                        {metric}
-                                    </div>
-                                    <div
-                                        className={cn(
-                                            "mx-auto h-2 w-2 rounded-full",
-                                            isGood
-                                                ? "bg-green-500"
-                                                : "bg-red-500",
-                                        )}
-                                    />
+                        return (
+                            <div key={metric} className="space-y-1">
+                                <div className="font-medium text-xs">
+                                    {metric}
                                 </div>
-                            );
-                        },
-                    )}
+                                <div
+                                    className={cn(
+                                        "mx-auto h-2 w-2 rounded-full",
+                                        isGood ? "bg-green-500" : "bg-red-500",
+                                    )}
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             </CardContent>
         </Card>
