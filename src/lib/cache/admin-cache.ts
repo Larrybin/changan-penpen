@@ -71,11 +71,7 @@ export const AdminCacheKeyBuilder = {
     },
     webVitalsData(timeframe: string, tenantId?: string): string {
         const params = { timeframe, tenantId };
-        return AdminCacheKeyBuilder.userKey(
-            "webvitals:data",
-            "global",
-            params,
-        );
+        return AdminCacheKeyBuilder.userKey("webvitals:data", "global", params);
     },
     seoScanData(tenantId?: string): string {
         const params = { tenantId };

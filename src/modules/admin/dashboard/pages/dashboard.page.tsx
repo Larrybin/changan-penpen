@@ -14,8 +14,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { adminApiClient } from "@/modules/admin/api/client";
-import { UsageSparkline } from "@/modules/admin/dashboard/components/usage-sparkline";
 import { SystemPerformanceOverview } from "@/modules/admin/components/system-performance-overview";
+import { UsageSparkline } from "@/modules/admin/dashboard/components/usage-sparkline";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 const ORDER_SKELETON_ROW_KEYS = Array.from(
