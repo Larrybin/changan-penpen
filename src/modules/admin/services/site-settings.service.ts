@@ -59,6 +59,25 @@ const EMPTY_SETTINGS: SiteSettingsPayload = {
     enabledLanguages: ["en"],
 };
 
+function getStaticBuildFallbackSettings(): SiteSettingsPayload {
+    const envCandidate = process.env.NEXT_PUBLIC_APP_URL ?? "";
+    const normalizedDomain = (() => {
+        const trimmed = envCandidate.trim();
+        if (!trimmed) {
+            return "https://banana-generator.com";
+        }
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+        return `https://${trimmed}`;
+    })();
+
+    return {
+        ...EMPTY_SETTINGS,
+        domain: normalizedDomain,
+    };
+}
+
 const SUPPORTED_LOCALE_SET = new Set<string>(getSupportedAppLocales());
 
 function isSupportedLocale(value: string): value is AppLocale {
@@ -274,9 +293,10 @@ export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
     }
 
     if (shouldBypassDatabaseForStaticBuild()) {
-        setCachedSiteSettings(EMPTY_SETTINGS);
-        syncRuntimeLocales(EMPTY_SETTINGS);
-        return EMPTY_SETTINGS;
+        const fallbackSettings = getStaticBuildFallbackSettings();
+        setCachedSiteSettings(fallbackSettings);
+        syncRuntimeLocales(fallbackSettings);
+        return fallbackSettings;
     }
 
     try {
