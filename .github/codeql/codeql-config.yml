@@ -1,0 +1,20 @@
+name: "CodeQL JavaScript/TypeScript"
+paths:
+  - src
+  - worker.ts
+  - instrumentation.ts
+  - middleware.ts
+  - config
+  - scripts
+  - types
+paths-ignore:
+  - node_modules/**
+  - **/node_modules/**
+  - .next/**
+  - dist/**
+  - build/**
+  - coverage/**
+  - public/**
+  - pnpm-lock.yaml
+  - pnpm-workspace.yaml
+  - **/.pnpm/**

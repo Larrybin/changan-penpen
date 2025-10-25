@@ -21,9 +21,13 @@ jobs:
     name: Security Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      CODEQL_EXTRACTOR_JAVASCRIPT_NODE_MODULES_INCLUSION: none
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -32,13 +36,14 @@ jobs:
           pnpm-version: 10
           cache-key-suffix: "-security"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: SAST Analysis with CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: javascript
+          languages: javascript-typescript
+          config-file: .github/codeql/codeql-config.yml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
