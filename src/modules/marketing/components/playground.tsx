@@ -1,17 +1,35 @@
 "use client";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type Ratio = "1:1" | "4:3" | "9:16" | "3:2" | "16:9";
 
-export default function Playground() {
+export type PlaygroundMessages = {
+    title: string;
+    badges: string[];
+    uploadLabel: string;
+    uploadSecondary: string;
+    filePlaceholder: string;
+    instructionsLabel: string;
+    usageGuide: string;
+    usageGuideHint: string;
+    promptPlaceholder: string;
+    aspectRatioLabel: string;
+    humanCheck: string;
+    generate: string;
+    sideDescription: string;
+};
+
+interface PlaygroundProps {
+    messages: PlaygroundMessages;
+}
+
+export default function Playground({ messages }: PlaygroundProps) {
     const [fileName, setFileName] = useState<string>("");
     const [prompt, setPrompt] = useState<string>("");
     const [ratio, setRatio] = useState<Ratio>("1:1");
-    const tPlayground = useTranslations("Marketing.playground");
-    const badges = tPlayground.raw("badges") as string[];
+    const badges = messages.badges;
 
     return (
         <section
@@ -23,7 +41,7 @@ export default function Playground() {
                     id="playground-heading"
                     className="font-semibold tracking-wide"
                 >
-                    {tPlayground("title")}
+                    {messages.title}
                 </h2>
                 <div className="flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-yellow-200/70 md:text-xs">
                     {badges.map((badge, _index) => (
@@ -41,8 +59,8 @@ export default function Playground() {
                 <div className="space-y-4">
                     <div>
                         <div className="mb-1 flex items-center justify-between text-xs text-yellow-200/80">
-                            <span>{tPlayground("uploadLabel")}</span>
-                            <span>{tPlayground("uploadSecondary")}</span>
+                            <span>{messages.uploadLabel}</span>
+                            <span>{messages.uploadSecondary}</span>
                         </div>
                         <label className="block">
                             <input
@@ -54,9 +72,7 @@ export default function Playground() {
                                 }
                             />
                             <div className="cursor-pointer rounded-md border border-yellow-400/30 bg-black/60 px-4 py-8 text-center text-yellow-200 hover:border-yellow-400/60">
-                                {fileName
-                                    ? fileName
-                                    : tPlayground("filePlaceholder")}
+                                {fileName ? fileName : messages.filePlaceholder}
                             </div>
                         </label>
                     </div>
@@ -64,22 +80,22 @@ export default function Playground() {
                     <div>
                         <div className="mb-1 flex items-start justify-between gap-2 text-xs text-yellow-200/80">
                             <span className="pt-1">
-                                {tPlayground("instructionsLabel")}
+                                {messages.instructionsLabel}
                             </span>
                             <div className="flex flex-col items-end gap-1 text-right">
                                 <button
                                     type="button"
                                     className="text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300 focus-visible:outline-offset-2 active:text-primary/80"
                                 >
-                                    {tPlayground("usageGuide")}
+                                    {messages.usageGuide}
                                 </button>
                                 <span className="text-[10px] text-yellow-200/60">
-                                    {tPlayground("usageGuideHint")}
+                                    {messages.usageGuideHint}
                                 </span>
                             </div>
                         </div>
                         <Textarea
-                            placeholder={tPlayground("promptPlaceholder")}
+                            placeholder={messages.promptPlaceholder}
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             className="min-h-24 border-yellow-400/30 bg-black/50 text-yellow-50 placeholder:text-yellow-100/40"
@@ -88,12 +104,12 @@ export default function Playground() {
 
                     <fieldset>
                         <legend className="mb-2 text-xs text-yellow-200/80">
-                            {tPlayground("aspectRatioLabel")}
+                            {messages.aspectRatioLabel}
                         </legend>
                         <div
                             className="flex flex-wrap gap-2"
                             role="radiogroup"
-                            aria-label={tPlayground("aspectRatioLabel")}
+                            aria-label={messages.aspectRatioLabel}
                         >
                             {["1:1", "4:3", "3:2", "9:16", "16:9"].map((r) => {
                                 const id = `playground-ratio-${r.replace(":", "-")}`;
@@ -125,13 +141,13 @@ export default function Playground() {
                             })}
                         </div>
                         <p className="mt-2 text-[10px] text-yellow-200/60">
-                            {tPlayground("humanCheck")}
+                            {messages.humanCheck}
                         </p>
                     </fieldset>
 
                     <div>
                         <Button className="bg-yellow-400 text-black hover:bg-yellow-300">
-                            {tPlayground("generate")}
+                            {messages.generate}
                         </Button>
                     </div>
                 </div>
@@ -140,7 +156,7 @@ export default function Playground() {
                     <div className="text-center">
                         <div className="mb-4 text-7xl">🍌</div>
                         <p className="text-sm text-yellow-200/80">
-                            {tPlayground("sideDescription")}
+                            {messages.sideDescription}
                         </p>
                     </div>
                 </div>

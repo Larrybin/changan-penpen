@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 
+import type { PlaygroundMessages } from "./playground";
+
 const Playground = dynamic(() => import("./playground"), {
     loading: () => (
         <div
@@ -20,4 +22,10 @@ const Playground = dynamic(() => import("./playground"), {
     ssr: false,
 });
 
-export default Playground;
+interface PlaygroundLoaderProps {
+    messages: PlaygroundMessages;
+}
+
+export default function PlaygroundLoader({ messages }: PlaygroundLoaderProps) {
+    return <Playground messages={messages} />;
+}
