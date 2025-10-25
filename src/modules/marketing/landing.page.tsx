@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { localeCurrencyMap } from "@/lib/seo";
+import type { AppLocale } from "@/i18n/config";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
 import type { PlaygroundMessages } from "./components/playground";
 import Playground from "./components/playground-loader";
@@ -21,7 +22,7 @@ type MarketingLandingPageProps = {
     structuredDataImage: string;
     siteName?: string;
     nonce?: string;
-    locale: string;
+    locale: AppLocale;
 };
 
 type FeatureItem = {
@@ -40,7 +41,7 @@ type TrustItem = {
     role: string;
 };
 
-type HeroSupportMap = Record<string, string>;
+type HeroSupportMap = Partial<Record<AppLocale, string>>;
 
 export default async function MarketingLandingPage({
     appUrl,
