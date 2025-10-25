@@ -63,16 +63,19 @@ jobs:
 
       - name: Download Next.js build artifact
         id: download-next
+        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
           name: next-build
           path: .
-          if-no-files-found: ignore
 
       - name: Detect downloaded Next.js build
         id: next-build
         run: |
           set -euo pipefail
+          if [ "${DOWNLOAD_OUTCOME}" = "failure" ]; then
+            echo "Download step reported failure (likely missing artifact); continuing with fresh build"
+          fi
           if [ -d ".next" ]; then
             echo "Reusing Next.js build artifact"
             echo "from_artifact=true" >>"$GITHUB_OUTPUT"
@@ -80,6 +83,8 @@ jobs:
             echo "CI build artifact not found; performing fresh build"
             echo "from_artifact=false" >>"$GITHUB_OUTPUT"
           fi
+        env:
+          DOWNLOAD_OUTCOME: ${{ steps.download-next.outcome }}
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
