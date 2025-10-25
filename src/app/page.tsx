@@ -1,21 +1,16 @@
 import { headers } from "next/headers";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 
 import { resolveAppLocale } from "@/i18n/config";
-import { pickMessages } from "@/lib/intl";
 import { readCspNonce } from "@/lib/security/csp";
 import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 import MarketingLandingPage from "@/modules/marketing/landing.page";
-import { MarketingMessagesProvider } from "@/modules/marketing/marketing-messages-provider";
 
 export default async function HomePage() {
     const locale = resolveAppLocale(await getLocale());
     const nonce = readCspNonce(await headers());
     const settings = await getSiteSettingsPayload();
-    const marketingMessages = pickMessages(await getMessages({ locale }), [
-        "Marketing",
-    ]);
     // 避免在构建时触发 Cloudflare runtime；仅读取进程环境变量
     const envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
     const appUrl = resolveAppUrl(settings, {
@@ -34,13 +29,12 @@ export default async function HomePage() {
         ? settings.siteName.trim()
         : undefined;
     return (
-        <MarketingMessagesProvider messages={marketingMessages}>
-            <MarketingLandingPage
-                appUrl={appUrl}
-                structuredDataImage={structuredDataImage}
-                siteName={siteName}
-                nonce={nonce}
-            />
-        </MarketingMessagesProvider>
+        <MarketingLandingPage
+            appUrl={appUrl}
+            structuredDataImage={structuredDataImage}
+            siteName={siteName}
+            nonce={nonce}
+            locale={locale}
+        />
     );
 }

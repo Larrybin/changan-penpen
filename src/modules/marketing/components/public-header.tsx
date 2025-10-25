@@ -11,11 +11,29 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 
-export default function PublicHeader() {
+export type MarketingHeaderMessages = {
+    mainNavigation: string;
+    navigateTo: string;
+    userActions: string;
+    loginToAccount: string;
+    createAccount: string;
+    cta: string;
+    menuLabel: string;
+    mobileMenuTitle: string;
+    mobileNavigation: string;
+    mobileUserActions: string;
+};
+
+interface PublicHeaderProps {
+    marketingHeaderMessages: MarketingHeaderMessages;
+}
+
+export default function PublicHeader({
+    marketingHeaderMessages,
+}: PublicHeaderProps) {
     const tCommon = useTranslations("Common");
     const tNav = useTranslations("Nav");
     const tAuth = useTranslations("Auth");
-    const tMarketingHeader = useTranslations("Marketing.header");
     const navigationItems = [
         { href: "#features", label: tNav("features") },
         { href: "#why", label: tNav("why") },
@@ -33,14 +51,14 @@ export default function PublicHeader() {
                 </Link>
                 <nav
                     className="xs:flex hidden items-center gap-6 text-foreground/80 text-sm"
-                    aria-label={tMarketingHeader("mainNavigation")}
+                    aria-label={marketingHeaderMessages.mainNavigation}
                 >
                     {navigationItems.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
                             className="rounded-md px-2 py-1 transition hover:text-accent focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                            aria-label={`${tMarketingHeader("navigateTo")} ${item.label}`}
+                            aria-label={`${marketingHeaderMessages.navigateTo} ${item.label}`}
                         >
                             {item.label}
                         </Link>
@@ -48,12 +66,12 @@ export default function PublicHeader() {
                 </nav>
                 <nav
                     className="xs:flex hidden items-center gap-2"
-                    aria-label={tMarketingHeader("userActions")}
+                    aria-label={marketingHeaderMessages.userActions}
                 >
                     <LanguageSwitcher />
                     <Link
                         href="/login"
-                        aria-label={tMarketingHeader("loginToAccount")}
+                        aria-label={marketingHeaderMessages.loginToAccount}
                     >
                         <Button
                             variant="outline"
@@ -64,10 +82,10 @@ export default function PublicHeader() {
                     </Link>
                     <Link
                         href="/signup"
-                        aria-label={tMarketingHeader("createAccount")}
+                        aria-label={marketingHeaderMessages.createAccount}
                     >
                         <Button className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                            {tMarketingHeader("cta")}
+                            {marketingHeaderMessages.cta}
                         </Button>
                     </Link>
                 </nav>
@@ -77,7 +95,7 @@ export default function PublicHeader() {
                             variant="ghost"
                             size="icon"
                             className="xs:hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                            aria-label={tMarketingHeader("menuLabel")}
+                            aria-label={marketingHeaderMessages.menuLabel}
                             aria-expanded={false}
                             aria-controls="mobile-navigation-menu"
                         >
@@ -93,20 +111,20 @@ export default function PublicHeader() {
                     >
                         <div className="flex flex-col gap-4">
                             <h2 id="mobile-menu-title" className="sr-only">
-                                {tMarketingHeader("mobileMenuTitle")}
+                                {marketingHeaderMessages.mobileMenuTitle}
                             </h2>
                             <nav
                                 className="flex flex-col gap-3 text-base text-foreground/80"
-                                aria-label={tMarketingHeader(
-                                    "mobileNavigation",
-                                )}
+                                aria-label={
+                                    marketingHeaderMessages.mobileNavigation
+                                }
                             >
                                 {navigationItems.map((item) => (
                                     <DialogClose asChild key={item.href}>
                                         <Link
                                             href={item.href}
                                             className="rounded-md px-3 py-2 transition hover:text-accent focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                            aria-label={`${tMarketingHeader("navigateTo")} ${item.label}`}
+                                            aria-label={`${marketingHeaderMessages.navigateTo} ${item.label}`}
                                         >
                                             {item.label}
                                         </Link>
@@ -116,16 +134,16 @@ export default function PublicHeader() {
                             <LanguageSwitcher />
                             <nav
                                 className="flex flex-col gap-2"
-                                aria-label={tMarketingHeader(
-                                    "mobileUserActions",
-                                )}
+                                aria-label={
+                                    marketingHeaderMessages.mobileUserActions
+                                }
                             >
                                 <DialogClose asChild>
                                     <Link
                                         href="/login"
-                                        aria-label={tMarketingHeader(
-                                            "loginToAccount",
-                                        )}
+                                        aria-label={
+                                            marketingHeaderMessages.loginToAccount
+                                        }
                                     >
                                         <Button
                                             variant="outline"
@@ -138,12 +156,12 @@ export default function PublicHeader() {
                                 <DialogClose asChild>
                                     <Link
                                         href="/signup"
-                                        aria-label={tMarketingHeader(
-                                            "createAccount",
-                                        )}
+                                        aria-label={
+                                            marketingHeaderMessages.createAccount
+                                        }
                                     >
                                         <Button className="w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                                            {tMarketingHeader("cta")}
+                                            {marketingHeaderMessages.cta}
                                         </Button>
                                     </Link>
                                 </DialogClose>

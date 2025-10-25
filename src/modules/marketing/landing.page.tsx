@@ -1,65 +1,90 @@
 import Link from "next/link";
 import Script from "next/script";
-import { useLocale, useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import type React from "react";
+
 import { SkipLink } from "@/components/accessibility/skip-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { resolveAppLocale } from "@/i18n/config";
 import { localeCurrencyMap } from "@/lib/seo";
+import type { AppLocale } from "@/i18n/config";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
+import type { PlaygroundMessages } from "./components/playground";
 import Playground from "./components/playground-loader";
-import PublicFooter from "./components/public-footer";
-import PublicHeader from "./components/public-header";
+import PublicFooter, { type FooterMessages } from "./components/public-footer";
+import PublicHeader, {
+    type MarketingHeaderMessages,
+} from "./components/public-header";
 
 type MarketingLandingPageProps = {
     appUrl: string;
     structuredDataImage: string;
     siteName?: string;
     nonce?: string;
+    locale: AppLocale;
 };
 
-export default function MarketingLandingPage({
+type FeatureItem = {
+    title: string;
+    description: string;
+};
+
+type FaqItem = {
+    question: string;
+    answer: string;
+};
+
+type TrustItem = {
+    quote: string;
+    author: string;
+    role: string;
+};
+
+type HeroSupportMap = Partial<Record<AppLocale, string>>;
+
+export default async function MarketingLandingPage({
     appUrl,
     structuredDataImage,
     siteName,
     nonce,
+    locale,
 }: MarketingLandingPageProps) {
-    const t = useTranslations("Marketing");
-    const locale = resolveAppLocale(useLocale());
+    const marketing = await getTranslations({
+        locale,
+        namespace: "Marketing",
+    });
+    const common = await getTranslations({
+        locale,
+        namespace: "Common",
+    });
+
     const resolvedSiteName = siteName?.trim().length
         ? siteName.trim()
-        : t("structuredData.name");
-    const features = t.raw("features.items") as Array<{
-        title: string;
-        description: string;
-    }>;
-    const whyItems = t.raw("why.items") as Array<{
-        title: string;
-        description: string;
-    }>;
-    const faqItems = t.raw("faq.items") as Array<{
-        question: string;
-        answer: string;
-    }>;
-    const trustItems = t.raw("trust.items") as Array<{
-        quote: string;
-        author: string;
-        role: string;
-    }>;
-    const heroSupport = t.raw("hero.support") as Record<string, string>;
+        : marketing("structuredData.name");
+
+    const features = marketing.raw("features.items") as FeatureItem[];
+    const whyItems = marketing.raw("why.items") as FeatureItem[];
+    const faqItems = marketing.raw("faq.items") as FaqItem[];
+    const trustItems = marketing.raw("trust.items") as TrustItem[];
+    const heroSupport = marketing.raw("hero.support") as HeroSupportMap;
     const heroSupportValues = Object.values(heroSupport);
+    const headerMessages = marketing.raw("header") as MarketingHeaderMessages;
+    const playgroundMessages = marketing.raw(
+        "playground",
+    ) as PlaygroundMessages;
+    const footerMessages = marketing.raw("footer") as FooterMessages;
+
     const currency = localeCurrencyMap[locale] ?? localeCurrencyMap.en;
     const structuredData = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        name: t("structuredData.name"),
+        name: marketing("structuredData.name"),
         url: appUrl,
         applicationCategory: "MultimediaApplication",
         operatingSystem: "Web",
-        description: t("structuredData.description"),
-        featureList: t.raw("structuredData.featureList") as string[],
+        description: marketing("structuredData.description"),
+        featureList: marketing.raw("structuredData.featureList") as string[],
         image: structuredDataImage,
         offers: {
             "@type": "Offer",
@@ -67,8 +92,8 @@ export default function MarketingLandingPage({
             priceCurrency: currency,
         },
         inLanguage: locale,
-        alternateName: t("hero.title"),
-        slogan: t("structuredData.tagline"),
+        alternateName: marketing("hero.title"),
+        slogan: marketing("structuredData.tagline"),
         publisher: {
             "@type": "Organization",
             name: resolvedSiteName,
@@ -78,7 +103,8 @@ export default function MarketingLandingPage({
                 url: structuredDataImage,
             },
         },
-    };
+    } satisfies Record<string, unknown>;
+
     const faqSchema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -90,29 +116,33 @@ export default function MarketingLandingPage({
                 text: item.answer,
             },
         })),
-    };
+    } satisfies Record<string, unknown>;
+
     const organizationSchema = {
         "@context": "https://schema.org",
         "@type": "Organization",
         name: resolvedSiteName,
         url: appUrl,
         logo: structuredDataImage,
-        sameAs: t.raw("trust.socialProfiles") as string[] | undefined,
-    };
+        sameAs: marketing.raw("trust.socialProfiles") as string[] | undefined,
+    } satisfies Record<string, unknown>;
+
     const websiteSchema = {
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: resolvedSiteName,
         url: appUrl,
-        description: t("structuredData.description"),
+        description: marketing("structuredData.description"),
         inLanguage: locale,
-    };
+    } satisfies Record<string, unknown>;
+
     const structuredDataPayload = [
         structuredData,
         faqSchema,
         organizationSchema,
         websiteSchema,
     ];
+
     return (
         <div
             className="bg-background text-foreground"
@@ -138,7 +168,7 @@ export default function MarketingLandingPage({
             }
         >
             <SkipLink />
-            <PublicHeader />
+            <PublicHeader marketingHeaderMessages={headerMessages} />
 
             <main id="main-content" tabIndex={-1}>
                 <header className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-12 md:py-16">
@@ -147,9 +177,9 @@ export default function MarketingLandingPage({
                             <div className="flex items-center gap-2">
                                 <Badge
                                     className="bg-yellow-400 text-black focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
-                                    aria-label={t("hero.badge")}
+                                    aria-label={marketing("hero.badge")}
                                 >
-                                    {t("hero.badge")}
+                                    {marketing("hero.badge")}
                                 </Badge>
                                 {/* 装饰性emoji，使用aria-hidden */}
                                 <span
@@ -157,50 +187,54 @@ export default function MarketingLandingPage({
                                     aria-hidden="true"
                                     role="presentation"
                                 >
-                                    {t("hero.emoji")}
+                                    {marketing("hero.emoji")}
                                 </span>
                             </div>
                             <h1
                                 id="hero-heading"
                                 className="mb-4 font-extrabold text-title tracking-tight"
                             >
-                                {t("hero.title")}
+                                {marketing("hero.title")}
                             </h1>
                             <p className="mb-6 text-lg text-yellow-200/80 leading-relaxed">
-                                {t("hero.description")}
+                                {marketing("hero.description")}
                             </p>
                             <nav
-                                aria-label={t("hero.primaryActions")}
+                                aria-label={marketing("hero.primaryActions")}
                                 className="mb-6 flex xs:flex-row flex-col gap-3 xs:gap-3"
                             >
                                 <Link
                                     href="/signup"
                                     className="inline-flex"
-                                    aria-label={t("hero.primaryAriaLabel")}
+                                    aria-label={marketing(
+                                        "hero.primaryAriaLabel",
+                                    )}
                                 >
                                     <Button
                                         className="w-full xs:w-auto focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
                                         size="lg"
                                     >
-                                        {t("hero.primaryCta")}
+                                        {marketing("hero.primaryCta")}
                                     </Button>
                                 </Link>
                                 <Link
                                     href="#playground"
                                     className="inline-flex"
-                                    aria-label={t("hero.secondaryAriaLabel")}
+                                    aria-label={marketing(
+                                        "hero.secondaryAriaLabel",
+                                    )}
                                 >
                                     <Button
                                         variant="outline"
                                         size="lg"
                                         className="w-full xs:w-auto border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
                                     >
-                                        {t("hero.secondaryCta")}
+                                        {marketing("hero.secondaryCta")}
                                     </Button>
                                 </Link>
                             </nav>
                             <ul
-                                aria-label={t("hero.featuresLabel")}
+                                aria-label={marketing("hero.featuresLabel")}
                                 className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-yellow-200/70"
                             >
                                 {heroSupportValues.map((item) => (
@@ -209,7 +243,7 @@ export default function MarketingLandingPage({
                                         key={item}
                                     >
                                         <span className="sr-only">
-                                            {t("hero.featurePrefix")}
+                                            {marketing("hero.featurePrefix")}
                                         </span>
                                         {item}
                                     </li>
@@ -222,7 +256,7 @@ export default function MarketingLandingPage({
                             aria-hidden="true"
                             role="presentation"
                         >
-                            {t("hero.emoji")}✨
+                            {marketing("hero.emoji")}✨
                         </div>
                     </div>
                 </header>
@@ -238,7 +272,7 @@ export default function MarketingLandingPage({
                         </h2>
                     </header>
                     <main>
-                        <Playground />
+                        <Playground messages={playgroundMessages} />
                     </main>
                 </section>
 
@@ -247,27 +281,27 @@ export default function MarketingLandingPage({
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
                     <h2 className="mb-6 text-center font-bold text-subtitle">
-                        {t("features.title")}
+                        {marketing("features.title")}
                     </h2>
                     <div className="grid xs:grid-cols-2 gap-4 lg-narrow:grid-cols-3">
-                        {features.map((f) => (
+                        {features.map((feature) => (
                             <Card
-                                key={f.title}
+                                key={feature.title}
                                 className="border-yellow-400/20 bg-black/40"
                             >
                                 <CardContent className="p-4">
                                     <h3 className="mb-1 font-semibold">
-                                        {f.title}
+                                        {feature.title}
                                     </h3>
                                     <p className="text-sm text-yellow-200/80">
-                                        {f.description}
+                                        {feature.description}
                                     </p>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
                     <p className="mt-6 text-sm text-yellow-100/80">
-                        {t.rich("features.learnMore", {
+                        {marketing.rich("features.learnMore", {
                             billingLink: (chunks) => (
                                 <Link
                                     href="/billing"
@@ -285,20 +319,20 @@ export default function MarketingLandingPage({
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
                     <h2 className="mb-6 text-center font-bold text-subtitle">
-                        {t("why.title")}
+                        {marketing("why.title")}
                     </h2>
                     <div className="grid xs:grid-cols-2 gap-4 lg-narrow:grid-cols-3">
-                        {whyItems.map((f) => (
+                        {whyItems.map((item) => (
                             <Card
-                                key={f.title}
+                                key={item.title}
                                 className="border-yellow-400/20 bg-black/40"
                             >
                                 <CardContent className="p-4">
                                     <h3 className="mb-1 font-semibold">
-                                        {f.title}
+                                        {item.title}
                                     </h3>
                                     <p className="text-sm text-yellow-200/80">
-                                        {f.description}
+                                        {item.description}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -311,7 +345,7 @@ export default function MarketingLandingPage({
                     className="mx-auto w-full max-w-4xl px-[var(--container-px)] py-10"
                 >
                     <h2 className="mb-6 text-center font-bold text-subtitle">
-                        {t("faq.title")}
+                        {marketing("faq.title")}
                     </h2>
                     <div className="space-y-3">
                         {faqItems.map((item) => (
@@ -329,7 +363,7 @@ export default function MarketingLandingPage({
                         ))}
                     </div>
                     <p className="mt-6 text-sm text-yellow-100/80">
-                        {t.rich("faq.supportingCopy", {
+                        {marketing.rich("faq.supportingCopy", {
                             contactLink: (chunks) => (
                                 <Link
                                     href="/contact"
@@ -355,10 +389,10 @@ export default function MarketingLandingPage({
                     className="mx-auto w-full max-w-[var(--container-max-w)] px-[var(--container-px)] py-10"
                 >
                     <h2 className="mb-4 text-center font-bold text-subtitle">
-                        {t("trust.title")}
+                        {marketing("trust.title")}
                     </h2>
                     <p className="mx-auto mb-8 max-w-2xl text-center text-yellow-200/80">
-                        {t("trust.description")}
+                        {marketing("trust.description")}
                     </p>
                     <div className="grid gap-4 md:grid-cols-3">
                         {trustItems.map((item) => (
@@ -381,7 +415,7 @@ export default function MarketingLandingPage({
                         ))}
                     </div>
                     <p className="mt-8 text-center text-sm text-yellow-100/80">
-                        {t.rich("trust.callout", {
+                        {marketing.rich("trust.callout", {
                             privacyLink: (chunks) => (
                                 <Link
                                     href="/privacy"
@@ -396,20 +430,24 @@ export default function MarketingLandingPage({
 
                 <section className="mx-auto w-full max-w-3xl px-4 py-14 text-center">
                     <h3 className="mb-3 font-extrabold text-3xl">
-                        {t("cta.title")}
+                        {marketing("cta.title")}
                     </h3>
                     <p className="mb-6 text-yellow-200/80">
-                        {t("cta.description")}
+                        {marketing("cta.description")}
                     </p>
                     <Link href="/signup">
                         <Button className="bg-yellow-400 text-black hover:bg-yellow-300">
-                            {t("cta.primaryCta")}
+                            {marketing("cta.primaryCta")}
                         </Button>
                     </Link>
                 </section>
             </main>
 
-            <PublicFooter />
+            <PublicFooter
+                appName={common("appName")}
+                brandTagline={common("brandTagline")}
+                footerMessages={footerMessages}
+            />
             <Script
                 id="marketing-structured-data"
                 type="application/ld+json"
