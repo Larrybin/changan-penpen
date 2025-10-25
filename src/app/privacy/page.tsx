@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { resolveAppLocale } from "@/i18n/config";
 import { readCspNonce } from "@/lib/security/csp";
 import { buildLocalizedPath } from "@/lib/seo";
+import { serializeJsonLd } from "@/lib/seo/jsonld";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -80,7 +81,7 @@ export default async function PrivacyPage() {
                 id="privacy-structured-data"
                 type="application/ld+json"
             >
-                {JSON.stringify(structuredData)}
+                {serializeJsonLd(structuredData)}
             </Script>
         </div>
     );
