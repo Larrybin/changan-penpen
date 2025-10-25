@@ -6,79 +6,87 @@
 
 import { Activity, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import type { PerformanceDiagnostics } from "@/app/api/v1/admin/performance/diagnostics/route";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { getAdminCacheManager } from "@/lib/cache/admin-cache";
-import { getCacheInvalidationManager } from "@/lib/cache/cache-invalidation";
-import { secureRandomNumber } from "@/lib/random";
 import { cn } from "@/lib/utils";
 
-interface PerformanceMetrics {
-    cacheStats: {
-        hits: number;
-        misses: number;
-        hitRate: number;
+interface DiagnosticsResponse {
+    success: boolean;
+    data?: PerformanceDiagnostics;
+    error?: {
+        code?: string;
+        message?: string;
     };
-    invalidationStats: {
-        totalEvents: number;
-        eventsByType: Record<string, number>;
-    };
-    responseTime: {
-        average: number;
-        min: number;
-        max: number;
-        p95: number;
-    };
-    timestamp: string;
+}
+
+const PERFORMANCE_DIAGNOSTICS_ENDPOINT =
+    "/api/v1/admin/performance/diagnostics";
+
+async function requestPerformanceDiagnostics(): Promise<PerformanceDiagnostics> {
+    const response = await fetch(PERFORMANCE_DIAGNOSTICS_ENDPOINT, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+            Accept: "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    const payload = (await response.json()) as DiagnosticsResponse;
+
+    if (!payload.success || !payload.data) {
+        throw new Error(payload.error?.message ?? "Failed to load diagnostics");
+    }
+
+    return payload.data;
 }
 
 /**
  * 性能监控仪表盘组件
  */
 export function PerformanceMonitor() {
-    const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
+    const [metrics, setMetrics] = useState<PerformanceDiagnostics | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchMetrics = useCallback(async () => {
         setIsLoading(true);
+        setError(null);
+
         try {
-            const manager = getAdminCacheManager();
-            const invalidationManager = getCacheInvalidationManager();
+            const diagnostics = await requestPerformanceDiagnostics();
+            setMetrics(diagnostics);
+        } catch (fetchError) {
+            console.error(
+                "Failed to fetch performance diagnostics",
+                fetchError,
+            );
 
-            const [cacheStats, invalidationStats] = await Promise.all([
-                manager.getStats(),
-                invalidationManager.getInvalidationStats("hour"),
-            ]);
-
-            // 模拟响应时间统计（实际项目中可以从监控服务获取）
-            const responseTime = {
-                average: secureRandomNumber(100, 600), // 100-600ms
-                min: secureRandomNumber(50, 100), // 50-100ms
-                max: secureRandomNumber(800, 1000), // 800-1000ms
-                p95: secureRandomNumber(400, 700), // 400-700ms
-            };
-
-            setMetrics({
-                cacheStats,
-                invalidationStats,
-                responseTime,
-                timestamp: new Date().toISOString(),
-            });
-        } catch (_error) {
-            console.error("Failed to fetch performance metrics:", _error);
+            const message =
+                fetchError instanceof Error
+                    ? fetchError.message
+                    : "Unknown error";
+            setError(message);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchMetrics();
+        void fetchMetrics();
 
         if (autoRefresh) {
-            const interval = setInterval(fetchMetrics, 30000); // 30秒刷新
+            const interval = setInterval(() => {
+                void fetchMetrics();
+            }, 30000); // 30秒刷新
             return () => clearInterval(interval);
         }
     }, [autoRefresh, fetchMetrics]);
@@ -98,13 +106,35 @@ export function PerformanceMonitor() {
     if (!metrics) {
         return (
             <Card>
-                <CardContent className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                        <Activity className="mx-auto mb-2 h-8 w-8 animate-pulse text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                            加载性能指标中...
-                        </p>
-                    </div>
+                <CardContent className="flex flex-col items-center justify-center space-y-4 py-12">
+                    {isLoading ? (
+                        <div className="text-center">
+                            <Activity className="mx-auto mb-2 h-8 w-8 animate-pulse text-muted-foreground" />
+                            <p className="text-muted-foreground">
+                                加载性能指标中...
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <Alert
+                                variant="danger"
+                                className="max-w-md text-center"
+                            >
+                                <AlertTitle>加载性能指标失败</AlertTitle>
+                                <AlertDescription>
+                                    {error ?? "请稍后重试。"}
+                                </AlertDescription>
+                            </Alert>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void fetchMetrics()}
+                                disabled={isLoading}
+                            >
+                                重新加载
+                            </Button>
+                        </>
+                    )}
                 </CardContent>
             </Card>
         );
@@ -112,6 +142,12 @@ export function PerformanceMonitor() {
 
     return (
         <div className="space-y-6">
+            {error && (
+                <Alert variant="warning">
+                    <AlertTitle>无法更新最新性能数据</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
             {/* 控制栏 */}
             <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg">性能监控</h3>
@@ -119,14 +155,14 @@ export function PerformanceMonitor() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setAutoRefresh(!autoRefresh)}
+                        onClick={() => setAutoRefresh((prev) => !prev)}
                     >
                         {autoRefresh ? "停止" : "开始"} 自动刷新
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={fetchMetrics}
+                        onClick={() => void fetchMetrics()}
                         disabled={isLoading}
                     >
                         <RefreshCw
@@ -331,19 +367,28 @@ export function PerformanceBadge() {
     const [hitRate, setHitRate] = useState<number | null>(null);
 
     useEffect(() => {
+        let isMounted = true;
+
         const fetchHitRate = async () => {
             try {
-                const manager = getAdminCacheManager();
-                const stats = await manager.getStats();
-                setHitRate(stats.hitRate);
+                const diagnostics = await requestPerformanceDiagnostics();
+                if (isMounted) {
+                    setHitRate(diagnostics.cacheStats.hitRate);
+                }
             } catch (_error) {
                 // 静默失败
             }
         };
 
-        fetchHitRate();
-        const interval = setInterval(fetchHitRate, 60000); // 每分钟更新
-        return () => clearInterval(interval);
+        void fetchHitRate();
+        const interval = setInterval(() => {
+            void fetchHitRate();
+        }, 60000); // 每分钟更新
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, []);
 
     if (hitRate === null) return null;
