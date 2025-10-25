@@ -14,18 +14,21 @@
     "defaultTtlSeconds": 120
   },
   "database": {
-    "host": "${STAGING_DB_HOST}",
-    "port": 5432,
-    "ssl_enabled": true,
-    "pool_size": 10,
-    "max_connections": 25,
-    "timeout": "12s",
-    "connection_timeout": "8s",
-    "idle_timeout": "180s",
+    "binding": "next_cf_app",
+    "environment_label": "staging",
+    "remote_management": {
+      "account_id_env": "CLOUDFLARE_ACCOUNT_ID",
+      "database_id_env": "CLOUDFLARE_D1_DATABASE_ID",
+      "token_env": "CLOUDFLARE_D1_TOKEN"
+    },
+    "migrations": {
+      "apply_command": "pnpm db:migrate:prod"
+    },
     "health_check": {
       "enabled": true,
       "interval": "60s"
-    }
+    },
+    "database_name": "next-cf-app"
   },
   "security": {
     "encryption_algorithm": "AES-192-GCM",
@@ -45,13 +48,30 @@
     },
     "cors": {
       "enabled": true,
-      "allowed_origins": ["${STAGING_APP_URL}", "http://localhost:3000"],
-      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "allowed_headers": ["Content-Type", "Authorization", "X-Requested-With", "X-Debug"],
+      "allowed_origins": [
+        "${STAGING_APP_URL}",
+        "http://localhost:3000"
+      ],
+      "allowed_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "allowed_headers": [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "X-Debug"
+      ],
       "credentials": true
     },
     "authentication": {
-      "providers": ["google", "github"],
+      "providers": [
+        "google",
+        "github"
+      ],
       "session_name": "next-cf-staging-session",
       "cookie_secure": true,
       "cookie_http_only": true,
@@ -109,7 +129,9 @@
     },
     "notifications": {
       "enabled": true,
-      "channels": ["email"],
+      "channels": [
+        "email"
+      ],
       "queue_size": 2000,
       "retry_policy": {
         "max_attempts": 3,
@@ -127,7 +149,9 @@
   "logging": {
     "level": "info",
     "format": "json",
-    "outputs": ["console"],
+    "outputs": [
+      "console"
+    ],
     "retention": "30d",
     "structured_logging": {
       "enabled": true,
@@ -155,7 +179,9 @@
     },
     "alerts": {
       "enabled": true,
-      "channels": ["email"],
+      "channels": [
+        "email"
+      ],
       "thresholds": {
         "error_rate": 0.05,
         "response_time_p95": 5000,
@@ -166,7 +192,9 @@
     "health_checks": {
       "enabled": true,
       "interval": "120s",
-      "endpoints": ["/api/health"]
+      "endpoints": [
+        "/api/health"
+      ]
     }
   },
   "testing": {

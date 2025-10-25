@@ -14,17 +14,18 @@
     "defaultTtlSeconds": 15
   },
   "database": {
-    "host": "localhost",
-    "port": 5432,
-    "ssl_enabled": false,
-    "pool_size": 3,
-    "max_connections": 10,
-    "timeout": "30s",
-    "connection_timeout": "10s",
-    "idle_timeout": "60s",
+    "binding": "next_cf_app",
+    "local_persistence": {
+      "sqlite_path": ".wrangler/state/v3/d1/miniflare-D1DatabaseObject/next_cf_app.sqlite",
+      "reset_command": "pnpm db:reset:local"
+    },
+    "migrations": {
+      "apply_command": "pnpm db:migrate:local"
+    },
     "health_check": {
       "enabled": false
-    }
+    },
+    "database_name": "next-cf-app"
   },
   "security": {
     "encryption_algorithm": "AES-128",
@@ -43,13 +44,33 @@
     },
     "cors": {
       "enabled": true,
-      "allowed_origins": ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000"],
-      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      "allowed_headers": ["Content-Type", "Authorization", "X-Requested-With", "X-Debug"],
+      "allowed_origins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000"
+      ],
+      "allowed_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH",
+        "OPTIONS"
+      ],
+      "allowed_headers": [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "X-Debug"
+      ],
       "credentials": true
     },
     "authentication": {
-      "providers": ["google", "github", "dev"],
+      "providers": [
+        "google",
+        "github",
+        "dev"
+      ],
       "session_name": "next-cf-dev-session",
       "cookie_secure": false,
       "cookie_http_only": false,
@@ -106,7 +127,9 @@
     },
     "notifications": {
       "enabled": false,
-      "channels": ["console"],
+      "channels": [
+        "console"
+      ],
       "queue_size": 100
     },
     "analytics": {
@@ -120,7 +143,9 @@
   "logging": {
     "level": "debug",
     "format": "pretty",
-    "outputs": ["console"],
+    "outputs": [
+      "console"
+    ],
     "retention": "7d",
     "structured_logging": {
       "enabled": false,
@@ -154,7 +179,11 @@
     "mock_external_services": true,
     "debug_endpoints": {
       "enabled": true,
-      "routes": ["/debug/config", "/debug/health", "/debug/metrics"]
+      "routes": [
+        "/debug/config",
+        "/debug/health",
+        "/debug/metrics"
+      ]
     },
     "local_ssl": {
       "enabled": false,

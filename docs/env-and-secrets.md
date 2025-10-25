@@ -28,14 +28,32 @@
 Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.d.ts`.
 
 ## Common Variables
-- `NEXT_PUBLIC_APP_URL`: public base URL for links and SEO
-- `BETTER_AUTH_SECRET`: server secret for sessions
-- `CREEM_API_URL` / `CREEM_API_KEY`: external billing service
-  - CI 变量名兼容：`CREEM_API_URL`（优先）或 `CREEM_API_URL_PRODUCTION`（回退）。工作流会优先读取 `CREEM_API_URL`，否则使用 `CREEM_API_URL_PRODUCTION`。
-- `OPENAI_API_KEY` / `GEMINI_API_KEY`: AI providers (optional; used for AI features)
-- Health toggles: `HEALTH_REQUIRE_DB`, `HEALTH_REQUIRE_R2`, `HEALTH_REQUIRE_EXTERNAL` ("true"/"false")
-- Health auth: `HEALTH_ACCESS_TOKEN`: enables detailed health output behind `X-Health-Token` or `Authorization: Bearer`
-- Admin cookies: `ADMIN_FORCE_SECURE_COOKIES`: force secure cookies even when proto headers are missing
+
+### Core platform & authentication
+- `NEXT_PUBLIC_APP_URL`: public base URL for links and SEO。
+- `BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`: Better Auth session 与回调配置。
+- `CREEM_API_URL` / `CREEM_API_KEY` / `CREEM_WEBHOOK_SECRET`: 外部计费服务。
+  - CI 变量名兼容：`CREEM_API_URL`（优先）或 `CREEM_API_URL_PRODUCTION`（回退）。
+- `ADMIN_ALLOWED_EMAILS`、`ADMIN_ENTRY_TOKEN`、`ADMIN_FORCE_SECURE_COOKIES`: 管理后台访问控制策略。
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Google OAuth。
+
+### Runtime & deployment metadata
+- `NEXTJS_ENV`: 自定义环境标识（覆盖默认的 `NODE_ENV`）。
+- `OPENNEXT_DEV`: 控制 Cloudflare OpenNext 适配器的开发模式逻辑。
+- `ANALYZE`: 设为 `true` 时触发 bundle analyzer、Lighthouse 等性能流程。
+- `SUMMARY_JSON`、`DEPLOYMENT_ID`: GitHub Actions 部署审计所需的上下文变量。
+- 健康检查：`HEALTH_ACCESS_TOKEN`、`HEALTH_REQUIRE_DB`、`HEALTH_REQUIRE_R2`、`HEALTH_REQUIRE_EXTERNAL`。
+
+### Documentation & tooling automation
+- `DOCS_SYNC`、`DOCS_SYNC_SCOPE`、`DOCS_SYNC_DRY`、`DOCS_SYNC_VERBOSE`: 文档同步脚本行为控制。
+- `DOCS_AUTOGEN`、`DOCS_AUTOGEN_SCOPE`、`DOCS_AUTOGEN_DRY`、`DOCS_AUTOGEN_THRESHOLD`、`DOCS_AUTOGEN_VERBOSE`: 文档自动生成配置。
+- `DOC_STRICT_MODE`: 启用严格模式文档检查（与 `pnpm run check:docs:strict` 配合）。
+- `ENABLE_MCP`: 为文档检查开启 MCP 增强模式。
+- `SKIP_DOCS_NORMALIZE`、`SKIP_DOCS_CHECK`: 聚合检查脚本中跳过文档归一化或检查的标志。
+
+### Optional integrations
+- `OPENAI_API_KEY` / `GEMINI_API_KEY`: AI providers（可选）。
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`: 速率限制与缓存（可选）。
 
 ## Rotation Policy
 - Use `wrangler secret put <NAME>` for production secrets

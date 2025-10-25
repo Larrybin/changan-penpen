@@ -6,7 +6,7 @@
 
 这是一个现代化的全栈SaaS模板项目，采用以下核心技术栈：
 
-- **前端框架**: Next.js 15 (App Router)
+- **前端框架**: Next.js 15.5.6 (App Router)
 - **运行时**: Cloudflare Workers + OpenNext
 - **数据库**: Cloudflare D1 (SQLite)
 - **ORM**: Drizzle ORM
@@ -70,14 +70,15 @@ graph TD
 
 ## 模块索引
 
-| 模块路径 | 职责描述 | 技术栈 | 入口文件 | 质量保障 |
-|---------|---------|--------|---------|----------|
-| `src/modules/auth` | 身份认证与授权 | Better Auth, Google OAuth | `auth.action.ts` | 人工验收 |
-| `src/modules/dashboard` | 用户主仪表板布局 | Next.js Layout, TanStack Query | `dashboard.layout.tsx` | 人工验收 |
-| `src/modules/todos` | 任务管理系统 | Drizzle ORM, Zod, Server Actions | `todo.service.ts` | 人工验收 |
-| `src/modules/admin` | 管理后台系统 | Refine, Drizzle, 多功能面板 | `admin.layout.tsx` | ⚠️ 部分覆盖 |
-| `src/modules/marketing` | 营销落地页 | Next.js, SEO优化, i18n | `landing.page.tsx` | 人工验收 |
-| `src/modules/creem` | 计费与订阅系统 | Creem API, Webhook处理 | `billing.service.ts` | 人工验收 |
+| 模块路径 | 职责描述 | 关键子模块 / 页面 | 技术栈 | 入口文件 | 质量保障 |
+|---------|---------|------------------|--------|---------|----------|
+| `src/modules/auth` | 身份认证与授权 | 登录、注册、社交登录回调 | Better Auth, Google OAuth | `auth.action.ts` | 人工验收 |
+| `src/modules/dashboard` | 用户主仪表板布局 | 概览、指标卡片、任务摘要 | Next.js Layout, TanStack Query | `dashboard.layout.tsx` | 人工验收 |
+| `src/modules/todos` | 任务管理系统 | 列表、创建、编辑、批量操作 | Drizzle ORM, Zod, Server Actions | `todo.service.ts` | 人工验收 |
+| `src/modules/admin` | 管理后台系统 | Dashboard、Users、Tenants、Billing、Catalog、Settings、Reports、Audit、**Performance** | Refine, Drizzle, 多功能面板 | `admin.layout.tsx` | ⚠️ 部分覆盖 |
+| `src/modules/admin/performance` | 管理后台性能监控 | 概览、System Health、SEO、Web Vitals、`performance-data.service.ts`、`seo-scanner.ts` | Next.js App Router, 缓存, 性能指标聚合 | `performance/pages/performance-overview.page.tsx` | 人工验收 |
+| `src/modules/marketing` | 营销落地页 | Landing、Pricing、Features、SEO 片段 | Next.js, SEO优化, i18n | `landing.page.tsx` | 人工验收 |
+| `src/modules/creem` | 计费与订阅系统 | 结算、订阅、Webhook 处理、信用管理 | Creem API, Webhook处理 | `billing.service.ts` | 人工验收 |
 
 ## 运行与开发
 
@@ -119,6 +120,19 @@ pnpm build:cf
 # 部署
 pnpm deploy:cf
 ```
+
+### 脚本命令速览
+
+> 完整命令、参数与前置条件详见 [`docs/scripts-reference.md`](docs/scripts-reference.md)。
+
+| 分类 | 代表命令 | 说明 |
+|------|----------|------|
+| OpenAPI | `pnpm run openapi:generate`<br/>`pnpm run openapi:check`<br/>`pnpm run openapi:lint` | 生成并校验公共 API 规范，确保 `public/openapi.json` 与实现一致。 |
+| 质量保障 | `pnpm run quality:check`<br/>`pnpm run quality:fix`<br/>`pnpm run quality:strict` | 组合运行 Biome、格式化与严格 TS 配置，支撑 PR 前的质量闸门。 |
+| 性能评估 | `pnpm run performance:validate`<br/>`pnpm run performance:lighthouse` | 运行性能验证脚本以及启用 `ANALYZE=true` 的 Lighthouse 构建。 |
+| SEO 审计 | `pnpm run seo:audit`<br/>`pnpm run seo:validate` | 抓取并校验 SEO 指标，可串联性能验证形成一站式报告。 |
+| 文档工具 | `pnpm run optimize:docs`<br/>`pnpm run optimize:docs:check`<br/>`pnpm run check:docs(:strict)` | 维护文档一致性的工具链，支持修复、检查与严格模式校验。 |
+| 预部署检查 | `pnpm run pre-deploy:check` | 聚合质量、性能、SEO 检查，用于生产部署前的快速回归。 |
 
 ### 代码质量
 ```bash
@@ -227,27 +241,32 @@ export async function GET(request: Request) {
 ## 环境配置
 
 ### 必需的环境变量
-```bash
-# Better Auth
-BETTER_AUTH_SECRET=
-BETTER_AUTH_URL=
 
-# Google OAuth
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+**认证与平台接入**
+- `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` — Better Auth 服务配置。
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth 登录。
+- `CREEM_API_URL` / `CREEM_API_KEY` / `CREEM_WEBHOOK_SECRET` — 计费与订阅服务。
+- `ADMIN_FORCE_SECURE_COOKIES`、`ADMIN_ALLOWED_EMAILS` — 管理后台访问控制。
 
-# Cloudflare
-D1_DATABASE_NAME=
-R2_BUCKET_NAME=
+**运行时与公共链接**
+- `NEXT_PUBLIC_APP_URL` — 生成站点链接与 SEO 元数据。
+- `NEXTJS_ENV` — 自定义环境标记（优先级高于 `NODE_ENV`）。
+- Cloudflare 绑定（通过 `wrangler.toml` 配置）提供 D1、R2 等资源，无需单独的 `D1_DATABASE_NAME` 环境变量。
 
-# Creem Payment
-CREEM_SECRET_KEY=
-CREEM_WEBHOOK_SECRET=
+**构建与调试开关**
+- `ANALYZE` — 设置为 `true` 时触发 Bundle Analyzer 与 Lighthouse 构建。
+- `OPENNEXT_DEV` — 控制 OpenNext Cloudflare 适配器的开发模式行为。
+- `SUMMARY_JSON` / `DEPLOYMENT_ID` — GitHub Actions 部署审计步骤共享上下文。
 
-# Upstash Redis (可选)
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
-```
+**文档与工具链**
+- `DOCS_SYNC`、`DOCS_SYNC_SCOPE`、`DOCS_SYNC_DRY`、`DOCS_SYNC_VERBOSE` — 文档同步脚本行为开关。
+- `DOCS_AUTOGEN`、`DOCS_AUTOGEN_SCOPE`、`DOCS_AUTOGEN_DRY`、`DOCS_AUTOGEN_THRESHOLD`、`DOCS_AUTOGEN_VERBOSE` — 文档自动生成器控制参数。
+- `DOC_STRICT_MODE`、`ENABLE_MCP`、`SKIP_DOCS_NORMALIZE`、`SKIP_DOCS_CHECK` — 文档一致性检查的模式与跳过开关。
+
+**可选的外部集成**
+- `OPENAI_API_KEY` / `GEMINI_API_KEY` — AI 功能。
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — 速率限制与缓存（可选）。
+- 健康检查令牌：`HEALTH_ACCESS_TOKEN`、`HEALTH_REQUIRE_DB`、`HEALTH_REQUIRE_R2`、`HEALTH_REQUIRE_EXTERNAL`。
 
 ### 数据库配置
 - **本地**: `.dev.vars` 配置本地 D1 数据库
