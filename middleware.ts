@@ -202,13 +202,16 @@ export async function middleware(request: NextRequest) {
     const forwardedHeaders = new Headers(request.headers);
     forwardedHeaders.set(CSP_NONCE_HEADER, nonce);
     const { pathname } = request.nextUrl;
-    const siteSettings = await getSiteSettingsPayload();
+    let siteSettings: SiteSettingsPayload | undefined;
+    try {
+        siteSettings = await getSiteSettingsPayload();
+    } catch (error) {
+        console.warn("Failed to load site settings in middleware", { error });
+    }
 
-    const canonicalRedirect = enforceCanonicalOrigin(
-        request,
-        siteSettings,
-        nonce,
-    );
+    const canonicalRedirect = siteSettings
+        ? enforceCanonicalOrigin(request, siteSettings, nonce)
+        : null;
     if (canonicalRedirect) {
         return canonicalRedirect;
     }
