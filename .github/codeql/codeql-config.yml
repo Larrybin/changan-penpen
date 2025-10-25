@@ -9,7 +9,7 @@ paths:
   - types
 paths-ignore:
   - node_modules/**
-  - **/node_modules/**
+  - "**/node_modules/**"
   - .next/**
   - dist/**
   - build/**
@@ -17,4 +17,4 @@ paths-ignore:
   - public/**
   - pnpm-lock.yaml
   - pnpm-workspace.yaml
-  - **/.pnpm/**
+  - "**/.pnpm/**"

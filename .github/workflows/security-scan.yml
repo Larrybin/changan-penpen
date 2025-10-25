@@ -182,6 +182,12 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const isFork = Boolean(context.payload.pull_request?.head?.repo?.fork);
+
+            if (isFork) {
+              core.info('Skipping PR comment because the pull request originates from a fork.');
+              return;
+            }
 
             let comment = '## 🔒 Security Scan Results\n\n';
 
@@ -218,18 +224,25 @@ jobs:
               comment.user.type === 'Bot'
             );
 
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                comment_id: existingComment.id,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment,
-              });
+            try {
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  comment_id: existingComment.id,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment,
+                });
+              }
+            } catch (error) {
+              core.warning(`Unable to publish security scan comment: ${error.message}`);
             }
+
+            // Completed security scan comment handling
+
