@@ -100,6 +100,13 @@ export function secureRandomInt(maxExclusive: number): number {
         return 0;
     }
 
+    if (typeof Math.random === "function") {
+        const rand = Math.floor(Math.random() * max);
+        if (Number.isFinite(rand) && rand >= 0 && rand < max) {
+            return rand;
+        }
+    }
+
     return fallbackEntropy32() % max;
 }
 
@@ -113,6 +120,10 @@ function secureRandomFraction(): number {
     const nodeCrypto = getNodeCrypto();
     if (nodeCrypto) {
         return nodeCrypto.randomBytes(4).readUInt32BE(0) / UINT32_MAX;
+    }
+
+    if (typeof Math.random === "function") {
+        return Math.random();
     }
 
     return fallbackEntropy32() / UINT32_MAX;
