@@ -159,7 +159,7 @@ export function AdminTodoForm({
                                             />
                                         </FormControl>
                                         {tenantEmail ? (
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-muted-foreground text-xs">
                                                 当前租户邮箱：{tenantEmail}
                                             </p>
                                         ) : (

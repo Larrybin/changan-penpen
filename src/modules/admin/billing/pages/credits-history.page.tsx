@@ -76,7 +76,7 @@ export function CreditsHistoryPage() {
                 cell: ({ row }) => (
                     <div>
                         <div>{row.getValue("customerEmail") ?? "-"}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                             {row.original.userId ?? "-"}
                         </div>
                     </div>
@@ -122,7 +122,7 @@ export function CreditsHistoryPage() {
                 cell: ({ row }) => {
                     const date = row.getValue("createdAt") as string;
                     return (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                             {formatDateTime(date)}
                         </div>
                     );

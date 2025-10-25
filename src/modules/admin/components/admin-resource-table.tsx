@@ -49,7 +49,7 @@ export function AdminResourceTable<TItem>({
             )}
         >
             <table className="min-w-full text-sm">
-                <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                     <tr>
                         {columns.map((column) => (
                             <th

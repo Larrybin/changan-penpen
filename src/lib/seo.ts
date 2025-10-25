@@ -29,6 +29,42 @@ function getGlobalEnvOverride(key: string): string | undefined {
     return undefined;
 }
 
+function getProcessEnv(key: string): string | undefined {
+    try {
+        return (
+            globalThis as {
+                process?: { env?: Record<string, string | undefined> };
+            }
+        ).process?.env?.[key];
+    } catch {
+        return undefined;
+    }
+}
+
+function parseBooleanFlag(value: string | undefined): boolean | undefined {
+    if (typeof value !== "string") return undefined;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return undefined;
+    if (normalized === "1" || normalized === "true") return true;
+    if (normalized === "0" || normalized === "false") return false;
+    return undefined;
+}
+
+function shouldAllowLocalAppUrl(options: ResolveAppUrlOptions): boolean {
+    if (typeof options.allowLocalInProduction === "boolean") {
+        return options.allowLocalInProduction;
+    }
+
+    const globalOverride = parseBooleanFlag(
+        getGlobalEnvOverride("ALLOW_LOCAL_APP_URL"),
+    );
+    if (typeof globalOverride === "boolean") {
+        return globalOverride;
+    }
+
+    return parseBooleanFlag(getProcessEnv("ALLOW_LOCAL_APP_URL")) ?? false;
+}
+
 export class AppUrlResolutionError extends Error {
     constructor(
         message = "Unable to resolve the application URL. Configure the domain in site settings or set NEXT_PUBLIC_APP_URL.",
@@ -161,7 +197,9 @@ function isAllowedUriScheme(url: string): boolean {
         const u = new URL(url, "https://example.com");
         const scheme = (u.protocol || "").toLowerCase();
         if (scheme === "http:" || scheme === "https:") return true;
-    } catch {}
+    } catch {
+        // Ignore invalid URLs and fall back to additional scheme checks.
+    }
     // data URL (only images)
     if (_isDataImageBase64(url)) return true;
     // allow mailto links
@@ -258,75 +296,139 @@ function isAlphaNumCode(c: number): boolean {
 }
 function sanitizeNoscriptContent(input: string): string {
     if (!input) return "";
-    let i = 0;
-    let out = "";
-    const len = input.length;
+    let index = 0;
+    let output = "";
 
-    while (i < len) {
-        const lt = input.indexOf("<", i);
-        if (lt === -1) {
-            out += escapeHtmlText(input.slice(i));
-            break;
-        }
-
-        if (lt > i) out += escapeHtmlText(input.slice(i, lt));
-
-        // 注释 <!-- ... -->
-        if (input.startsWith("<!--", lt)) {
-            const end = input.indexOf("-->", lt + 4);
-            i = end === -1 ? len : end + 3;
-            continue;
-        }
-
-        const isEnd = input.charCodeAt(lt + 1) === 47; // '/'
-        let j = isEnd ? lt + 2 : lt + 1;
-
-        // 解析标签名（ASCII 字母 + 数字）
-        const nameStart = j;
-        if (j >= len) break;
-        const first = input.charCodeAt(j);
-        const isLetter = isAsciiLetterCode(first);
-        if (!isLetter) {
-            // 非标签起始，按文本处理
-            out += "&lt;";
-            i = lt + 1;
-            continue;
-        }
-        j++;
-        while (j < len) {
-            const _c = input.charCodeAt(j);
-            if (!isAlphaNumCode(_c)) break;
-            j++;
-        }
-        const name = input.slice(nameStart, j).toLowerCase();
-        const gt = input.indexOf(">", j);
-        if (gt === -1) {
-            out += escapeHtmlText(input.slice(lt));
-            break;
-        }
-
-        if (!ALLOWED_NOSCRIPT_TAGS.has(name)) {
-            i = gt + 1;
-            continue;
-        }
-
-        const rawInside = input.slice(j, gt);
-        const isSelfClosing =
-            rawInside.trimEnd().endsWith("/") ||
-            name === "br" ||
-            name === "img";
-
-        if (isEnd) {
-            out += `</${name}>`;
-            i = gt + 1;
-            continue;
-        }
-
-        const safeAttrs = parseNoscriptAttributesLinear(rawInside, name);
-        out += serializeStartTag(name, safeAttrs, isSelfClosing);
-        i = gt + 1;
+    while (index < input.length) {
+        const segment = consumeNoscriptSegment(input, index);
+        output += segment.output;
+        index = segment.nextIndex;
     }
-    return out;
+
+    return output;
+}
+
+type NoscriptSegment = { output: string; nextIndex: number };
+
+function consumeNoscriptSegment(input: string, start: number): NoscriptSegment {
+    const text = consumeNoscriptPlainText(input, start);
+    if (text) return text;
+
+    const comment = consumeNoscriptComment(input, start);
+    if (comment) return comment;
+
+    const tag = consumeNoscriptTag(input, start);
+    if (tag) return tag;
+
+    return { output: "&lt;", nextIndex: Math.min(start + 1, input.length) };
+}
+
+function consumeNoscriptPlainText(
+    input: string,
+    start: number,
+): NoscriptSegment | null {
+    const lt = input.indexOf("<", start);
+    if (lt === -1) {
+        return {
+            output: escapeHtmlText(input.slice(start)),
+            nextIndex: input.length,
+        };
+    }
+    if (lt > start) {
+        return {
+            output: escapeHtmlText(input.slice(start, lt)),
+            nextIndex: lt,
+        };
+    }
+    return null;
+}
+
+function consumeNoscriptComment(
+    input: string,
+    start: number,
+): NoscriptSegment | null {
+    if (!input.startsWith("<!--", start)) return null;
+    const end = input.indexOf("-->", start + 4);
+    return { output: "", nextIndex: end === -1 ? input.length : end + 3 };
+}
+
+type ScannedNoscriptTag = {
+    name: string;
+    isClosing: boolean;
+    rawAttributes: string;
+    nextIndex: number;
+};
+
+function consumeNoscriptTag(
+    input: string,
+    start: number,
+): NoscriptSegment | null {
+    if (input.charAt(start) !== "<") return null;
+    const afterLt = start + 1;
+    if (afterLt >= input.length) {
+        return { output: "&lt;", nextIndex: input.length };
+    }
+    const isClosing = input.charCodeAt(afterLt) === 47;
+    const nameStart = isClosing ? afterLt + 1 : afterLt;
+    if (nameStart >= input.length) {
+        return { output: "&lt;", nextIndex: Math.min(start + 1, input.length) };
+    }
+    if (!isAsciiLetterCode(input.charCodeAt(nameStart))) {
+        return { output: "&lt;", nextIndex: start + 1 };
+    }
+
+    const scanned = scanNoscriptTag(input, nameStart, isClosing);
+    if (!scanned) {
+        return {
+            output: escapeHtmlText(input.slice(start)),
+            nextIndex: input.length,
+        };
+    }
+    if (!ALLOWED_NOSCRIPT_TAGS.has(scanned.name)) {
+        return { output: "", nextIndex: scanned.nextIndex };
+    }
+    if (scanned.isClosing) {
+        return { output: `</${scanned.name}>`, nextIndex: scanned.nextIndex };
+    }
+    const attrs = parseNoscriptAttributesLinear(
+        scanned.rawAttributes,
+        scanned.name,
+    );
+    const selfClosing = isSelfClosingNoscript(
+        scanned.name,
+        scanned.rawAttributes,
+    );
+    return {
+        output: serializeStartTag(scanned.name, attrs, selfClosing),
+        nextIndex: scanned.nextIndex,
+    };
+}
+
+function scanNoscriptTag(
+    input: string,
+    nameStart: number,
+    isClosing: boolean,
+): ScannedNoscriptTag | null {
+    let cursor = nameStart + 1;
+    while (cursor < input.length && isAlphaNumCode(input.charCodeAt(cursor))) {
+        cursor++;
+    }
+
+    const name = input.slice(nameStart, cursor).toLowerCase();
+    const gt = input.indexOf(">", cursor);
+    if (gt === -1) return null;
+
+    return {
+        name,
+        isClosing,
+        rawAttributes: input.slice(cursor, gt),
+        nextIndex: gt + 1,
+    };
+}
+
+function isSelfClosingNoscript(tag: string, rawInside: string): boolean {
+    if (tag === "br" || tag === "img") return true;
+    return rawInside.trimEnd().endsWith("/");
 }
 
 // 线性扫描解析 noscript 内部标签属性，使用 noscript 白名单与专用净化
@@ -456,36 +558,7 @@ export function resolveAppUrl(
     settings?: SiteSettingsPayload | null,
     options: ResolveAppUrlOptions = {},
 ): string {
-    const allowLocalInProduction = (() => {
-        if (typeof options.allowLocalInProduction === "boolean") {
-            return options.allowLocalInProduction;
-        }
-        const globalOverride = getGlobalEnvOverride("ALLOW_LOCAL_APP_URL");
-        if (typeof globalOverride === "string" && globalOverride.trim()) {
-            const normalized = globalOverride.trim().toLowerCase();
-            if (normalized === "1" || normalized === "true") {
-                return true;
-            }
-        }
-        const processAllow = (() => {
-            try {
-                return (
-                    globalThis as {
-                        process?: { env?: Record<string, string | undefined> };
-                    }
-                ).process?.env?.ALLOW_LOCAL_APP_URL;
-            } catch {
-                return undefined;
-            }
-        })();
-        if (typeof processAllow === "string" && processAllow.trim()) {
-            const normalized = processAllow.trim().toLowerCase();
-            if (normalized === "1" || normalized === "true") {
-                return true;
-            }
-        }
-        return false;
-    })();
+    const allowLocalInProduction = shouldAllowLocalAppUrl(options);
     const isProduction = Boolean(
         (
             globalThis as {
@@ -710,24 +783,59 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
     const nodes: SanitizedHeadNode[] = [];
 
     const lower = html.toLowerCase();
-    const allowedWithContent: AllowedHeadTag[] = [
-        "script",
-        "style",
-        "noscript",
-    ];
-    const allowedSelfClosing: AllowedHeadTag[] = ["meta", "link"];
+    const withContentTags: AllowedHeadTag[] = ["script", "style", "noscript"];
+    const selfClosingTags: AllowedHeadTag[] = ["meta", "link"];
 
-    function tryProcessWithContent(
+    type TagProcessor = (
         lt: number,
-        tag: AllowedHeadTag,
-    ): { node: SanitizedHeadNode; next: number } | null {
-        const open = `<${tag}`;
+    ) => { node: SanitizedHeadNode; next: number } | null;
+
+    const processors: TagProcessor[] = [
+        ...withContentTags.map((tag) =>
+            createContentProcessor(tag, html, lower),
+        ),
+        ...selfClosingTags.map((tag) =>
+            createSelfClosingProcessor(tag, html, lower),
+        ),
+    ];
+
+    let index = 0;
+    while (index < html.length) {
+        const lt = lower.indexOf("<", index);
+        if (lt === -1) break;
+
+        const commentEnd = findHtmlCommentEnd(lower, lt, html.length);
+        if (commentEnd !== null) {
+            index = commentEnd;
+            continue;
+        }
+
+        const processed = tryProcessAllowedTag(processors, lt);
+        if (processed) {
+            nodes.push(processed.node);
+            index = processed.next;
+            continue;
+        }
+
+        index = lt + 1;
+    }
+    return nodes;
+}
+
+function createContentProcessor(
+    tag: AllowedHeadTag,
+    html: string,
+    lower: string,
+): (lt: number) => { node: SanitizedHeadNode; next: number } | null {
+    const open = `<${tag}`;
+    const close = `</${tag}>`;
+    return (lt: number) => {
         if (!lower.startsWith(open, lt)) return null;
         const gt = html.indexOf(">", lt + open.length);
-        if (gt === -1)
+        if (gt === -1) {
             return { node: { tag, attributes: {} }, next: html.length };
+        }
         const rawAttrs = html.slice(lt + open.length, gt);
-        const close = `</${tag}>`;
         const closeIdx = lower.indexOf(close, gt + 1);
         const content = closeIdx === -1 ? "" : html.slice(gt + 1, closeIdx);
         const attributes = parseAttributes(rawAttrs, tag);
@@ -742,62 +850,51 @@ export function sanitizeCustomHtml(html: string): SanitizedHeadNode[] {
         };
         const next = closeIdx === -1 ? gt + 1 : closeIdx + close.length;
         return { node, next };
-    }
+    };
+}
 
-    function tryProcessSelfClosing(
-        lt: number,
-        tag: AllowedHeadTag,
-    ): { node: SanitizedHeadNode; next: number } | null {
-        const open = `<${tag}`;
+function createSelfClosingProcessor(
+    tag: AllowedHeadTag,
+    html: string,
+    lower: string,
+): (lt: number) => { node: SanitizedHeadNode; next: number } | null {
+    const open = `<${tag}`;
+    return (lt: number) => {
         if (!lower.startsWith(open, lt)) return null;
         const gt = html.indexOf(">", lt + open.length);
-        if (gt === -1)
+        if (gt === -1) {
             return { node: { tag, attributes: {} }, next: html.length };
+        }
         const rawAttrs = html.slice(lt + open.length, gt);
         const attributes = parseAttributes(rawAttrs, tag);
         const node: SanitizedHeadNode = { tag, attributes };
         return { node, next: gt + 1 };
+    };
+}
+
+function findHtmlCommentEnd(
+    lower: string,
+    start: number,
+    fallback: number,
+): number | null {
+    if (!lower.startsWith("<!--", start)) return null;
+    const endComment = lower.indexOf("-->", start + 4);
+    return endComment === -1 ? fallback : endComment + 3;
+}
+
+function tryProcessAllowedTag(
+    processors: Array<
+        (lt: number) => { node: SanitizedHeadNode; next: number } | null
+    >,
+    lt: number,
+): { node: SanitizedHeadNode; next: number } | null {
+    for (const processor of processors) {
+        const result = processor(lt);
+        if (result) {
+            return result;
+        }
     }
-
-    let i = 0;
-    while (i < html.length) {
-        const lt = lower.indexOf("<", i);
-        if (lt === -1) break;
-
-        // Skip comments quickly
-        if (lower.startsWith("<!--", lt)) {
-            const endComment = lower.indexOf("-->", lt + 4);
-            i = endComment === -1 ? html.length : endComment + 3;
-            continue;
-        }
-
-        let handled = false;
-        for (const tag of allowedWithContent) {
-            const res = tryProcessWithContent(lt, tag);
-            if (res) {
-                nodes.push(res.node);
-                i = res.next;
-                handled = true;
-                break;
-            }
-        }
-        if (handled) continue;
-
-        for (const tag of allowedSelfClosing) {
-            const res = tryProcessSelfClosing(lt, tag);
-            if (res) {
-                nodes.push(res.node);
-                i = res.next;
-                handled = true;
-                break;
-            }
-        }
-        if (handled) continue;
-
-        // Not an allowed tag; skip this '<'
-        i = lt + 1;
-    }
-    return nodes;
+    return null;
 }
 
 export function buildLocalizedPath(locale: AppLocale, path: string): string {

@@ -357,10 +357,10 @@ export async function batchInvalidateCache(
 /**
  * 仪表盘缓存失效工具，供预热函数复用
  */
-const invalidateDashboardCacheForWarmup = async (options?: {
+export async function invalidateDashboardCache(options?: {
     tenantId?: string;
     resource?: "all" | "orders" | "credits" | "catalog";
-}) => {
+}): Promise<void> {
     const resource = options?.resource ?? "all";
 
     switch (resource) {
@@ -388,7 +388,7 @@ const invalidateDashboardCacheForWarmup = async (options?: {
             ]);
             break;
     }
-};
+}
 
 /**
  * 缓存预热函数
@@ -426,7 +426,7 @@ export async function warmupCache(
 
             const resource: "all" | "orders" | "credits" | "catalog" =
                 type === "dashboard" ? "all" : type;
-            await invalidateDashboardCacheForWarmup({
+            await invalidateDashboardCache({
                 tenantId,
                 resource,
             });

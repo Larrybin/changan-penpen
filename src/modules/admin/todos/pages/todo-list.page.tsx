@@ -105,7 +105,7 @@ export default function AdminTodoListPage() {
                 <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <CardTitle>全部任务</CardTitle>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                             共 {total} 条记录
                         </p>
                     </div>
@@ -134,7 +134,7 @@ export default function AdminTodoListPage() {
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
                                 <thead>
-                                    <tr className="border-b border-border text-left">
+                                    <tr className="border-border border-b text-left">
                                         {[
                                             "标题",
                                             "所属租户",
@@ -172,7 +172,7 @@ export default function AdminTodoListPage() {
                             </table>
                         </div>
                     ) : todos.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-10">
+                        <div className="py-10 text-center text-muted-foreground">
                             {normalizedFilter
                                 ? "未找到匹配该租户的任务，请检查租户 ID。"
                                 : "暂无数据，点击右上角按钮新建任务。"}
@@ -181,7 +181,7 @@ export default function AdminTodoListPage() {
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
                                 <thead>
-                                    <tr className="border-b border-border text-left">
+                                    <tr className="border-border border-b text-left">
                                         <th className="px-4 py-3 font-medium">
                                             标题
                                         </th>
@@ -209,12 +209,12 @@ export default function AdminTodoListPage() {
                                     {todos.map((todo) => (
                                         <tr
                                             key={todo.id}
-                                            className="border-b border-border/60 last:border-none"
+                                            className="border-border/60 border-b last:border-none"
                                         >
                                             <td className="px-4 py-3 font-medium text-foreground">
                                                 {todo.title ?? "-"}
                                                 {todo.completed && (
-                                                    <span className="ml-2 text-xs text-green-600">
+                                                    <span className="ml-2 text-green-600 text-xs">
                                                         已完成
                                                     </span>
                                                 )}
@@ -224,7 +224,7 @@ export default function AdminTodoListPage() {
                                                     <span className="font-medium">
                                                         {todo.userEmail ?? "-"}
                                                     </span>
-                                                    <span className="text-xs text-muted-foreground">
+                                                    <span className="text-muted-foreground text-xs">
                                                         {todo.userId ?? "-"}
                                                     </span>
                                                 </div>

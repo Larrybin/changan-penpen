@@ -34,7 +34,7 @@ export function CouponEditPage() {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader title="编辑优惠券" description="更新折扣信息。" />
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-muted-foreground text-sm">
                     参数错误。
                 </div>
             </div>
@@ -59,7 +59,7 @@ export function CouponEditPage() {
         return (
             <div className="flex flex-col gap-[var(--grid-gap-section)]">
                 <PageHeader title="编辑优惠券" description="更新折扣信息。" />
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-muted-foreground text-sm">
                     未找到该优惠券。
                 </div>
             </div>

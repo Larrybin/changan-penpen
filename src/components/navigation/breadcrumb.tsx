@@ -329,10 +329,10 @@ export const BreadcrumbPresets = {
 // 面包屑样式预设
 export const BreadcrumbStyles = {
     // 默认样式
-    default: "flex items-center space-x-1 text-sm text-muted-foreground",
+    default: "flex items-center space-x-1 text-muted-foreground text-sm",
 
     // 紧凑样式
-    compact: "flex items-center space-x-0.5 text-xs text-muted-foreground",
+    compact: "flex items-center space-x-0.5 text-muted-foreground text-xs",
 
     // 大号样式
     large: "flex items-center space-x-2 text-base text-muted-foreground",
@@ -341,7 +341,7 @@ export const BreadcrumbStyles = {
     card: "flex items-center space-x-1 rounded-md border bg-muted/30 px-3 py-2 text-sm",
 
     // 导航栏样式
-    navbar: "flex items-center space-x-1 text-sm text-muted-foreground/80",
+    navbar: "flex items-center space-x-1 text-muted-foreground text-sm/80",
 } as const;
 
 // 自定义hook：面包屑相关操作

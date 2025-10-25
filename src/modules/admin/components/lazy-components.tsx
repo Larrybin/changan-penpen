@@ -4,9 +4,17 @@
  * 提升首屏加载性能
  */
 
-import { lazy, Suspense } from "react";
+import { type ComponentProps, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const TABLE_SKELETON_ROW_KEYS = [
+    "table-skeleton-row-1",
+    "table-skeleton-row-2",
+    "table-skeleton-row-3",
+    "table-skeleton-row-4",
+    "table-skeleton-row-5",
+];
 
 // 基础骨架屏组件
 const TableSkeleton = () => (
@@ -17,8 +25,8 @@ const TableSkeleton = () => (
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-4 w-24" />
         </div>
-        {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center space-x-4">
+        {TABLE_SKELETON_ROW_KEYS.map((rowKey) => (
+            <div key={rowKey} className="flex items-center space-x-4">
                 <Skeleton className="h-4 w-4" />
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-4 w-32" />
@@ -28,20 +36,27 @@ const TableSkeleton = () => (
     </div>
 );
 
-const CardSkeleton = ({ count = 1 }: { count?: number }) => (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: count }, (_, i) => (
-            <Card key={i}>
-                <CardHeader className="pb-2">
-                    <Skeleton className="h-4 w-20" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-8 w-16" />
-                </CardContent>
-            </Card>
-        ))}
-    </div>
-);
+const CardSkeleton = ({ count = 1 }: { count?: number }) => {
+    const keys = Array.from(
+        { length: count },
+        (_, index) => `card-skeleton-${index}`,
+    );
+
+    return (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {keys.map((key) => (
+                <Card key={key}>
+                    <CardHeader className="pb-2">
+                        <Skeleton className="h-4 w-20" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-8 w-16" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+};
 
 const ChartSkeleton = () => (
     <Card>
@@ -140,7 +155,9 @@ export function LazyWrapper({
 }
 
 // 预定义的懒加载组件包装器
-export const LazyUserDetailWrapper = (props: any) => (
+export const LazyUserDetailWrapper = (
+    props: ComponentProps<typeof LazyUserDetail>,
+) => (
     <LazyWrapper
         fallback={
             <Card>
@@ -161,13 +178,17 @@ export const LazyUserDetailWrapper = (props: any) => (
     </LazyWrapper>
 );
 
-export const LazyUsersListClientWrapper = (props: any) => (
+export const LazyUsersListClientWrapper = (
+    props: ComponentProps<typeof LazyUsersListClient>,
+) => (
     <LazyWrapper fallback={<TableSkeleton />}>
         <LazyUsersListClient {...props} />
     </LazyWrapper>
 );
 
-export const LazyTodoFormWrapper = (props: any) => (
+export const LazyTodoFormWrapper = (
+    props: ComponentProps<typeof LazyTodoForm>,
+) => (
     <LazyWrapper
         fallback={
             <Card>
@@ -188,7 +209,9 @@ export const LazyTodoFormWrapper = (props: any) => (
     </LazyWrapper>
 );
 
-export const LazyProductFormWrapper = (props: any) => (
+export const LazyProductFormWrapper = (
+    props: ComponentProps<typeof LazyProductForm>,
+) => (
     <LazyWrapper
         fallback={
             <Card>
@@ -210,7 +233,9 @@ export const LazyProductFormWrapper = (props: any) => (
     </LazyWrapper>
 );
 
-export const LazyCouponFormWrapper = (props: any) => (
+export const LazyCouponFormWrapper = (
+    props: ComponentProps<typeof LazyCouponForm>,
+) => (
     <LazyWrapper
         fallback={
             <Card>
@@ -232,7 +257,9 @@ export const LazyCouponFormWrapper = (props: any) => (
     </LazyWrapper>
 );
 
-export const LazyContentPageFormWrapper = (props: any) => (
+export const LazyContentPageFormWrapper = (
+    props: ComponentProps<typeof LazyContentPageForm>,
+) => (
     <LazyWrapper
         fallback={
             <Card>
@@ -254,13 +281,17 @@ export const LazyContentPageFormWrapper = (props: any) => (
     </LazyWrapper>
 );
 
-export const LazyAdminResourceTableWrapper = (props: any) => (
+export const LazyAdminResourceTableWrapper = (
+    props: ComponentProps<typeof LazyAdminResourceTable>,
+) => (
     <LazyWrapper fallback={<TableSkeleton />}>
         <LazyAdminResourceTable {...props} />
     </LazyWrapper>
 );
 
-export const LazyAdminResourceFormWrapper = (props: any) => (
+export const LazyAdminResourceFormWrapper = (
+    props: ComponentProps<typeof LazyAdminResourceForm>,
+) => (
     <LazyWrapper
         fallback={
             <Card>
@@ -356,7 +387,9 @@ export class ComponentLoadingManager {
         }
 
         const listeners = this.listeners.get(componentName) || [];
-        listeners.forEach((listener) => listener(loading));
+        listeners.forEach((listener) => {
+            listener(loading);
+        });
     }
 
     isLoading(componentName: string): boolean {
@@ -370,7 +403,7 @@ export class ComponentLoadingManager {
         if (!this.listeners.has(componentName)) {
             this.listeners.set(componentName, []);
         }
-        this.listeners.get(componentName)!.push(listener);
+        this.listeners.get(componentName)?.push(listener);
 
         // 返回取消订阅函数
         return () => {

@@ -160,7 +160,7 @@ export function AdvancedSearch({
             {/* Main search bar */}
             <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="搜索..."
                         value={values.search || ""}
@@ -199,7 +199,7 @@ export function AdvancedSearch({
             {isExpanded && (
                 <div className="rounded-lg border bg-muted/30 p-4">
                     <div className="mb-4 flex items-center justify-between">
-                        <h4 className="text-sm font-medium">高级筛选</h4>
+                        <h4 className="font-medium text-sm">高级筛选</h4>
                         <Button
                             type="button"
                             variant="ghost"
@@ -242,7 +242,7 @@ export function AdvancedSearch({
                             .map((field) => (
                                 <div key={field.key} className="space-y-2">
                                     <label
-                                        className="text-sm font-medium"
+                                        className="font-medium text-sm"
                                         htmlFor={`advanced-search-${field.key}`}
                                     >
                                         {field.label}

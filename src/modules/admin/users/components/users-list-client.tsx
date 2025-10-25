@@ -50,10 +50,10 @@ export function UsersListClient({
         (updates: Record<string, string | null>) => {
             const current = new URLSearchParams(searchParams?.toString() ?? "");
             for (const [key, value] of Object.entries(updates)) {
-                if (!value) {
-                    current.delete(key);
-                } else {
+                if (value) {
                     current.set(key, value);
+                } else {
+                    current.delete(key);
                 }
             }
             const queryString = current.toString();

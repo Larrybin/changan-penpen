@@ -44,25 +44,25 @@ export function AdminShell({ children, user }: AdminShellProps) {
 
     return (
         <div className="flex min-h-screen bg-muted/40">
-            <aside className="flex w-[var(--layout-sidebar-width)] flex-col border-r border-border bg-background">
-                <div className="flex items-center gap-2 border-b border-border px-6 py-5">
+            <aside className="flex w-[var(--layout-sidebar-width)] flex-col border-border border-r bg-background">
+                <div className="flex items-center gap-2 border-border border-b px-6 py-5">
                     <CheckSquare
                         aria-hidden="true"
                         className="h-5 w-5 text-primary"
                         focusable="false"
                         role="img"
                     />
-                    <span className="text-lg font-semibold">站长仪表盘</span>
+                    <span className="font-semibold text-lg">站长仪表盘</span>
                 </div>
-                <div className="border-b border-border px-6 py-4">
-                    <p className="text-sm text-muted-foreground">
+                <div className="border-border border-b px-6 py-4">
+                    <p className="text-muted-foreground text-sm">
                         {user.email}
                     </p>
                 </div>
                 <nav className="flex flex-1 flex-col gap-4 px-3 py-4">
                     {groups.map(({ group, entries }) => (
                         <div key={group} className="space-y-1.5">
-                            <p className="px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                            <p className="px-3 font-semibold text-muted-foreground text-xs uppercase tracking-[0.12em]">
                                 {group ?? DEFAULT_ADMIN_MENU_GROUP}
                             </p>
                             {entries.map((item) => {
@@ -74,7 +74,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
                                     <Link
                                         key={item.name}
                                         href={item.href}
-                                        className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                        className={`block rounded-md px-3 py-2 font-medium text-sm transition-colors ${
                                             isActive
                                                 ? "bg-primary text-primary-foreground"
                                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"

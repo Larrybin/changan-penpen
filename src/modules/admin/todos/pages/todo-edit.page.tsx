@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { CrudFilter } from "@/lib/crud/types";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
@@ -26,10 +26,9 @@ interface AdminTodoEditPageProps {
     id: string;
 }
 
-export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
-    const router = useRouter();
-    const queryClient = useQueryClient();
+function useAdminTodoEditData(id: string) {
     const todoId = Number.parseInt(id, 10);
+    const isInvalidId = Number.isNaN(todoId);
 
     const todoQuery = useQuery({
         queryKey: adminQueryKeys.detail("todos", todoId),
@@ -39,28 +38,27 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
                 id: todoId,
                 signal,
             }),
-        enabled: !Number.isNaN(todoId),
+        enabled: !isInvalidId,
     });
 
     const record = todoQuery.data ?? undefined;
-    const tenantId = typeof record?.userId === "string" ? record.userId : "";
-    const normalizedTenantId = tenantId.trim();
-    const categoryFilters: CrudFilter[] = normalizedTenantId
+    const tenantId =
+        typeof record?.userId === "string" ? record.userId.trim() : "";
+    const categoryFilters: CrudFilter[] = tenantId
         ? [
               {
                   field: "tenantId",
                   operator: "eq",
-                  value: normalizedTenantId,
+                  value: tenantId,
               },
           ]
         : [];
+
     const categoriesQuery = useQuery({
         queryKey: adminQueryKeys.list("categories", {
             pagination: { pageSize: 100 },
             filters: categoryFilters,
-            meta: normalizedTenantId
-                ? { tenantId: normalizedTenantId }
-                : undefined,
+            meta: tenantId ? { tenantId } : undefined,
         }),
         queryFn: ({ signal }) =>
             fetchAdminList<TodoCategoryRecord>({
@@ -69,8 +67,25 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
                 filters: categoryFilters,
                 signal,
             }),
-        enabled: Boolean(normalizedTenantId),
+        enabled: Boolean(tenantId),
     });
+
+    return { todoId, isInvalidId, todoQuery, record, categoriesQuery };
+}
+
+function CenteredPlaceholder({ children }: { children: ReactNode }) {
+    return (
+        <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+            {children}
+        </div>
+    );
+}
+
+export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
+    const router = useRouter();
+    const queryClient = useQueryClient();
+    const { todoId, isInvalidId, todoQuery, record, categoriesQuery } =
+        useAdminTodoEditData(id);
 
     const updateMutation = useMutation({
         mutationFn: (values: AdminTodoFormValues) =>
@@ -88,12 +103,8 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
         },
     });
 
-    if (Number.isNaN(todoId)) {
-        return (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                无效的 Todo ID
-            </div>
-        );
+    if (isInvalidId) {
+        return <CenteredPlaceholder>无效的 Todo ID</CenteredPlaceholder>;
     }
 
     const isLoading = todoQuery.isLoading;
@@ -106,11 +117,7 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
     }
 
     if (!record) {
-        return (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                未找到对应的 Todo
-            </div>
-        );
+        return <CenteredPlaceholder>未找到对应的 Todo</CenteredPlaceholder>;
     }
 
     const handleSubmit: ComponentProps<typeof AdminTodoForm>["onSubmit"] = (
@@ -136,8 +143,8 @@ export default function AdminTodoEditPage({ id }: AdminTodoEditPageProps) {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-semibold">编辑 Todo</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="font-semibold text-2xl">编辑 Todo</h1>
+                <p className="text-muted-foreground text-sm">
                     调整任务信息，保存后立即生效。
                 </p>
             </div>

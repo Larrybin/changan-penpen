@@ -123,6 +123,175 @@ function setPartialValue<TKey extends keyof SiteSettingsState>(
     target[key] = value;
 }
 
+type LocalizedFieldKey =
+    | "seoTitleLocalized"
+    | "seoDescriptionLocalized"
+    | "seoOgImageLocalized";
+
+const LOCALIZED_FIELD_KEYS: LocalizedFieldKey[] = [
+    "seoTitleLocalized",
+    "seoDescriptionLocalized",
+    "seoOgImageLocalized",
+];
+
+function isLocalizedFieldKey(
+    key: keyof SiteSettingsState,
+): key is LocalizedFieldKey {
+    return LOCALIZED_FIELD_KEYS.includes(key as LocalizedFieldKey);
+}
+
+function cloneValueForKey<TKey extends keyof SiteSettingsState>(
+    key: TKey,
+    value: SiteSettingsState[TKey],
+): SiteSettingsState[TKey] {
+    if (key === "enabledLanguages") {
+        return [...((value as AppLocale[]) ?? [])] as SiteSettingsState[TKey];
+    }
+
+    if (isLocalizedFieldKey(key)) {
+        return cloneLocalizedMap(
+            (value as Partial<Record<AppLocale, string>>) ?? {},
+        ) as SiteSettingsState[TKey];
+    }
+
+    return value;
+}
+
+function createFullPayload(
+    current: SiteSettingsState,
+): Partial<SiteSettingsState> {
+    const payload: Partial<SiteSettingsState> = {};
+    for (const key of Object.keys(current) as Array<keyof SiteSettingsState>) {
+        setPartialValue(payload, key, cloneValueForKey(key, current[key]));
+    }
+    return payload;
+}
+
+function addDiffForKey(
+    diff: Partial<SiteSettingsState>,
+    key: keyof SiteSettingsState,
+    nextValue: SiteSettingsState[keyof SiteSettingsState],
+    prevValue: SiteSettingsState[keyof SiteSettingsState],
+) {
+    if (key === "enabledLanguages") {
+        const nextLanguages = (nextValue as AppLocale[]) ?? [];
+        const prevLanguages = (prevValue as AppLocale[]) ?? [];
+        if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
+            setPartialValue(diff, key, [
+                ...nextLanguages,
+            ] as SiteSettingsState[typeof key]);
+        }
+        return;
+    }
+
+    if (isLocalizedFieldKey(key)) {
+        const nextMap = (nextValue as Partial<Record<AppLocale, string>>) ?? {};
+        const prevMap = (prevValue as Partial<Record<AppLocale, string>>) ?? {};
+        if (!localizedMapsEqual(nextMap, prevMap)) {
+            setPartialValue(
+                diff,
+                key,
+                cloneLocalizedMap(nextMap) as SiteSettingsState[typeof key],
+            );
+        }
+        return;
+    }
+
+    if (nextValue !== prevValue) {
+        setPartialValue(diff, key, nextValue as SiteSettingsState[typeof key]);
+    }
+}
+
+function diffSettingsPayload(
+    base: SiteSettingsState,
+    current: SiteSettingsState,
+): Partial<SiteSettingsState> {
+    const diff: Partial<SiteSettingsState> = {};
+    for (const key of Object.keys(current) as Array<keyof SiteSettingsState>) {
+        addDiffForKey(diff, key, current[key], base[key]);
+    }
+    return diff;
+}
+
+function computeSettingsPayload(
+    base: SiteSettingsState | null,
+    current: SiteSettingsState,
+): Partial<SiteSettingsState> {
+    return base
+        ? diffSettingsPayload(base, current)
+        : createFullPayload(current);
+}
+
+function prepareRequestPayload(
+    payload: Partial<SiteSettingsState>,
+): Partial<SiteSettingsState> {
+    const result: Partial<SiteSettingsState> = {};
+    for (const key of Object.keys(payload) as Array<keyof SiteSettingsState>) {
+        const value = payload[key];
+        if (value === undefined) continue;
+        setPartialValue(result, key, cloneValueForKey(key, value));
+    }
+    return result;
+}
+
+function createInitialSnapshot(settings: SiteSettingsState): SiteSettingsState {
+    return {
+        ...settings,
+        enabledLanguages: cloneValueForKey(
+            "enabledLanguages",
+            settings.enabledLanguages,
+        ),
+        seoTitleLocalized: cloneValueForKey(
+            "seoTitleLocalized",
+            settings.seoTitleLocalized,
+        ),
+        seoDescriptionLocalized: cloneValueForKey(
+            "seoDescriptionLocalized",
+            settings.seoDescriptionLocalized,
+        ),
+        seoOgImageLocalized: cloneValueForKey(
+            "seoOgImageLocalized",
+            settings.seoOgImageLocalized,
+        ),
+    };
+}
+
+function mergeSettingsPatch(
+    previous: SiteSettingsState,
+    patch: Partial<SiteSettingsState>,
+): SiteSettingsState {
+    const next: SiteSettingsState = {
+        ...previous,
+        ...patch,
+        enabledLanguages: Array.isArray(patch.enabledLanguages)
+            ? cloneValueForKey("enabledLanguages", patch.enabledLanguages)
+            : cloneValueForKey("enabledLanguages", previous.enabledLanguages),
+        defaultLanguage:
+            patch.defaultLanguage && isRuntimeLocale(patch.defaultLanguage)
+                ? patch.defaultLanguage
+                : previous.defaultLanguage,
+        seoTitleLocalized: patch.seoTitleLocalized
+            ? cloneValueForKey("seoTitleLocalized", patch.seoTitleLocalized)
+            : cloneValueForKey("seoTitleLocalized", previous.seoTitleLocalized),
+        seoDescriptionLocalized: patch.seoDescriptionLocalized
+            ? cloneValueForKey(
+                  "seoDescriptionLocalized",
+                  patch.seoDescriptionLocalized,
+              )
+            : cloneValueForKey(
+                  "seoDescriptionLocalized",
+                  previous.seoDescriptionLocalized,
+              ),
+        seoOgImageLocalized: patch.seoOgImageLocalized
+            ? cloneValueForKey("seoOgImageLocalized", patch.seoOgImageLocalized)
+            : cloneValueForKey(
+                  "seoOgImageLocalized",
+                  previous.seoOgImageLocalized,
+              ),
+    };
+    return next;
+}
+
 export function SiteSettingsPage() {
     const [settings, setSettings] =
         useState<SiteSettingsState>(defaultSettings);
@@ -177,32 +346,10 @@ export function SiteSettingsPage() {
             return;
         }
 
-        setSettings({
-            ...siteSettingsQuery.data,
-            enabledLanguages: [...siteSettingsQuery.data.enabledLanguages],
-            seoTitleLocalized: cloneLocalizedMap(
-                siteSettingsQuery.data.seoTitleLocalized,
-            ),
-            seoDescriptionLocalized: cloneLocalizedMap(
-                siteSettingsQuery.data.seoDescriptionLocalized,
-            ),
-            seoOgImageLocalized: cloneLocalizedMap(
-                siteSettingsQuery.data.seoOgImageLocalized,
-            ),
-        });
-        initialSettingsRef.current = {
-            ...siteSettingsQuery.data,
-            enabledLanguages: [...siteSettingsQuery.data.enabledLanguages],
-            seoTitleLocalized: cloneLocalizedMap(
-                siteSettingsQuery.data.seoTitleLocalized,
-            ),
-            seoDescriptionLocalized: cloneLocalizedMap(
-                siteSettingsQuery.data.seoDescriptionLocalized,
-            ),
-            seoOgImageLocalized: cloneLocalizedMap(
-                siteSettingsQuery.data.seoOgImageLocalized,
-            ),
-        };
+        setSettings(createInitialSnapshot(siteSettingsQuery.data));
+        initialSettingsRef.current = createInitialSnapshot(
+            siteSettingsQuery.data,
+        );
 
         if (
             !siteSettingsQuery.data.sitemapEnabled &&
@@ -227,21 +374,24 @@ export function SiteSettingsPage() {
         toast.error("加载站点设置失败，已使用默认配置。");
 
         if (!initialSettingsRef.current) {
-            initialSettingsRef.current = {
-                ...defaultSettings,
-                enabledLanguages: [...defaultSettings.enabledLanguages],
-                seoTitleLocalized: cloneLocalizedMap(
-                    defaultSettings.seoTitleLocalized,
-                ),
-                seoDescriptionLocalized: cloneLocalizedMap(
-                    defaultSettings.seoDescriptionLocalized,
-                ),
-                seoOgImageLocalized: cloneLocalizedMap(
-                    defaultSettings.seoOgImageLocalized,
-                ),
-            };
+            initialSettingsRef.current = createInitialSnapshot(defaultSettings);
         }
     }, [siteSettingsQuery.error, siteSettingsQuery.isError]);
+
+    const applyPatch = (patch: Partial<SiteSettingsState>) => {
+        setSettings((previous) => {
+            const next = mergeSettingsPatch(previous, patch);
+            initialSettingsRef.current = createInitialSnapshot(next);
+            if (!next.sitemapEnabled && !sitemapWarningShownRef.current) {
+                toast.message(
+                    "建议启用 XML Sitemap，以帮助搜索引擎更好地索引你的站点。",
+                    { icon: "⚠️" },
+                );
+                sitemapWarningShownRef.current = true;
+            }
+            return next;
+        });
+    };
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -251,152 +401,23 @@ export function SiteSettingsPage() {
             return;
         }
 
-        const base = initialSettingsRef.current;
-        let payload: Partial<SiteSettingsState>;
-
-        if (base) {
-            const diff: Partial<SiteSettingsState> = {};
-            for (const key of Object.keys(settings) as Array<
-                keyof SiteSettingsState
-            >) {
-                const nextValue = settings[key];
-                const prevValue = base[key];
-
-                if (Array.isArray(nextValue) && Array.isArray(prevValue)) {
-                    const nextLanguages = nextValue as string[];
-                    const prevLanguages = prevValue as string[];
-
-                    if (!arraysShallowEqual(nextLanguages, prevLanguages)) {
-                        setPartialValue(diff, key, [
-                            ...nextLanguages,
-                        ] as SiteSettingsState[typeof key]);
-                    }
-
-                    continue;
-                }
-
-                if (
-                    key === "seoTitleLocalized" ||
-                    key === "seoDescriptionLocalized" ||
-                    key === "seoOgImageLocalized"
-                ) {
-                    const nextMap = nextValue as Partial<
-                        Record<AppLocale, string>
-                    >;
-                    const prevMap = prevValue as Partial<
-                        Record<AppLocale, string>
-                    >;
-                    if (!localizedMapsEqual(nextMap, prevMap)) {
-                        setPartialValue(
-                            diff,
-                            key,
-                            cloneLocalizedMap(
-                                nextMap,
-                            ) as SiteSettingsState[typeof key],
-                        );
-                    }
-                    continue;
-                }
-
-                if (nextValue !== prevValue) {
-                    setPartialValue(
-                        diff,
-                        key,
-                        nextValue as SiteSettingsState[typeof key],
-                    );
-                }
-            }
-            payload = diff;
-        } else {
-            payload = {
-                ...settings,
-                enabledLanguages: [...settings.enabledLanguages],
-                seoTitleLocalized: cloneLocalizedMap(
-                    settings.seoTitleLocalized,
-                ),
-                seoDescriptionLocalized: cloneLocalizedMap(
-                    settings.seoDescriptionLocalized,
-                ),
-                seoOgImageLocalized: cloneLocalizedMap(
-                    settings.seoOgImageLocalized,
-                ),
-            };
-        }
+        const payload = computeSettingsPayload(
+            initialSettingsRef.current,
+            settings,
+        );
 
         if (Object.keys(payload).length === 0) {
             toast.message("未检测到任何更改");
             return;
         }
 
-        const requestPayload: Partial<SiteSettingsState> = { ...payload };
-        if (requestPayload.enabledLanguages) {
-            requestPayload.enabledLanguages = [
-                ...requestPayload.enabledLanguages,
-            ];
-        }
-        if (requestPayload.seoTitleLocalized) {
-            requestPayload.seoTitleLocalized = cloneLocalizedMap(
-                requestPayload.seoTitleLocalized,
-            );
-        }
-        if (requestPayload.seoDescriptionLocalized) {
-            requestPayload.seoDescriptionLocalized = cloneLocalizedMap(
-                requestPayload.seoDescriptionLocalized,
-            );
-        }
-        if (requestPayload.seoOgImageLocalized) {
-            requestPayload.seoOgImageLocalized = cloneLocalizedMap(
-                requestPayload.seoOgImageLocalized,
-            );
-        }
+        const requestPayload = prepareRequestPayload(payload);
 
         try {
-            const result = await saveMutation.mutateAsync(payload);
-            const patch = (result ?? payload) as Partial<SiteSettingsState>;
-            setSettings((previous) => {
-                const next: SiteSettingsState = {
-                    ...previous,
-                    ...patch,
-                    enabledLanguages: Array.isArray(patch.enabledLanguages)
-                        ? [...patch.enabledLanguages]
-                        : [...previous.enabledLanguages],
-                    defaultLanguage:
-                        patch.defaultLanguage &&
-                        isRuntimeLocale(patch.defaultLanguage)
-                            ? patch.defaultLanguage
-                            : previous.defaultLanguage,
-                    seoTitleLocalized: patch.seoTitleLocalized
-                        ? cloneLocalizedMap(patch.seoTitleLocalized)
-                        : cloneLocalizedMap(previous.seoTitleLocalized),
-                    seoDescriptionLocalized: patch.seoDescriptionLocalized
-                        ? cloneLocalizedMap(patch.seoDescriptionLocalized)
-                        : cloneLocalizedMap(previous.seoDescriptionLocalized),
-                    seoOgImageLocalized: patch.seoOgImageLocalized
-                        ? cloneLocalizedMap(patch.seoOgImageLocalized)
-                        : cloneLocalizedMap(previous.seoOgImageLocalized),
-                };
-                initialSettingsRef.current = {
-                    ...next,
-                    enabledLanguages: [...next.enabledLanguages],
-                    seoTitleLocalized: cloneLocalizedMap(
-                        next.seoTitleLocalized,
-                    ),
-                    seoDescriptionLocalized: cloneLocalizedMap(
-                        next.seoDescriptionLocalized,
-                    ),
-                    seoOgImageLocalized: cloneLocalizedMap(
-                        next.seoOgImageLocalized,
-                    ),
-                };
-                if (!next.sitemapEnabled && !sitemapWarningShownRef.current) {
-                    toast.message(
-                        "建议启用 XML Sitemap，以帮助搜索引擎更好地索引你的站点。",
-                        { icon: "⚠️" },
-                    );
-                    sitemapWarningShownRef.current = true;
-                }
-                return next;
-            });
+            const result = await saveMutation.mutateAsync(requestPayload);
+            const patch = (result ??
+                requestPayload) as Partial<SiteSettingsState>;
+            applyPatch(patch);
             toast.success("站点设置已保存");
             queryClient.invalidateQueries({
                 queryKey: adminQueryKeys.resource("site-settings"),
@@ -448,10 +469,10 @@ export function SiteSettingsPage() {
             >;
             const nextMap = cloneLocalizedMap(currentMap);
             const trimmed = value.trim();
-            if (!trimmed) {
-                delete nextMap[locale];
-            } else {
+            if (trimmed) {
                 nextMap[locale] = trimmed;
+            } else {
+                delete nextMap[locale];
             }
             return {
                 ...prev,
@@ -538,7 +559,7 @@ export function SiteSettingsPage() {
                 </section>
 
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold">SEO 设置</h2>
+                    <h2 className="font-semibold text-lg">SEO 设置</h2>
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="默认标题">
                             <Input
@@ -590,10 +611,10 @@ export function SiteSettingsPage() {
                     </Field>
                     <div className="space-y-4 rounded-lg border border-input p-4">
                         <div>
-                            <h3 className="text-base font-semibold">
+                            <h3 className="font-semibold text-base">
                                 多语言 SEO
                             </h3>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                                 为不同语言提供专属标题、描述与分享图像。
                             </p>
                         </div>
@@ -602,7 +623,7 @@ export function SiteSettingsPage() {
                                 const label = LANGUAGE_LABELS[locale] ?? locale;
                                 return (
                                     <div key={locale} className="space-y-3">
-                                        <div className="text-sm font-semibold text-muted-foreground">
+                                        <div className="font-semibold text-muted-foreground text-sm">
                                             {label}
                                         </div>
                                         <div className="grid gap-4 md:grid-cols-2">
@@ -666,7 +687,7 @@ export function SiteSettingsPage() {
                     </div>
                     <div className="grid gap-2">
                         <label
-                            className="text-sm font-medium"
+                            className="font-medium text-sm"
                             htmlFor="sitemap-enabled"
                         >
                             站点地图
@@ -689,7 +710,7 @@ export function SiteSettingsPage() {
                 </section>
 
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold">品牌与主题</h2>
+                    <h2 className="font-semibold text-lg">品牌与主题</h2>
                     <div className="grid gap-4 md:grid-cols-3">
                         <Field label="主色">
                             <Input
@@ -752,7 +773,7 @@ export function SiteSettingsPage() {
                 </section>
 
                 <section className="space-y-4">
-                    <h2 className="text-lg font-semibold">国际化</h2>
+                    <h2 className="font-semibold text-lg">国际化</h2>
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="默认语言">
                             <select
@@ -772,7 +793,7 @@ export function SiteSettingsPage() {
                             </select>
                         </Field>
                         <div className="grid gap-2">
-                            <span className="text-sm font-medium">
+                            <span className="font-medium text-sm">
                                 启用语言
                             </span>
                             <div className="flex flex-wrap gap-3 rounded-md border border-input p-3">
@@ -802,7 +823,7 @@ export function SiteSettingsPage() {
                                 })}
                             </div>
                             {defaultLanguageConflict ? (
-                                <p className="text-sm text-red-500">
+                                <p className="text-red-500 text-sm">
                                     默认语言必须包含在启用语言列表中。
                                 </p>
                             ) : null}
@@ -840,7 +861,7 @@ function Field({ label, children, id }: FieldProps) {
 
     return (
         <div className="grid gap-2">
-            <label className="text-sm font-medium" htmlFor={controlId}>
+            <label className="font-medium text-sm" htmlFor={controlId}>
                 {label}
             </label>
             {renderedChild}

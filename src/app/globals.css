@@ -451,9 +451,10 @@
 }
 
 /* Performance optimizations - Unified base classes */
-@layer base {
+@layer components {
     /* Unified interaction base class for all form controls */
-    .interactive-base {
+    .interactive-base,
+    .form-control-base {
         transition: all var(--token-motion-duration-md)
             var(--token-motion-ease-standard);
         border: 1px solid var(--border);
@@ -461,17 +462,20 @@
         outline: none;
     }
 
-    .interactive-base:hover {
+    .interactive-base:hover,
+    .form-control-base:hover {
         border-color: var(--accent);
     }
 
-    .interactive-base:focus-visible {
+    .interactive-base:focus-visible,
+    .form-control-base:focus-visible {
         outline: 2px solid var(--ring);
         outline-offset: 2px;
         border-color: var(--ring);
     }
 
-    .interactive-base:disabled {
+    .interactive-base:disabled,
+    .form-control-base:disabled {
         opacity: 0.5;
         cursor: not-allowed;
         pointer-events: none;
@@ -479,8 +483,6 @@
 
     /* Unified form control base */
     .form-control-base {
-        /* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind directive for shared interactive styles */
-        @apply interactive-base;
         border-radius: var(--control-radius);
         padding: var(--control-py) var(--control-px);
         box-shadow: var(--shadow-sm);
@@ -811,7 +813,8 @@
         --token-focus-ring-color: #0000ff;
     }
 
-    .interactive-base:focus-visible {
+    .interactive-base:focus-visible,
+    .form-control-base:focus-visible {
         outline: 3px solid var(--ring);
         outline-offset: 2px;
     }

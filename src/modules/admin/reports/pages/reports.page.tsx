@@ -92,7 +92,7 @@ export function ReportsPage() {
                     >
                         <div className="grid gap-1">
                             <label
-                                className="text-xs font-medium uppercase text-muted-foreground"
+                                className="font-medium text-muted-foreground text-xs uppercase"
                                 htmlFor="report-type"
                             >
                                 报表类型
@@ -117,7 +117,7 @@ export function ReportsPage() {
                         </div>
                         <div className="grid gap-1">
                             <label
-                                className="text-xs font-medium uppercase text-muted-foreground"
+                                className="font-medium text-muted-foreground text-xs uppercase"
                                 htmlFor="report-tenant"
                             >
                                 租户 ID（可选）
@@ -145,7 +145,7 @@ export function ReportsPage() {
             />
             <div className="overflow-x-auto rounded-md border">
                 <table className="min-w-full text-sm">
-                    <thead className="bg-muted/60 text-left text-xs font-semibold uppercase text-muted-foreground">
+                    <thead className="bg-muted/60 text-left font-semibold text-muted-foreground text-xs uppercase">
                         <tr>
                             <th className="px-4 py-3">类型</th>
                             <th className="px-4 py-3">参数</th>
@@ -193,7 +193,7 @@ export function ReportsPage() {
                                 <td className="px-4 py-3 capitalize">
                                     {report.status ?? "-"}
                                 </td>
-                                <td className="px-4 py-3 text-xs text-muted-foreground">
+                                <td className="px-4 py-3 text-muted-foreground text-xs">
                                     {formatDateTime(report.createdAt)}
                                 </td>
                                 <td className="px-4 py-3">
@@ -211,7 +211,7 @@ export function ReportsPage() {
                                             </Link>
                                         </Button>
                                     ) : (
-                                        <span className="text-xs text-muted-foreground">
+                                        <span className="text-muted-foreground text-xs">
                                             生成中
                                         </span>
                                     )}

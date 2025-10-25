@@ -65,7 +65,7 @@ export function ContentPagesListPage() {
         {
             id: "updatedAt",
             header: "更新时间",
-            cellClassName: "text-xs text-muted-foreground",
+            cellClassName: "text-muted-foreground text-xs",
             render: (page) => formatDateTime(page.updatedAt),
         },
         {

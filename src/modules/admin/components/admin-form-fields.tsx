@@ -48,7 +48,7 @@ export function AdminTextField<TFieldValues extends FieldValues>({
 
     return (
         <div className={cn("grid gap-2", containerClassName)}>
-            <label className="text-sm font-medium" htmlFor={fieldId}>
+            <label className="font-medium text-sm" htmlFor={fieldId}>
                 {label}
             </label>
             <Input
@@ -58,7 +58,7 @@ export function AdminTextField<TFieldValues extends FieldValues>({
                 className={className}
             />
             {description ? (
-                <p className="text-xs text-muted-foreground">{description}</p>
+                <p className="text-muted-foreground text-xs">{description}</p>
             ) : null}
         </div>
     );
@@ -87,7 +87,7 @@ export function AdminTextareaField<TFieldValues extends FieldValues>({
 
     return (
         <div className={cn("grid gap-2", containerClassName)}>
-            <label className="text-sm font-medium" htmlFor={fieldId}>
+            <label className="font-medium text-sm" htmlFor={fieldId}>
                 {label}
             </label>
             <Textarea
@@ -97,7 +97,7 @@ export function AdminTextareaField<TFieldValues extends FieldValues>({
                 className={className}
             />
             {description ? (
-                <p className="text-xs text-muted-foreground">{description}</p>
+                <p className="text-muted-foreground text-xs">{description}</p>
             ) : null}
         </div>
     );
