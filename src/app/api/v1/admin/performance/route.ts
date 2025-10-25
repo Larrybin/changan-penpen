@@ -8,18 +8,19 @@ import { NextResponse } from "next/server";
 import {
     AdminCacheKeyBuilder,
     getAdminCacheManager,
-    invalidateAdminCache,
     withAdminCache,
 } from "@/lib/cache/admin-cache";
+import {
+    isValidPerformanceTimeframe,
+    PERFORMANCE_TIMEFRAMES,
+    type PerformanceTimeframe,
+} from "@/modules/admin/services/performance-cache";
 import type {
     PerformanceMetrics,
     PerformanceQueryParams as ServicePerformanceQueryParams,
 } from "@/modules/admin/services/performance-data.service";
 import { getAdminPerformanceMetrics } from "@/modules/admin/services/performance-data.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
-
-const VALID_TIMEFRAMES = ["1h", "24h", "7d", "30d"] as const;
-type PerformanceTimeframe = (typeof VALID_TIMEFRAMES)[number];
 
 // 性能数据查询参数
 type PerformanceQueryParams = ServicePerformanceQueryParams & {
@@ -45,13 +46,6 @@ interface APIResponse<T = unknown> {
         timeframe?: string;
         refreshed?: boolean;
     };
-}
-
-function isValidTimeframe(value: unknown): value is PerformanceTimeframe {
-    return (
-        typeof value === "string" &&
-        (VALID_TIMEFRAMES as readonly string[]).includes(value)
-    );
 }
 
 /**
@@ -96,16 +90,21 @@ export async function GET(
     // 解析查询参数
     const url = new URL(request.url);
     const timeframeParam = url.searchParams.get("timeframe");
-    if (timeframeParam !== null && !isValidTimeframe(timeframeParam)) {
+    if (
+        timeframeParam !== null &&
+        !isValidPerformanceTimeframe(timeframeParam)
+    ) {
         return buildErrorResponse(
             "INVALID_TIMEFRAME",
-            `Invalid timeframe. Must be one of: ${VALID_TIMEFRAMES.join(", ")}`,
+            `Invalid timeframe. Must be one of: ${PERFORMANCE_TIMEFRAMES.join(", ")}`,
             { status: 400 },
         );
     }
 
     const params: PerformanceQueryParams = {
-        timeframe: isValidTimeframe(timeframeParam) ? timeframeParam : "24h",
+        timeframe: isValidPerformanceTimeframe(timeframeParam)
+            ? timeframeParam
+            : "24h",
         metrics: url.searchParams.get("metrics")?.split(","),
         bypassCache: url.searchParams.get("bypassCache") ?? "false",
         tenantId: url.searchParams.get("tenantId") ?? undefined,
@@ -203,16 +202,19 @@ export async function POST(
             unknown
         >;
         const timeframeValue = body.timeframe;
-        if (timeframeValue !== undefined && !isValidTimeframe(timeframeValue)) {
+        if (
+            timeframeValue !== undefined &&
+            !isValidPerformanceTimeframe(timeframeValue)
+        ) {
             return buildErrorResponse(
                 "INVALID_TIMEFRAME",
-                `Invalid timeframe. Must be one of: ${VALID_TIMEFRAMES.join(", ")}`,
+                `Invalid timeframe. Must be one of: ${PERFORMANCE_TIMEFRAMES.join(", ")}`,
                 { status: 400 },
             );
         }
 
         const params: PerformanceQueryParams = {
-            timeframe: isValidTimeframe(timeframeValue)
+            timeframe: isValidPerformanceTimeframe(timeframeValue)
                 ? timeframeValue
                 : "24h",
             tenantId:
@@ -263,39 +265,4 @@ export async function POST(
             error instanceof Error ? error.stack : undefined,
         );
     }
-}
-
-/**
- * 刷新性能数据缓存的辅助函数
- */
-export async function invalidatePerformanceCache(options?: {
-    tenantId?: string;
-    timeframe?: PerformanceTimeframe;
-}): Promise<void> {
-    const timeframes: PerformanceTimeframe[] = options?.timeframe
-        ? [options.timeframe]
-        : [...VALID_TIMEFRAMES];
-
-    const manager = getAdminCacheManager();
-
-    await Promise.all(
-        timeframes.map((timeframe) =>
-            manager.del(
-                AdminCacheKeyBuilder.performanceMetrics(
-                    timeframe,
-                    options?.tenantId,
-                ),
-            ),
-        ),
-    );
-
-    await invalidateAdminCache("performance:metrics", {
-        tenantId: options?.tenantId,
-        level: "USER",
-    });
-
-    console.info("[Performance Cache] Cache invalidated", {
-        timeframes,
-        tenantId: options?.tenantId,
-    });
 }
