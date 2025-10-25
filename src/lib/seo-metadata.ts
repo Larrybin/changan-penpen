@@ -320,8 +320,16 @@ function resolveShareImageUrl(
     options: CreateMetadataOptions,
     canonicalInfo: CanonicalInfo,
 ): string {
+    const openGraphImages = options.openGraph?.images;
+    const twitterImages = options.twitter?.images;
+
     const hasCustomImages = Boolean(
-        options.openGraph?.images?.length || options.twitter?.images?.length,
+        (Array.isArray(openGraphImages)
+            ? openGraphImages.length
+            : openGraphImages) ||
+            (Array.isArray(twitterImages)
+                ? twitterImages.length
+                : twitterImages),
     );
 
     if (hasCustomImages) {
