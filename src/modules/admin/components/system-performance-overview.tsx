@@ -4,33 +4,33 @@
  * 整合Web Vitals和SEO指标的综合性能监控面板
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
     Activity,
-    TrendingUp,
-    TrendingDown,
     AlertTriangle,
+    BarChart3,
     CheckCircle2,
-    XCircle,
-    RefreshCw,
+    Clock,
+    Eye,
     Gauge,
+    RefreshCw,
     Search,
     Target,
+    TrendingDown,
+    TrendingUp,
+    XCircle,
     Zap,
-    Eye,
-    BarChart3,
-    Clock
-} from 'lucide-react';
-import { WebVitalsDashboard } from './web-vitals-dashboard';
-import { SEOTechnicalDashboard } from './seo-technical-dashboard';
-import { PerformanceMonitor } from './performance-monitor';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { PerformanceMonitor } from "./performance-monitor";
+import { SEOTechnicalDashboard } from "./seo-technical-dashboard";
+import { WebVitalsDashboard } from "./web-vitals-dashboard";
 
 // 综合性能评分类型
 interface SystemPerformanceScore {
@@ -38,8 +38,8 @@ interface SystemPerformanceScore {
     performance: number;
     seo: number;
     health: number;
-    grade: 'A' | 'B' | 'C' | 'D' | 'F';
-    trend: 'improving' | 'stable' | 'declining';
+    grade: "A" | "B" | "C" | "D" | "F";
+    trend: "improving" | "stable" | "declining";
     lastUpdated: string;
 }
 
@@ -55,6 +55,49 @@ interface QuickStats {
     cacheHitRate: number;
 }
 
+type HealthCheckStatus = "pass" | "warning" | "fail";
+
+interface HealthCheckComponentStatus {
+    status?: HealthCheckStatus;
+}
+
+interface HealthCheckResponse {
+    status?: unknown;
+    issues?: unknown;
+    components?: {
+        database?: HealthCheckComponentStatus | null;
+        cache?: HealthCheckComponentStatus | null;
+        api?: HealthCheckComponentStatus | null;
+        storage?: HealthCheckComponentStatus | null;
+    } | null;
+}
+
+function normalizeHealthStatus(
+    value: unknown,
+): "healthy" | "warning" | "critical" {
+    if (value === "healthy" || value === "warning" || value === "critical") {
+        return value;
+    }
+
+    return "warning";
+}
+
+function normalizeComponentStatus(status: unknown): HealthCheckStatus {
+    if (status === "pass" || status === "warning" || status === "fail") {
+        return status;
+    }
+
+    return "pass";
+}
+
+function normalizeIssues(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value.map((item) => String(item));
+    }
+
+    return [];
+}
+
 /**
  * 系统性能评分组件
  */
@@ -65,58 +108,73 @@ interface SystemPerformanceScoreProps {
 function SystemPerformanceScoreCard({ score }: SystemPerformanceScoreProps) {
     const getGradeColor = (grade: string) => {
         switch (grade) {
-            case 'A': return 'text-green-600 bg-green-50';
-            case 'B': return 'text-blue-600 bg-blue-50';
-            case 'C': return 'text-yellow-600 bg-yellow-50';
-            case 'D': return 'text-orange-600 bg-orange-50';
-            case 'F': return 'text-red-600 bg-red-50';
-            default: return 'text-gray-600 bg-gray-50';
+            case "A":
+                return "text-green-600 bg-green-50";
+            case "B":
+                return "text-blue-600 bg-blue-50";
+            case "C":
+                return "text-yellow-600 bg-yellow-50";
+            case "D":
+                return "text-orange-600 bg-orange-50";
+            case "F":
+                return "text-red-600 bg-red-50";
+            default:
+                return "text-gray-600 bg-gray-50";
         }
     };
 
     const getScoreColor = (score: number) => {
-        if (score >= 90) return 'text-green-600';
-        if (score >= 80) return 'text-blue-600';
-        if (score >= 70) return 'text-yellow-600';
-        if (score >= 60) return 'text-orange-600';
-        return 'text-red-600';
+        if (score >= 90) return "text-green-600";
+        if (score >= 80) return "text-blue-600";
+        if (score >= 70) return "text-yellow-600";
+        if (score >= 60) return "text-orange-600";
+        return "text-red-600";
     };
 
     const getTrendIcon = (trend: string) => {
         switch (trend) {
-            case 'improving': return <TrendingUp className="h-4 w-4 text-green-600" />;
-            case 'stable': return <Activity className="h-4 w-4 text-blue-600" />;
-            case 'declining': return <TrendingDown className="h-4 w-4 text-red-600" />;
-            default: return null;
+            case "improving":
+                return <TrendingUp className="h-4 w-4 text-green-600" />;
+            case "stable":
+                return <Activity className="h-4 w-4 text-blue-600" />;
+            case "declining":
+                return <TrendingDown className="h-4 w-4 text-red-600" />;
+            default:
+                return null;
         }
     };
 
     return (
         <Card className="lg:col-span-1">
             <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <Gauge className="h-4 w-4 mr-2" />
+                <CardTitle className="flex items-center font-medium text-muted-foreground text-sm">
+                    <Gauge className="mr-2 h-4 w-4" />
                     系统综合评分
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col items-center space-y-3">
                     <div className="flex items-center space-x-2">
-                        <div className={cn(
-                            "text-5xl font-bold",
-                            getScoreColor(score.overall)
-                        )}>
+                        <div
+                            className={cn(
+                                "font-bold text-5xl",
+                                getScoreColor(score.overall),
+                            )}
+                        >
                             {score.overall}
                         </div>
                         <div className="flex flex-col items-center">
                             <Badge className={getGradeColor(score.grade)}>
                                 等级 {score.grade}
                             </Badge>
-                            <div className="flex items-center mt-1">
+                            <div className="mt-1 flex items-center">
                                 {getTrendIcon(score.trend)}
-                                <span className="text-xs text-muted-foreground ml-1">
-                                    {score.trend === 'improving' ? '改善中' :
-                                     score.trend === 'stable' ? '稳定' : '下降中'}
+                                <span className="ml-1 text-muted-foreground text-xs">
+                                    {score.trend === "improving"
+                                        ? "改善中"
+                                        : score.trend === "stable"
+                                          ? "稳定"
+                                          : "下降中"}
                                 </span>
                             </div>
                         </div>
@@ -124,37 +182,49 @@ function SystemPerformanceScoreCard({ score }: SystemPerformanceScoreProps) {
                     <Progress value={score.overall} className="w-full" />
 
                     {/* 分类评分 */}
-                    <div className="grid grid-cols-3 gap-2 w-full text-center">
+                    <div className="grid w-full grid-cols-3 gap-2 text-center">
                         <div className="space-y-1">
-                            <div className={cn(
-                                "text-lg font-semibold",
-                                getScoreColor(score.performance)
-                            )}>
+                            <div
+                                className={cn(
+                                    "font-semibold text-lg",
+                                    getScoreColor(score.performance),
+                                )}
+                            >
                                 {score.performance}
                             </div>
-                            <div className="text-xs text-muted-foreground">性能</div>
+                            <div className="text-muted-foreground text-xs">
+                                性能
+                            </div>
                         </div>
                         <div className="space-y-1">
-                            <div className={cn(
-                                "text-lg font-semibold",
-                                getScoreColor(score.seo)
-                            )}>
+                            <div
+                                className={cn(
+                                    "font-semibold text-lg",
+                                    getScoreColor(score.seo),
+                                )}
+                            >
                                 {score.seo}
                             </div>
-                            <div className="text-xs text-muted-foreground">SEO</div>
+                            <div className="text-muted-foreground text-xs">
+                                SEO
+                            </div>
                         </div>
                         <div className="space-y-1">
-                            <div className={cn(
-                                "text-lg font-semibold",
-                                getScoreColor(score.health)
-                            )}>
+                            <div
+                                className={cn(
+                                    "font-semibold text-lg",
+                                    getScoreColor(score.health),
+                                )}
+                            >
                                 {score.health}
                             </div>
-                            <div className="text-xs text-muted-foreground">健康</div>
+                            <div className="text-muted-foreground text-xs">
+                                健康
+                            </div>
                         </div>
                     </div>
 
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                         更新时间: {new Date(score.lastUpdated).toLocaleString()}
                     </p>
                 </div>
@@ -173,78 +243,76 @@ interface QuickStatsPanelProps {
 function QuickStatsPanel({ stats }: QuickStatsPanelProps) {
     const statItems = [
         {
-            title: '页面浏览量',
+            title: "页面浏览量",
             value: stats.pageViews.toLocaleString(),
             icon: <Eye className="h-4 w-4" />,
-            color: 'text-blue-600',
-            bgColor: 'bg-blue-50'
+            color: "text-blue-600",
+            bgColor: "bg-blue-50",
         },
         {
-            title: '独立访客',
+            title: "独立访客",
             value: stats.uniqueVisitors.toLocaleString(),
             icon: <Target className="h-4 w-4" />,
-            color: 'text-green-600',
-            bgColor: 'bg-green-50'
+            color: "text-green-600",
+            bgColor: "bg-green-50",
         },
         {
-            title: '跳出率',
+            title: "跳出率",
             value: `${stats.bounceRate}%`,
             icon: <Activity className="h-4 w-4" />,
-            color: stats.bounceRate > 70 ? 'text-red-600' : 'text-green-600',
-            bgColor: stats.bounceRate > 70 ? 'bg-red-50' : 'bg-green-50'
+            color: stats.bounceRate > 70 ? "text-red-600" : "text-green-600",
+            bgColor: stats.bounceRate > 70 ? "bg-red-50" : "bg-green-50",
         },
         {
-            title: '会话时长',
+            title: "会话时长",
             value: `${Math.round(stats.avgSessionDuration)}s`,
             icon: <Clock className="h-4 w-4" />,
-            color: 'text-purple-600',
-            bgColor: 'bg-purple-50'
+            color: "text-purple-600",
+            bgColor: "bg-purple-50",
         },
         {
-            title: '转化率',
+            title: "转化率",
             value: `${stats.conversionRate}%`,
             icon: <Zap className="h-4 w-4" />,
-            color: 'text-yellow-600',
-            bgColor: 'bg-yellow-50'
+            color: "text-yellow-600",
+            bgColor: "bg-yellow-50",
         },
         {
-            title: '系统可用性',
+            title: "系统可用性",
             value: `${stats.uptime}%`,
             icon: <CheckCircle2 className="h-4 w-4" />,
-            color: stats.uptime >= 99 ? 'text-green-600' : 'text-orange-600',
-            bgColor: stats.uptime >= 99 ? 'bg-green-50' : 'bg-orange-50'
+            color: stats.uptime >= 99 ? "text-green-600" : "text-orange-600",
+            bgColor: stats.uptime >= 99 ? "bg-green-50" : "bg-orange-50",
         },
         {
-            title: '错误率',
+            title: "错误率",
             value: `${stats.errorRate}%`,
             icon: <XCircle className="h-4 w-4" />,
-            color: stats.errorRate > 5 ? 'text-red-600' : 'text-green-600',
-            bgColor: stats.errorRate > 5 ? 'bg-red-50' : 'bg-green-50'
+            color: stats.errorRate > 5 ? "text-red-600" : "text-green-600",
+            bgColor: stats.errorRate > 5 ? "bg-red-50" : "bg-green-50",
         },
         {
-            title: '缓存命中率',
+            title: "缓存命中率",
             value: `${stats.cacheHitRate}%`,
             icon: <BarChart3 className="h-4 w-4" />,
-            color: stats.cacheHitRate >= 80 ? 'text-green-600' : 'text-yellow-600',
-            bgColor: stats.cacheHitRate >= 80 ? 'bg-green-50' : 'bg-yellow-50'
-        }
+            color:
+                stats.cacheHitRate >= 80 ? "text-green-600" : "text-yellow-600",
+            bgColor: stats.cacheHitRate >= 80 ? "bg-green-50" : "bg-yellow-50",
+        },
     ];
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {statItems.map((item, index) => (
-                <Card key={index}>
+            {statItems.map((item) => (
+                <Card key={item.title}>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                        <CardTitle className="flex items-center font-medium text-muted-foreground text-sm">
                             {item.icon}
                             <span className="ml-2">{item.title}</span>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className={cn(
-                            "text-2xl font-bold",
-                            item.color
-                        )}>
+                        <div className={cn("font-bold text-2xl", item.color)}>
                             {item.value}
                         </div>
                     </CardContent>
@@ -259,39 +327,49 @@ function QuickStatsPanel({ stats }: QuickStatsPanelProps) {
  */
 function SystemHealthIndicator() {
     const [healthStatus, setHealthStatus] = useState({
-        status: 'healthy' as 'healthy' | 'warning' | 'critical',
+        status: "healthy" as "healthy" | "warning" | "critical",
         issues: [] as string[],
         checks: {
-            database: 'pass' as 'pass' | 'warning' | 'fail',
-            cache: 'pass' as 'pass' | 'warning' | 'fail',
-            api: 'pass' as 'pass' | 'warning' | 'fail',
-            storage: 'pass' as 'pass' | 'warning' | 'fail'
-        }
+            database: "pass" as "pass" | "warning" | "fail",
+            cache: "pass" as "pass" | "warning" | "fail",
+            api: "pass" as "pass" | "warning" | "fail",
+            storage: "pass" as "pass" | "warning" | "fail",
+        },
     });
 
     useEffect(() => {
         // 模拟健康检查
         const checkHealth = async () => {
             try {
-                const response = await fetch('/api/v1/health');
-                const data = await response.json();
+                const response = await fetch("/api/v1/health");
+                const payload = (await response
+                    .json()
+                    .catch(() => null)) as HealthCheckResponse | null;
 
                 // 这里应该根据实际健康检查数据更新状态
                 setHealthStatus({
-                    status: data.status === 'healthy' ? 'healthy' : 'warning',
-                    issues: data.issues || [],
+                    status: normalizeHealthStatus(payload?.status),
+                    issues: normalizeIssues(payload?.issues),
                     checks: {
-                        database: data.components?.database?.status || 'pass',
-                        cache: data.components?.cache?.status || 'pass',
-                        api: data.components?.api?.status || 'pass',
-                        storage: data.components?.storage?.status || 'pass'
-                    }
+                        database: normalizeComponentStatus(
+                            payload?.components?.database?.status,
+                        ),
+                        cache: normalizeComponentStatus(
+                            payload?.components?.cache?.status,
+                        ),
+                        api: normalizeComponentStatus(
+                            payload?.components?.api?.status,
+                        ),
+                        storage: normalizeComponentStatus(
+                            payload?.components?.storage?.status,
+                        ),
+                    },
                 });
-            } catch (error) {
-                setHealthStatus(prev => ({
+            } catch (_error) {
+                setHealthStatus((prev) => ({
                     ...prev,
-                    status: 'critical',
-                    issues: ['无法连接到健康检查服务']
+                    status: "critical",
+                    issues: ["无法连接到健康检查服务"],
                 }));
             }
         };
@@ -303,44 +381,73 @@ function SystemHealthIndicator() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'healthy': return 'text-green-600 bg-green-50';
-            case 'warning': return 'text-yellow-600 bg-yellow-50';
-            case 'critical': return 'text-red-600 bg-red-50';
-            default: return 'text-gray-600 bg-gray-50';
+            case "healthy":
+                return "text-green-600 bg-green-50";
+            case "warning":
+                return "text-yellow-600 bg-yellow-50";
+            case "critical":
+                return "text-red-600 bg-red-50";
+            default:
+                return "text-gray-600 bg-gray-50";
         }
     };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
-            case 'healthy': return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-            case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
-            case 'critical': return <XCircle className="h-5 w-5 text-red-600" />;
-            default: return null;
+            case "healthy":
+                return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+            case "warning":
+                return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+            case "critical":
+                return <XCircle className="h-5 w-5 text-red-600" />;
+            default:
+                return null;
         }
     };
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-base flex items-center">
+                <CardTitle className="flex items-center text-base">
                     {getStatusIcon(healthStatus.status)}
                     <span className="ml-2">系统健康状态</span>
-                    <Badge className={cn("ml-auto", getStatusColor(healthStatus.status))}>
-                        {healthStatus.status === 'healthy' ? '正常' :
-                         healthStatus.status === 'warning' ? '警告' : '严重'}
+                    <Badge
+                        className={cn(
+                            "ml-auto",
+                            getStatusColor(healthStatus.status),
+                        )}
+                    >
+                        {healthStatus.status === "healthy"
+                            ? "正常"
+                            : healthStatus.status === "warning"
+                              ? "警告"
+                              : "严重"}
                     </Badge>
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(healthStatus.checks).map(([service, status]) => (
-                        <div key={service} className="flex items-center justify-between text-sm">
-                            <span className="capitalize text-muted-foreground">{service}</span>
-                            <Badge variant={status === 'pass' ? 'default' : 'destructive'}>
-                                {status === 'pass' ? '正常' : '异常'}
-                            </Badge>
-                        </div>
-                    ))}
+                    {Object.entries(healthStatus.checks).map(
+                        ([service, status]) => (
+                            <div
+                                key={service}
+                                className="flex items-center justify-between text-sm"
+                            >
+                                <span className="text-muted-foreground capitalize">
+                                    {service}
+                                </span>
+                                <Badge
+                                    variant={
+                                        status === "pass"
+                                            ? "default"
+                                            : "destructive"
+                                    }
+                                >
+                                    {status === "pass" ? "正常" : "异常"}
+                                </Badge>
+                            </div>
+                        ),
+                    )}
                 </div>
 
                 {healthStatus.issues.length > 0 && (
@@ -348,8 +455,10 @@ function SystemHealthIndicator() {
                         <AlertTriangle className="h-4 w-4" />
                         <AlertDescription>
                             <div className="space-y-1">
-                                {healthStatus.issues.map((issue, index) => (
-                                    <div key={index} className="text-sm">{issue}</div>
+                                {healthStatus.issues.map((issue) => (
+                                    <div key={issue} className="text-sm">
+                                        {issue}
+                                    </div>
                                 ))}
                             </div>
                         </AlertDescription>
@@ -364,10 +473,11 @@ function SystemHealthIndicator() {
  * 系统性能概览仪表盘主组件
  */
 export function SystemPerformanceOverview() {
-    const [performanceScore, setPerformanceScore] = useState<SystemPerformanceScore | null>(null);
+    const [performanceScore, setPerformanceScore] =
+        useState<SystemPerformanceScore | null>(null);
     const [quickStats, setQuickStats] = useState<QuickStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState("overview");
 
     // 计算综合性能评分
     const calculateOverallScore = useCallback(() => {
@@ -377,9 +487,9 @@ export function SystemPerformanceOverview() {
             performance: 82,
             seo: 88,
             health: 90,
-            grade: 'B',
-            trend: 'improving',
-            lastUpdated: new Date().toISOString()
+            grade: "B",
+            trend: "improving",
+            lastUpdated: new Date().toISOString(),
         };
         setPerformanceScore(score);
     }, []);
@@ -395,7 +505,7 @@ export function SystemPerformanceOverview() {
             conversionRate: 3.2,
             uptime: 99.8,
             errorRate: 0.2,
-            cacheHitRate: 87.3
+            cacheHitRate: 87.3,
         };
         setQuickStats(stats);
     }, []);
@@ -407,7 +517,7 @@ export function SystemPerformanceOverview() {
                 calculateOverallScore();
                 loadQuickStats();
             } catch (error) {
-                console.error('Failed to load performance data:', error);
+                console.error("Failed to load performance data:", error);
             } finally {
                 setIsLoading(false);
             }
@@ -425,14 +535,16 @@ export function SystemPerformanceOverview() {
     }, [calculateOverallScore, loadQuickStats]);
 
     if (isLoading) {
+        const skeletonPlaceholders = ["overall", "webVitals", "seo", "system"];
+
         return (
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">系统性能概览</h2>
+                    <h2 className="font-bold text-2xl">系统性能概览</h2>
                 </div>
                 <div className="grid gap-4 lg:grid-cols-4">
-                    {Array.from({ length: 4 }, (_, i) => (
-                        <Card key={i}>
+                    {skeletonPlaceholders.map((placeholder) => (
+                        <Card key={placeholder}>
                             <CardContent className="flex items-center justify-center py-12">
                                 <Gauge className="h-8 w-8 animate-pulse text-muted-foreground" />
                             </CardContent>
@@ -448,19 +560,23 @@ export function SystemPerformanceOverview() {
             {/* 页面标题 */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold">系统性能概览</h2>
+                    <h2 className="font-bold text-2xl">系统性能概览</h2>
                     <p className="text-muted-foreground">
                         综合监控Web Vitals、SEO指标和系统健康状态
                     </p>
                 </div>
                 <Button variant="outline" size="sm">
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="mr-2 h-4 w-4" />
                     刷新数据
                 </Button>
             </div>
 
             {/* 标签页导航 */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="space-y-4"
+            >
                 <TabsList>
                     <TabsTrigger value="overview">总览</TabsTrigger>
                     <TabsTrigger value="performance">性能监控</TabsTrigger>
@@ -471,7 +587,11 @@ export function SystemPerformanceOverview() {
                 <TabsContent value="overview" className="space-y-6">
                     {/* 综合评分和快速统计 */}
                     <div className="grid gap-6 lg:grid-cols-4">
-                        {performanceScore && <SystemPerformanceScoreCard score={performanceScore} />}
+                        {performanceScore && (
+                            <SystemPerformanceScoreCard
+                                score={performanceScore}
+                            />
+                        )}
 
                         {/* 系统健康状态 */}
                         <div className="lg:col-span-3">
@@ -484,46 +604,53 @@ export function SystemPerformanceOverview() {
 
                     {/* 快速导航卡片 */}
                     <div className="grid gap-4 md:grid-cols-3">
-                        <Card className="cursor-pointer hover:shadow-md transition-shadow"
-                              onClick={() => setActiveTab('performance')}>
+                        <Card
+                            className="cursor-pointer transition-shadow hover:shadow-md"
+                            onClick={() => setActiveTab("performance")}
+                        >
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <Activity className="h-5 w-5 mr-2 text-blue-600" />
+                                    <Activity className="mr-2 h-5 w-5 text-blue-600" />
                                     性能监控
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm text-muted-foreground">
-                                    查看Web Vitals指标、性能趋势和系统响应时间分析
+                                <p className="text-muted-foreground text-sm">
+                                    查看Web
+                                    Vitals指标、性能趋势和系统响应时间分析
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card className="cursor-pointer hover:shadow-md transition-shadow"
-                              onClick={() => setActiveTab('seo')}>
+                        <Card
+                            className="cursor-pointer transition-shadow hover:shadow-md"
+                            onClick={() => setActiveTab("seo")}
+                        >
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <Search className="h-5 w-5 mr-2 text-green-600" />
+                                    <Search className="mr-2 h-5 w-5 text-green-600" />
                                     SEO分析
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                     检查SEO技术指标、元数据优化和搜索引擎友好度
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card className="cursor-pointer hover:shadow-md transition-shadow"
-                              onClick={() => setActiveTab('health')}>
+                        <Card
+                            className="cursor-pointer transition-shadow hover:shadow-md"
+                            onClick={() => setActiveTab("health")}
+                        >
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <Gauge className="h-5 w-5 mr-2 text-purple-600" />
+                                    <Gauge className="mr-2 h-5 w-5 text-purple-600" />
                                     系统健康
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                     监控数据库连接、缓存状态和API服务健康状况
                                 </p>
                             </CardContent>

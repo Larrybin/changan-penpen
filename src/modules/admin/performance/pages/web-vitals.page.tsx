@@ -6,24 +6,30 @@
 
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WebVitalsDashboard } from "@/modules/admin/components/web-vitals-dashboard";
 import {
     Activity,
-    Info,
-    TrendingUp,
     AlertTriangle,
     CheckCircle2,
     Clock,
-    Zap,
+    ExternalLink,
+    Info,
     Target,
-    ExternalLink
+    TrendingUp,
+    Zap,
 } from "lucide-react";
+import { PageHeader } from "@/components/layout/page-header";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WebVitalsDashboard } from "@/modules/admin/components/web-vitals-dashboard";
 
 // Web Vitals指标说明
 const webVitalsInfo = {
@@ -33,7 +39,7 @@ const webVitalsInfo = {
         good: "< 2.5s",
         needsImprovement: "2.5s - 4.0s",
         poor: "> 4.0s",
-        icon: <Target className="h-5 w-5" />
+        icon: <Target className="h-5 w-5" />,
     },
     inp: {
         name: "Interaction to Next Paint (INP)",
@@ -41,7 +47,7 @@ const webVitalsInfo = {
         good: "< 200ms",
         needsImprovement: "200ms - 500ms",
         poor: "> 500ms",
-        icon: <Zap className="h-5 w-5" />
+        icon: <Zap className="h-5 w-5" />,
     },
     cls: {
         name: "Cumulative Layout Shift (CLS)",
@@ -49,7 +55,7 @@ const webVitalsInfo = {
         good: "< 0.1",
         needsImprovement: "0.1 - 0.25",
         poor: "> 0.25",
-        icon: <Activity className="h-5 w-5" />
+        icon: <Activity className="h-5 w-5" />,
     },
     fcp: {
         name: "First Contentful Paint (FCP)",
@@ -57,7 +63,7 @@ const webVitalsInfo = {
         good: "< 1.8s",
         needsImprovement: "1.8s - 3.0s",
         poor: "> 3.0s",
-        icon: <Clock className="h-5 w-5" />
+        icon: <Clock className="h-5 w-5" />,
     },
     ttfb: {
         name: "Time to First Byte (TTFB)",
@@ -65,8 +71,8 @@ const webVitalsInfo = {
         good: "< 800ms",
         needsImprovement: "800ms - 1800ms",
         poor: "> 1800ms",
-        icon: <TrendingUp className="h-5 w-5" />
-    }
+        icon: <TrendingUp className="h-5 w-5" />,
+    },
 };
 
 export default function WebVitalsPage() {
@@ -78,19 +84,27 @@ export default function WebVitalsPage() {
                 actions={
                     <div className="flex flex-wrap gap-2">
                         <Button variant="outline" asChild>
-                            <a href="https://web.dev/vitals/" target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4 mr-2" />
+                            <a
+                                href="https://web.dev/vitals/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <ExternalLink className="mr-2 h-4 w-4" />
                                 Web Vitals 指南
                             </a>
                         </Button>
                         <Button variant="outline" asChild>
-                            <a href="https://pagespeed.web.dev" target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4 mr-2" />
+                            <a
+                                href="https://pagespeed.web.dev"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <ExternalLink className="mr-2 h-4 w-4" />
                                 PageSpeed 测试
                             </a>
                         </Button>
                         <Button>
-                            <Activity className="h-4 w-4 mr-2" />
+                            <Activity className="mr-2 h-4 w-4" />
                             立即测试
                         </Button>
                     </div>
@@ -101,7 +115,8 @@ export default function WebVitalsPage() {
             <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                    <strong>Core Web Vitals</strong> 是Google用来衡量用户体验的三个关键指标：LCP（加载速度）、INP（交互性）和CLS（视觉稳定性）。
+                    <strong>Core Web Vitals</strong>{" "}
+                    是Google用来衡量用户体验的三个关键指标：LCP（加载速度）、INP（交互性）和CLS（视觉稳定性）。
                     这些指标直接影响搜索引擎排名和用户满意度。
                 </AlertDescription>
             </Alert>
@@ -117,22 +132,34 @@ export default function WebVitalsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                                 {info.description}
                             </p>
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-green-600 font-medium">良好</span>
-                                    <span className="text-green-600">{info.good}</span>
+                                    <span className="font-medium text-green-600">
+                                        良好
+                                    </span>
+                                    <span className="text-green-600">
+                                        {info.good}
+                                    </span>
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-yellow-600 font-medium">需改进</span>
-                                    <span className="text-yellow-600">{info.needsImprovement}</span>
+                                    <span className="font-medium text-yellow-600">
+                                        需改进
+                                    </span>
+                                    <span className="text-yellow-600">
+                                        {info.needsImprovement}
+                                    </span>
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-red-600 font-medium">差</span>
-                                    <span className="text-red-600">{info.poor}</span>
+                                    <span className="font-medium text-red-600">
+                                        差
+                                    </span>
+                                    <span className="text-red-600">
+                                        {info.poor}
+                                    </span>
                                 </div>
                             </div>
                         </CardContent>
@@ -150,7 +177,7 @@ export default function WebVitalsPage() {
 
                 <TabsContent value="realtime" className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">实时性能监控</h3>
+                        <h3 className="font-semibold text-lg">实时性能监控</h3>
                         <Badge variant="outline">每30秒更新</Badge>
                     </div>
                     <WebVitalsDashboard />
@@ -161,7 +188,7 @@ export default function WebVitalsPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <TrendingUp className="h-5 w-5 mr-2" />
+                                    <TrendingUp className="mr-2 h-5 w-5" />
                                     性能趋势分析
                                 </CardTitle>
                                 <CardDescription>
@@ -171,21 +198,55 @@ export default function WebVitalsPage() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {[
-                                        { metric: 'LCP', trend: 'improving', change: '-15%' },
-                                        { metric: 'INP', trend: 'stable', change: '0%' },
-                                        { metric: 'CLS', trend: 'improving', change: '-8%' },
-                                        { metric: 'FCP', trend: 'declining', change: '+12%' },
-                                    ].map((item, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                            <span className="font-medium">{item.metric}</span>
+                                        {
+                                            metric: "LCP",
+                                            trend: "improving",
+                                            change: "-15%",
+                                        },
+                                        {
+                                            metric: "INP",
+                                            trend: "stable",
+                                            change: "0%",
+                                        },
+                                        {
+                                            metric: "CLS",
+                                            trend: "improving",
+                                            change: "-8%",
+                                        },
+                                        {
+                                            metric: "FCP",
+                                            trend: "declining",
+                                            change: "+12%",
+                                        },
+                                    ].map((item) => (
+                                        <div
+                                            key={item.metric}
+                                            className="flex items-center justify-between rounded-lg bg-muted/50 p-3"
+                                        >
+                                            <span className="font-medium">
+                                                {item.metric}
+                                            </span>
                                             <div className="flex items-center space-x-2">
-                                                {item.trend === 'improving' && <TrendingUp className="h-4 w-4 text-green-600" />}
-                                                {item.trend === 'stable' && <Activity className="h-4 w-4 text-blue-600" />}
-                                                {item.trend === 'declining' && <AlertTriangle className="h-4 w-4 text-red-600" />}
-                                                <span className={`text-sm font-medium ${
-                                                    item.trend === 'improving' ? 'text-green-600' :
-                                                    item.trend === 'stable' ? 'text-blue-600' : 'text-red-600'
-                                                }`}>
+                                                {item.trend === "improving" && (
+                                                    <TrendingUp className="h-4 w-4 text-green-600" />
+                                                )}
+                                                {item.trend === "stable" && (
+                                                    <Activity className="h-4 w-4 text-blue-600" />
+                                                )}
+                                                {item.trend === "declining" && (
+                                                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                                                )}
+                                                <span
+                                                    className={`font-medium text-sm ${
+                                                        item.trend ===
+                                                        "improving"
+                                                            ? "text-green-600"
+                                                            : item.trend ===
+                                                                "stable"
+                                                              ? "text-blue-600"
+                                                              : "text-red-600"
+                                                    }`}
+                                                >
                                                     {item.change}
                                                 </span>
                                             </div>
@@ -198,7 +259,7 @@ export default function WebVitalsPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <Target className="h-5 w-5 mr-2" />
+                                    <Target className="mr-2 h-5 w-5" />
                                     性能目标达成情况
                                 </CardTitle>
                                 <CardDescription>
@@ -208,28 +269,62 @@ export default function WebVitalsPage() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {[
-                                        { metric: 'LCP目标', current: '2.2s', target: '< 2.5s', status: 'achieved' },
-                                        { metric: 'INP目标', current: '180ms', target: '< 200ms', status: 'achieved' },
-                                        { metric: 'CLS目标', current: '0.08', target: '< 0.1', status: 'achieved' },
-                                        { metric: 'FCP目标', current: '1.6s', target: '< 1.8s', status: 'achieved' },
-                                    ].map((item, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                        {
+                                            metric: "LCP目标",
+                                            current: "2.2s",
+                                            target: "< 2.5s",
+                                            status: "achieved",
+                                        },
+                                        {
+                                            metric: "INP目标",
+                                            current: "180ms",
+                                            target: "< 200ms",
+                                            status: "achieved",
+                                        },
+                                        {
+                                            metric: "CLS目标",
+                                            current: "0.08",
+                                            target: "< 0.1",
+                                            status: "achieved",
+                                        },
+                                        {
+                                            metric: "FCP目标",
+                                            current: "1.6s",
+                                            target: "< 1.8s",
+                                            status: "achieved",
+                                        },
+                                    ].map((item) => (
+                                        <div
+                                            key={item.metric}
+                                            className="flex items-center justify-between rounded-lg bg-muted/50 p-3"
+                                        >
                                             <div>
-                                                <div className="font-medium">{item.metric}</div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    当前: {item.current} | 目标: {item.target}
+                                                <div className="font-medium">
+                                                    {item.metric}
+                                                </div>
+                                                <div className="text-muted-foreground text-sm">
+                                                    当前: {item.current} | 目标:{" "}
+                                                    {item.target}
                                                 </div>
                                             </div>
                                             <Badge
-                                                variant={item.status === 'achieved' ? 'default' : 'destructive'}
+                                                variant={
+                                                    item.status === "achieved"
+                                                        ? "default"
+                                                        : "destructive"
+                                                }
                                                 className="flex items-center space-x-1"
                                             >
-                                                {item.status === 'achieved' ? (
+                                                {item.status === "achieved" ? (
                                                     <CheckCircle2 className="h-3 w-3" />
                                                 ) : (
                                                     <AlertTriangle className="h-3 w-3" />
                                                 )}
-                                                <span>{item.status === 'achieved' ? '已达成' : '未达成'}</span>
+                                                <span>
+                                                    {item.status === "achieved"
+                                                        ? "已达成"
+                                                        : "未达成"}
+                                                </span>
                                             </Badge>
                                         </div>
                                     ))}
@@ -251,47 +346,72 @@ export default function WebVitalsPage() {
                             <CardContent className="space-y-4">
                                 {[
                                     {
-                                        priority: 'high',
-                                        title: '优化图片加载',
-                                        description: '使用现代图片格式(WebP/AVIF)和响应式图片，实现懒加载',
-                                        impact: 'LCP, CLS',
-                                        effort: 'Medium'
+                                        priority: "high",
+                                        title: "优化图片加载",
+                                        description:
+                                            "使用现代图片格式(WebP/AVIF)和响应式图片，实现懒加载",
+                                        impact: "LCP, CLS",
+                                        effort: "Medium",
                                     },
                                     {
-                                        priority: 'medium',
-                                        title: '减少JavaScript执行时间',
-                                        description: '分割代码包，延迟加载非关键JavaScript',
-                                        impact: 'INP, FCP',
-                                        effort: 'High'
+                                        priority: "medium",
+                                        title: "减少JavaScript执行时间",
+                                        description:
+                                            "分割代码包，延迟加载非关键JavaScript",
+                                        impact: "INP, FCP",
+                                        effort: "High",
                                     },
                                     {
-                                        priority: 'low',
-                                        title: '优化字体加载',
-                                        description: '使用font-display: swap优化字体加载策略',
-                                        impact: 'FCP, CLS',
-                                        effort: 'Low'
-                                    }
-                                ].map((recommendation, index) => (
-                                    <Alert key={index} className={
-                                        recommendation.priority === 'high' ? 'border-red-200 bg-red-50' :
-                                        recommendation.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                                        'border-blue-200 bg-blue-50'
-                                    }>
-                                        <AlertTriangle className={`h-4 w-4 ${
-                                            recommendation.priority === 'high' ? 'text-red-600' :
-                                            recommendation.priority === 'medium' ? 'text-yellow-600' :
-                                            'text-blue-600'
-                                        }`} />
+                                        priority: "low",
+                                        title: "优化字体加载",
+                                        description:
+                                            "使用font-display: swap优化字体加载策略",
+                                        impact: "FCP, CLS",
+                                        effort: "Low",
+                                    },
+                                ].map((recommendation) => (
+                                    <Alert
+                                        key={`${recommendation.priority}-${recommendation.title}`}
+                                        className={
+                                            recommendation.priority === "high"
+                                                ? "border-red-200 bg-red-50"
+                                                : recommendation.priority ===
+                                                    "medium"
+                                                  ? "border-yellow-200 bg-yellow-50"
+                                                  : "border-blue-200 bg-blue-50"
+                                        }
+                                    >
+                                        <AlertTriangle
+                                            className={`h-4 w-4 ${
+                                                recommendation.priority ===
+                                                "high"
+                                                    ? "text-red-600"
+                                                    : recommendation.priority ===
+                                                        "medium"
+                                                      ? "text-yellow-600"
+                                                      : "text-blue-600"
+                                            }`}
+                                        />
                                         <AlertDescription>
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
-                                                    <h4 className="font-medium">{recommendation.title}</h4>
+                                                    <h4 className="font-medium">
+                                                        {recommendation.title}
+                                                    </h4>
                                                     <div className="flex items-center space-x-2">
-                                                        <Badge variant="outline">{recommendation.impact}</Badge>
-                                                        <Badge variant="outline">{recommendation.effort}</Badge>
+                                                        <Badge variant="outline">
+                                                            {
+                                                                recommendation.impact
+                                                            }
+                                                        </Badge>
+                                                        <Badge variant="outline">
+                                                            {
+                                                                recommendation.effort
+                                                            }
+                                                        </Badge>
                                                     </div>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">
+                                                <p className="text-muted-foreground text-sm">
                                                     {recommendation.description}
                                                 </p>
                                             </div>
