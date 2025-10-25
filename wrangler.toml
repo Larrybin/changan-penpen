@@ -32,6 +32,38 @@ upload_source_maps = true
 [version_metadata]
     binding = "CF_VERSION_METADATA"
 
+[workers]
+    name = "next-cf-app-og-image"
+    main = ".open-next/server-functions/ogImage/index.mjs"
+    compatibility_date = "2025-03-01"
+    compatibility_flags = [
+        "global_fetch_strictly_public",
+    ]
+    workers_dev = true
+
+    [workers.assets]
+        binding = "ASSETS"
+        directory = ".open-next/assets"
+
+    [[workers.d1_databases]]
+        binding = "next_cf_app"
+        database_name = "next-cf-app"
+        database_id = "0a4563c7-3ffb-4805-a564-681f81562d31"
+        migrations_dir = "./src/drizzle"
+
+    [[workers.r2_buckets]]
+        binding = "next_cf_app_bucket"
+        bucket_name = "next-cf-app-bucket"
+
+    [workers.ai]
+        binding = "AI"
+
+    [workers.version_metadata]
+        binding = "CF_VERSION_METADATA"
+
+    [[workers.routes]]
+        pattern = "/opengraph-image*"
+
 [env.production]
 
 
@@ -50,3 +82,35 @@ upload_source_maps = true
 
 [env.production.version_metadata]
     binding = "CF_VERSION_METADATA"
+
+[[env.production.workers]]
+    name = "next-cf-app-og-image"
+    main = ".open-next/server-functions/ogImage/index.mjs"
+    compatibility_date = "2025-03-01"
+    compatibility_flags = [
+        "global_fetch_strictly_public",
+    ]
+    workers_dev = true
+
+    [env.production.workers.assets]
+        binding = "ASSETS"
+        directory = ".open-next/assets"
+
+    [[env.production.workers.d1_databases]]
+        binding = "next_cf_app"
+        database_name = "next-cf-app"
+        database_id = "0a4563c7-3ffb-4805-a564-681f81562d31"
+        migrations_dir = "./src/drizzle"
+
+    [[env.production.workers.r2_buckets]]
+        binding = "next_cf_app_bucket"
+        bucket_name = "next-cf-app-bucket"
+
+    [env.production.workers.ai]
+        binding = "AI"
+
+    [env.production.workers.version_metadata]
+        binding = "CF_VERSION_METADATA"
+
+    [[env.production.workers.routes]]
+        pattern = "/opengraph-image*"
