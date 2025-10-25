@@ -12,7 +12,13 @@ import { readCspNonce } from "@/lib/security/csp";
 import { sanitizeCustomHtml } from "@/lib/seo";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 
-const SHARED_NAMESPACES = ["Common", "Nav", "Auth", "AuthForms"] as const;
+const SHARED_NAMESPACES = [
+    "Common",
+    "Nav",
+    "Auth",
+    "AuthForms",
+    "Accessibility",
+] as const;
 
 export default async function RootLayout({
     children,

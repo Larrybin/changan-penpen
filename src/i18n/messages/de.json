@@ -6,6 +6,10 @@
         "languageSwitcherLabel": "Sprache auswählen",
         "brandTagline": "KI-Bildbearbeitung, mit der du die Nummer eins bleibst."
     },
+    "Accessibility": {
+        "skipToMain": "Skip to main content",
+        "skipToNavigation": "Skip to navigation"
+    },
     "Nav": {
         "home": "Startseite",
         "dashboard": "Dashboard",
