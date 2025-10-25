@@ -560,14 +560,10 @@ class DocConsistencyChecker {
             // Memory: 检索历史文档问题模式
             const historicalPatterns = await this.getMCPHistoricalPatterns();
 
-            // Sequential-thinking: 分析文档质量策略
-            const qualityStrategy = await this.getMCPQualityStrategy(docFiles);
-
             // 应用MCP分析结果
             await this.applyMCPAnalysis(
                 bestPractices,
                 historicalPatterns,
-                qualityStrategy,
                 docFiles,
             );
         } catch (error) {
@@ -631,46 +627,10 @@ class DocConsistencyChecker {
         };
     }
 
-    async getMCPQualityStrategy(docFiles) {
-        // 模拟Sequential-thinking MCP调用
-        return {
-            source: "sequential-thinking",
-            strategy: [
-                {
-                    step: 1,
-                    focus: "优先检查核心文档",
-                    reasoning: "README和API文档是用户最常查看的文档",
-                    files: docFiles.filter(
-                        (f) =>
-                            f.relativePath.includes("README") ||
-                            f.relativePath.includes("API"),
-                    ),
-                },
-                {
-                    step: 2,
-                    focus: "检查文档间的交叉引用",
-                    reasoning: "确保文档间的链接一致性",
-                    action: "验证所有内部链接",
-                },
-                {
-                    step: 3,
-                    focus: "验证代码示例的准确性",
-                    reasoning: "代码示例应该能实际运行",
-                    action: "检查代码语法和文件引用",
-                },
-            ],
-        };
-    }
-
     /**
      * 应用MCP分析结果
      */
-    async applyMCPAnalysis(
-        bestPractices,
-        historicalPatterns,
-        qualityStrategy,
-        docFiles,
-    ) {
+    async applyMCPAnalysis(bestPractices, historicalPatterns, docFiles) {
         // 应用最佳实践检查
         if (bestPractices.practices) {
             for (const practice of bestPractices.practices) {
@@ -682,13 +642,6 @@ class DocConsistencyChecker {
         if (historicalPatterns.patterns) {
             for (const pattern of historicalPatterns.patterns) {
                 await this.applyHistoricalPattern(pattern, docFiles);
-            }
-        }
-
-        // 应用质量策略
-        if (qualityStrategy.strategy) {
-            for (const step of qualityStrategy.strategy) {
-                await this.applyQualityStrategyStep(step, docFiles);
             }
         }
     }
@@ -1140,17 +1093,6 @@ class DocConsistencyChecker {
                 }
                 // 可以添加更多模式检查
             }
-        }
-    }
-
-    async applyQualityStrategyStep(step, _docFiles) {
-        // 应用质量策略步骤
-        if (step.focus === "优先检查核心文档") {
-            await this.checkCoreDocuments(step.files);
-        } else if (step.focus === "检查文档间的交叉引用") {
-            // 已经在checkLinkConsistency中处理
-        } else if (step.focus === "验证代码示例的准确性") {
-            // 已经在checkCodeBlockConsistency中处理
         }
     }
 
