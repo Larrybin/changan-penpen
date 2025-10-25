@@ -69,6 +69,14 @@ jobs:
           name: next-build
           path: .
 
+      - name: Download OpenNext bundle artifact
+        id: download-open-next
+        continue-on-error: true
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: open-next-bundle
+          path: .
+
       - name: Detect downloaded Next.js build
         id: next-build
         run: |
@@ -76,6 +84,18 @@ jobs:
           if [ "${DOWNLOAD_OUTCOME}" = "failure" ]; then
             echo "Download step reported failure (likely missing artifact); continuing with fresh build"
           fi
+          if [ "${DOWNLOAD_OPEN_NEXT_OUTCOME}" = "failure" ]; then
+            echo "OpenNext artifact download reported failure (likely missing artifact); will rebuild if needed"
+          fi
+
+          if [ -d ".open-next" ]; then
+            echo "Detected OpenNext bundle artifact"
+            echo "open_next_from_artifact=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "OpenNext bundle artifact not found"
+            echo "open_next_from_artifact=false" >>"$GITHUB_OUTPUT"
+          fi
+
           if [ -d ".next" ]; then
             echo "Reusing Next.js build artifact"
             echo "from_artifact=true" >>"$GITHUB_OUTPUT"
@@ -87,6 +107,7 @@ jobs:
           fi
         env:
           DOWNLOAD_OUTCOME: ${{ steps.download-next.outcome }}
+          DOWNLOAD_OPEN_NEXT_OUTCOME: ${{ steps.download-open-next.outcome }}
 
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -176,7 +197,7 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Build OpenNext bundle (reusing CI build)
-        if: steps.next-build.outputs.from_artifact == 'true'
+        if: steps.next-build.outputs.from_artifact == 'true' && steps.next-build.outputs.open_next_from_artifact != 'true'
         run: |
           rm -rf .open-next
           npx @opennextjs/cloudflare build --skipNextBuild
