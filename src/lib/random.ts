@@ -3,13 +3,39 @@ const globalCrypto: Crypto | undefined =
         ? (globalThis as { crypto?: Crypto }).crypto
         : undefined;
 
-function getNodeCrypto(): typeof import("node:crypto") | undefined {
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        return require("node:crypto") as typeof import("node:crypto");
-    } catch {
-        return undefined;
+type NodeCrypto = typeof import("node:crypto");
+type NodeRequireFunction = (id: string) => unknown;
+
+let cachedNodeCrypto: NodeCrypto | null | undefined;
+
+function getNodeCrypto(): NodeCrypto | undefined {
+    if (cachedNodeCrypto !== undefined) {
+        return cachedNodeCrypto ?? undefined;
     }
+
+    const isNode =
+        typeof process !== "undefined" &&
+        typeof process.versions?.node === "string";
+
+    if (isNode) {
+        try {
+            const globalWithRequire = globalThis as {
+                require?: NodeRequireFunction;
+            };
+            const req =
+                typeof globalWithRequire.require === "function"
+                    ? globalWithRequire.require
+                    : (Function("return require")() as NodeRequireFunction);
+            cachedNodeCrypto = req("crypto") as NodeCrypto;
+            return cachedNodeCrypto;
+        } catch {
+            cachedNodeCrypto = null;
+            return undefined;
+        }
+    }
+
+    cachedNodeCrypto = null;
+    return undefined;
 }
 
 const UINT32_MAX = 0x100000000;
