@@ -8,6 +8,31 @@ type NodeRequireFunction = (id: string) => unknown;
 
 let cachedNodeCrypto: NodeCrypto | null | undefined;
 
+let fallbackCounter = 0;
+
+function fallbackEntropy32(): number {
+    const timestamp = Date.now();
+    const performanceNow =
+        typeof performance !== "undefined" &&
+        typeof performance.now === "function"
+            ? Math.floor(performance.now() * 1000)
+            : 0;
+    const randomContribution =
+        typeof Math.random === "function"
+            ? Math.floor(Math.random() * UINT32_MAX)
+            : 0;
+
+    fallbackCounter = (fallbackCounter + 1) >>> 0;
+
+    return (
+        ((timestamp & 0xffffffff) ^
+            (performanceNow & 0xffffffff) ^
+            fallbackCounter ^
+            randomContribution) >>>
+        0
+    );
+}
+
 function getNodeCrypto(): NodeCrypto | undefined {
     if (cachedNodeCrypto !== undefined) {
         return cachedNodeCrypto ?? undefined;
@@ -71,7 +96,11 @@ export function secureRandomInt(maxExclusive: number): number {
         return rand % max;
     }
 
-    return 0;
+    if (max <= 1) {
+        return 0;
+    }
+
+    return fallbackEntropy32() % max;
 }
 
 function secureRandomFraction(): number {
@@ -86,7 +115,7 @@ function secureRandomFraction(): number {
         return nodeCrypto.randomBytes(4).readUInt32BE(0) / UINT32_MAX;
     }
 
-    return 0;
+    return fallbackEntropy32() / UINT32_MAX;
 }
 
 export function secureRandomNumber(min: number, max: number): number {
