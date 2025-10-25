@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminQueryKeys } from "@/lib/query/keys";
 import { adminApiClient } from "@/modules/admin/api/client";
 import { UsageSparkline } from "@/modules/admin/dashboard/components/usage-sparkline";
+import { SystemPerformanceOverview } from "@/modules/admin/components/system-performance-overview";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 
 const ORDER_SKELETON_ROW_KEYS = Array.from(
@@ -436,6 +437,9 @@ export function AdminDashboardPage() {
             />
 
             <MetricCards metrics={metricCards} isLoading={isLoading} />
+
+            {/* 性能监控概览 */}
+            <SystemPerformanceOverview />
 
             <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
                 <TrendCard usageTrend={usageTrend} isLoading={isLoading} />

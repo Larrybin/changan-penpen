@@ -60,6 +60,30 @@ export const AdminCacheKeyBuilder = {
     recentCredits(tenantId?: string): string {
         return AdminCacheKeyBuilder.realtimeKey("credits:recent", { tenantId });
     },
+    // 性能数据缓存键
+    performanceMetrics(timeframe: string, tenantId?: string): string {
+        const params = { timeframe, tenantId };
+        return AdminCacheKeyBuilder.userKey(
+            "performance:metrics",
+            "global",
+            params,
+        );
+    },
+    webVitalsData(timeframe: string, tenantId?: string): string {
+        const params = { timeframe, tenantId };
+        return AdminCacheKeyBuilder.userKey(
+            "webvitals:data",
+            "global",
+            params,
+        );
+    },
+    seoScanData(tenantId?: string): string {
+        const params = { tenantId };
+        return AdminCacheKeyBuilder.userKey("seo:scan", "global", params);
+    },
+    systemHealthData(): string {
+        return AdminCacheKeyBuilder.realtimeKey("system:health");
+    },
 } as const;
 
 // 智能缓存管理器

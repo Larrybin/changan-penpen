@@ -31,6 +31,12 @@ const adminRoutes = {
         coupons: "/admin/catalog/coupons",
         contentPages: "/admin/catalog/content-pages",
     },
+    performance: {
+        overview: "/admin/performance",
+        webVitals: "/admin/performance/web-vitals",
+        seo: "/admin/performance/seo",
+        systemHealth: "/admin/performance/system-health",
+    },
     reports: {
         list: "/admin/reports",
     },

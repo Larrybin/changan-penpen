@@ -180,6 +180,15 @@ const adminResourceDefinitions: readonly AdminResourceDefinition[] = [
         },
     },
     {
+        name: "performance",
+        label: "性能监控",
+        icon: "activity",
+        group: "运营",
+        routes: {
+            list: adminRoutes.performance.overview,
+        },
+    },
+    {
         name: "todos",
         label: "代办事项",
         icon: "check-square",
