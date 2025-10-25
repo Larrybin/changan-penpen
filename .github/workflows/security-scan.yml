@@ -39,7 +39,7 @@ jobs:
       - name: SAST Analysis with CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: javascript-typescript
+          languages: javascript
           config-file: .github/codeql/codeql-config.yml
 
       - name: Install dependencies
