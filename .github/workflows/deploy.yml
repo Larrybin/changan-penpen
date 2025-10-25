@@ -79,9 +79,11 @@ jobs:
           if [ -d ".next" ]; then
             echo "Reusing Next.js build artifact"
             echo "from_artifact=true" >>"$GITHUB_OUTPUT"
+            echo "needs_fresh_build=false" >>"$GITHUB_OUTPUT"
           else
             echo "CI build artifact not found; performing fresh build"
             echo "from_artifact=false" >>"$GITHUB_OUTPUT"
+            echo "needs_fresh_build=true" >>"$GITHUB_OUTPUT"
           fi
         env:
           DOWNLOAD_OUTCOME: ${{ steps.download-next.outcome }}
@@ -168,7 +170,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Build Next.js (diagnostic)
-        if: steps.next-build.outputs.from_artifact != 'true'
+        if: steps.next-build.outputs.needs_fresh_build == 'true'
         run: pnpm run build
         env:
           NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
@@ -187,10 +189,10 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
       - name: Build application
-        if: steps.next-build.outputs.from_artifact != 'true'
+        if: steps.next-build.outputs.needs_fresh_build == 'true'
         run: |
           rm -rf .open-next
-          pnpm run build:cf
+          pnpm run build:cf -- --skipNextBuild
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
