@@ -1,4 +1,5 @@
 ﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createRandomId } from "@/lib/random";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 const DEFAULT_ALLOWED_MIME_TYPES = [
@@ -288,36 +289,6 @@ function normalizeFolder(folder: string | undefined) {
     while (end >= start && val.charCodeAt(end) === 47 /* '/' */) end--;
     const normalized = val.slice(start, end + 1);
     return normalized || "uploads";
-}
-
-function createRandomId() {
-    if (
-        typeof globalThis.crypto !== "undefined" &&
-        typeof (globalThis.crypto as Crypto).randomUUID === "function"
-    ) {
-        return (globalThis.crypto as Crypto).randomUUID();
-    }
-    if (
-        typeof globalThis.crypto !== "undefined" &&
-        typeof (globalThis.crypto as Crypto).getRandomValues === "function"
-    ) {
-        const bytes = new Uint8Array(16);
-        (globalThis.crypto as Crypto).getRandomValues(bytes);
-        let out = "";
-        for (let i = 0; i < bytes.length; i++) {
-            out += bytes[i].toString(16).padStart(2, "0");
-        }
-        return out;
-    }
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const nodeCrypto =
-            require("node:crypto") as typeof import("node:crypto");
-        return nodeCrypto.randomBytes(16).toString("hex");
-    } catch {
-        // Ignore and fall back to timestamp-based identifier
-    }
-    // 鏈€鍚庡厹搴曪細浣跨敤鏃堕棿鎴筹紝閬垮厤渚濊禆闈炲畨鍏ㄩ殢鏈?    return `${Date.now()}-${performance?.now?.() ?? 0}`;
 }
 
 function sanitizeExtension(filename: string) {

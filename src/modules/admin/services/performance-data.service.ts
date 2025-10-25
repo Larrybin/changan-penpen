@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { secureRandomNumber } from "@/lib/random";
 
 // 性能指标数据类型
 export const WebVitalsDataSchema = z.object({
@@ -245,12 +246,12 @@ export class PerformanceDataService {
 
         // 当前数据（在实际应用中，这应该来自实时监控）
         const currentData: WebVitalsData = {
-            lcp: 2500 + Math.random() * 1000,
-            inp: 100 + Math.random() * 200,
-            cls: 0.1 + Math.random() * 0.2,
-            fcp: 1800 + Math.random() * 800,
-            ttfb: 400 + Math.random() * 300,
-            score: 75 + Math.random() * 20,
+            lcp: secureRandomNumber(2500, 3500),
+            inp: secureRandomNumber(100, 300),
+            cls: secureRandomNumber(0.1, 0.3),
+            fcp: secureRandomNumber(1800, 2600),
+            ttfb: secureRandomNumber(400, 700),
+            score: secureRandomNumber(75, 95),
             timestamp: new Date().toISOString(),
             url:
                 typeof window !== "undefined"
@@ -318,14 +319,14 @@ export class PerformanceDataService {
     ): Promise<PerformanceMetrics["quickStats"]> {
         // 模拟数据，实际应该从分析服务获取
         const baseStats = {
-            pageViews: 50000 + Math.random() * 20000,
-            uniqueVisitors: 8000 + Math.random() * 4000,
-            bounceRate: 30 + Math.random() * 20,
-            avgSessionDuration: 180 + Math.random() * 120,
-            conversionRate: 2 + Math.random() * 3,
-            uptime: 99 + Math.random(),
-            errorRate: Math.random() * 2,
-            cacheHitRate: 80 + Math.random() * 15,
+            pageViews: secureRandomNumber(50000, 70000),
+            uniqueVisitors: secureRandomNumber(8000, 12000),
+            bounceRate: secureRandomNumber(30, 50),
+            avgSessionDuration: secureRandomNumber(180, 300),
+            conversionRate: secureRandomNumber(2, 5),
+            uptime: secureRandomNumber(99, 100),
+            errorRate: secureRandomNumber(0, 2),
+            cacheHitRate: secureRandomNumber(80, 95),
         };
 
         // 根据时间范围调整数据
@@ -489,12 +490,12 @@ export class PerformanceDataService {
         const now = Date.now();
 
         return dataPoints.map((offset, _index) => ({
-            lcp: 2000 + Math.random() * 1500,
-            inp: 80 + Math.random() * 250,
-            cls: 0.05 + Math.random() * 0.3,
-            fcp: 1500 + Math.random() * 1000,
-            ttfb: 300 + Math.random() * 500,
-            score: 70 + Math.random() * 25,
+            lcp: secureRandomNumber(2000, 3500),
+            inp: secureRandomNumber(80, 330),
+            cls: secureRandomNumber(0.05, 0.35),
+            fcp: secureRandomNumber(1500, 2500),
+            ttfb: secureRandomNumber(300, 800),
+            score: secureRandomNumber(70, 95),
             timestamp: new Date(now - offset).toISOString(),
             url:
                 typeof window !== "undefined"

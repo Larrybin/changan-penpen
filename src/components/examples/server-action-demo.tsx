@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCrudServerAction } from "@/hooks/use-server-action";
+import { secureRandomNumber } from "@/lib/random";
 import { toast } from "@/lib/toast";
 
 interface DemoTodo {
@@ -33,7 +34,7 @@ async function createTodoAction(input: { title: string; description: string }) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // 模拟随机失败 (20% 概率)
-    if (Math.random() < 0.2) {
+    if (secureRandomNumber(0, 1) < 0.2) {
         throw new Error("创建任务失败：服务器错误");
     }
 
@@ -48,7 +49,7 @@ async function createTodoAction(input: { title: string; description: string }) {
 async function updateTodoAction(input: { id: number; title: string }) {
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    if (Math.random() < 0.15) {
+    if (secureRandomNumber(0, 1) < 0.15) {
         throw new Error("更新任务失败：网络错误");
     }
 
@@ -61,7 +62,7 @@ async function updateTodoAction(input: { id: number; title: string }) {
 async function deleteTodoAction(input: { id: number }) {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    if (Math.random() < 0.1) {
+    if (secureRandomNumber(0, 1) < 0.1) {
         throw new Error("删除任务失败：权限不足");
     }
 

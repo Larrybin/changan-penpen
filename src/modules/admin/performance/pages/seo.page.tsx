@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { secureRandomInt } from "@/lib/random";
 import { SEOTechnicalDashboard } from "@/modules/admin/components/seo-technical-dashboard";
 
 // SEO检查类别
@@ -143,7 +144,7 @@ export default function SEOPage() {
                         <CardContent>
                             <div className="flex flex-col items-center space-y-2">
                                 <div className="font-bold text-2xl">
-                                    {85 + Math.floor(Math.random() * 15)}
+                                    {85 + secureRandomInt(15)}
                                 </div>
                                 <div className="flex items-center space-x-1">
                                     <CheckCircle2 className="h-3 w-3 text-green-600" />
@@ -152,7 +153,7 @@ export default function SEOPage() {
                                     </span>
                                 </div>
                                 <Progress
-                                    value={85 + Math.floor(Math.random() * 15)}
+                                    value={85 + secureRandomInt(15)}
                                     className="mt-2 w-full"
                                 />
                             </div>

@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import type { ApiErrorDetails as ApiClientErrorDetails } from "@/lib/api-client";
 import { ApiError } from "@/lib/http-error";
+import { secureRandomNumber } from "@/lib/random";
 import { toast } from "@/lib/toast";
 
 function extractRetryAfter(details: unknown) {
@@ -146,7 +147,7 @@ function createAdminQueryClient() {
                         baseDelay * 2 ** attemptIndex,
                         maxDelay,
                     );
-                    return delay + Math.random() * 1000; // 添加随机抖动
+                    return delay + secureRandomNumber(0, 1000); // 添加随机抖动
                 },
 
                 // 网络状态变化处理
@@ -170,7 +171,7 @@ function createAdminQueryClient() {
 
                 // 变更重试延迟
                 retryDelay: (_attemptIndex) => {
-                    return 1000 + Math.random() * 1000; // 1-2秒随机延迟
+                    return 1000 + secureRandomNumber(0, 1000); // 1-2秒随机延迟
                 },
 
                 // 网络状态变化处理

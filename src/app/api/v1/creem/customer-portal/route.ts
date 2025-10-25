@@ -2,6 +2,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
 import { json } from "@/lib/http";
 import { createApiErrorResponse } from "@/lib/http-error";
+import { secureRandomInt } from "@/lib/random";
 import { requireSessionUser } from "@/modules/auth/utils/guards";
 import { requireCreemCustomerId } from "@/modules/creem/utils/guards";
 
@@ -205,31 +206,4 @@ async function fetchWithRetry(
     }
 
     return { ok: false, status: lastFailure.status, text: lastFailure.text };
-}
-
-function secureRandomInt(maxExclusive: number): number {
-    if (maxExclusive <= 0) return 0;
-    const g: Crypto | undefined = (globalThis as unknown as { crypto?: Crypto })
-        .crypto;
-    if (g && typeof g.getRandomValues === "function") {
-        const arr = new Uint32Array(1);
-        g.getRandomValues(arr);
-        return arr[0] % maxExclusive;
-    }
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const nodeCrypto =
-            require("node:crypto") as typeof import("node:crypto");
-        // Remove modulo bias: use rejection sampling
-        const range = 0xffffffff + 1;
-        const limit = Math.floor(range / maxExclusive) * maxExclusive;
-        let rand: number;
-        do {
-            rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
-        } while (rand >= limit);
-        return rand % maxExclusive;
-    } catch {
-        // Ignore: Node.js crypto module unavailable in this environment
-    }
-    return 0;
 }

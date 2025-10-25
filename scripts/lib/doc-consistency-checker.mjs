@@ -5,6 +5,7 @@
  * 集成MCP工具提供智能文档分析和一致性验证
  */
 
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -767,7 +768,19 @@ class DocConsistencyChecker {
     }
 
     generateIssueId() {
-        return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        if (typeof crypto.randomUUID === "function") {
+            return `doc_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+        }
+
+        if (typeof crypto.randomBytes === "function") {
+            return `doc_${crypto.randomBytes(9).toString("hex").slice(0, 18)}`;
+        }
+
+        const hrtime =
+            typeof process !== "undefined" && process.hrtime?.bigint
+                ? process.hrtime.bigint().toString(36)
+                : Date.now().toString(36);
+        return `doc_${Date.now().toString(36)}_${hrtime}`;
     }
 
     simpleHash(str) {

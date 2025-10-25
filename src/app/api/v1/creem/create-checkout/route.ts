@@ -1,6 +1,7 @@
 ﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
 import { ApiError } from "@/lib/http-error";
+import { createRandomId, secureRandomInt } from "@/lib/random";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import {
@@ -125,7 +126,8 @@ function generateRequestId(): string {
     } catch {
         // Ignore: node crypto fallback not available
     }
-    return `req_${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`;
+    const randomId = createRandomId().replace(/-/g, "");
+    return `req_${randomId}`;
 }
 
 // -------------------- helpers to reduce POST complexity --------------------
@@ -625,38 +627,6 @@ async function fetchWithRetry(
 
 function sleep(ms: number) {
     return new Promise((res) => setTimeout(res, ms));
-}
-
-function secureRandomInt(maxExclusive: number): number {
-    if (maxExclusive <= 0) return 0;
-    const g: Crypto | undefined = (globalThis as unknown as { crypto?: Crypto })
-        .crypto;
-    // 2^32
-    const maxUint32 = 0x100000000;
-    const limit = Math.floor(maxUint32 / maxExclusive) * maxExclusive;
-    if (g && typeof g.getRandomValues === "function") {
-        // browser/recent runtime: use getRandomValues, rejection sampling
-        let rand: number;
-        do {
-            const arr = new Uint32Array(1);
-            g.getRandomValues(arr);
-            rand = arr[0];
-        } while (rand >= limit);
-        return rand % maxExclusive;
-    }
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const nodeCrypto =
-            require("node:crypto") as typeof import("node:crypto");
-        let rand: number;
-        do {
-            rand = nodeCrypto.randomBytes(4).readUInt32BE(0);
-        } while (rand >= limit);
-        return rand % maxExclusive;
-    } catch {
-        // Ignore: unable to access Node.js crypto in this environment
-    }
-    return 0;
 }
 
 function backoffWithJitter(attempt: number) {
