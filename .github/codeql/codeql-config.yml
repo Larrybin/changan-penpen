@@ -15,6 +15,7 @@ paths-ignore:
   - build/**
   - coverage/**
   - public/**
+  - src/app/favicon.ico
   - pnpm-lock.yaml
   - pnpm-workspace.yaml
   - "**/.pnpm/**"
