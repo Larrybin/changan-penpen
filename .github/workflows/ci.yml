@@ -188,12 +188,6 @@ jobs:
     needs:
       - lint-docs
       - typecheck
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
     steps:
       - *checkout
       - name: Setup Node.js and pnpm
@@ -219,7 +213,7 @@ jobs:
         run: pnpm build
 
       - name: Build OpenNext bundle (Cloudflare)
-        if: github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' && env.BETTER_AUTH_SECRET != '' && env.GOOGLE_CLIENT_ID != '' && env.GOOGLE_CLIENT_SECRET != ''
+        if: github.event_name != 'pull_request' && secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' && secrets.BETTER_AUTH_SECRET != '' && secrets.GOOGLE_CLIENT_ID != '' && secrets.GOOGLE_CLIENT_SECRET != ''
         id: build-open-next
         run: pnpm run build:cf -- --skipNextBuild
         env:
