@@ -6,6 +6,10 @@
         "languageSwitcherLabel": "Choisir la langue",
         "brandTagline": "L'édition d'images par IA qui vous maintient au top."
     },
+    "Accessibility": {
+        "skipToMain": "Skip to main content",
+        "skipToNavigation": "Skip to navigation"
+    },
     "Nav": {
         "home": "Accueil",
         "dashboard": "Tableau de bord",
