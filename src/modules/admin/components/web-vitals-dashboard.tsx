@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { secureRandomNumber } from "@/lib/random";
 import { cn } from "@/lib/utils";
 
 // Web Vitals数据类型
@@ -409,11 +410,11 @@ export function WebVitalsDashboard() {
             const timestamp = now - i * 24 * 60 * 60 * 1000; // 每天
             trends.push({
                 timestamp,
-                lcp: 2000 + Math.random() * 1000,
-                inp: 150 + Math.random() * 100,
-                cls: 0.05 + Math.random() * 0.1,
-                fcp: 1500 + Math.random() * 500,
-                ttfb: 500 + Math.random() * 300,
+                lcp: secureRandomNumber(2000, 3000),
+                inp: secureRandomNumber(150, 250),
+                cls: secureRandomNumber(0.05, 0.15),
+                fcp: secureRandomNumber(1500, 2000),
+                ttfb: secureRandomNumber(500, 800),
             });
         }
 

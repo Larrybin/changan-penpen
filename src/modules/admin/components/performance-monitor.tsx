@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { getAdminCacheManager } from "@/lib/cache/admin-cache";
 import { getCacheInvalidationManager } from "@/lib/cache/cache-invalidation";
+import { secureRandomNumber } from "@/lib/random";
 import { cn } from "@/lib/utils";
 
 interface PerformanceMetrics {
@@ -54,10 +55,10 @@ export function PerformanceMonitor() {
 
             // 模拟响应时间统计（实际项目中可以从监控服务获取）
             const responseTime = {
-                average: Math.random() * 500 + 100, // 100-600ms
-                min: Math.random() * 50 + 50, // 50-100ms
-                max: Math.random() * 200 + 800, // 800-1000ms
-                p95: Math.random() * 300 + 400, // 400-700ms
+                average: secureRandomNumber(100, 600), // 100-600ms
+                min: secureRandomNumber(50, 100), // 50-100ms
+                max: secureRandomNumber(800, 1000), // 800-1000ms
+                p95: secureRandomNumber(400, 700), // 400-700ms
             };
 
             setMetrics({

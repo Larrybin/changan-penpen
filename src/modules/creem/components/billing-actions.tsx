@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { secureRandomInt } from "@/lib/random";
 import {
     CREDITS_TIERS,
     SUBSCRIPTION_TIERS,
@@ -14,7 +15,7 @@ function generateClientRequestId() {
     ) {
         return crypto.randomUUID();
     }
-    return `checkout-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+    return `checkout-${Date.now()}-${secureRandomInt(1_000_000)}`;
 }
 
 export default function BillingActions() {

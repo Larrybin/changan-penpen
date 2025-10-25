@@ -1,3 +1,5 @@
+import { createRandomId, secureRandomString } from "@/lib/random";
+
 export const CSP_NONCE_HEADER = "x-csp-nonce" as const;
 
 export function generateCspNonce(): string {
@@ -7,7 +9,13 @@ export function generateCspNonce(): string {
     ) {
         return crypto.randomUUID().replace(/-/g, "");
     }
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
+    const fallback = secureRandomString(32);
+    if (fallback) {
+        return fallback;
+    }
+
+    return createRandomId().replace(/-/g, "");
 }
 
 export function readCspNonce(headers: Headers): string | undefined {

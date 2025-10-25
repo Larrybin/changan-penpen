@@ -1,3 +1,5 @@
+import { createRandomId } from "@/lib/random";
+
 export interface ApiErrorDetails {
     [key: string]: unknown;
 }
@@ -36,7 +38,7 @@ function generateTraceId() {
     ) {
         return crypto.randomUUID();
     }
-    return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+    return createRandomId();
 }
 
 function mergeHeaders(target: Headers, extra?: HeadersInit) {
