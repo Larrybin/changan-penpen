@@ -1,0 +1,10 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Prêt à passer en mode Banana ?",
+      "description": "Essayez Banana Generator dès maintenant et transformez vos photos en créations d'exception !",
+      "primaryCta": "Démarrer avec l'éditeur photo IA"
+    }
+  }
+}

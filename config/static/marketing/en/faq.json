@@ -1,0 +1,27 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Frequently Asked Questions",
+      "items": [
+        {
+          "question": "What is Banana Generator?",
+          "answer": "A free AI photo editor and image generator powered by the Nano Banana model."
+        },
+        {
+          "question": "Do I need to sign up or pay?",
+          "answer": "No. It’s fast, free, and unlimited to get started."
+        },
+        {
+          "question": "What formats are supported?",
+          "answer": "Upload common formats like PNG and JPG; high-res export is supported."
+        },
+        {
+          "question": "Is my data private and secure?",
+          "answer": "We follow a privacy-first policy. You keep ownership of your images."
+        }
+      ],
+      "supportingCopy": "Need more details? <contactLink>Talk with our AI support team</contactLink> or learn about our mission on the <aboutLink>Banana Generator about page</aboutLink>."
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "badge": "Gratuito online",
+      "emoji": "🍌",
+      "title": "Editor de fotos com IA",
+      "description": "Transforme, edite e aprimore suas imagens com comandos de texto simples. Adicione, remova ou estilize qualquer coisa em segundos usando edição de imagem com IA.",
+      "primaryCta": "Começar edição de fotos com IA",
+      "secondaryCta": "Explorar fluxos de trabalho com IA",
+      "support": {
+        "fast": "⚡ Rápido",
+        "secure": "🔒 Sem cadastro",
+        "free": "🆓 Ilimitado"
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Was ist Banana Generator?",
+      "items": [
+        {
+          "title": "Kostenloser & unbegrenzter Zugriff",
+          "description": "Genieße unbegrenzte Bildgenerierung – keine Anmeldung, keine versteckten Kosten."
+        },
+        {
+          "title": "Bearbeitung mit natürlicher Sprache",
+          "description": "Ersetze Hintergründe, passe Licht an oder entferne Objekte per Textbefehl."
+        },
+        {
+          "title": "Konsistente Charaktere",
+          "description": "Erhalte wiedererkennbare Charaktere über mehrere Bilder hinweg."
+        },
+        {
+          "title": "Nahtlose Szenenintegration",
+          "description": "Füge Änderungen mit natürlichen Schatten und Lichtstimmungen ein."
+        },
+        {
+          "title": "Hochgeschwindigkeits-Verarbeitung",
+          "description": "Erstelle oder bearbeite 1-MP-Bilder in Sekunden."
+        },
+        {
+          "title": "Vielseitige Stilgenerierung",
+          "description": "Erzeuge fotorealistische, cartoonhafte, Aquarell- oder Ölgemälde-Stile."
+        }
+      ],
+      "learnMore": "Alle Preise findest du in unseren <billingLink>KI-Bildbearbeitungs-Tarifen</billingLink>."
+    }
+  }
+}

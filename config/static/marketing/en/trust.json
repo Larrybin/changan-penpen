@@ -1,0 +1,28 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Trusted by creative teams everywhere",
+      "description": "Studios, agencies, and indie makers rely on Banana Generator to speed up AI photo editing without losing brand quality.",
+      "items": [
+        {
+          "quote": "Banana Generator cut our product shot editing time in half while keeping every color on-brand.",
+          "author": "Maya Thompson",
+          "role": "Director of Photography, Citrus Labs"
+        },
+        {
+          "quote": "The AI photo editor helps our designers iterate fast and stay consistent across every campaign.",
+          "author": "Leo Martins",
+          "role": "Creative Lead, Pixel & Peel Studio"
+        },
+        {
+          "quote": "As a solo creator, I love how the AI handles lighting adjustments so I can focus on storytelling.",
+          "author": "Jules Rivera",
+          "role": "YouTube Filmmaker"
+        }
+      ],
+      "callout": "Looking for compliance docs? Visit our <privacyLink>privacy center</privacyLink> for AI data practices.",
+      "socialProfiles": []
+    }
+  }
+}

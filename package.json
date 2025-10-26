@@ -4,8 +4,9 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
-        "prebuild": "pnpm run prebuild:static-config && pnpm run fix:i18n && pnpm run config:headers",
+        "prebuild": "pnpm run prebuild:static-config && pnpm run validate:static-config && pnpm run fix:i18n && pnpm run config:headers",
         "prebuild:static-config": "pnpm exec tsx scripts/export-site-settings.ts",
+        "validate:static-config": "pnpm exec tsx scripts/validate-static-config.ts",
         "build": "next build",
         "start": "next start",
         "wrangler:dev": "npx wrangler dev",
@@ -136,7 +137,9 @@
         "wrangler": "^4.43.0"
     },
     "lint-staged": {
-        "*.{ts,tsx,js,jsx,json,css,md}": "pnpm exec biome check --write --unsafe"
+        "*.{ts,tsx,js,jsx,json,css,md}": "pnpm exec biome check --write --unsafe",
+        "config/static/**/*.json": "pnpm run validate:static-config -- --print",
+        "config/static/marketing/**/*.json": "pnpm run validate:static-config -- --print"
     },
     "pnpm": {
         "overrides": {

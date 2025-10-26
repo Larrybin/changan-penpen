@@ -1,0 +1,23 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "badge": "Free Online",
+      "emoji": "🍌",
+      "title": "AI Photo Editor",
+      "description": "Transform, edit, and enhance your images with simple text prompts. Add, remove, or restyle anything in seconds using AI image editing.",
+      "primaryCta": "Start AI photo editing free",
+      "secondaryCta": "Explore AI image workflows",
+      "primaryAriaLabel": "Start editing photos for free",
+      "secondaryAriaLabel": "Try AI image editing playground",
+      "primaryActions": "Primary actions",
+      "featuresLabel": "Features and benefits",
+      "featurePrefix": "Feature:",
+      "support": {
+        "fast": "⚡ Fast",
+        "secure": "🔒 No sign-up",
+        "free": "🆓 Unlimited"
+      }
+    }
+  }
+}

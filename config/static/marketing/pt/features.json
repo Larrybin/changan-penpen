@@ -1,0 +1,35 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "O que é o Banana Generator?",
+      "items": [
+        {
+          "title": "Acesso gratuito e ilimitado",
+          "description": "Aproveite geração ilimitada de imagens — sem cadastro e sem custos ocultos."
+        },
+        {
+          "title": "Edição em linguagem natural",
+          "description": "Substitua fundos, ajuste iluminação ou remova objetos usando texto."
+        },
+        {
+          "title": "Personagens consistentes",
+          "description": "Mantenha personagens reconhecíveis em várias imagens."
+        },
+        {
+          "title": "Integração de cena perfeita",
+          "description": "Combine edições com sombras e luzes originais de forma natural."
+        },
+        {
+          "title": "Processamento em alta velocidade",
+          "description": "Gere ou edite imagens de 1 MP em segundos."
+        },
+        {
+          "title": "Geração de estilos versátil",
+          "description": "Crie estilos fotorrealistas, cartoon, aquarela ou pintura a óleo."
+        }
+      ],
+      "learnMore": "Veja todos os detalhes em nossos <billingLink>planos de edição de imagens com IA</billingLink>."
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "badge": "Gratuit en ligne",
+      "emoji": "🍌",
+      "title": "Éditeur photo IA",
+      "description": "Transformez, retouchez et améliorez vos images avec de simples invites texte. Ajoutez, supprimez ou restylez n'importe quoi en quelques secondes grâce à l'édition d'images par IA.",
+      "primaryCta": "Commencer l'édition photo IA",
+      "secondaryCta": "Explorer les workflows d'images IA",
+      "support": {
+        "fast": "⚡ Rapide",
+        "secure": "🔒 Sans inscription",
+        "free": "🆓 Illimité"
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Ready to Go Bananas?",
+      "description": "Try Banana Generator now and turn your photos into top banana creations!",
+      "primaryCta": "Start editing with the AI photo editor"
+    }
+  }
+}
