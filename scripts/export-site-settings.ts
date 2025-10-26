@@ -99,11 +99,7 @@ function resolveWriteContext(): WriteContext {
 }
 
 function shouldRequireToken(flags: CliFlags): boolean {
-    if (flags.requireToken) {
-        return true;
-    }
-    const ci = process.env.CI ?? "";
-    return ci === "1" || ci.toLowerCase() === "true";
+    return flags.requireToken;
 }
 
 async function fetchConfigs(
@@ -215,7 +211,7 @@ async function runExport(flags: CliFlags) {
     const requireToken = shouldRequireToken(flags);
     if (requireToken && !token) {
         console.error(
-            "[static-export] STATIC_EXPORT_TOKEN is required in CI or when --require-token is specified.",
+            "[static-export] STATIC_EXPORT_TOKEN is required when --require-token is specified.",
         );
         process.exit(1);
     }

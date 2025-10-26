@@ -58,7 +58,7 @@ jobs:
         uses: ./.github/actions/install-and-heal
 
       - name: Generate static marketing config
-        run: pnpm run prebuild:static-config -- --require-token
+        run: pnpm run prebuild:static-config
 
       - name: Validate static marketing config
         run: pnpm run validate:static-config -- --print

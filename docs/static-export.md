@@ -25,7 +25,7 @@ You can force remote mode locally by passing `--require-token`. The script exits
 
 ## Continuous integration (CI)
 
-In CI, the command is invoked as `pnpm run prebuild:static-config -- --require-token` so the pipeline fails immediately if credentials are missing. Ensure the following environment variables are configured (for example via repository secrets/variables):
+In CI, the same command runs without additional flags. When credentials are present, the remote export path is used; otherwise the job succeeds while writing fallback configs. Configure the following environment variables when you want CI to exercise the remote export flow (for example via repository secrets/variables):
 
 - `STATIC_EXPORT_TOKEN` – bearer token used by the `/api/admin/site-settings/export` endpoint.
 - `STATIC_EXPORT_BASE_URL` – base URL that hosts the admin export endpoint (e.g. production deployment URL).
@@ -54,6 +54,6 @@ Use `pnpm run validate:static-config` manually whenever editing static JSON file
 
 ## Troubleshooting
 
-- **Missing token in CI** – Ensure the repository secret `STATIC_EXPORT_TOKEN` is defined. The script exits with code `1` when required credentials are absent.
+- **Missing token in CI** – The job falls back to bundled messages. Provide the repository secret `STATIC_EXPORT_TOKEN` to exercise the remote export path.
 - **Validation failures** – Run `pnpm run validate:static-config -- --print` locally to view detailed errors, then fix the offending JSON files.
 - **Unexpected fallback** – Check the console output; if the script logs a fallback warning, confirm that `STATIC_EXPORT_TOKEN` and `STATIC_EXPORT_BASE_URL` are set and reachable from your environment.
