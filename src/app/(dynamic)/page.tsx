@@ -22,7 +22,7 @@ import type {
 import { resolveMarketingVariant } from "@/modules/marketing/utils/variant";
 
 type PageProps = {
-    searchParams?: Record<string, string | string[] | undefined>;
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 type VariantSelection = Record<
@@ -61,6 +61,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         MarketingSectionFile
     >;
 
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
     const cookieStore = await cookies();
     const variantSelections: VariantSelection = {} as VariantSelection;
     for (const section of MARKETING_SECTIONS) {
@@ -70,7 +71,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             section,
             availableVariants: variants,
             defaultVariant: summary.defaultVariant,
-            searchParams,
+            searchParams: resolvedSearchParams,
             cookies: cookieStore,
         });
         variantSelections[section] = selection;
