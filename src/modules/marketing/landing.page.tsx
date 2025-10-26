@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Script from "next/script";
 import { getTranslations } from "next-intl/server";
 import type React from "react";
 
@@ -7,8 +6,8 @@ import { SkipLink } from "@/components/accessibility/skip-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { localeCurrencyMap } from "@/lib/seo";
 import type { AppLocale } from "@/i18n/config";
+import { localeCurrencyMap } from "@/lib/seo";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
 import type { PlaygroundMessages } from "./components/playground";
 import Playground from "./components/playground-loader";
@@ -21,7 +20,6 @@ type MarketingLandingPageProps = {
     appUrl: string;
     structuredDataImage: string;
     siteName?: string;
-    nonce?: string;
     locale: AppLocale;
 };
 
@@ -47,7 +45,6 @@ export default async function MarketingLandingPage({
     appUrl,
     structuredDataImage,
     siteName,
-    nonce,
     locale,
 }: MarketingLandingPageProps) {
     const marketing = await getTranslations({
@@ -448,13 +445,14 @@ export default async function MarketingLandingPage({
                 brandTagline={common("brandTagline")}
                 footerMessages={footerMessages}
             />
-            <Script
+            <script
                 id="marketing-structured-data"
                 type="application/ld+json"
-                nonce={nonce}
-            >
-                {serializeJsonLd(structuredDataPayload)}
-            </Script>
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: structured data must be inlined as JSON-LD
+                dangerouslySetInnerHTML={{
+                    __html: serializeJsonLd(structuredDataPayload),
+                }}
+            />
         </div>
     );
 }
