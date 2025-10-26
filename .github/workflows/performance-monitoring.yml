@@ -88,7 +88,12 @@ function collectFiles(directory) {
     }
 
     const stats = fs.statSync(entryPath);
-    files.push({ path: entryPath, size: stats.size });
+    const relativePath = path
+      .relative(".next", entryPath)
+      .split(path.sep)
+      .join("/");
+
+    files.push({ path: relativePath, size: stats.size });
   }
 
   return files;
@@ -191,8 +196,10 @@ NODE
 
               if (Array.isArray(report.largestFiles) && report.largestFiles.length > 0) {
                 comment += "### Largest JavaScript Chunks\n";
+                comment += "| Chunk | Size (KB) |\n";
+                comment += "| --- | ---: |\n";
                 report.largestFiles.slice(0, 5).forEach((file) => {
-                  comment += `- \`${file.path}\`: ${file.sizeKB} KB\n`;
+                  comment += `| \`${file.path}\` | ${file.sizeKB} |\n`;
                 });
                 comment += "\n";
               }
@@ -203,6 +210,8 @@ NODE
                   comment += `- \`${file.path}\`: ${file.sizeKB} KB\n`;
                 });
                 comment += "\n";
+              } else {
+                comment += `✅ All analyzed JavaScript chunks are under ${report.sizeThresholdKB} KB.\n\n`;
               }
             }
 
