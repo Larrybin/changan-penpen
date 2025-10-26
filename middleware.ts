@@ -267,6 +267,34 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    const shouldConsiderMarketingCache =
+        request.method === "GET" && normalized === "/";
+    if (shouldConsiderMarketingCache) {
+        const searchParams = request.nextUrl.searchParams;
+        const hasPreviewToken = searchParams.has("previewToken");
+        const hasVariantQuery = Array.from(searchParams.keys()).some((key) =>
+            key.startsWith("variant_"),
+        );
+        const hasVariantCookie = request.cookies
+            .getAll()
+            .some((cookie) => cookie.name.startsWith("marketing-variant-"));
+
+        if (!hasPreviewToken && !hasVariantQuery && !hasVariantCookie) {
+            response.headers.set(
+                "Cache-Control",
+                "public, max-age=0, s-maxage=300, stale-while-revalidate=60",
+            );
+            response.headers.append("Vary", "Cookie");
+            response.headers.set("X-Marketing-Cache", "default");
+        } else {
+            response.headers.set("Cache-Control", "no-store");
+            response.headers.set(
+                "X-Marketing-Cache",
+                hasPreviewToken ? "preview" : "personalized",
+            );
+        }
+    }
+
     return applySecurityHeaders(response, { isApi: false }, nonce);
 }
 

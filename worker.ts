@@ -51,8 +51,102 @@ function toFetchHandler<Env>(handler: MaybeFetchHandler<Env>): FetchHandler<Env>
 
 const handler = toFetchHandler(appModule as MaybeFetchHandler<CloudflareEnv>);
 
-export async function fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext) {
-    return handler.fetch(request, env, ctx);
+const MARKETING_CACHE_HEADER = "X-Marketing-Cache";
+const MARKETING_VARIANT_COOKIE_PREFIX = "marketing-variant-";
+
+function isLocaleSegment(value: string): boolean {
+    return /^[a-z]{2}(?:-[A-Z]{2})?$/.test(value);
+}
+
+function shouldHandleMarketingCache(request: Request): boolean {
+    if (request.method !== "GET") {
+        return false;
+    }
+
+    const accept = request.headers.get("accept");
+    if (accept && !accept.includes("text/html") && !accept.includes("*/*")) {
+        return false;
+    }
+
+    const url = new URL(request.url);
+    const segments = url.pathname.split("/").filter(Boolean);
+    if (segments.length > 1) {
+        return false;
+    }
+    if (segments.length === 1) {
+        const [segment] = segments;
+        if (!segment || !isLocaleSegment(segment)) {
+            return false;
+        }
+    }
+
+    if (url.searchParams.has("previewToken")) {
+        return false;
+    }
+    for (const key of url.searchParams.keys()) {
+        if (key.startsWith("variant_")) {
+            return false;
+        }
+    }
+
+    const cookieHeader = request.headers.get("cookie");
+    if (
+        cookieHeader &&
+        cookieHeader.toLowerCase().includes(MARKETING_VARIANT_COOKIE_PREFIX)
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+export async function fetch(
+    request: Request,
+    env: CloudflareEnv,
+    ctx: ExecutionContext,
+) {
+    const shouldUseCache = shouldHandleMarketingCache(request);
+    const cacheKey = shouldUseCache ? new Request(request.url, request) : null;
+    if (shouldUseCache && cacheKey) {
+        const cached = await caches.default.match(cacheKey);
+        if (cached) {
+            return cached;
+        }
+    }
+
+    const response = await handler.fetch(request, env, ctx);
+    const cacheHint = response.headers.get(MARKETING_CACHE_HEADER);
+    if (!cacheHint) {
+        return response;
+    }
+
+    const headers = new Headers(response.headers);
+    headers.delete(MARKETING_CACHE_HEADER);
+    const finalResponse = new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+    });
+
+    const waitUntil =
+        typeof ctx?.waitUntil === "function"
+            ? ctx.waitUntil.bind(ctx)
+            : undefined;
+    if (
+        shouldUseCache &&
+        cacheHint === "default" &&
+        cacheKey &&
+        response.ok
+    ) {
+        const putPromise = caches.default.put(cacheKey, finalResponse.clone());
+        if (waitUntil) {
+            waitUntil(putPromise);
+        } else {
+            await putPromise;
+        }
+    }
+
+    return finalResponse;
 }
 
 export default handler;
