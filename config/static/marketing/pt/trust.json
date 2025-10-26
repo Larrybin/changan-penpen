@@ -1,0 +1,28 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Confiado por equipes criativas",
+      "description": "Estúdios, agências e criadores independentes usam o Banana Generator para acelerar a edição de fotos com IA sem perder a identidade da marca.",
+      "items": [
+        {
+          "quote": "O Banana Generator reduziu pela metade nosso tempo de edição de produtos e manteve todas as cores da marca.",
+          "author": "Maya Thompson",
+          "role": "Diretora de fotografia, Citrus Labs"
+        },
+        {
+          "quote": "O editor de fotos com IA ajuda nosso time de design a iterar rápido e manter consistência em cada campanha.",
+          "author": "Leo Martins",
+          "role": "Líder criativo, Pixel & Peel Studio"
+        },
+        {
+          "quote": "Como criadora solo, adoro como a IA cuida da iluminação para que eu foque na narrativa.",
+          "author": "Jules Rivera",
+          "role": "Cineasta no YouTube"
+        }
+      ],
+      "callout": "Precisa de documentos de conformidade? Visite nosso <privacyLink>centro de privacidade</privacyLink> para saber como tratamos dados de IA.",
+      "socialProfiles": []
+    }
+  }
+}

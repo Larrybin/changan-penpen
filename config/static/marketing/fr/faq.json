@@ -1,0 +1,27 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Foire aux questions",
+      "items": [
+        {
+          "question": "Qu'est-ce que Banana Generator ?",
+          "answer": "Un éditeur photo et générateur d'images IA gratuit alimenté par le modèle Nano Banana."
+        },
+        {
+          "question": "Dois-je m'inscrire ou payer ?",
+          "answer": "Non. Commencez immédiatement, gratuitement et sans limites."
+        },
+        {
+          "question": "Quels formats sont pris en charge ?",
+          "answer": "Importez les formats courants comme PNG et JPG ; l'export haute résolution est pris en charge."
+        },
+        {
+          "question": "Mes données sont-elles privées et sécurisées ?",
+          "answer": "Nous appliquons une politique axée sur la confidentialité. Vous gardez la propriété de vos images."
+        }
+      ],
+      "supportingCopy": "Besoin d'aide ? <contactLink>Contactez notre équipe support IA</contactLink> ou découvrez notre vision sur la <aboutLink>page À propos de Banana Generator</aboutLink>."
+    }
+  }
+}

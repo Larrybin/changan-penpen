@@ -1,0 +1,28 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Vertrauenswürdig bei Kreativteams weltweit",
+      "description": "Studios, Agenturen und Creator nutzen Banana Generator, um KI-Fotobearbeitung schneller und markenkonform zu machen.",
+      "items": [
+        {
+          "quote": "Banana Generator hat unsere Produktbild-Bearbeitung halbiert und die Markenfarben perfekt gehalten.",
+          "author": "Maya Thompson",
+          "role": "Leiterin Fotografie, Citrus Labs"
+        },
+        {
+          "quote": "Der KI-Fotoeditor hilft unserem Designteam, schneller zu iterieren und jede Kampagne konsistent zu halten.",
+          "author": "Leo Martins",
+          "role": "Creative Lead, Pixel & Peel Studio"
+        },
+        {
+          "quote": "Als Solo-Creator liebe ich, wie die KI Lichtstimmungen übernimmt, damit ich mich aufs Storytelling konzentriere.",
+          "author": "Jules Rivera",
+          "role": "YouTube-Filmemacher:in"
+        }
+      ],
+      "callout": "Du suchst Compliance-Dokumente? Besuche unser <privacyLink>Privacy Center</privacyLink> für Informationen zur KI-Datennutzung.",
+      "socialProfiles": []
+    }
+  }
+}

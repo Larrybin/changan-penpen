@@ -27,6 +27,8 @@ env:
   NODE_VERSION: '20'
   PNPM_VERSION: '10'
   NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+  STATIC_EXPORT_TOKEN: ${{ secrets.STATIC_EXPORT_TOKEN || '' }}
+  STATIC_EXPORT_BASE_URL: ${{ vars.STATIC_EXPORT_BASE_URL || vars.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
 jobs:
   lint-docs:
@@ -54,6 +56,12 @@ jobs:
       - &install
         name: Install dependencies (composite)
         uses: ./.github/actions/install-and-heal
+
+      - name: Generate static marketing config
+        run: pnpm run prebuild:static-config
+
+      - name: Validate static marketing config
+        run: pnpm run validate:static-config -- --print
 
       - name: Run i18n normalization
         run: pnpm run fix:i18n

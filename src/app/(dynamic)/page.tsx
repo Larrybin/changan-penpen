@@ -1,36 +1,137 @@
+import { cookies } from "next/headers";
 import { getLocale } from "next-intl/server";
 
 import { resolveAppLocale } from "@/i18n/config";
-import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
+import {
+    loadMarketingSection,
+    loadStaticConfig,
+    MARKETING_SECTIONS,
+    type MarketingSection,
+    type MarketingSectionFile,
+} from "@/lib/static-config";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 import MarketingLandingPage from "@/modules/marketing/landing.page";
+import type {
+    CtaSectionData,
+    FaqSectionData,
+    FeaturesSectionData,
+    HeroSectionData,
+    TrustSectionData,
+    WhySectionItem,
+} from "@/modules/marketing/sections/types";
+import { resolveMarketingVariant } from "@/modules/marketing/utils/variant";
 
-export default async function HomePage() {
+type PageProps = {
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+type VariantSelection = Record<
+    MarketingSection,
+    {
+        value: string;
+        source: "query" | "cookie" | "default";
+    }
+>;
+
+function pickVariant<T>(file: MarketingSectionFile, variant: string): T {
+    const candidate =
+        file.variants?.[variant] ?? file.variants?.[file.defaultVariant];
+    if (!candidate) {
+        throw new Error("Missing marketing section variant data");
+    }
+    return candidate as T;
+}
+
+export default async function HomePage({ searchParams }: PageProps) {
     const locale = resolveAppLocale(await getLocale());
     const settings = await getSiteSettingsPayload();
-    // 避免在构建时触发 Cloudflare runtime；仅读取进程环境变量
-    const envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
-    const appUrl = resolveAppUrl(settings, {
-        envAppUrl,
-    });
-    const defaultLocale = settings.defaultLanguage;
-    const localizedOgImage =
-        settings.seoOgImageLocalized?.[defaultLocale]?.trim() ?? "";
-    const ogImageSource = localizedOgImage.length
-        ? localizedOgImage
-        : settings.seoOgImage?.trim().length
-          ? settings.seoOgImage.trim()
-          : "/og-image.svg";
-    const structuredDataImage = ensureAbsoluteUrl(ogImageSource, appUrl);
     const siteName = settings.siteName?.trim().length
         ? settings.siteName.trim()
         : undefined;
+
+    const staticConfig = await loadStaticConfig(locale);
+    const sectionFiles = await Promise.all(
+        MARKETING_SECTIONS.map(
+            async (section) =>
+                [section, await loadMarketingSection(locale, section)] as const,
+        ),
+    );
+    const sectionMap = Object.fromEntries(sectionFiles) as Record<
+        MarketingSection,
+        MarketingSectionFile
+    >;
+
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
+    const cookieStore = await cookies();
+    const variantSelections: VariantSelection = {} as VariantSelection;
+    for (const section of MARKETING_SECTIONS) {
+        const variants = staticConfig.marketing.variants[section] ?? [];
+        const summary = staticConfig.marketing.sections[section];
+        const selection = resolveMarketingVariant({
+            section,
+            availableVariants: variants,
+            defaultVariant: summary.defaultVariant,
+            searchParams: resolvedSearchParams,
+            cookies: cookieStore,
+        });
+        variantSelections[section] = selection;
+    }
+
+    const heroData = pickVariant<HeroSectionData>(
+        sectionMap.hero,
+        variantSelections.hero.value,
+    );
+    const featuresData = pickVariant<FeaturesSectionData>(
+        sectionMap.features,
+        variantSelections.features.value,
+    );
+    const faqData = pickVariant<FaqSectionData>(
+        sectionMap.faq,
+        variantSelections.faq.value,
+    );
+    const trustData = pickVariant<TrustSectionData>(
+        sectionMap.trust,
+        variantSelections.trust.value,
+    );
+    const ctaData = pickVariant<CtaSectionData>(
+        sectionMap.cta,
+        variantSelections.cta.value,
+    );
+
+    const marketingMessages = staticConfig.messages.Marketing as Record<
+        string,
+        unknown
+    >;
+    const commonMessages = staticConfig.messages.Common as Record<
+        string,
+        unknown
+    >;
+    const whyNamespace = marketingMessages.why as {
+        title?: string;
+        items?: WhySectionItem[];
+    };
+    const whyItems = Array.isArray(whyNamespace?.items)
+        ? (whyNamespace?.items as WhySectionItem[])
+        : [];
+    const whyTitle =
+        typeof whyNamespace?.title === "string"
+            ? whyNamespace.title
+            : "Why Choose Us";
+
     return (
         <MarketingLandingPage
-            appUrl={appUrl}
-            structuredDataImage={structuredDataImage}
             siteName={siteName}
-            locale={locale}
+            marketingMessages={marketingMessages}
+            commonMessages={commonMessages}
+            marketingSummary={staticConfig.marketing}
+            heroData={heroData}
+            featuresData={featuresData}
+            faqData={faqData}
+            trustData={trustData}
+            ctaData={ctaData}
+            whyItems={whyItems}
+            whyTitle={whyTitle}
+            variantSelections={variantSelections}
         />
     );
 }

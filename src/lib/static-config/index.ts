@@ -7,8 +7,34 @@ import deMessages from "@/i18n/messages/de.json";
 import enMessages from "@/i18n/messages/en.json";
 import frMessages from "@/i18n/messages/fr.json";
 import ptMessages from "@/i18n/messages/pt.json";
+import {
+    buildLocalizedPath,
+    ensureAbsoluteUrl,
+    localeCurrencyMap,
+} from "@/lib/seo";
 
 const STATIC_ROOT = path.join(process.cwd(), "config", "static");
+const MARKETING_ROOT = path.join(STATIC_ROOT, "marketing");
+
+export const MARKETING_SECTIONS = [
+    "hero",
+    "features",
+    "faq",
+    "trust",
+    "cta",
+] as const;
+
+export type MarketingSection = (typeof MARKETING_SECTIONS)[number];
+
+export type MarketingSectionSummary = {
+    defaultVariant: string;
+    structuredData?: Record<string, unknown> | Array<unknown>;
+};
+
+export type MarketingSectionFile = {
+    defaultVariant: string;
+    variants: Record<string, unknown>;
+};
 
 export type StaticSiteConfig = {
     locale: AppLocale;
@@ -16,17 +42,38 @@ export type StaticSiteConfig = {
         baseUrl: string;
         siteName: string;
         ogImage: string;
-        structuredData: Record<string, unknown>;
+        structuredData: Record<string, unknown> | Array<unknown>;
+        version: string;
+        updatedAt: string;
     };
     messages: {
         Marketing: Record<string, unknown>;
         StaticPages: Record<string, unknown>;
+        Common: Record<string, unknown>;
+    };
+    marketing: {
+        sections: Record<MarketingSection, MarketingSectionSummary>;
+        variants: Record<MarketingSection, string[]>;
     };
 };
 
-const cache = new Map<AppLocale, StaticSiteConfig>();
+type StaticConfigBundle = {
+    config: StaticSiteConfig;
+    sections: Record<MarketingSection, MarketingSectionFile>;
+};
 
 type LocaleMessages = Record<string, unknown>;
+
+type MessagesModule = {
+    Marketing: Record<string, unknown>;
+    StaticPages: Record<string, unknown>;
+    Common: Record<string, unknown>;
+    Metadata: {
+        openGraph?: {
+            siteName?: string;
+        };
+    };
+};
 
 const FALLBACK_MESSAGES: Record<AppLocale, LocaleMessages> = {
     de: deMessages,
@@ -37,47 +84,13 @@ const FALLBACK_MESSAGES: Record<AppLocale, LocaleMessages> = {
 
 export type StaticConfigFallbackOptions = {
     baseUrl?: string;
+    version?: string;
+    updatedAt?: string;
 };
 
-export function createFallbackConfig(
-    locale: AppLocale,
-    options: StaticConfigFallbackOptions = {},
-): StaticSiteConfig {
-    const { baseUrl = "" } = options;
-    const messages = FALLBACK_MESSAGES[locale];
-    const metadataMessages = (messages.Metadata ?? {}) as Record<
-        string,
-        unknown
-    >;
-    const openGraph = (metadataMessages.openGraph ?? {}) as Record<
-        string,
-        unknown
-    >;
-    const marketingMessages = (messages.Marketing ?? {}) as Record<
-        string,
-        unknown
-    >;
-    const staticPagesMessages = (messages.StaticPages ?? {}) as Record<
-        string,
-        unknown
-    >;
-    return {
-        locale,
-        metadata: {
-            baseUrl,
-            siteName:
-                typeof openGraph.siteName === "string"
-                    ? (openGraph.siteName as string)
-                    : "Banana Generator",
-            ogImage: "",
-            structuredData: {},
-        },
-        messages: {
-            Marketing: marketingMessages,
-            StaticPages: staticPagesMessages,
-        },
-    } satisfies StaticSiteConfig;
-}
+const configCache = new Map<AppLocale, StaticSiteConfig>();
+const marketingCache = new Map<string, MarketingSectionFile>();
+const fallbackCache = new Map<AppLocale, StaticConfigBundle>();
 
 function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
     return (
@@ -95,8 +108,596 @@ function assertLocale(locale: AppLocale): AppLocale {
     return locale;
 }
 
+function toMarketingSection(value: string): MarketingSection {
+    if ((MARKETING_SECTIONS as readonly string[]).includes(value)) {
+        return value as MarketingSection;
+    }
+    throw new Error(`Unsupported marketing section: ${value}`);
+}
+
+function getSectionCacheKey(locale: AppLocale, section: MarketingSection) {
+    return `${locale}:${section}`;
+}
+
+function buildPageUrl(appUrl: string, locale: AppLocale, pathValue: string) {
+    const localizedPath = buildLocalizedPath(locale, pathValue);
+    if (localizedPath === "/") {
+        return appUrl;
+    }
+    return `${appUrl}${localizedPath}`;
+}
+
+type SectionEntry = {
+    title: string;
+    description: string;
+};
+
+function toSections(value: unknown): SectionEntry[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value.flatMap((item) => {
+        if (
+            item &&
+            typeof item === "object" &&
+            typeof (item as { title?: unknown }).title === "string" &&
+            typeof (item as { description?: unknown }).description === "string"
+        ) {
+            return [
+                {
+                    title: (item as { title: string }).title,
+                    description: (item as { description: string }).description,
+                },
+            ];
+        }
+        return [];
+    });
+}
+
+type StructuredDataParams = {
+    locale: AppLocale;
+    appUrl: string;
+    siteName: string;
+    structuredDataImage: string;
+    marketingMessages: Record<string, unknown>;
+};
+
+function createMarketingStructuredData({
+    locale,
+    appUrl,
+    siteName,
+    structuredDataImage,
+    marketingMessages,
+}: StructuredDataParams) {
+    const marketing = marketingMessages ?? {};
+    const hero = (marketing.hero ?? {}) as Record<string, unknown>;
+    const structured = (marketing.structuredData ?? {}) as Record<
+        string,
+        unknown
+    >;
+    const faq = (marketing.faq ?? {}) as Record<string, unknown>;
+    const trust = (marketing.trust ?? {}) as Record<string, unknown>;
+    const faqItems = Array.isArray(faq.items)
+        ? (faq.items as Array<Record<string, unknown>>)
+        : [];
+    const featureList = Array.isArray(structured.featureList)
+        ? (structured.featureList as string[])
+        : [];
+    const socialProfiles = Array.isArray(trust.socialProfiles)
+        ? (trust.socialProfiles as string[])
+        : undefined;
+    const currency = localeCurrencyMap[locale] ?? localeCurrencyMap.en;
+
+    return [
+        {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: (structured.name as string) ?? siteName,
+            url: appUrl,
+            applicationCategory: "MultimediaApplication",
+            operatingSystem: "Web",
+            description: (structured.description as string) ?? "",
+            featureList,
+            image: structuredDataImage,
+            offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: currency,
+            },
+            inLanguage: locale,
+            alternateName: (hero.title as string) ?? siteName,
+            slogan:
+                (structured.tagline as string) ??
+                (hero.title as string) ??
+                siteName,
+            publisher: {
+                "@type": "Organization",
+                name: siteName,
+                url: appUrl,
+                logo: {
+                    "@type": "ImageObject",
+                    url: structuredDataImage,
+                },
+            },
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqItems.map((item) => ({
+                "@type": "Question",
+                name: (item.question as string) ?? "",
+                acceptedAnswer: {
+                    "@type": "Answer",
+                    text: (item.answer as string) ?? "",
+                },
+            })),
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: siteName,
+            url: appUrl,
+            logo: structuredDataImage,
+            ...(socialProfiles?.length ? { sameAs: socialProfiles } : {}),
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: siteName,
+            url: appUrl,
+            description: (structured.description as string) ?? "",
+            inLanguage: locale,
+        },
+    ] satisfies Record<string, unknown>[];
+}
+
+function createAboutStructuredData(
+    locale: AppLocale,
+    appUrl: string,
+    siteName: string,
+    messages: Record<string, unknown>,
+) {
+    const page = (messages.about ?? {}) as Record<string, unknown>;
+    const sections = toSections(page.sections);
+    return {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        name: (page.title as string) ?? siteName,
+        description: (page.intro as string) ?? "",
+        inLanguage: locale,
+        url: buildPageUrl(appUrl, locale, "/about"),
+        isPartOf: {
+            "@type": "WebSite",
+            name: siteName,
+            url: appUrl,
+        },
+        mainEntity: sections.map((section) => ({
+            "@type": "CreativeWork",
+            name: section.title,
+            description: section.description,
+        })),
+    } satisfies Record<string, unknown>;
+}
+
+function createContactStructuredData(
+    locale: AppLocale,
+    appUrl: string,
+    siteName: string,
+    messages: Record<string, unknown>,
+) {
+    const page = (messages.contact ?? {}) as Record<string, unknown>;
+    const details = Array.isArray(page.details)
+        ? (page.details as Array<Record<string, unknown>>)
+        : [];
+    const contactPoints = details
+        .map((detail) => {
+            const label = detail.label;
+            const value = detail.value;
+            if (typeof label !== "string" || typeof value !== "string") {
+                return null;
+            }
+            const trimmedValue = value.trim();
+            if (!trimmedValue.length) {
+                return null;
+            }
+            const contactPoint: Record<string, string> = {
+                "@type": "ContactPoint",
+                contactType: label,
+            };
+            if (trimmedValue.includes("@")) {
+                contactPoint.email = trimmedValue;
+            }
+            if (/^[+0-9][0-9\s()+-]*$/.test(trimmedValue)) {
+                contactPoint.telephone = trimmedValue;
+            }
+            return contactPoint;
+        })
+        .filter((value): value is Record<string, string> => Boolean(value));
+
+    const hoursDetail = details.find((detail) => {
+        const label = detail.label;
+        if (typeof label !== "string") {
+            return false;
+        }
+        return label.toLowerCase().includes("hour");
+    });
+
+    return {
+        "@context": "https://schema.org",
+        "@type": "ContactPage",
+        name: (page.title as string) ?? siteName,
+        description: (page.intro as string) ?? "",
+        inLanguage: locale,
+        url: buildPageUrl(appUrl, locale, "/contact"),
+        isPartOf: {
+            "@type": "WebSite",
+            name: siteName,
+            url: appUrl,
+        },
+        ...(contactPoints.length ? { contactPoint: contactPoints } : {}),
+        ...(hoursDetail && typeof hoursDetail.value === "string"
+            ? {
+                  openingHoursSpecification: [
+                      {
+                          "@type": "OpeningHoursSpecification",
+                          description: hoursDetail.value,
+                      },
+                  ],
+              }
+            : {}),
+    } satisfies Record<string, unknown>;
+}
+
+function createPolicyStructuredData(
+    locale: AppLocale,
+    appUrl: string,
+    siteName: string,
+    messages: Record<string, unknown>,
+    key: "privacy" | "terms",
+) {
+    const page = (messages[key] ?? {}) as Record<string, unknown>;
+    const sections = toSections(page.sections);
+    const type = key === "privacy" ? "PrivacyPolicy" : "TermsOfService";
+    const policyPath = key === "privacy" ? "/privacy" : "/terms";
+    return {
+        "@context": "https://schema.org",
+        "@type": type,
+        name: (page.title as string) ?? siteName,
+        description: (page.intro as string) ?? "",
+        inLanguage: locale,
+        url: buildPageUrl(appUrl, locale, policyPath),
+        isPartOf: {
+            "@type": "WebSite",
+            name: siteName,
+            url: appUrl,
+        },
+        hasPart: sections.map((section) => ({
+            "@type": "WebPageSection",
+            name: section.title,
+            description: section.description,
+        })),
+    } satisfies Record<string, unknown>;
+}
+
+function normalizeVariantKey(value: unknown, fallback: string) {
+    if (typeof value === "string" && value.trim().length) {
+        return value.trim();
+    }
+    return fallback;
+}
+
+type MarketingSectionBuildResult = {
+    summary: MarketingSectionSummary;
+    file: MarketingSectionFile;
+};
+
+type BuildOptions = {
+    baseUrl: string;
+    version: string;
+    updatedAt: string;
+    siteName?: string;
+    ogImage?: string;
+};
+
+function buildMarketingSections(
+    _locale: AppLocale,
+    marketingMessages: Record<string, unknown>,
+    structuredData: Record<string, unknown>[],
+): Record<MarketingSection, MarketingSectionBuildResult> {
+    const hero = (marketingMessages.hero ?? {}) as Record<string, unknown>;
+    const heroVariant = normalizeVariantKey(hero.variant, "default");
+    const heroVariants: Record<string, unknown> = {
+        [heroVariant]: hero,
+    };
+
+    const features = (marketingMessages.features ?? {}) as Record<
+        string,
+        unknown
+    >;
+    const featuresVariant = normalizeVariantKey(features.variant, "default");
+    const featuresVariants: Record<string, unknown> = {
+        [featuresVariant]: features,
+    };
+
+    const faq = (marketingMessages.faq ?? {}) as Record<string, unknown>;
+    const faqVariant = normalizeVariantKey(faq.variant, "default");
+    const faqVariants: Record<string, unknown> = {
+        [faqVariant]: faq,
+    };
+
+    const trust = (marketingMessages.trust ?? {}) as Record<string, unknown>;
+    const trustVariant = normalizeVariantKey(trust.variant, "default");
+    const trustVariants: Record<string, unknown> = {
+        [trustVariant]: trust,
+    };
+
+    const cta = (marketingMessages.cta ?? {}) as Record<string, unknown>;
+    const ctaVariant = normalizeVariantKey(cta.variant, "default");
+    const ctaVariants: Record<string, unknown> = {
+        [ctaVariant]: cta,
+    };
+
+    const structuredHero = structuredData.length ? structuredData : undefined;
+    const structuredFaq =
+        structuredData.length > 1 ? structuredData[1] : undefined;
+    const structuredTrust =
+        structuredData.length > 2 ? structuredData[2] : undefined;
+    const structuredWebsite =
+        structuredData.length > 3 ? structuredData[3] : undefined;
+
+    const entries: Array<[MarketingSection, MarketingSectionBuildResult]> = [
+        [
+            "hero",
+            {
+                summary: {
+                    defaultVariant: heroVariant,
+                    structuredData: structuredHero,
+                },
+                file: {
+                    defaultVariant: heroVariant,
+                    variants: heroVariants,
+                },
+            },
+        ],
+        [
+            "features",
+            {
+                summary: {
+                    defaultVariant: featuresVariant,
+                },
+                file: {
+                    defaultVariant: featuresVariant,
+                    variants: featuresVariants,
+                },
+            },
+        ],
+        [
+            "faq",
+            {
+                summary: {
+                    defaultVariant: faqVariant,
+                    structuredData: structuredFaq,
+                },
+                file: {
+                    defaultVariant: faqVariant,
+                    variants: faqVariants,
+                },
+            },
+        ],
+        [
+            "trust",
+            {
+                summary: {
+                    defaultVariant: trustVariant,
+                    structuredData: structuredTrust,
+                },
+                file: {
+                    defaultVariant: trustVariant,
+                    variants: trustVariants,
+                },
+            },
+        ],
+        [
+            "cta",
+            {
+                summary: {
+                    defaultVariant: ctaVariant,
+                    structuredData: structuredWebsite,
+                },
+                file: {
+                    defaultVariant: ctaVariant,
+                    variants: ctaVariants,
+                },
+            },
+        ],
+    ];
+
+    return Object.fromEntries(entries) as Record<
+        MarketingSection,
+        MarketingSectionBuildResult
+    >;
+}
+
+export function createStaticConfigBundleFromMessages(
+    locale: AppLocale,
+    messages: MessagesModule,
+    options: BuildOptions,
+): StaticConfigBundle {
+    const metadataMessages = messages.Metadata ?? {};
+    const openGraph = (metadataMessages.openGraph ?? {}) as Record<
+        string,
+        unknown
+    >;
+    const marketingMessages = messages.Marketing ?? {};
+    const staticPageMessages = messages.StaticPages ?? {};
+    const commonMessages = messages.Common ?? {};
+
+    const siteNameOverride = options.siteName?.trim();
+    const siteName = siteNameOverride?.length
+        ? siteNameOverride
+        : typeof openGraph.siteName === "string" &&
+            openGraph.siteName.trim().length
+          ? openGraph.siteName.trim()
+          : "Banana Generator";
+    const ogImageSource = options.ogImage?.trim();
+    const ogImage = ogImageSource?.length
+        ? ensureAbsoluteUrl(ogImageSource, options.baseUrl)
+        : ensureAbsoluteUrl("/og-image.svg", options.baseUrl);
+
+    const marketingStructuredData = createMarketingStructuredData({
+        locale,
+        appUrl: options.baseUrl,
+        siteName,
+        structuredDataImage: ogImage,
+        marketingMessages,
+    });
+
+    const structuredData = {
+        marketing: marketingStructuredData,
+        about: createAboutStructuredData(
+            locale,
+            options.baseUrl,
+            siteName,
+            staticPageMessages,
+        ),
+        contact: createContactStructuredData(
+            locale,
+            options.baseUrl,
+            siteName,
+            staticPageMessages,
+        ),
+        privacy: createPolicyStructuredData(
+            locale,
+            options.baseUrl,
+            siteName,
+            staticPageMessages,
+            "privacy",
+        ),
+        terms: createPolicyStructuredData(
+            locale,
+            options.baseUrl,
+            siteName,
+            staticPageMessages,
+            "terms",
+        ),
+    } satisfies Record<string, unknown>;
+
+    const marketingSections = buildMarketingSections(
+        locale,
+        marketingMessages,
+        marketingStructuredData,
+    );
+
+    const sectionsSummary = Object.fromEntries(
+        Object.entries(marketingSections).map(([section, value]) => [
+            toMarketingSection(section),
+            value.summary,
+        ]),
+    ) as Record<MarketingSection, MarketingSectionSummary>;
+
+    const sectionsFiles = Object.fromEntries(
+        Object.entries(marketingSections).map(([section, value]) => [
+            toMarketingSection(section),
+            value.file,
+        ]),
+    ) as Record<MarketingSection, MarketingSectionFile>;
+
+    const variants = Object.fromEntries(
+        Object.entries(sectionsFiles).map(([section, file]) => [
+            toMarketingSection(section),
+            Object.keys(file.variants),
+        ]),
+    ) as Record<MarketingSection, string[]>;
+
+    return {
+        config: {
+            locale,
+            metadata: {
+                baseUrl: options.baseUrl,
+                siteName,
+                ogImage,
+                structuredData,
+                version: options.version,
+                updatedAt: options.updatedAt,
+            },
+            messages: {
+                Marketing: marketingMessages,
+                StaticPages: staticPageMessages,
+                Common: commonMessages,
+            },
+            marketing: {
+                sections: sectionsSummary,
+                variants,
+            },
+        },
+        sections: sectionsFiles,
+    } satisfies StaticConfigBundle;
+}
+
+function buildFallbackBundle(
+    locale: AppLocale,
+    options: StaticConfigFallbackOptions = {},
+): StaticConfigBundle {
+    const cached = fallbackCache.get(locale);
+    if (cached) {
+        return cached;
+    }
+    const messages = FALLBACK_MESSAGES[locale] as MessagesModule;
+    const version = options.version?.trim().length
+        ? options.version.trim()
+        : "local";
+    const updatedAt = options.updatedAt?.trim().length
+        ? options.updatedAt.trim()
+        : new Date().toISOString();
+    const baseUrl = options.baseUrl ?? "http://localhost:3000";
+    const bundle = createStaticConfigBundleFromMessages(locale, messages, {
+        baseUrl,
+        version,
+        updatedAt,
+    });
+    fallbackCache.set(locale, bundle);
+    return bundle;
+}
+
+function cacheBundle(locale: AppLocale, bundle: StaticConfigBundle) {
+    configCache.set(locale, bundle.config);
+    for (const [section, file] of Object.entries(bundle.sections)) {
+        const key = getSectionCacheKey(locale, toMarketingSection(section));
+        marketingCache.set(key, file);
+    }
+}
+
+export function createFallbackConfig(
+    locale: AppLocale,
+    options: StaticConfigFallbackOptions = {},
+): StaticSiteConfig {
+    const normalized = assertLocale(locale);
+    const bundle = buildFallbackBundle(normalized, options);
+    cacheBundle(normalized, bundle);
+    return bundle.config;
+}
+
+function createFallbackSection(
+    locale: AppLocale,
+    section: MarketingSection,
+    options: StaticConfigFallbackOptions = {},
+) {
+    const normalized = assertLocale(locale);
+    const bundle = buildFallbackBundle(normalized, options);
+    cacheBundle(normalized, bundle);
+    return bundle.sections[section];
+}
+
+export function createFallbackMarketingSection(
+    locale: AppLocale,
+    section: MarketingSection,
+    options: StaticConfigFallbackOptions = {},
+): MarketingSectionFile {
+    return createFallbackSection(locale, section, options);
+}
+
 function readConfigFileSync(locale: AppLocale): StaticSiteConfig {
-    const cached = cache.get(locale);
+    const cached = configCache.get(locale);
     if (cached) {
         return cached;
     }
@@ -104,13 +705,13 @@ function readConfigFileSync(locale: AppLocale): StaticSiteConfig {
     try {
         const raw = readFileSync(file, "utf-8");
         const parsed = JSON.parse(raw) as StaticSiteConfig;
-        cache.set(locale, parsed);
+        configCache.set(locale, parsed);
         return parsed;
     } catch (error) {
         if (isMissingFileError(error)) {
-            const fallback = createFallbackConfig(locale);
-            cache.set(locale, fallback);
-            return fallback;
+            const fallback = buildFallbackBundle(locale);
+            cacheBundle(locale, fallback);
+            return fallback.config;
         }
         throw error;
     }
@@ -118,7 +719,7 @@ function readConfigFileSync(locale: AppLocale): StaticSiteConfig {
 
 export async function loadStaticConfig(locale: AppLocale) {
     const normalized = assertLocale(locale);
-    const cached = cache.get(normalized);
+    const cached = configCache.get(normalized);
     if (cached) {
         return cached;
     }
@@ -126,13 +727,13 @@ export async function loadStaticConfig(locale: AppLocale) {
     try {
         const raw = await fs.readFile(file, "utf-8");
         const parsed = JSON.parse(raw) as StaticSiteConfig;
-        cache.set(normalized, parsed);
+        configCache.set(normalized, parsed);
         return parsed;
     } catch (error) {
         if (isMissingFileError(error)) {
-            const fallback = createFallbackConfig(normalized);
-            cache.set(normalized, fallback);
-            return fallback;
+            const fallback = buildFallbackBundle(normalized);
+            cacheBundle(normalized, fallback);
+            return fallback.config;
         }
         throw error;
     }
@@ -141,4 +742,73 @@ export async function loadStaticConfig(locale: AppLocale) {
 export function loadStaticConfigSync(locale: AppLocale) {
     const normalized = assertLocale(locale);
     return readConfigFileSync(normalized);
+}
+
+function getSectionFilePath(locale: AppLocale, section: MarketingSection) {
+    return path.join(MARKETING_ROOT, locale, `${section}.json`);
+}
+
+function readSectionFileSync(
+    locale: AppLocale,
+    section: MarketingSection,
+): MarketingSectionFile {
+    const key = getSectionCacheKey(locale, section);
+    const cached = marketingCache.get(key);
+    if (cached) {
+        return cached;
+    }
+    const file = getSectionFilePath(locale, section);
+    try {
+        const raw = readFileSync(file, "utf-8");
+        const parsed = JSON.parse(raw) as MarketingSectionFile;
+        marketingCache.set(key, parsed);
+        return parsed;
+    } catch (error) {
+        if (isMissingFileError(error)) {
+            const fallback = createFallbackSection(locale, section);
+            marketingCache.set(key, fallback);
+            return fallback;
+        }
+        throw error;
+    }
+}
+
+export async function loadMarketingSection(
+    locale: AppLocale,
+    section: MarketingSection,
+) {
+    const normalized = assertLocale(locale);
+    const key = getSectionCacheKey(normalized, section);
+    const cached = marketingCache.get(key);
+    if (cached) {
+        return cached;
+    }
+    const file = getSectionFilePath(normalized, section);
+    try {
+        const raw = await fs.readFile(file, "utf-8");
+        const parsed = JSON.parse(raw) as MarketingSectionFile;
+        marketingCache.set(key, parsed);
+        return parsed;
+    } catch (error) {
+        if (isMissingFileError(error)) {
+            const fallback = createFallbackSection(normalized, section);
+            marketingCache.set(key, fallback);
+            return fallback;
+        }
+        throw error;
+    }
+}
+
+export function loadMarketingSectionSync(
+    locale: AppLocale,
+    section: MarketingSection,
+) {
+    const normalized = assertLocale(locale);
+    return readSectionFileSync(normalized, section);
+}
+
+export function clearStaticConfigCache() {
+    configCache.clear();
+    marketingCache.clear();
+    fallbackCache.clear();
 }

@@ -1,0 +1,18 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "badge": "Kostenlos online",
+      "emoji": "🍌",
+      "title": "KI-Fotobearbeitung",
+      "description": "Verwandle, bearbeite und verbessere deine Bilder mit einfachen Textanweisungen. Füge Objekte hinzu, entferne sie oder gestalte alles in Sekunden mit KI neu.",
+      "primaryCta": "Kostenlos mit KI bearbeiten",
+      "secondaryCta": "KI-Bild-Workflows entdecken",
+      "support": {
+        "fast": "⚡ Schnell",
+        "secure": "🔒 Keine Anmeldung",
+        "free": "🆓 Unbegrenzt"
+      }
+    }
+  }
+}

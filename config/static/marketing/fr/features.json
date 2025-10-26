@@ -1,0 +1,35 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Qu'est-ce que Banana Generator ?",
+      "items": [
+        {
+          "title": "Accès gratuit et illimité",
+          "description": "Profitez d'une génération d'images illimitée – sans inscription ni coûts cachés."
+        },
+        {
+          "title": "Retouche en langage naturel",
+          "description": "Remplacez les arrière-plans, ajustez la lumière ou retirez des objets avec du texte."
+        },
+        {
+          "title": "Personnages cohérents",
+          "description": "Conservez des personnages identifiables sur plusieurs images."
+        },
+        {
+          "title": "Intégration de scène fluide",
+          "description": "Fusionnez les retouches avec les ombres et lumières d'origine."
+        },
+        {
+          "title": "Traitement ultra-rapide",
+          "description": "Générez ou retouchez des images 1 MP en quelques secondes."
+        },
+        {
+          "title": "Génération de styles polyvalente",
+          "description": "Créez des styles photoréalistes, cartoon, aquarelle ou peinture à l'huile."
+        }
+      ],
+      "learnMore": "Consultez nos <billingLink>offres de retouche d'images IA</billingLink> pour tous les détails tarifaires."
+    }
+  }
+}

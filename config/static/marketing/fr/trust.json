@@ -1,0 +1,28 @@
+{
+  "defaultVariant": "default",
+  "variants": {
+    "default": {
+      "title": "Plébiscité par les équipes créatives",
+      "description": "Studios, agences et créateurs indépendants utilisent Banana Generator pour accélérer la retouche photo IA tout en respectant leur identité visuelle.",
+      "items": [
+        {
+          "quote": "Banana Generator a divisé par deux notre temps de retouche produit tout en conservant nos couleurs de marque.",
+          "author": "Maya Thompson",
+          "role": "Directrice photo, Citrus Labs"
+        },
+        {
+          "quote": "L'éditeur photo IA aide nos designers à itérer rapidement et à rester cohérents sur chaque campagne.",
+          "author": "Leo Martins",
+          "role": "Directeur créatif, Pixel & Peel Studio"
+        },
+        {
+          "quote": "En tant que créatrice solo, j'adore la façon dont l'IA gère la lumière pour que je me concentre sur le récit.",
+          "author": "Jules Rivera",
+          "role": "Réalisatrice YouTube"
+        }
+      ],
+      "callout": "Besoin de documents de conformité ? Consultez notre <privacyLink>centre de confidentialité</privacyLink> pour connaître nos pratiques de données IA.",
+      "socialProfiles": []
+    }
+  }
+}

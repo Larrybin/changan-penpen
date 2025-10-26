@@ -3,8 +3,217 @@
   "metadata": {
     "baseUrl": "http://localhost:3000",
     "siteName": "Banana Generator",
-    "ogImage": "",
-    "structuredData": {}
+    "ogImage": "http://localhost:3000/og-image.svg",
+    "structuredData": {
+      "marketing": [
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "Web",
+          "description": "Banana Generator é um editor de fotos e gerador de imagens com IA gratuito que ajuda equipes a lançar visuais criativos instantaneamente.",
+          "featureList": [
+            "Editor de fotos com IA e comandos em linguagem natural",
+            "Geração e aprimoramento de imagens com IA instantâneos",
+            "Sem cadastro obrigatório e com edições ilimitadas"
+          ],
+          "image": "http://localhost:3000/og-image.svg",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "BRL"
+          },
+          "inLanguage": "pt",
+          "alternateName": "Editor de fotos com IA",
+          "slogan": "Edição de imagens com IA para você continuar no topo.",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Banana Generator",
+            "url": "http://localhost:3000",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "http://localhost:3000/og-image.svg"
+            }
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "O que é o Banana Generator?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Um editor de fotos e gerador de imagens com IA gratuito alimentado pelo modelo Nano Banana."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Preciso me cadastrar ou pagar?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Não. Comece rápido, grátis e sem limites."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Quais formatos são compatíveis?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Envie formatos comuns como PNG e JPG; exportação em alta resolução é suportada."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Meus dados são privados e seguros?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Seguimos uma política que prioriza privacidade. Você mantém a propriedade das suas imagens."
+              }
+            }
+          ]
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000",
+          "logo": "http://localhost:3000/og-image.svg"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000",
+          "description": "Banana Generator é um editor de fotos e gerador de imagens com IA gratuito que ajuda equipes a lançar visuais criativos instantaneamente.",
+          "inLanguage": "pt"
+        }
+      ],
+      "about": {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        "name": "Sobre o Banana Generator",
+        "description": "Banana Generator é um kit de edição com IA pronto para produção, feito para equipes que precisam de resultados consistentes.",
+        "inLanguage": "pt",
+        "url": "http://localhost:3000/pt/about",
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000"
+        },
+        "mainEntity": [
+          {
+            "@type": "CreativeWork",
+            "name": "Nossa missão",
+            "description": "Oferecer a criativos e times de produto um ambiente intuitivo para editar imagens com linguagem natural sem perder qualidade."
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "O que oferecemos",
+            "description": "Automação em lote, consistência de personagens, modelos de IA, armazenamento e fluxos de deploy escaláveis."
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Por que importa",
+            "description": "As equipes lançam visuais mais rápido, mantêm a marca consistente e colaboram com segurança em diferentes mercados."
+          }
+        ]
+      },
+      "contact": {
+        "@context": "https://schema.org",
+        "@type": "ContactPage",
+        "name": "Fale conosco",
+        "description": "Queremos ouvir você. Escolha o canal certo para receber uma resposta rápida.",
+        "inLanguage": "pt",
+        "url": "http://localhost:3000/pt/contact",
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000"
+        },
+        "contactPoint": [
+          {
+            "@type": "ContactPoint",
+            "contactType": "Suporte",
+            "email": "support@bananagenerator.app"
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "Parcerias",
+            "email": "partners@bananagenerator.app"
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "Horário"
+          }
+        ]
+      },
+      "privacy": {
+        "@context": "https://schema.org",
+        "@type": "PrivacyPolicy",
+        "name": "Política de privacidade",
+        "description": "Sua confiança é prioridade. Seguimos privacidade desde o desenho de cada funcionalidade.",
+        "inLanguage": "pt",
+        "url": "http://localhost:3000/pt/privacy",
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000"
+        },
+        "hasPart": [
+          {
+            "@type": "WebPageSection",
+            "name": "Dados que coletamos",
+            "description": "Armazenamos informações essenciais da conta, eventos de uso e arquivos enviados para garantir estabilidade."
+          },
+          {
+            "@type": "WebPageSection",
+            "name": "Como usamos os dados",
+            "description": "Usamos as informações para oferecer recursos principais, melhorar modelos de forma agregada e prestar suporte."
+          },
+          {
+            "@type": "WebPageSection",
+            "name": "Suas escolhas",
+            "description": "Exporte seus dados a qualquer momento, solicite exclusão e gerencie preferências de marketing no painel."
+          }
+        ]
+      },
+      "terms": {
+        "@context": "https://schema.org",
+        "@type": "TermsOfService",
+        "name": "Termos de uso",
+        "description": "Estes termos regem o acesso e o uso do Banana Generator.",
+        "inLanguage": "pt",
+        "url": "http://localhost:3000/pt/terms",
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000"
+        },
+        "hasPart": [
+          {
+            "@type": "WebPageSection",
+            "name": "Uso do Banana Generator",
+            "description": "Você deve ter 18 anos ou mais, proteger suas credenciais e cumprir as leis aplicáveis."
+          },
+          {
+            "@type": "WebPageSection",
+            "name": "Uso responsável e conteúdo",
+            "description": "Não gere conteúdo nocivo, infrator ou enganoso. Podemos suspender contas em caso de violação."
+          },
+          {
+            "@type": "WebPageSection",
+            "name": "Cobrança e cancelamentos",
+            "description": "Assinaturas renovam automaticamente até serem canceladas. Cancele a tempo para evitar novas cobranças."
+          }
+        ]
+      }
+    },
+    "version": "a22d43e98eff227c0ae4d2bf0cf3240e3ddf8c6e",
+    "updatedAt": "2025-10-26T08:43:14.065Z"
   },
   "messages": {
     "Marketing": {
@@ -244,6 +453,189 @@
           }
         ]
       }
+    },
+    "Common": {
+      "appName": "Banana Generator",
+      "welcome": "Bem-vindo",
+      "language": "Idioma",
+      "languageSwitcherLabel": "Selecionar idioma",
+      "brandTagline": "Edição de imagens com IA para você continuar no topo."
+    }
+  },
+  "marketing": {
+    "sections": {
+      "hero": {
+        "defaultVariant": "default",
+        "structuredData": [
+          {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Banana Generator",
+            "url": "http://localhost:3000",
+            "applicationCategory": "MultimediaApplication",
+            "operatingSystem": "Web",
+            "description": "Banana Generator é um editor de fotos e gerador de imagens com IA gratuito que ajuda equipes a lançar visuais criativos instantaneamente.",
+            "featureList": [
+              "Editor de fotos com IA e comandos em linguagem natural",
+              "Geração e aprimoramento de imagens com IA instantâneos",
+              "Sem cadastro obrigatório e com edições ilimitadas"
+            ],
+            "image": "http://localhost:3000/og-image.svg",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "BRL"
+            },
+            "inLanguage": "pt",
+            "alternateName": "Editor de fotos com IA",
+            "slogan": "Edição de imagens com IA para você continuar no topo.",
+            "publisher": {
+              "@type": "Organization",
+              "name": "Banana Generator",
+              "url": "http://localhost:3000",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "http://localhost:3000/og-image.svg"
+              }
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "O que é o Banana Generator?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Um editor de fotos e gerador de imagens com IA gratuito alimentado pelo modelo Nano Banana."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Preciso me cadastrar ou pagar?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Não. Comece rápido, grátis e sem limites."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Quais formatos são compatíveis?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Envie formatos comuns como PNG e JPG; exportação em alta resolução é suportada."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Meus dados são privados e seguros?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Seguimos uma política que prioriza privacidade. Você mantém a propriedade das suas imagens."
+                }
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Banana Generator",
+            "url": "http://localhost:3000",
+            "logo": "http://localhost:3000/og-image.svg"
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Banana Generator",
+            "url": "http://localhost:3000",
+            "description": "Banana Generator é um editor de fotos e gerador de imagens com IA gratuito que ajuda equipes a lançar visuais criativos instantaneamente.",
+            "inLanguage": "pt"
+          }
+        ]
+      },
+      "features": {
+        "defaultVariant": "default"
+      },
+      "faq": {
+        "defaultVariant": "default",
+        "structuredData": {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "O que é o Banana Generator?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Um editor de fotos e gerador de imagens com IA gratuito alimentado pelo modelo Nano Banana."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Preciso me cadastrar ou pagar?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Não. Comece rápido, grátis e sem limites."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Quais formatos são compatíveis?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Envie formatos comuns como PNG e JPG; exportação em alta resolução é suportada."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Meus dados são privados e seguros?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Seguimos uma política que prioriza privacidade. Você mantém a propriedade das suas imagens."
+              }
+            }
+          ]
+        }
+      },
+      "trust": {
+        "defaultVariant": "default",
+        "structuredData": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000",
+          "logo": "http://localhost:3000/og-image.svg"
+        }
+      },
+      "cta": {
+        "defaultVariant": "default",
+        "structuredData": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Banana Generator",
+          "url": "http://localhost:3000",
+          "description": "Banana Generator é um editor de fotos e gerador de imagens com IA gratuito que ajuda equipes a lançar visuais criativos instantaneamente.",
+          "inLanguage": "pt"
+        }
+      }
+    },
+    "variants": {
+      "hero": [
+        "default"
+      ],
+      "features": [
+        "default"
+      ],
+      "faq": [
+        "default"
+      ],
+      "trust": [
+        "default"
+      ],
+      "cta": [
+        "default"
+      ]
     }
   }
 }
