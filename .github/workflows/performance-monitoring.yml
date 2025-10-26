@@ -57,6 +57,97 @@ jobs:
               total_size=$(du -sh .next 2>/dev/null | cut -f1 || echo "0")
               echo "📊 Total build size: $total_size"
             fi
+
+            # Collect largest JavaScript chunks for reporting
+            if [[ -d ".next/static/chunks" ]]; then
+              node <<'NODE'
+const fs = require("fs");
+const path = require("path");
+
+const baseDir = path.join(".next", "static", "chunks");
+const reportPath = "performance-report.json";
+const sizeThresholdKB = 500;
+
+function collectFiles(directory) {
+  const entries = fs.readdirSync(directory, { withFileTypes: true });
+  const files = [];
+
+  for (const entry of entries) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectFiles(entryPath));
+      continue;
+    }
+
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    if (!/\.(c|m)?js$/i.test(entry.name)) {
+      continue;
+    }
+
+    const stats = fs.statSync(entryPath);
+    const relativePath = path
+      .relative(".next", entryPath)
+      .split(path.sep)
+      .join("/");
+
+    files.push({ path: relativePath, size: stats.size });
+  }
+
+  return files;
+}
+
+function toKB(bytes) {
+  return Math.round((bytes / 1024) * 10) / 10;
+}
+
+const report = {
+  generatedAt: new Date().toISOString(),
+  sizeThresholdKB,
+  largestFiles: [],
+  exceedingThreshold: [],
+};
+
+if (fs.existsSync(baseDir)) {
+  const files = collectFiles(baseDir);
+  files.sort((a, b) => b.size - a.size);
+
+  report.largestFiles = files.slice(0, 10).map((file) => ({
+    path: file.path,
+    sizeBytes: file.size,
+    sizeKB: toKB(file.size),
+  }));
+
+  report.exceedingThreshold = files
+    .filter((file) => toKB(file.size) > sizeThresholdKB)
+    .map((file) => ({
+      path: file.path,
+      sizeBytes: file.size,
+      sizeKB: toKB(file.size),
+    }));
+}
+
+fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+
+if (report.largestFiles.length > 0) {
+  console.log("Top JavaScript chunks:");
+  for (const file of report.largestFiles) {
+    console.log(`- ${file.path}: ${file.sizeKB} KB`);
+  }
+
+  if (report.exceedingThreshold.length > 0) {
+    console.log("\nChunks exceeding threshold:");
+    for (const file of report.exceedingThreshold) {
+      console.log(`- ${file.path}: ${file.sizeKB} KB (>${sizeThresholdKB} KB)`);
+    }
+  }
+} else {
+  console.log("No JavaScript chunks found in .next/static/chunks.");
+}
+NODE
+            fi
           else
             echo "::error::Build failed or .next directory not found"
             exit 1
@@ -88,7 +179,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           script: |
-            const fs = require('fs');
+            const fs = require("fs");
 
             let comment = '## 📊 Performance Analysis\n\n';
 
@@ -97,6 +188,31 @@ jobs:
               const stats = fs.statSync('.next/static/chunks/pages/_app.js');
               const sizeKB = Math.round(stats.size / 1024);
               comment += `📦 **Main App Bundle**: ${sizeKB} KB\n\n`;
+            }
+
+            const reportPath = 'performance-report.json';
+            if (fs.existsSync(reportPath)) {
+              const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+
+              if (Array.isArray(report.largestFiles) && report.largestFiles.length > 0) {
+                comment += "### Largest JavaScript Chunks\n";
+                comment += "| Chunk | Size (KB) |\n";
+                comment += "| --- | ---: |\n";
+                report.largestFiles.slice(0, 5).forEach((file) => {
+                  comment += `| \`${file.path}\` | ${file.sizeKB} |\n`;
+                });
+                comment += "\n";
+              }
+
+              if (Array.isArray(report.exceedingThreshold) && report.exceedingThreshold.length > 0) {
+                comment += `⚠️ **Chunks above ${report.sizeThresholdKB} KB**\n`;
+                report.exceedingThreshold.forEach((file) => {
+                  comment += `- \`${file.path}\`: ${file.sizeKB} KB\n`;
+                });
+                comment += "\n";
+              } else {
+                comment += `✅ All analyzed JavaScript chunks are under ${report.sizeThresholdKB} KB.\n\n`;
+              }
             }
 
             comment += 'This analysis helps track bundle size changes and performance impact.\n\n';

@@ -29,6 +29,18 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Determine CodeQL upload mode
+        id: fork-check
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.fork }}" == "true" ]]; then
+            echo "⚠️ Detected forked pull request - CodeQL results will be stored as artifacts only"
+            echo "is-fork=true" >> "$GITHUB_OUTPUT"
+            echo "can-upload=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-fork=false" >> "$GITHUB_OUTPUT"
+            echo "can-upload=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
@@ -49,8 +61,37 @@ jobs:
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
+        if: steps.fork-check.outputs.can-upload == 'true'
         uses: github/codeql-action/analyze@v3
-        continue-on-error: true
+        with:
+          output: codeql-results
+
+      - name: Generate SARIF artifact without upload
+        if: steps.fork-check.outputs.can-upload != 'true'
+        run: |
+          set -euo pipefail
+
+          mkdir -p codeql-results
+          CODEQL_SUITE="codeql_databases/javascript/temp/config-queries.qls"
+
+          if [[ ! -f "${CODEQL_SUITE}" ]]; then
+            echo "::error::Unable to locate generated CodeQL query suite at ${CODEQL_SUITE}" >&2
+            exit 1
+          fi
+
+          codeql database analyze \
+            --format=sarifv2.1.0 \
+            --output=codeql-results/javascript.sarif \
+            --threads=0 \
+            codeql_databases/javascript \
+            "${CODEQL_SUITE}"
+
+      - name: Upload CodeQL SARIF as artifact
+        if: steps.fork-check.outputs.can-upload != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: codeql-results-${{ github.run_id }}
+          path: codeql-results
 
       - name: Dependency Security Scan
         run: |
@@ -187,12 +228,11 @@ jobs:
             const fs = require('fs');
             const isFork = Boolean(context.payload.pull_request?.head?.repo?.fork);
 
-            if (isFork) {
-              core.info('Skipping PR comment because the pull request originates from a fork.');
-              return;
-            }
-
             let comment = '## 🔒 Security Scan Results\n\n';
+
+            if (isFork) {
+              comment += '⚠️ 由于该 PR 来自 fork，CodeQL 结果已作为构件上传，请在 Actions 运行页面下载 `codeql-results` 工件查看详细 SARIF 报告。\n\n';
+            }
 
             // Check if any security steps failed
             if ('${{ job.status }}' === 'failure') {
