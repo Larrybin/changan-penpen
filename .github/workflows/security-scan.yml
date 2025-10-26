@@ -29,6 +29,16 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Detect forked pull request
+        id: fork-check
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.fork }}" == "true" ]]; then
+            echo "🚫 Detected forked pull request - skipping CodeQL upload"
+            echo "is-fork=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-fork=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
@@ -37,6 +47,7 @@ jobs:
           cache-key-suffix: "-security"
 
       - name: SAST Analysis with CodeQL
+        if: steps.fork-check.outputs.is-fork != 'true'
         uses: github/codeql-action/init@v3
         with:
           languages: javascript
@@ -46,11 +57,18 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build CodeQL Database
+        if: steps.fork-check.outputs.is-fork != 'true'
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
+        if: steps.fork-check.outputs.is-fork != 'true'
         uses: github/codeql-action/analyze@v3
         continue-on-error: true
+
+      - name: Skip CodeQL on forks
+        if: steps.fork-check.outputs.is-fork == 'true'
+        run: |
+          echo "CodeQL scanning is disabled for pull requests opened from forks because the GitHub token lacks the security-events: write permission required to upload SARIF results."
 
       - name: Dependency Security Scan
         run: |
