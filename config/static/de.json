@@ -1,0 +1,249 @@
+{
+  "locale": "de",
+  "metadata": {
+    "baseUrl": "http://localhost:3000",
+    "siteName": "Banana Generator",
+    "ogImage": "",
+    "structuredData": {}
+  },
+  "messages": {
+    "Marketing": {
+      "header": {
+        "cta": "KI-Fotobearbeitung starten",
+        "menuLabel": "Navigationsmenü öffnen"
+      },
+      "hero": {
+        "badge": "Kostenlos online",
+        "emoji": "🍌",
+        "title": "KI-Fotobearbeitung",
+        "description": "Verwandle, bearbeite und verbessere deine Bilder mit einfachen Textanweisungen. Füge Objekte hinzu, entferne sie oder gestalte alles in Sekunden mit KI neu.",
+        "primaryCta": "Kostenlos mit KI bearbeiten",
+        "secondaryCta": "KI-Bild-Workflows entdecken",
+        "support": {
+          "fast": "⚡ Schnell",
+          "secure": "🔒 Keine Anmeldung",
+          "free": "🆓 Unbegrenzt"
+        }
+      },
+      "features": {
+        "title": "Was ist Banana Generator?",
+        "items": [
+          {
+            "title": "Kostenloser & unbegrenzter Zugriff",
+            "description": "Genieße unbegrenzte Bildgenerierung – keine Anmeldung, keine versteckten Kosten."
+          },
+          {
+            "title": "Bearbeitung mit natürlicher Sprache",
+            "description": "Ersetze Hintergründe, passe Licht an oder entferne Objekte per Textbefehl."
+          },
+          {
+            "title": "Konsistente Charaktere",
+            "description": "Erhalte wiedererkennbare Charaktere über mehrere Bilder hinweg."
+          },
+          {
+            "title": "Nahtlose Szenenintegration",
+            "description": "Füge Änderungen mit natürlichen Schatten und Lichtstimmungen ein."
+          },
+          {
+            "title": "Hochgeschwindigkeits-Verarbeitung",
+            "description": "Erstelle oder bearbeite 1-MP-Bilder in Sekunden."
+          },
+          {
+            "title": "Vielseitige Stilgenerierung",
+            "description": "Erzeuge fotorealistische, cartoonhafte, Aquarell- oder Ölgemälde-Stile."
+          }
+        ],
+        "learnMore": "Alle Preise findest du in unseren <billingLink>KI-Bildbearbeitungs-Tarifen</billingLink>."
+      },
+      "why": {
+        "title": "Warum Banana Generator wählen?",
+        "items": [
+          {
+            "title": "KI-Fotobearbeitung",
+            "description": "Bearbeite Fotos, indem du Änderungen einfach beschreibst. Keine Ebenen nötig."
+          },
+          {
+            "title": "KI-Bildgenerator",
+            "description": "Wandle Text in einzigartige Bilder mit realistischen oder künstlerischen Stilen um."
+          },
+          {
+            "title": "Go-Bananas-Modus",
+            "description": "Erstelle mehrere Varianten gleichzeitig für grenzenlose Inspiration."
+          }
+        ]
+      },
+      "faq": {
+        "title": "Häufig gestellte Fragen",
+        "items": [
+          {
+            "question": "Was ist Banana Generator?",
+            "answer": "Ein kostenloser KI-Fotobearbeiter und Bildgenerator, betrieben vom Nano-Banana-Modell."
+          },
+          {
+            "question": "Muss ich mich anmelden oder bezahlen?",
+            "answer": "Nein. Du kannst sofort schnell, kostenlos und unbegrenzt starten."
+          },
+          {
+            "question": "Welche Formate werden unterstützt?",
+            "answer": "Lade gängige Formate wie PNG und JPG hoch; Export in hoher Auflösung wird unterstützt."
+          },
+          {
+            "question": "Sind meine Daten privat und sicher?",
+            "answer": "Wir verfolgen eine Privacy-First-Strategie. Du behältst das Eigentum an deinen Bildern."
+          }
+        ],
+        "supportingCopy": "Du brauchst mehr Infos? <contactLink>Kontaktiere unser KI-Supportteam</contactLink> oder lerne auf der <aboutLink>Über-uns-Seite von Banana Generator</aboutLink> mehr über unsere Mission."
+      },
+      "trust": {
+        "title": "Vertrauenswürdig bei Kreativteams weltweit",
+        "description": "Studios, Agenturen und Creator nutzen Banana Generator, um KI-Fotobearbeitung schneller und markenkonform zu machen.",
+        "items": [
+          {
+            "quote": "Banana Generator hat unsere Produktbild-Bearbeitung halbiert und die Markenfarben perfekt gehalten.",
+            "author": "Maya Thompson",
+            "role": "Leiterin Fotografie, Citrus Labs"
+          },
+          {
+            "quote": "Der KI-Fotoeditor hilft unserem Designteam, schneller zu iterieren und jede Kampagne konsistent zu halten.",
+            "author": "Leo Martins",
+            "role": "Creative Lead, Pixel & Peel Studio"
+          },
+          {
+            "quote": "Als Solo-Creator liebe ich, wie die KI Lichtstimmungen übernimmt, damit ich mich aufs Storytelling konzentriere.",
+            "author": "Jules Rivera",
+            "role": "YouTube-Filmemacher:in"
+          }
+        ],
+        "callout": "Du suchst Compliance-Dokumente? Besuche unser <privacyLink>Privacy Center</privacyLink> für Informationen zur KI-Datennutzung.",
+        "socialProfiles": []
+      },
+      "cta": {
+        "title": "Bereit für den Banana-Modus?",
+        "description": "Teste Banana Generator jetzt und verwandle deine Fotos in Spitzenkreationen!",
+        "primaryCta": "Mit dem KI-Fotoeditor starten"
+      },
+      "playground": {
+        "title": "Playground",
+        "badges": [
+          "Intelligente Bearbeitung",
+          "Keine Anmeldung nötig",
+          "Kostenlose Testphase"
+        ],
+        "uploadLabel": "Wähle ein Bild zur Bearbeitung",
+        "uploadSecondary": "Text zu Bild",
+        "filePlaceholder": "Tippe, um ein Bild auszuwählen",
+        "instructionsLabel": "Bearbeitungsanweisungen",
+        "usageGuide": "Anleitung",
+        "usageGuideHint": "Interaktiver Leitfaden folgt in Kürze.",
+        "promptPlaceholder": "z. B. „setze der Katze einen Geburtstags-Hut auf“",
+        "aspectRatioLabel": "Seitenverhältnis",
+        "humanCheck": "Bestätige, dass du Mensch bist",
+        "generate": "Schälen",
+        "sideDescription": "Lass deiner Fantasie freien Lauf und erschaffe Bilder mit KI."
+      },
+      "footer": {
+        "supportTitle": "Support",
+        "legalTitle": "Rechtliches",
+        "supportLinks": {
+          "about": "Über uns",
+          "contact": "Kontakt"
+        },
+        "legalLinks": {
+          "privacy": "Datenschutz",
+          "terms": "Nutzungsbedingungen"
+        },
+        "copyright": "© 2025 Banana Generator. Alle Rechte vorbehalten."
+      },
+      "structuredData": {
+        "name": "Banana Generator",
+        "description": "Banana Generator ist ein kostenloser KI-Fotobearbeiter und Bildgenerator, mit dem Teams im Handumdrehen kreative Visuals veröffentlichen.",
+        "tagline": "KI-Bildbearbeitung, mit der du die Nummer eins bleibst.",
+        "featureList": [
+          "KI-Fotobearbeitung mit natürlichen Sprachbefehlen",
+          "Sofortige KI-Bilderstellung und -optimierung",
+          "Keine Anmeldung erforderlich und unbegrenzte Bearbeitungen"
+        ]
+      }
+    },
+    "StaticPages": {
+      "about": {
+        "title": "Über Banana Generator",
+        "intro": "Banana Generator ist ein produktionsreifes KI-Bearbeitungstoolkit für Teams, die verlässliche und reproduzierbare Ergebnisse brauchen.",
+        "sections": [
+          {
+            "title": "Unsere Mission",
+            "description": "Wir bieten Kreativen und Produktteams einen intuitiven Arbeitsbereich, um Bilder mit natürlicher Sprache zu bearbeiten – ohne Qualitätsverluste."
+          },
+          {
+            "title": "Was wir bieten",
+            "description": "Von Stapelautomatisierung bis zur Charakterkonsistenz kombiniert Banana Generator KI-Modelle, Speicher und Deployment-Workflows, die mit Ihren Anforderungen wachsen."
+          },
+          {
+            "title": "Warum es wichtig ist",
+            "description": "Teams veröffentlichen Visuals schneller, halten Markenrichtlinien ein und arbeiten sicher über Länder hinweg zusammen."
+          }
+        ]
+      },
+      "contact": {
+        "title": "Kontakt",
+        "intro": "Wir freuen uns über Ihre Nachricht. Wählen Sie den passenden Kanal, damit wir schnell reagieren können.",
+        "details": [
+          {
+            "label": "Support",
+            "value": "support@bananagenerator.app"
+          },
+          {
+            "label": "Partnerschaften",
+            "value": "partners@bananagenerator.app"
+          },
+          {
+            "label": "Zeiten",
+            "value": "Mo–Fr, 9–18 Uhr UTC"
+          }
+        ],
+        "sections": [
+          {
+            "title": "Wie wir helfen können",
+            "description": "Fragen Sie nach Onboarding, Enterprise-Tests, Abrechnungen oder neuen Kooperationen – wir antworten innerhalb eines Werktags."
+          }
+        ]
+      },
+      "privacy": {
+        "title": "Datenschutzerklärung",
+        "intro": "Ihr Vertrauen zählt. Wir verfolgen bei jeder Funktion einen Privacy-by-Design-Ansatz.",
+        "sections": [
+          {
+            "title": "Welche Daten wir erfassen",
+            "description": "Wir speichern notwendige Kontoinformationen, Nutzungsereignisse und hochgeladene Dateien, damit das Produkt zuverlässig funktioniert."
+          },
+          {
+            "title": "Wie wir Daten nutzen",
+            "description": "Informationen dienen der Bereitstellung der Kernfunktionen, der aggregierten Verbesserung der Modelle und dem Support."
+          },
+          {
+            "title": "Ihre Wahlmöglichkeiten",
+            "description": "Exportieren Sie Ihre Daten jederzeit, fordern Sie Löschungen an und steuern Sie Marketing-Einstellungen im Dashboard."
+          }
+        ]
+      },
+      "terms": {
+        "title": "Nutzungsbedingungen",
+        "intro": "Diese Bedingungen regeln den Zugriff und die Nutzung von Banana Generator.",
+        "sections": [
+          {
+            "title": "Banana Generator verwenden",
+            "description": "Sie müssen mindestens 18 Jahre alt sein, Ihre Zugangsdaten schützen und geltendes Recht einhalten."
+          },
+          {
+            "title": "Fair Use & Inhaltsrichtlinien",
+            "description": "Erzeugen Sie keine schädlichen, rechtsverletzenden oder irreführenden Inhalte. Wir können Accounts bei Verstößen sperren."
+          },
+          {
+            "title": "Abrechnung & Kündigungen",
+            "description": "Abonnements verlängern sich automatisch, bis sie gekündigt werden. Kündigen Sie rechtzeitig, um weitere Gebühren zu vermeiden."
+          }
+        ]
+      }
+    }
+  }
+}

@@ -35,7 +35,15 @@ const FALLBACK_MESSAGES: Record<AppLocale, LocaleMessages> = {
     pt: ptMessages,
 };
 
-function createFallbackConfig(locale: AppLocale): StaticSiteConfig {
+export type StaticConfigFallbackOptions = {
+    baseUrl?: string;
+};
+
+export function createFallbackConfig(
+    locale: AppLocale,
+    options: StaticConfigFallbackOptions = {},
+): StaticSiteConfig {
+    const { baseUrl = "" } = options;
     const messages = FALLBACK_MESSAGES[locale];
     const metadataMessages = (messages.Metadata ?? {}) as Record<
         string,
@@ -56,7 +64,7 @@ function createFallbackConfig(locale: AppLocale): StaticSiteConfig {
     return {
         locale,
         metadata: {
-            baseUrl: "",
+            baseUrl,
             siteName:
                 typeof openGraph.siteName === "string"
                     ? (openGraph.siteName as string)
