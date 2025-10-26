@@ -153,6 +153,15 @@ const adminResourceDefinitions: readonly AdminResourceDefinition[] = [
         },
     },
     {
+        name: "marketing-content",
+        label: "营销内容",
+        icon: "megaphone",
+        group: "配置",
+        routes: {
+            list: adminRoutes.settings.marketing,
+        },
+    },
+    {
         name: "api-docs",
         label: "API 文档",
         icon: "book-open",
