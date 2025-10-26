@@ -8,31 +8,6 @@ type NodeRequireFunction = (id: string) => unknown;
 
 let cachedNodeCrypto: NodeCrypto | null | undefined;
 
-let fallbackCounter = 0;
-
-function fallbackEntropy32(): number {
-    const timestamp = Date.now();
-    const performanceNow =
-        typeof performance !== "undefined" &&
-        typeof performance.now === "function"
-            ? Math.floor(performance.now() * 1000)
-            : 0;
-    const randomContribution =
-        typeof Math.random === "function"
-            ? Math.floor(Math.random() * UINT32_MAX)
-            : 0;
-
-    fallbackCounter = (fallbackCounter + 1) >>> 0;
-
-    return (
-        ((timestamp & 0xffffffff) ^
-            (performanceNow & 0xffffffff) ^
-            fallbackCounter ^
-            randomContribution) >>>
-        0
-    );
-}
-
 function getNodeCrypto(): NodeCrypto | undefined {
     if (cachedNodeCrypto !== undefined) {
         return cachedNodeCrypto ?? undefined;
@@ -96,18 +71,9 @@ export function secureRandomInt(maxExclusive: number): number {
         return rand % max;
     }
 
-    if (max <= 1) {
-        return 0;
-    }
-
-    if (typeof Math.random === "function") {
-        const rand = Math.floor(Math.random() * max);
-        if (Number.isFinite(rand) && rand >= 0 && rand < max) {
-            return rand;
-        }
-    }
-
-    return fallbackEntropy32() % max;
+    throw new Error(
+        "Secure random generator is not available. Provide Web Crypto or Node crypto support.",
+    );
 }
 
 function secureRandomFraction(): number {
@@ -122,11 +88,9 @@ function secureRandomFraction(): number {
         return nodeCrypto.randomBytes(4).readUInt32BE(0) / UINT32_MAX;
     }
 
-    if (typeof Math.random === "function") {
-        return Math.random();
-    }
-
-    return fallbackEntropy32() / UINT32_MAX;
+    throw new Error(
+        "Secure random generator is not available. Provide Web Crypto or Node crypto support.",
+    );
 }
 
 export function secureRandomNumber(min: number, max: number): number {

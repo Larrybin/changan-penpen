@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import type { MarketingSectionRouteContext } from "@/modules/admin/routes/marketing-content.types";
-import { generatePreviewToken } from "@/modules/admin/services/marketing-content.service";
+import {
+    generatePreviewToken,
+    PreviewTokenGenerationError,
+} from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
 export async function POST(
@@ -25,6 +28,13 @@ export async function POST(
         });
         return NextResponse.json({ data: payload });
     } catch (error) {
+        if (error instanceof PreviewTokenGenerationError) {
+            return NextResponse.json(
+                { message: error.message },
+                { status: 503 },
+            );
+        }
+
         if (error instanceof Error) {
             return NextResponse.json(
                 { message: error.message },
