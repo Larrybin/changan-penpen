@@ -368,8 +368,8 @@ export async function upsertMarketingContentDraft(
     return mapDraftRow(
         locale,
         section,
-        row,
         parsedPayload,
+        row,
         latestPublishedVersion,
     );
 }

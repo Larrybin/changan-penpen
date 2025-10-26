@@ -80,8 +80,8 @@ const marketingVariantSchema = z.record(z.string(), z.unknown());
 export const marketingSectionFileSchema = z
     .object({
         defaultVariant: z
-            .string({ required_error: "defaultVariant is required" })
-            .min(1, "defaultVariant must not be empty"),
+            .string()
+            .min(1, { message: "defaultVariant must not be empty" }),
         variants: marketingVariantSchema.refine(
             (value) => Object.keys(value ?? {}).length > 0,
             {
