@@ -3,6 +3,12 @@ export {
     coupons,
     products,
 } from "@/modules/admin/schemas/catalog.schema";
+export {
+    marketingContentAudit,
+    marketingContentDrafts,
+    marketingContentVersions,
+    marketingSectionFileSchema,
+} from "@/modules/admin/schemas/marketing-content.schema";
 export { orders } from "@/modules/admin/schemas/orders.schema";
 export {
     adminAuditLogs,

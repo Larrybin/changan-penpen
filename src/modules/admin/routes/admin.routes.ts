@@ -25,6 +25,7 @@ const adminRoutes = {
     },
     settings: {
         site: "/admin/settings/site",
+        marketing: "/admin/settings/marketing",
     },
     catalog: {
         products: "/admin/catalog/products",
