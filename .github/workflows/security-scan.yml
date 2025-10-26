@@ -5,11 +5,6 @@ on:
   schedule:
     # Run weekly on Mondays at 8 AM UTC
     - cron: '0 8 * * 1'
-  pull_request:
-    types: [opened, synchronize]
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
 
 permissions:
   contents: read
