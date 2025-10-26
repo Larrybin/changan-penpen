@@ -38,10 +38,7 @@ export async function requireAdminRequest(
 }
 
 export interface AdminRouteContext<
-    TParams extends Record<string, string | string[] | undefined> = Record<
-        string,
-        string | string[] | undefined
-    >,
+    TParams = Record<string, string | string[] | undefined>,
 > {
     request: Request;
     params: TParams;
@@ -49,18 +46,12 @@ export interface AdminRouteContext<
 }
 
 export type AdminRouteHandler<
-    TParams extends Record<string, string | string[] | undefined> = Record<
-        string,
-        string | string[] | undefined
-    >,
+    TParams = Record<string, string | string[] | undefined>,
     TResult extends Response | NextResponse = NextResponse,
 > = (context: AdminRouteContext<TParams>) => Promise<TResult> | TResult;
 
 export function withAdminRoute<
-    TParams extends Record<string, string | string[] | undefined> = Record<
-        string,
-        string | string[] | undefined
-    >,
+    TParams = Record<string, string | string[] | undefined>,
     TResult extends Response | NextResponse = NextResponse,
 >(
     handler: AdminRouteHandler<TParams, TResult>,

@@ -11,7 +11,13 @@ export interface ListOrdersOptions extends TenantPaginationOptions {}
 const applyTenantScope = <TResult>(
     builder: FilterableBuilder<TResult>,
     tenantId: string,
-) => builder.where(eq(customers.userId, tenantId));
+) => {
+    const filterable = builder as FilterableBuilder<TResult> & {
+        where?: (clause: unknown) => FilterableBuilder<TResult>;
+    };
+
+    return filterable.where?.(eq(customers.userId, tenantId)) ?? builder;
+};
 
 export const listOrders = createPaginatedQuery<
     ListOrdersOptions,
@@ -20,9 +26,9 @@ export const listOrders = createPaginatedQuery<
         amountCents: number;
         currency: string;
         status: string;
-        createdAt: Date;
-        customerEmail: string;
-        userId: string | null;
+        createdAt: string;
+        customerEmail: string | null;
+        userId: string;
     }
 >({
     buildBaseQuery: (db, { limit, offset }) =>
@@ -78,9 +84,9 @@ export const listCreditsHistory = createPaginatedQuery<
         amount: number;
         type: string;
         description: string | null;
-        createdAt: Date;
-        customerEmail: string;
-        userId: string | null;
+        createdAt: string;
+        customerEmail: string | null;
+        userId: string;
     }
 >({
     buildBaseQuery: (db, { limit, offset }) =>

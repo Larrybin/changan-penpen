@@ -24,9 +24,7 @@ export type TenantPaginationOptions = PaginationArgs & {
     tenantId?: string;
 };
 
-export type FilterableBuilder<TResult> = Promise<TResult> & {
-    where: (...args: unknown[]) => FilterableBuilder<TResult>;
-};
+export type FilterableBuilder<TResult> = PromiseLike<TResult>;
 
 export function createPaginatedQuery<
     TOptions extends TenantPaginationOptions,
