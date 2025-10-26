@@ -5,7 +5,7 @@ import {
     evaluateReturnRedirect,
     extractReturnDetails,
     type VerificationState,
-} from "@/app/billing/status-verification";
+} from "@/app/(dynamic)/billing/status-verification";
 import { Button } from "@/components/ui/button";
 import { resolveAppLocale } from "@/i18n/config";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
