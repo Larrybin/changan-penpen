@@ -19,6 +19,7 @@ import type {
     TrustSectionData,
     WhySectionItem,
 } from "@/modules/marketing/sections/types";
+import { getMarketingPreviewPayload } from "@/modules/marketing/services/preview.service";
 import { resolveMarketingVariant } from "@/modules/marketing/utils/variant";
 
 type PageProps = {
@@ -62,6 +63,23 @@ export default async function HomePage({ searchParams }: PageProps) {
     >;
 
     const resolvedSearchParams = searchParams ? await searchParams : undefined;
+    const previewTokenRaw =
+        typeof resolvedSearchParams?.previewToken === "string"
+            ? resolvedSearchParams.previewToken
+            : undefined;
+    if (previewTokenRaw) {
+        const preview = await getMarketingPreviewPayload(previewTokenRaw);
+        if (preview && preview.locale === locale) {
+            sectionMap[preview.section] = preview.payload;
+            staticConfig.marketing.sections[preview.section] = {
+                ...(staticConfig.marketing.sections[preview.section] ?? {}),
+                defaultVariant: preview.payload.defaultVariant,
+            };
+            staticConfig.marketing.variants[preview.section] = Object.keys(
+                preview.payload.variants ?? {},
+            );
+        }
+    }
     const cookieStore = await cookies();
     const variantSelections: VariantSelection = {} as VariantSelection;
     for (const section of MARKETING_SECTIONS) {
