@@ -361,6 +361,8 @@
         "title": "Uso (últimos 30 dias)",
         "loginRequiredTitle": "Relatórios de uso",
         "loginRequiredMessage": "Faça login para revisar sua atividade recente.",
+        "unavailableTitle": "Uso temporariamente indisponível",
+        "unavailableMessage": "Os dados de uso não podem ser exibidos agora. Tente novamente mais tarde.",
         "empty": "Nenhum dado de uso disponível para este período.",
         "entry": "{{feature}}: {{total}} {{unit}}"
     },

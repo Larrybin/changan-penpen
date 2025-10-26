@@ -1,15 +1,12 @@
-import { headers } from "next/headers";
 import { getLocale } from "next-intl/server";
 
 import { resolveAppLocale } from "@/i18n/config";
-import { readCspNonce } from "@/lib/security/csp";
 import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
 import { getSiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 import MarketingLandingPage from "@/modules/marketing/landing.page";
 
 export default async function HomePage() {
     const locale = resolveAppLocale(await getLocale());
-    const nonce = readCspNonce(await headers());
     const settings = await getSiteSettingsPayload();
     // 避免在构建时触发 Cloudflare runtime；仅读取进程环境变量
     const envAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL;
@@ -33,7 +30,6 @@ export default async function HomePage() {
             appUrl={appUrl}
             structuredDataImage={structuredDataImage}
             siteName={siteName}
-            nonce={nonce}
             locale={locale}
         />
     );

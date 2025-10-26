@@ -4,7 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
-        "prebuild": "pnpm run fix:i18n && pnpm run config:headers",
+        "prebuild": "pnpm run prebuild:static-config && pnpm run fix:i18n && pnpm run config:headers",
+        "prebuild:static-config": "pnpm exec tsx scripts/export-site-settings.ts",
         "build": "next build",
         "start": "next start",
         "wrangler:dev": "npx wrangler dev",

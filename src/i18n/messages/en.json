@@ -398,6 +398,8 @@
         "title": "Usage (last 30 days)",
         "loginRequiredTitle": "Usage reports",
         "loginRequiredMessage": "Log in to review your recent activity.",
+        "unavailableTitle": "Usage temporarily unavailable",
+        "unavailableMessage": "Usage metrics can’t be displayed right now. Please try again later.",
         "empty": "No usage data is available for this period.",
         "entry": "{{feature}}: {{total}} {{unit}}"
     },

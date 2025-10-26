@@ -1,10 +1,12 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
 import { resolveAppLocale } from "@/i18n/config";
 import { createMetadata, getMetadataContext } from "@/lib/seo-metadata";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import { getUsageDaily } from "@/modules/creem/services/usage.service";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
     const locale = resolveAppLocale(await getLocale());
@@ -24,30 +26,63 @@ function formatDate(d: Date) {
 
 export default async function UsagePage() {
     const t = await getTranslations("BillingUsage");
-    const auth = await getAuthInstance();
-    const session = await auth.api.getSession({
-        headers: new Headers(await headers()),
-    });
-    if (!session?.user) {
-        return (
-            <div className="mx-auto max-w-[var(--container-max-w)] px-[var(--container-px)] py-12">
-                <h1 className="mb-3 font-bold text-title-sm">
-                    {t("loginRequiredTitle")}
-                </h1>
-                <p className="text-muted-foreground">
-                    {t("loginRequiredMessage")}
-                </p>
-            </div>
+    const requestHeaders = await headers();
+
+    const renderLoginPrompt = () => (
+        <div className="mx-auto max-w-[var(--container-max-w)] px-[var(--container-px)] py-12">
+            <h1 className="mb-3 font-bold text-title-sm">
+                {t("loginRequiredTitle")}
+            </h1>
+            <p className="text-muted-foreground">{t("loginRequiredMessage")}</p>
+        </div>
+    );
+
+    const renderUnavailable = () => (
+        <div className="mx-auto max-w-[var(--container-max-w)] px-[var(--container-px)] py-12">
+            <h1 className="mb-3 font-bold text-title-sm">
+                {t("unavailableTitle")}
+            </h1>
+            <p className="text-muted-foreground">{t("unavailableMessage")}</p>
+        </div>
+    );
+
+    let sessionUserId: string | null = null;
+
+    try {
+        const auth = await getAuthInstance();
+        const session = await auth.api.getSession({
+            headers: new Headers(requestHeaders),
+        });
+
+        if (!session?.user) {
+            return renderLoginPrompt();
+        }
+
+        sessionUserId = session.user.id;
+    } catch (error) {
+        console.warn(
+            "[billing/usage] Authentication backend unavailable; showing fallback",
+            error,
         );
+        return renderUnavailable();
     }
 
     const end = new Date();
     const start = new Date(end.getTime() - 29 * 24 * 60 * 60 * 1000);
     const fromDate = formatDate(start);
     const toDate = formatDate(end);
-    const rows = await getUsageDaily(session.user.id, fromDate, toDate);
 
-    // 鎸夋棩鏈熲啋feature 鍒嗙粍
+    let rows: Awaited<ReturnType<typeof getUsageDaily>>;
+    try {
+        rows = await getUsageDaily(sessionUserId, fromDate, toDate);
+    } catch (error) {
+        console.warn(
+            "[billing/usage] Failed to load usage records; showing fallback",
+            { userId: sessionUserId, fromDate, toDate, error },
+        );
+        return renderUnavailable();
+    }
+
     const byDate: Record<
         string,
         { feature: string; total: number; unit: string }[]

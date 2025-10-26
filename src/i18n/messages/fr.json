@@ -361,6 +361,8 @@
         "title": "Utilisation (30 derniers jours)",
         "loginRequiredTitle": "Rapports d’utilisation",
         "loginRequiredMessage": "Connectez-vous pour consulter votre activité récente.",
+        "unavailableTitle": "Utilisation temporairement indisponible",
+        "unavailableMessage": "Les métriques d’utilisation ne peuvent pas être affichées pour le moment. Réessayez plus tard.",
         "empty": "Aucune donnée d’utilisation pour cette période.",
         "entry": "{{feature}} : {{total}} {{unit}}"
     },

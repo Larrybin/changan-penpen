@@ -6,7 +6,7 @@
 
 import { Activity, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { PerformanceDiagnostics } from "@/app/api/v1/admin/performance/diagnostics/route";
+import type { PerformanceDiagnostics } from "@/app/(dynamic)/api/v1/admin/performance/diagnostics/route";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

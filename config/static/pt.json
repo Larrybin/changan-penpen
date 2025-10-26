@@ -1,0 +1,249 @@
+{
+  "locale": "pt",
+  "metadata": {
+    "baseUrl": "http://localhost:3000",
+    "siteName": "Banana Generator",
+    "ogImage": "",
+    "structuredData": {}
+  },
+  "messages": {
+    "Marketing": {
+      "header": {
+        "cta": "Iniciar editor de fotos com IA",
+        "menuLabel": "Abrir menu de navegação"
+      },
+      "hero": {
+        "badge": "Gratuito online",
+        "emoji": "🍌",
+        "title": "Editor de fotos com IA",
+        "description": "Transforme, edite e aprimore suas imagens com comandos de texto simples. Adicione, remova ou estilize qualquer coisa em segundos usando edição de imagem com IA.",
+        "primaryCta": "Começar edição de fotos com IA",
+        "secondaryCta": "Explorar fluxos de trabalho com IA",
+        "support": {
+          "fast": "⚡ Rápido",
+          "secure": "🔒 Sem cadastro",
+          "free": "🆓 Ilimitado"
+        }
+      },
+      "features": {
+        "title": "O que é o Banana Generator?",
+        "items": [
+          {
+            "title": "Acesso gratuito e ilimitado",
+            "description": "Aproveite geração ilimitada de imagens — sem cadastro e sem custos ocultos."
+          },
+          {
+            "title": "Edição em linguagem natural",
+            "description": "Substitua fundos, ajuste iluminação ou remova objetos usando texto."
+          },
+          {
+            "title": "Personagens consistentes",
+            "description": "Mantenha personagens reconhecíveis em várias imagens."
+          },
+          {
+            "title": "Integração de cena perfeita",
+            "description": "Combine edições com sombras e luzes originais de forma natural."
+          },
+          {
+            "title": "Processamento em alta velocidade",
+            "description": "Gere ou edite imagens de 1 MP em segundos."
+          },
+          {
+            "title": "Geração de estilos versátil",
+            "description": "Crie estilos fotorrealistas, cartoon, aquarela ou pintura a óleo."
+          }
+        ],
+        "learnMore": "Veja todos os detalhes em nossos <billingLink>planos de edição de imagens com IA</billingLink>."
+      },
+      "why": {
+        "title": "Por que escolher o Banana Generator?",
+        "items": [
+          {
+            "title": "Editor de fotos com IA",
+            "description": "Edite fotos apenas descrevendo as alterações. Sem camadas complicadas."
+          },
+          {
+            "title": "Gerador de imagens com IA",
+            "description": "Transforme texto em imagens únicas com estilos realistas ou artísticos."
+          },
+          {
+            "title": "Modo Go Bananas",
+            "description": "Crie várias variações de uma vez para inspiração ilimitada."
+          }
+        ]
+      },
+      "faq": {
+        "title": "Perguntas frequentes",
+        "items": [
+          {
+            "question": "O que é o Banana Generator?",
+            "answer": "Um editor de fotos e gerador de imagens com IA gratuito alimentado pelo modelo Nano Banana."
+          },
+          {
+            "question": "Preciso me cadastrar ou pagar?",
+            "answer": "Não. Comece rápido, grátis e sem limites."
+          },
+          {
+            "question": "Quais formatos são compatíveis?",
+            "answer": "Envie formatos comuns como PNG e JPG; exportação em alta resolução é suportada."
+          },
+          {
+            "question": "Meus dados são privados e seguros?",
+            "answer": "Seguimos uma política que prioriza privacidade. Você mantém a propriedade das suas imagens."
+          }
+        ],
+        "supportingCopy": "Precisa de ajuda? <contactLink>Fale com nossa equipe de suporte em IA</contactLink> ou conheça nossa missão na <aboutLink>página Sobre o Banana Generator</aboutLink>."
+      },
+      "trust": {
+        "title": "Confiado por equipes criativas",
+        "description": "Estúdios, agências e criadores independentes usam o Banana Generator para acelerar a edição de fotos com IA sem perder a identidade da marca.",
+        "items": [
+          {
+            "quote": "O Banana Generator reduziu pela metade nosso tempo de edição de produtos e manteve todas as cores da marca.",
+            "author": "Maya Thompson",
+            "role": "Diretora de fotografia, Citrus Labs"
+          },
+          {
+            "quote": "O editor de fotos com IA ajuda nosso time de design a iterar rápido e manter consistência em cada campanha.",
+            "author": "Leo Martins",
+            "role": "Líder criativo, Pixel & Peel Studio"
+          },
+          {
+            "quote": "Como criadora solo, adoro como a IA cuida da iluminação para que eu foque na narrativa.",
+            "author": "Jules Rivera",
+            "role": "Cineasta no YouTube"
+          }
+        ],
+        "callout": "Precisa de documentos de conformidade? Visite nosso <privacyLink>centro de privacidade</privacyLink> para saber como tratamos dados de IA.",
+        "socialProfiles": []
+      },
+      "cta": {
+        "title": "Pronto para entrar no modo Banana?",
+        "description": "Experimente o Banana Generator agora e transforme suas fotos em criações incríveis!",
+        "primaryCta": "Começar com o editor de fotos com IA"
+      },
+      "playground": {
+        "title": "Playground",
+        "badges": [
+          "Edição inteligente",
+          "Sem necessidade de conta",
+          "Teste gratuito"
+        ],
+        "uploadLabel": "Escolha uma imagem para editar",
+        "uploadSecondary": "Texto para imagem",
+        "filePlaceholder": "Toque para escolher uma imagem",
+        "instructionsLabel": "Instruções de edição",
+        "usageGuide": "Guia de uso",
+        "usageGuideHint": "Guia interativo disponível em breve.",
+        "promptPlaceholder": "ex.: “coloque um chapéu de aniversário no gato”",
+        "aspectRatioLabel": "Proporção",
+        "humanCheck": "Prove que você é humano",
+        "generate": "Descascar",
+        "sideDescription": "Solte a imaginação e crie imagens com IA."
+      },
+      "footer": {
+        "supportTitle": "Suporte",
+        "legalTitle": "Jurídico",
+        "supportLinks": {
+          "about": "Sobre",
+          "contact": "Contato"
+        },
+        "legalLinks": {
+          "privacy": "Privacidade",
+          "terms": "Termos"
+        },
+        "copyright": "© 2025 Banana Generator. Todos os direitos reservados."
+      },
+      "structuredData": {
+        "name": "Banana Generator",
+        "description": "Banana Generator é um editor de fotos e gerador de imagens com IA gratuito que ajuda equipes a lançar visuais criativos instantaneamente.",
+        "tagline": "Edição de imagens com IA para você continuar no topo.",
+        "featureList": [
+          "Editor de fotos com IA e comandos em linguagem natural",
+          "Geração e aprimoramento de imagens com IA instantâneos",
+          "Sem cadastro obrigatório e com edições ilimitadas"
+        ]
+      }
+    },
+    "StaticPages": {
+      "about": {
+        "title": "Sobre o Banana Generator",
+        "intro": "Banana Generator é um kit de edição com IA pronto para produção, feito para equipes que precisam de resultados consistentes.",
+        "sections": [
+          {
+            "title": "Nossa missão",
+            "description": "Oferecer a criativos e times de produto um ambiente intuitivo para editar imagens com linguagem natural sem perder qualidade."
+          },
+          {
+            "title": "O que oferecemos",
+            "description": "Automação em lote, consistência de personagens, modelos de IA, armazenamento e fluxos de deploy escaláveis."
+          },
+          {
+            "title": "Por que importa",
+            "description": "As equipes lançam visuais mais rápido, mantêm a marca consistente e colaboram com segurança em diferentes mercados."
+          }
+        ]
+      },
+      "contact": {
+        "title": "Fale conosco",
+        "intro": "Queremos ouvir você. Escolha o canal certo para receber uma resposta rápida.",
+        "details": [
+          {
+            "label": "Suporte",
+            "value": "support@bananagenerator.app"
+          },
+          {
+            "label": "Parcerias",
+            "value": "partners@bananagenerator.app"
+          },
+          {
+            "label": "Horário",
+            "value": "Seg–Sex, 9h–18h UTC"
+          }
+        ],
+        "sections": [
+          {
+            "title": "Como podemos ajudar",
+            "description": "Onboarding, pilotos enterprise, dúvidas de cobrança ou novas ideias de parceria — respondemos em até um dia útil."
+          }
+        ]
+      },
+      "privacy": {
+        "title": "Política de privacidade",
+        "intro": "Sua confiança é prioridade. Seguimos privacidade desde o desenho de cada funcionalidade.",
+        "sections": [
+          {
+            "title": "Dados que coletamos",
+            "description": "Armazenamos informações essenciais da conta, eventos de uso e arquivos enviados para garantir estabilidade."
+          },
+          {
+            "title": "Como usamos os dados",
+            "description": "Usamos as informações para oferecer recursos principais, melhorar modelos de forma agregada e prestar suporte."
+          },
+          {
+            "title": "Suas escolhas",
+            "description": "Exporte seus dados a qualquer momento, solicite exclusão e gerencie preferências de marketing no painel."
+          }
+        ]
+      },
+      "terms": {
+        "title": "Termos de uso",
+        "intro": "Estes termos regem o acesso e o uso do Banana Generator.",
+        "sections": [
+          {
+            "title": "Uso do Banana Generator",
+            "description": "Você deve ter 18 anos ou mais, proteger suas credenciais e cumprir as leis aplicáveis."
+          },
+          {
+            "title": "Uso responsável e conteúdo",
+            "description": "Não gere conteúdo nocivo, infrator ou enganoso. Podemos suspender contas em caso de violação."
+          },
+          {
+            "title": "Cobrança e cancelamentos",
+            "description": "Assinaturas renovam automaticamente até serem canceladas. Cancele a tempo para evitar novas cobranças."
+          }
+        ]
+      }
+    }
+  }
+}

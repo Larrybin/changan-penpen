@@ -1,0 +1,262 @@
+{
+  "locale": "en",
+  "metadata": {
+    "baseUrl": "http://localhost:3000",
+    "siteName": "Banana Generator",
+    "ogImage": "",
+    "structuredData": {}
+  },
+  "messages": {
+    "Marketing": {
+      "header": {
+        "cta": "Launch the AI photo editor",
+        "menuLabel": "Open navigation menu",
+        "mainNavigation": "Main navigation",
+        "userActions": "User actions",
+        "mobileNavigation": "Mobile navigation",
+        "mobileUserActions": "Mobile user actions",
+        "mobileMenuTitle": "Mobile Navigation Menu",
+        "navigateTo": "Navigate to",
+        "loginToAccount": "Login to your account",
+        "createAccount": "Create a new account"
+      },
+      "hero": {
+        "badge": "Free Online",
+        "emoji": "🍌",
+        "title": "AI Photo Editor",
+        "description": "Transform, edit, and enhance your images with simple text prompts. Add, remove, or restyle anything in seconds using AI image editing.",
+        "primaryCta": "Start AI photo editing free",
+        "secondaryCta": "Explore AI image workflows",
+        "primaryAriaLabel": "Start editing photos for free",
+        "secondaryAriaLabel": "Try AI image editing playground",
+        "primaryActions": "Primary actions",
+        "featuresLabel": "Features and benefits",
+        "featurePrefix": "Feature:",
+        "support": {
+          "fast": "⚡ Fast",
+          "secure": "🔒 No sign-up",
+          "free": "🆓 Unlimited"
+        }
+      },
+      "features": {
+        "title": "What is Banana Generator?",
+        "items": [
+          {
+            "title": "Free & Unlimited Access",
+            "description": "Enjoy unlimited image generation — no sign-up, no hidden costs."
+          },
+          {
+            "title": "Natural Language Editing",
+            "description": "Replace backgrounds, adjust lighting, or remove objects using text."
+          },
+          {
+            "title": "Consistent Characters",
+            "description": "Maintain identifiable characters across multiple images."
+          },
+          {
+            "title": "Seamless Scene Integration",
+            "description": "Blend edits naturally with original shadows and lighting."
+          },
+          {
+            "title": "High-Speed Processing",
+            "description": "Generate or edit 1MP images in seconds."
+          },
+          {
+            "title": "Versatile Style Generation",
+            "description": "Create photorealistic, cartoon, watercolor, or oil painting styles."
+          }
+        ],
+        "learnMore": "See detailed pricing on our <billingLink>AI image editing plans</billingLink>."
+      },
+      "why": {
+        "title": "Why Choose Banana Generator?",
+        "items": [
+          {
+            "title": "AI Photo Editor",
+            "description": "Edit photos by simply describing changes. No layers needed."
+          },
+          {
+            "title": "AI Image Generator",
+            "description": "Turn text into unique images with realistic or artistic styles."
+          },
+          {
+            "title": "Go Bananas Mode",
+            "description": "Create multiple variations at once for endless inspiration."
+          }
+        ]
+      },
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "items": [
+          {
+            "question": "What is Banana Generator?",
+            "answer": "A free AI photo editor and image generator powered by the Nano Banana model."
+          },
+          {
+            "question": "Do I need to sign up or pay?",
+            "answer": "No. It’s fast, free, and unlimited to get started."
+          },
+          {
+            "question": "What formats are supported?",
+            "answer": "Upload common formats like PNG and JPG; high-res export is supported."
+          },
+          {
+            "question": "Is my data private and secure?",
+            "answer": "We follow a privacy-first policy. You keep ownership of your images."
+          }
+        ],
+        "supportingCopy": "Need more details? <contactLink>Talk with our AI support team</contactLink> or learn about our mission on the <aboutLink>Banana Generator about page</aboutLink>."
+      },
+      "trust": {
+        "title": "Trusted by creative teams everywhere",
+        "description": "Studios, agencies, and indie makers rely on Banana Generator to speed up AI photo editing without losing brand quality.",
+        "items": [
+          {
+            "quote": "Banana Generator cut our product shot editing time in half while keeping every color on-brand.",
+            "author": "Maya Thompson",
+            "role": "Director of Photography, Citrus Labs"
+          },
+          {
+            "quote": "The AI photo editor helps our designers iterate fast and stay consistent across every campaign.",
+            "author": "Leo Martins",
+            "role": "Creative Lead, Pixel & Peel Studio"
+          },
+          {
+            "quote": "As a solo creator, I love how the AI handles lighting adjustments so I can focus on storytelling.",
+            "author": "Jules Rivera",
+            "role": "YouTube Filmmaker"
+          }
+        ],
+        "callout": "Looking for compliance docs? Visit our <privacyLink>privacy center</privacyLink> for AI data practices.",
+        "socialProfiles": []
+      },
+      "cta": {
+        "title": "Ready to Go Bananas?",
+        "description": "Try Banana Generator now and turn your photos into top banana creations!",
+        "primaryCta": "Start editing with the AI photo editor"
+      },
+      "playground": {
+        "title": "Playground",
+        "badges": [
+          "Smart editing",
+          "No account needed",
+          "Free trial"
+        ],
+        "uploadLabel": "Choose an image to edit",
+        "uploadSecondary": "Text to Image",
+        "filePlaceholder": "Tap to choose an image",
+        "instructionsLabel": "Editing Instructions",
+        "usageGuide": "Usage Guide",
+        "usageGuideHint": "Interactive guide coming soon.",
+        "promptPlaceholder": "e.g., \"add a birthday hat on the cat\"",
+        "aspectRatioLabel": "Aspect Ratio",
+        "humanCheck": "Prove you are human",
+        "generate": "Peel",
+        "sideDescription": "Go bananas turning imagination into images."
+      },
+      "footer": {
+        "supportTitle": "Support",
+        "legalTitle": "Legal",
+        "supportLinks": {
+          "about": "About",
+          "contact": "Contact"
+        },
+        "legalLinks": {
+          "privacy": "Privacy",
+          "terms": "Terms"
+        },
+        "copyright": "© 2025 Banana Generator. All rights reserved."
+      },
+      "structuredData": {
+        "name": "Banana Generator",
+        "description": "Banana Generator is a free AI photo editor and image generator that helps teams launch creative visuals instantly.",
+        "tagline": "AI image editing that keeps you the top banana.",
+        "featureList": [
+          "AI photo editor with natural language prompts",
+          "Instant AI image generation and enhancement",
+          "No sign-up required with unlimited edits"
+        ]
+      }
+    },
+    "StaticPages": {
+      "about": {
+        "title": "About Banana Generator",
+        "intro": "Banana Generator is a production-ready AI editing toolkit built for teams that need reliable, repeatable creative results.",
+        "sections": [
+          {
+            "title": "Our mission",
+            "description": "Give creators and product teams an intuitive workspace for editing images with natural language prompts—without sacrificing quality or control."
+          },
+          {
+            "title": "What we offer",
+            "description": "From batch automation to character consistency, Banana Generator combines AI models, storage, and deployment workflows that scale with your needs."
+          },
+          {
+            "title": "Why it matters",
+            "description": "Teams launch visuals faster, keep branding consistent, and collaborate securely across global markets."
+          }
+        ]
+      },
+      "contact": {
+        "title": "Contact us",
+        "intro": "We’d love to hear from you. Choose the right channel so our team can respond quickly.",
+        "details": [
+          {
+            "label": "Support",
+            "value": "support@bananagenerator.app"
+          },
+          {
+            "label": "Partnerships",
+            "value": "partners@bananagenerator.app"
+          },
+          {
+            "label": "Hours",
+            "value": "Mon–Fri, 9am–8pm UTC"
+          }
+        ],
+        "sections": [
+          {
+            "title": "How we can help",
+            "description": "Ask about onboarding, enterprise pilots, billing questions, or new collaboration ideas—we respond within one business day."
+          }
+        ]
+      },
+      "privacy": {
+        "title": "Privacy policy",
+        "intro": "Your trust matters. We follow a privacy-by-design approach for every feature we ship.",
+        "sections": [
+          {
+            "title": "Data we collect",
+            "description": "We store essential account details, usage events, and files you upload so the product works reliably."
+          },
+          {
+            "title": "How we use data",
+            "description": "Information is used to deliver core functionality, improve model performance in aggregate, and provide support."
+          },
+          {
+            "title": "Your choices",
+            "description": "Export your data anytime, request deletion, and control marketing preferences from the dashboard."
+          }
+        ]
+      },
+      "terms": {
+        "title": "Terms of service",
+        "intro": "These terms govern how you access and use Banana Generator.",
+        "sections": [
+          {
+            "title": "Using Banana Generator",
+            "description": "You must be 18 or older, keep your credentials secure, and comply with applicable laws."
+          },
+          {
+            "title": "Fair use & content guidelines",
+            "description": "Do not generate harmful, infringing, or deceptive content. We may suspend accounts that violate policies."
+          },
+          {
+            "title": "Billing & cancellations",
+            "description": "Subscriptions renew automatically until cancelled. Cancel anytime to avoid future charges."
+          }
+        ]
+      }
+    }
+  }
+}
