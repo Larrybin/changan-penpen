@@ -6,7 +6,7 @@
 本方案遵循“小步快跑，可回退”原则，将重构过程划分为多个阶段，并为每阶段定义验收标准与风险缓解措施，确保在 **4–6 周** 内平滑完成 Refine 替代。总体上，新架构选择与现有技术栈高度对齐，改造方向正确且粒度可控，但需要针对仓库中的细节（如 Refine 的桩实现、集中式资源路由、Providers 组织方式、CI 质量门槛等）进行有针对性的调整和补充，以保证方案切实落地。
 
 ## 2. 当前技术栈现状与迁移动机
-**现有架构**： 项目目前使用 Next.js 15 作为前端框架，并通过 OpenNext 适配部署到 Cloudflare Workers 环境\[1\]。UI 层采用了 shadcn/ui 组件集，表单方案为 React Hook Form (RHF) + Zod\[2\]。项目已经引入 @tanstack/react-query 和 @tanstack/react-table 依赖，但管理后台页面仍主要依赖 Refine（@refinedev/core）的桩实现与 `useList` 等 hooks 完成数据请求和状态管理；React Query 仅在少量基础设施中预留了配置，尚未在页面层面投入使用。当前管理后台基于 Refine 实现，但通过 tsconfig paths 将其指向本地桩模块，在 `AdminRefineApp` 组件中集中配置 Auth/Data/Notification Provider 以及资源（resources）列表\[3\]\[4\]。Refine 在本项目中的作用主要是充当一个壳容器：集中注册菜单和路由资源、提供 CRUD 数据接口抽象（DataProvider），以及封装通知和权限逻辑；实际页面组件和业务逻辑则散布于各功能模块中，由 Refine 的 hooks 调用数据提供者完成（例如列表页使用 `useList` 调用 `adminDataProvider`）\[5\]。这种架构意味着 Refine 与项目代码的耦合度相对有限，为渐进式替换提供了契机。
+**现有架构**： 项目目前使用 Next.js 15 作为前端框架，并通过 OpenNext 适配部署到 Cloudflare Workers 环境\[1\]。UI 层采用了 shadcn/ui 组件集，表单方案为 React Hook Form (RHF) + Zod\[2\]。项目已经引入 @tanstack/react-query 和 @tanstack/react-table 依赖，但管理后台页面仍主要依赖 Refine（@refinedev/core）的桩实现与 `useList` 等 hooks 完成数据请求和状态管理；React Query 仅在少量基础设施中预留了配置，尚未在页面层面投入使用。当前管理后台基于 Refine 实现，但通过 tsconfig paths 将其指向本地桩模块，在 `AdminRefineApp` 组件中集中配置 Auth/Data/Notification Provider 以及资源（resources）列表\[3\]\[4\]。Refine 在本项目中的作用主要是充当一个壳容器：集中注册菜单和路由资源、提供 CRUD 数据接口抽象（DataProvider），以及封装通知和权限逻辑；实际页面组件和业务逻辑则散布于各功能模块中，由 Refine 的 hooks 调用数据提供者完成（例如列表页曾使用 `useList` 调用 `adminDataProvider`，该兼容层已于 2025/03 清理）\[5\]。这种架构意味着 Refine 与项目代码的耦合度相对有限，为渐进式替换提供了契机。
 
 **替换动机**： 随着 Next.js 新特性（如 App Router、Server Actions）趋于成熟，以及项目对类型安全和性能要求的提高，使用本地桩模拟 Refine 已不再是最佳方案。继续依赖 Refine 会带来以下问题：
 - **类型与灵活性受限**： Refine 的数据接口和钩子限制了对请求参数、响应类型的细粒度控制，而切换到直接使用 `fetch`/自定义 API 客户端结合 Zod，可以获得端到端的静态类型验证和更灵活的参数构造。
@@ -91,7 +91,7 @@ Refine 替代将按阶段逐步实施，每阶段在保持功能等价的前提�
 
 **具体步骤**：
 1. **封装 API 客户端与 QueryKey 工具**： 在 `src/lib/api-client.ts` 中创建统一的 `api(url, options)` 函数，用于封装 `fetch` 调用。它应内置项目统一的错误处理逻辑：如对非 2xx 响应，根据响应格式解析出错误信息和代码，抛出定制的 `ApiError` 异常\[15\]。同目录下 `api-error.ts` 定义 `ApiError` 类，包含 `status`、`message`、`fieldErrors` 等属性，以便区分全局错误和字段错误。示例： 后端约定验证失败返回 `{ code: "VALIDATION_FAILED", errors: [ {field: "email", message: "邮箱格式不正确"} ] }`，API 客户端收到后，将其转换为 `ApiError` 对象，其中 `fieldErrors` 映射为 `{ email: "邮箱格式不正确" }` 形式，便于表单处理。与此同时，在 `src/lib/query/keys.ts` 定义生成 React Query Query Key 的工具函数，如 `listKey(resource, { filters, sorters, pageIndex, pageSize })`，确保不同列表页面的 key 规范统一。Key 应包含分页页码、每页大小、筛选和排序条件的序列化表示，以保证在这些参数变化时 Query 自动隔离缓存。统一的 queryKey 生成有助于避免不同组件对同一数据使用不一致的 key。
-2. **兼容层适配（DataProvider→API）**: 为平滑过渡，本阶段开始时不立即废弃 `adminDataProvider`，而是先编写一个适配器，使其内部调用新的 API 客户端。例如实现 `adminDataProvider.getList` 时，改为调用 `api("/api/${resource}", { params: ... })` 获取数据，然后按 Refine 期望的格式返回 `{ data, total }`。这样，现有页面即使仍调用 `useList`，底层已经走新逻辑了，但接口和结果与之前保持一致\[5\]。需要特别注意分页/筛选/排序协议：Refine 的 `useList` 传入参数包括 `current` (当前页码,1 基) 和 `pageSize`，以及 `filters`（例如 `{field: "email", operator: "contains", value: "x"}`）和排序数组。我们应在适配器内将这些参数转换为后端 API 当前使用的查询参数格式。例如，后端可能期望 `page=1&per_page=20&email_contains=x` 之类的。可以在 `lib/query/params.ts` 编写帮助函数，将 `CrudFilters` 转换为查询字符串。同样对于排序，也映射为 `sort_by=field&order=asc` 格式。通过这些转换，新的 API 调用应返回与旧 DataProvider 相同的数据集，从而避免联动回归。在有了适配层后，可以针对关键接口编写单元测试，确保给定参数时，新老实现返回结果一致。
+2. **兼容层适配（DataProvider→API）**: （历史记录）最初为了平滑过渡，我们计划保留 `adminDataProvider` 并在内部调用新的 API 客户端。随着管理端完全迁移到 App Router 与服务层，这一步已完成并在 2025/03 清理了遗留适配器。若需要了解原始迁移思路，可参考旧方案：实现 `adminDataProvider` 时将 `useList` 入参转换为 API 查询字符串，确保数据结构兼容；该逻辑现已直接由 API Route 和服务层承担。
 3. **React Query 集成**： 为逐步替换 `useList` 等 Refine 钩子，我们引入 TanStack React Query。在 `src/lib/query` 下设置 `QueryClient` 并配置全局选项，例如请求重试策略、缓存时间、垃圾回收时间等。考虑到 Cloudflare 边缘环境内存有限和数据实时性要求，可设置缓存时间较短（如几分钟）或由后端返回的 `Cache-Control` 决定。如果目前 DataProvider 没有实现缓存，那保持 Query 默认的新鲜度配置即可，以免行为变化。重要： 配置全局错误处理钩子（`QueryClient.onError`）将 `ApiError` 分类处理：若为鉴权错误（如 401/403），执行与 `authProvider` 相同的跳转登录逻辑；若为其他错误，统一触发 Notification 提示。当前桩实现中，Refine 的 hooks 会将错误暴露在返回值上，由页面或表单组件显式调用 `useNotification().open(...)` 来展示提示（例如 `ProductForm` 处理保存失败时主动触发 toast）。为了保持体验一致，可以在 React Query 的 `onError` 中沿用这一模式：将错误封装后再交由页面/表单统一调用通知函数，或逐步引入集中式的“错误→通知”桥接层。
 4. **替换页面数据 Hooks**： 有了以上基础，就可以逐个页面将数据获取逻辑从 Refine 钩子切换到 React Query。以列表页为例，原代码：
    ```ts
@@ -247,7 +247,7 @@ Refine 替换本身将减少框架开销，但新的架构性能还需细心打�
   - ⭕️ *待完成*：建立页面 UI/交互对照清单（或自动化验证），确保标题、面包屑、按钮布局等细节与旧版一致。
 - **阶段 B – 数据层替换与适配**
   - ✅ 全量页面（列表、详情、表单）已迁移至 React Query 与 `adminApiClient`，并统一接入 `AdminQueryProvider` 的限流与错误提示。
-  - ✅ `applyApiErrorToForm` 为表单提供字段错误映射；`adminDataProvider` 仅用于残余兼容路径。
+  - ✅ `applyApiErrorToForm` 为表单提供字段错误映射；`adminDataProvider` 已删除，仅保留文档记录。
 - **阶段 C – Refine 移除与收尾优化**
   - ✅ `<Refine>` 桩与路径映射已移除，Admin 壳组件改由自定义 Provider（`AdminQueryProvider` 等）直接托管。
   - ⭕️ *计划中*：完善手工回归清单与权限驱动菜单增强，并在 PR 模板中纳入截图/录屏要求。

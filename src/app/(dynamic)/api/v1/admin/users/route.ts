@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import { config } from "@/config";
 import { listUsers } from "@/modules/admin/services/user.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 
-export async function GET(request: Request) {
-    const guardResult = await requireAdminRequest(request);
-    if (guardResult.response) {
-        return guardResult.response;
-    }
-
+export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);
     const { page, perPage } = parsePaginationParams(url.searchParams, {
         page: 1,
@@ -36,4 +31,4 @@ export async function GET(request: Request) {
         perPage: result.perPage,
         totalPages,
     });
-}
+});

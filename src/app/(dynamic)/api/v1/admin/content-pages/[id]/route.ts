@@ -5,60 +5,34 @@ import {
     getContentPageById,
     updateContentPage,
 } from "@/modules/admin/services/catalog.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
 interface Params {
     id: string;
 }
 
-type RouteContext = {
-    params: Promise<Params>;
-};
-
-export async function GET(request: Request, context: RouteContext) {
-    const { id } = await context.params;
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
-    const page = await getContentPageById(Number(id));
+export const GET = withAdminRoute<Params>(async ({ params }) => {
+    const page = await getContentPageById(Number(params.id));
     if (!page) {
         return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
 
     return NextResponse.json({ data: page });
-}
+});
 
-export async function PATCH(request: Request, context: RouteContext) {
-    const { id } = await context.params;
-    const result = await requireAdminRequest(request);
-    if (result.response || !result.user) {
-        return (
-            result.response ??
-            NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+export const PATCH = withAdminRoute<Params>(
+    async ({ request, params, user }) => {
+        const body = (await request.json()) as ContentPageInput;
+        const updated = await updateContentPage(
+            Number(params.id),
+            body,
+            user.email ?? "admin",
         );
-    }
+        return NextResponse.json({ data: updated });
+    },
+);
 
-    const body = (await request.json()) as ContentPageInput;
-    const updated = await updateContentPage(
-        Number(id),
-        body,
-        result.user.email ?? "admin",
-    );
-    return NextResponse.json({ data: updated });
-}
-
-export async function DELETE(request: Request, context: RouteContext) {
-    const { id } = await context.params;
-    const result = await requireAdminRequest(request);
-    if (result.response || !result.user) {
-        return (
-            result.response ??
-            NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-        );
-    }
-
-    await deleteContentPage(Number(id), result.user.email ?? "admin");
+export const DELETE = withAdminRoute<Params>(async ({ params, user }) => {
+    await deleteContentPage(Number(params.id), user.email ?? "admin");
     return NextResponse.json({ success: true });
-}
+});

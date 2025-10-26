@@ -36,3 +36,58 @@ export async function requireAdminRequest(
 
     return { user };
 }
+
+export interface AdminRouteContext<
+    TParams extends Record<string, string | string[] | undefined> = Record<
+        string,
+        string | string[] | undefined
+    >,
+> {
+    request: Request;
+    params: TParams;
+    user: AuthUser;
+}
+
+export type AdminRouteHandler<
+    TParams extends Record<string, string | string[] | undefined> = Record<
+        string,
+        string | string[] | undefined
+    >,
+    TResult extends Response | NextResponse = NextResponse,
+> = (context: AdminRouteContext<TParams>) => Promise<TResult> | TResult;
+
+export function withAdminRoute<
+    TParams extends Record<string, string | string[] | undefined> = Record<
+        string,
+        string | string[] | undefined
+    >,
+    TResult extends Response | NextResponse = NextResponse,
+>(
+    handler: AdminRouteHandler<TParams, TResult>,
+    options?: {
+        onUnauthorized?: (result: AdminGuardResult) => NextResponse;
+    },
+) {
+    return async (
+        request: Request,
+        context: { params: TParams } = { params: {} as TParams },
+    ): Promise<TResult | NextResponse> => {
+        const guardResult = await requireAdminRequest(request);
+        if (!guardResult.user) {
+            if (options?.onUnauthorized) {
+                return options.onUnauthorized(guardResult);
+            }
+
+            return (
+                guardResult.response ??
+                NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+            );
+        }
+
+        return handler({
+            request,
+            params: context.params,
+            user: guardResult.user,
+        });
+    };
+}

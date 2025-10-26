@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { listCreditsHistory } from "@/modules/admin/services/billing.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
+import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 
-export async function GET(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
+export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);
-    const page = Number(url.searchParams.get("page") ?? "1");
-    const perPage = Number(url.searchParams.get("perPage") ?? "20");
+    const { page, perPage } = parsePaginationParams(url.searchParams);
     const tenantId = url.searchParams.get("tenantId") ?? undefined;
 
     const data = await listCreditsHistory({
@@ -19,4 +14,4 @@ export async function GET(request: Request) {
         tenantId: tenantId || undefined,
     });
     return NextResponse.json(data);
-}
+});

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 import {
     deleteTodoForAdmin,
     getTodoByIdForAdmin,
@@ -14,18 +14,12 @@ function parseId(param: string | string[] | undefined) {
     return Number.isNaN(id) ? null : id;
 }
 
-type RouteContext = {
-    params: Promise<{ id: string }>;
-};
+interface Params {
+    id: string;
+}
 
-export async function GET(request: Request, context: RouteContext) {
-    const { id } = await context.params;
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
-    const todoId = parseId(id);
+export const GET = withAdminRoute<Params>(async ({ params }) => {
+    const todoId = parseId(params.id);
 
     if (todoId === null) {
         return NextResponse.json(
@@ -44,16 +38,10 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     return NextResponse.json({ data: todo });
-}
+});
 
-export async function PATCH(request: Request, context: RouteContext) {
-    const { id } = await context.params;
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
-    const todoId = parseId(id);
+export const PATCH = withAdminRoute<Params>(async ({ request, params }) => {
+    const todoId = parseId(params.id);
 
     if (todoId === null) {
         return NextResponse.json(
@@ -79,16 +67,10 @@ export async function PATCH(request: Request, context: RouteContext) {
             { status: 400 },
         );
     }
-}
+});
 
-export async function DELETE(request: Request, context: RouteContext) {
-    const { id } = await context.params;
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
-    const todoId = parseId(id);
+export const DELETE = withAdminRoute<Params>(async ({ params }) => {
+    const todoId = parseId(params.id);
 
     if (todoId === null) {
         return NextResponse.json(
@@ -113,4 +95,4 @@ export async function DELETE(request: Request, context: RouteContext) {
             { status: 400 },
         );
     }
-}
+});

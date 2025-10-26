@@ -117,35 +117,9 @@ const query = useQuery({
 });
 ```
 
-### 4. 智能数据预取
+### 4. 智能数据预取（已归档）
 
-#### 预取Hook (`src/modules/admin/hooks/use-dashboard-prefetch.ts`)
-
-```typescript
-import { useDashboardPrefetch } from '@/modules/admin/hooks/use-dashboard-prefetch';
-
-function DashboardPage() {
-    const { startIntelligentPrefetch } = useDashboardPrefetch({
-        enabled: true,
-        delay: 1000, // 1秒后开始预取
-        priority: 'normal'
-    });
-
-    const { data } = useQuery(['dashboard'], fetchDashboard);
-
-    // 数据加载后智能预取相关数据
-    useEffect(() => {
-        if (data) {
-            startIntelligentPrefetch(data, {
-                recentOrders: true,
-                catalogAccess: false
-            });
-        }
-    }, [data]);
-
-    return <DashboardUI data={data} />;
-}
-```
+> ⚠️ 原型 Hook `src/modules/admin/hooks/use-dashboard-prefetch.ts` 已在 2025/03 为精简未使用的代码而移除。若未来需要重新引入仪表盘的智能预取，请以本文档描述的策略为参考，实现面向实际页面场景的定制化 Hook，并确保有消费方再恢复代码。
 
 ### 5. 组件懒加载
 
@@ -192,32 +166,9 @@ function DataComponent() {
 }
 ```
 
-#### 乐观更新 (`src/modules/admin/utils/optimistic-updates.ts`)
+#### 乐观更新（待按需实现）
 
-```typescript
-import { useOptimisticUpdate } from '@/modules/admin/utils/optimistic-updates';
-
-function OrderStatusToggle({ orderId }) {
-    const updateMutation = useOptimisticUpdate(
-        ['orders'],
-        ({ id, status }) => updateOrderStatus(id, status),
-        (oldData, { id, status }) =>
-            oldData.map(order =>
-                order.id === id ? { ...order, status } : order
-            ),
-        {
-            successMessage: '订单状态已更新',
-            errorMessage: '订单状态更新失败'
-        }
-    );
-
-    return (
-        <button onClick={() => updateMutation.mutate({ id: orderId, status: 'completed' })}>
-            标记完成
-        </button>
-    );
-}
-```
+> ⚠️ `src/modules/admin/utils/optimistic-updates.ts` 的通用实现已清理。若需要统一的乐观更新工具，可基于 TanStack Query 的 `useMutation` 在具体业务场景中重建，并结合缓存键约定补充测试。
 
 ### 7. 性能监控
 
@@ -334,36 +285,7 @@ function UserPage({ userId }) {
 
 ### 4. 乐观更新
 
-```typescript
-import { useOptimisticUpdate } from '@/modules/admin/utils/optimistic-updates';
-
-function StatusToggle({ itemId, currentStatus }) {
-    const mutation = useOptimisticUpdate(
-        ['items'],
-        updateItemStatus,
-        (oldData, { id, status }) =>
-            oldData.map(item =>
-                item.id === id ? { ...item, status } : item
-            ),
-        {
-            successMessage: '状态已更新',
-            errorMessage: '更新失败'
-        }
-    );
-
-    return (
-        <button
-            onClick={() => mutation.mutate({
-                id: itemId,
-                status: currentStatus === 'active' ? 'inactive' : 'active'
-            })}
-            disabled={mutation.isPending}
-        >
-            {mutation.isPending ? '更新中...' : '切换状态'}
-        </button>
-    );
-}
-```
+> 可根据具体模块自行封装 Mutation Hook。推荐做法：在组件内部使用 TanStack Query 的 `useMutation`，在 `onMutate` 中手动更新缓存，并结合 `onError`/`onSuccess` 恢复或刷新数据。
 
 ## 🚨 故障排除
 
@@ -394,10 +316,10 @@ console.log('Cache stats:', await manager.getStats());
 // 强制刷新缓存
 fetch('/api/v1/admin/dashboard?bypassCache=true');
 
-// 检查预取状态
-import { useDashboardPrefetch } from '@/modules/admin/hooks/use-dashboard-prefetch';
-const { hasPrefetched } = useDashboardPrefetch();
-console.log('Prefetched:', hasPrefetched);
+// 结合浏览器 Performance 工具排查请求时序
+performance.getEntriesByType('resource').forEach((entry) => {
+    console.log(entry.name, entry.duration);
+});
 ```
 
 ## 📈 监控和报警

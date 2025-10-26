@@ -1,49 +1,39 @@
 import { NextResponse } from "next/server";
 
-import type { MarketingSectionRouteContext } from "@/modules/admin/routes/marketing-content.types";
+import type { MarketingSectionParams } from "@/modules/admin/routes/marketing-content.types";
 import {
     generatePreviewToken,
     PreviewTokenGenerationError,
 } from "@/modules/admin/services/marketing-content.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
-export async function POST(
-    request: Request,
-    context: MarketingSectionRouteContext,
-) {
-    const params = await context.params;
-    const result = await requireAdminRequest(request);
-    if (result.response || !result.user) {
-        return (
-            result.response ??
-            NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-        );
-    }
+export const POST = withAdminRoute<MarketingSectionParams>(
+    async ({ params, user }) => {
+        try {
+            const payload = await generatePreviewToken({
+                locale: params.locale,
+                section: params.section,
+                adminEmail: user.email ?? "admin",
+            });
+            return NextResponse.json({ data: payload });
+        } catch (error) {
+            if (error instanceof PreviewTokenGenerationError) {
+                return NextResponse.json(
+                    { message: error.message },
+                    { status: 503 },
+                );
+            }
 
-    try {
-        const payload = await generatePreviewToken({
-            locale: params.locale,
-            section: params.section,
-            adminEmail: result.user.email ?? "admin",
-        });
-        return NextResponse.json({ data: payload });
-    } catch (error) {
-        if (error instanceof PreviewTokenGenerationError) {
+            if (error instanceof Error) {
+                return NextResponse.json(
+                    { message: error.message },
+                    { status: 400 },
+                );
+            }
             return NextResponse.json(
-                { message: error.message },
-                { status: 503 },
-            );
-        }
-
-        if (error instanceof Error) {
-            return NextResponse.json(
-                { message: error.message },
+                { message: "Failed to create preview token" },
                 { status: 400 },
             );
         }
-        return NextResponse.json(
-            { message: "Failed to create preview token" },
-            { status: 400 },
-        );
-    }
-}
+    },
+);

@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
 import { listTenants } from "@/modules/admin/services/tenant.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 
-export async function GET(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
+export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);
     const { page, perPage } = parsePaginationParams(url.searchParams);
     const search = url.searchParams.get("search") ?? undefined;
@@ -19,4 +14,4 @@ export async function GET(request: Request) {
         search: search || undefined,
     });
     return NextResponse.json(data);
-}
+});
