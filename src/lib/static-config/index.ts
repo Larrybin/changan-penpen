@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
-import fs from "node:fs/promises";
-import path from "node:path";
+import { desc, eq } from "drizzle-orm";
 
+import { getDb, marketingContentVersions } from "@/db";
 import { type AppLocale, supportedLocales } from "@/i18n/config";
+import { marketingSectionFileSchema } from "@/modules/admin/schemas/marketing-content.schema";
 import deMessages from "@/i18n/messages/de.json";
 import enMessages from "@/i18n/messages/en.json";
 import frMessages from "@/i18n/messages/fr.json";
@@ -12,9 +12,6 @@ import {
     ensureAbsoluteUrl,
     localeCurrencyMap,
 } from "@/lib/seo";
-
-const STATIC_ROOT = path.join(process.cwd(), "config", "static");
-const MARKETING_ROOT = path.join(STATIC_ROOT, "marketing");
 
 export const MARKETING_SECTIONS = [
     "hero",
@@ -90,15 +87,19 @@ export type StaticConfigFallbackOptions = {
 
 const configCache = new Map<AppLocale, StaticSiteConfig>();
 const marketingCache = new Map<string, MarketingSectionFile>();
+const bundleCache = new Map<AppLocale, StaticConfigBundle>();
+const bundlePromises = new Map<AppLocale, Promise<StaticConfigBundle>>();
 const fallbackCache = new Map<AppLocale, StaticConfigBundle>();
 
-function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
-    return (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as NodeJS.ErrnoException).code === "ENOENT"
-    );
+function cloneJson<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function cloneBundle(bundle: StaticConfigBundle): StaticConfigBundle {
+    return {
+        config: cloneJson(bundle.config),
+        sections: cloneJson(bundle.sections),
+    };
 }
 
 function assertLocale(locale: AppLocale): AppLocale {
@@ -660,8 +661,10 @@ function buildFallbackBundle(
 }
 
 function cacheBundle(locale: AppLocale, bundle: StaticConfigBundle) {
-    configCache.set(locale, bundle.config);
-    for (const [section, file] of Object.entries(bundle.sections)) {
+    const snapshot = cloneBundle(bundle);
+    bundleCache.set(locale, snapshot);
+    configCache.set(locale, snapshot.config);
+    for (const [section, file] of Object.entries(snapshot.sections)) {
         const key = getSectionCacheKey(locale, toMarketingSection(section));
         marketingCache.set(key, file);
     }
@@ -696,119 +699,194 @@ export function createFallbackMarketingSection(
     return createFallbackSection(locale, section, options);
 }
 
-function readConfigFileSync(locale: AppLocale): StaticSiteConfig {
-    const cached = configCache.get(locale);
-    if (cached) {
-        return cached;
-    }
-    const file = path.join(STATIC_ROOT, `${locale}.json`);
+function parseSectionPayload(raw: string): MarketingSectionFile | null {
     try {
-        const raw = readFileSync(file, "utf-8");
-        const parsed = JSON.parse(raw) as StaticSiteConfig;
-        configCache.set(locale, parsed);
-        return parsed;
-    } catch (error) {
-        if (isMissingFileError(error)) {
-            const fallback = buildFallbackBundle(locale);
-            cacheBundle(locale, fallback);
-            return fallback.config;
+        const parsed = JSON.parse(raw) as unknown;
+        return marketingSectionFileSchema.parse(parsed);
+    } catch {
+        return null;
+    }
+}
+
+export function computeMarketingMetadataVersion(
+    locale: AppLocale,
+    section: MarketingSection,
+    version: number,
+) {
+    return `marketing:${locale}:${section}:v${version}`;
+}
+
+async function loadBundleFromStore(
+    locale: AppLocale,
+): Promise<StaticConfigBundle> {
+    const fallback = buildFallbackBundle(locale);
+    let db;
+    try {
+        db = await getDb();
+    } catch {
+        return fallback;
+    }
+
+    const rows = await db
+        .select({
+            section: marketingContentVersions.section,
+            payload: marketingContentVersions.payload,
+            version: marketingContentVersions.version,
+            metadataVersion: marketingContentVersions.metadataVersion,
+            createdAt: marketingContentVersions.createdAt,
+        })
+        .from(marketingContentVersions)
+        .where(eq(marketingContentVersions.locale, locale))
+        .orderBy(desc(marketingContentVersions.version));
+
+    const seenSections = new Set<MarketingSection>();
+    let latestPublishedAt = fallback.config.metadata.updatedAt ?? "";
+    let latestMetadataVersion = fallback.config.metadata.version ?? "";
+
+    for (const row of rows) {
+        let section: MarketingSection;
+        try {
+            section = toMarketingSection(row.section);
+        } catch {
+            continue;
         }
-        throw error;
+        if (seenSections.has(section)) {
+            continue;
+        }
+        const payload = parseSectionPayload(row.payload);
+        if (!payload) {
+            continue;
+        }
+
+        fallback.sections[section] = payload;
+        fallback.config.marketing.sections[section] = {
+            ...(fallback.config.marketing.sections[section] ?? {}),
+            defaultVariant: payload.defaultVariant,
+        };
+        fallback.config.marketing.variants[section] = Object.keys(
+            payload.variants ?? {},
+        );
+        seenSections.add(section);
+
+        const publishedAt = row.createdAt ?? "";
+        if (!latestPublishedAt || publishedAt > latestPublishedAt) {
+            latestPublishedAt = publishedAt;
+            latestMetadataVersion =
+                row.metadataVersion ??
+                computeMarketingMetadataVersion(locale, section, row.version);
+        }
+    }
+
+    if (latestPublishedAt) {
+        fallback.config.metadata.updatedAt = latestPublishedAt;
+    }
+    if (latestMetadataVersion) {
+        fallback.config.metadata.version = latestMetadataVersion;
+    }
+
+    return fallback;
+}
+
+async function ensureBundleLoaded(
+    locale: AppLocale,
+): Promise<StaticConfigBundle> {
+    const cached = bundleCache.get(locale);
+    if (cached) {
+        return cloneBundle(cached);
+    }
+
+    let inflight = bundlePromises.get(locale);
+    if (!inflight) {
+        inflight = loadBundleFromStore(locale).then((bundle) => {
+            cacheBundle(locale, bundle);
+            const snapshot = bundleCache.get(locale);
+            return snapshot ?? bundle;
+        });
+        bundlePromises.set(locale, inflight);
+    }
+
+    try {
+        const base = await inflight;
+        return cloneBundle(base);
+    } finally {
+        bundlePromises.delete(locale);
     }
 }
 
 export async function loadStaticConfig(locale: AppLocale) {
     const normalized = assertLocale(locale);
-    const cached = configCache.get(normalized);
-    if (cached) {
-        return cached;
-    }
-    const file = path.join(STATIC_ROOT, `${normalized}.json`);
-    try {
-        const raw = await fs.readFile(file, "utf-8");
-        const parsed = JSON.parse(raw) as StaticSiteConfig;
-        configCache.set(normalized, parsed);
-        return parsed;
-    } catch (error) {
-        if (isMissingFileError(error)) {
-            const fallback = buildFallbackBundle(normalized);
-            cacheBundle(normalized, fallback);
-            return fallback.config;
-        }
-        throw error;
-    }
+    const bundle = await ensureBundleLoaded(normalized);
+    return bundle.config;
 }
 
 export function loadStaticConfigSync(locale: AppLocale) {
     const normalized = assertLocale(locale);
-    return readConfigFileSync(normalized);
-}
-
-function getSectionFilePath(locale: AppLocale, section: MarketingSection) {
-    return path.join(MARKETING_ROOT, locale, `${section}.json`);
-}
-
-function readSectionFileSync(
-    locale: AppLocale,
-    section: MarketingSection,
-): MarketingSectionFile {
-    const key = getSectionCacheKey(locale, section);
-    const cached = marketingCache.get(key);
+    const cached = bundleCache.get(normalized);
     if (cached) {
-        return cached;
+        return cloneBundle(cached).config;
     }
-    const file = getSectionFilePath(locale, section);
-    try {
-        const raw = readFileSync(file, "utf-8");
-        const parsed = JSON.parse(raw) as MarketingSectionFile;
-        marketingCache.set(key, parsed);
-        return parsed;
-    } catch (error) {
-        if (isMissingFileError(error)) {
-            const fallback = createFallbackSection(locale, section);
-            marketingCache.set(key, fallback);
-            return fallback;
-        }
-        throw error;
-    }
+    const fallback = buildFallbackBundle(normalized);
+    cacheBundle(normalized, fallback);
+    const snapshot = bundleCache.get(normalized);
+    return cloneBundle(snapshot ?? fallback).config;
 }
 
 export async function loadMarketingSection(
     locale: AppLocale,
     section: MarketingSection,
 ) {
-    const normalized = assertLocale(locale);
-    const key = getSectionCacheKey(normalized, section);
+    const normalizedLocale = assertLocale(locale);
+    const normalizedSection = toMarketingSection(section);
+    const key = getSectionCacheKey(normalizedLocale, normalizedSection);
     const cached = marketingCache.get(key);
     if (cached) {
-        return cached;
+        return cloneJson(cached);
     }
-    const file = getSectionFilePath(normalized, section);
-    try {
-        const raw = await fs.readFile(file, "utf-8");
-        const parsed = JSON.parse(raw) as MarketingSectionFile;
-        marketingCache.set(key, parsed);
-        return parsed;
-    } catch (error) {
-        if (isMissingFileError(error)) {
-            const fallback = createFallbackSection(normalized, section);
-            marketingCache.set(key, fallback);
-            return fallback;
-        }
-        throw error;
-    }
+    const bundle = await ensureBundleLoaded(normalizedLocale);
+    const payload =
+        bundle.sections[normalizedSection] ??
+        createFallbackSection(normalizedLocale, normalizedSection);
+    const snapshot = cloneJson(payload);
+    marketingCache.set(key, snapshot);
+    return cloneJson(snapshot);
 }
 
 export function loadMarketingSectionSync(
     locale: AppLocale,
     section: MarketingSection,
 ) {
-    const normalized = assertLocale(locale);
-    return readSectionFileSync(normalized, section);
+    const normalizedLocale = assertLocale(locale);
+    const normalizedSection = toMarketingSection(section);
+    const key = getSectionCacheKey(normalizedLocale, normalizedSection);
+    const cached = marketingCache.get(key);
+    if (cached) {
+        return cloneJson(cached);
+    }
+    const snapshot = bundleCache.get(normalizedLocale);
+    if (snapshot) {
+        const payload =
+            snapshot.sections[normalizedSection] ??
+            createFallbackSection(normalizedLocale, normalizedSection);
+        const snapshotPayload = cloneJson(payload);
+        marketingCache.set(key, snapshotPayload);
+        return cloneJson(snapshotPayload);
+    }
+    const fallback = buildFallbackBundle(normalizedLocale);
+    cacheBundle(normalizedLocale, fallback);
+    const stored = bundleCache.get(normalizedLocale);
+    const payload =
+        stored?.sections[normalizedSection] ??
+        fallback.sections[normalizedSection] ??
+        createFallbackSection(normalizedLocale, normalizedSection);
+    const snapshotPayload = cloneJson(payload);
+    marketingCache.set(key, snapshotPayload);
+    return cloneJson(snapshotPayload);
 }
 
 export function clearStaticConfigCache() {
     configCache.clear();
     marketingCache.clear();
+    bundleCache.clear();
+    bundlePromises.clear();
     fallbackCache.clear();
 }

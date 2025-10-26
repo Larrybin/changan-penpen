@@ -1,7 +1,3 @@
-import { randomUUID } from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
-
 import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
 import {
     getDb,
@@ -16,8 +12,8 @@ import {
 } from "@/i18n/config";
 import {
     clearStaticConfigCache,
-    createFallbackConfig,
     createFallbackMarketingSection,
+    computeMarketingMetadataVersion,
     loadMarketingSection,
     MARKETING_SECTIONS,
     type MarketingSection,
@@ -28,8 +24,6 @@ import {
 } from "@/modules/admin/schemas/marketing-content.schema";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
 
-const STATIC_ROOT = path.join(process.cwd(), "config", "static");
-const MARKETING_ROOT = path.join(STATIC_ROOT, "marketing");
 const PREVIEW_TOKEN_TTL_MS = 1000 * 60 * 60; // 60 minutes
 
 const SUPPORTED_LOCALE_SET = new Set(getSupportedAppLocales());
@@ -77,103 +71,16 @@ function serializePayload(payload: MarketingSectionFileInput) {
     return JSON.stringify(payload);
 }
 
-async function ensureDirectory(directory: string) {
-    await fs.mkdir(directory, { recursive: true });
-}
-
-function computeMetadataVersion(
-    locale: AppLocale,
-    section: MarketingSection,
-    version: number,
-) {
-    return `marketing:${locale}:${section}:v${version}`;
-}
-
-async function writeSectionFile(
-    locale: AppLocale,
-    section: MarketingSection,
-    payload: MarketingSectionFileInput,
-) {
-    await ensureDirectory(path.join(MARKETING_ROOT, locale));
-    const filePath = path.join(MARKETING_ROOT, locale, `${section}.json`);
-    const content = `${JSON.stringify(payload, null, 2)}\n`;
-    await fs.writeFile(filePath, content, "utf-8");
-}
-
-async function readStaticConfigFile(locale: AppLocale) {
-    const filePath = path.join(STATIC_ROOT, `${locale}.json`);
-    try {
-        const raw = await fs.readFile(filePath, "utf-8");
-        return JSON.parse(raw) as Record<string, unknown>;
-    } catch (error) {
-        if (error && typeof error === "object" && "code" in error) {
-            const code = (error as NodeJS.ErrnoException).code;
-            if (code === "ENOENT") {
-                return createFallbackConfig(locale) as Record<string, unknown>;
-            }
-        }
-        throw error;
+function generateUuid() {
+    if (
+        typeof globalThis.crypto !== "undefined" &&
+        typeof globalThis.crypto.randomUUID === "function"
+    ) {
+        return globalThis.crypto.randomUUID();
     }
-}
-
-async function writeStaticConfigFile(
-    locale: AppLocale,
-    config: Record<string, unknown>,
-) {
-    await ensureDirectory(STATIC_ROOT);
-    const filePath = path.join(STATIC_ROOT, `${locale}.json`);
-    const content = `${JSON.stringify(config, null, 2)}\n`;
-    await fs.writeFile(filePath, content, "utf-8");
-}
-
-function updateStaticConfigMetadata(
-    config: Record<string, unknown>,
-    metadataVersion: string,
-    publishedAt: string,
-) {
-    const metadata = (config.metadata ?? {}) as Record<string, unknown>;
-    metadata.version = metadataVersion;
-    metadata.updatedAt = publishedAt;
-    if (!metadata.baseUrl) {
-        metadata.baseUrl = "http://localhost:3000";
-    }
-    config.metadata = metadata;
-}
-
-function updateMarketingSummary(
-    config: Record<string, unknown>,
-    section: MarketingSection,
-    payload: MarketingSectionFileInput,
-) {
-    const marketing = (config.marketing ?? {}) as Record<string, unknown>;
-    const sections = (marketing.sections ?? {}) as Record<string, unknown>;
-    const variants = (marketing.variants ?? {}) as Record<string, unknown>;
-
-    const sectionSummary = (sections[section] ?? {}) as Record<string, unknown>;
-    sectionSummary.defaultVariant = payload.defaultVariant;
-    sections[section] = sectionSummary;
-    variants[section] = Object.keys(payload.variants ?? {});
-
-    marketing.sections = sections;
-    marketing.variants = variants;
-    config.marketing = marketing;
-}
-
-async function persistPublishedPayload(
-    locale: AppLocale,
-    section: MarketingSection,
-    payload: MarketingSectionFileInput,
-    version: number,
-    publishedAt: string,
-) {
-    await writeSectionFile(locale, section, payload);
-    const config = await readStaticConfigFile(locale);
-    const metadataVersion = computeMetadataVersion(locale, section, version);
-    updateStaticConfigMetadata(config, metadataVersion, publishedAt);
-    updateMarketingSummary(config, section, payload);
-    await writeStaticConfigFile(locale, config);
-    clearStaticConfigCache();
-    return metadataVersion;
+    return `${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 10)}`;
 }
 
 export type MarketingContentMetadata = {
@@ -399,7 +306,7 @@ export async function generatePreviewToken(input: GeneratePreviewTokenInput) {
     const section = assertSection(input.section);
     const now = new Date();
     const expiresAt = new Date(now.getTime() + PREVIEW_TOKEN_TTL_MS);
-    const token = randomUUID();
+    const token = generateUuid();
 
     const db = await getDb();
     const [existing] = await db
@@ -485,13 +392,10 @@ export async function publishMarketingContent(
     const nextVersion = lastVersion + 1;
     const publishedAt = new Date().toISOString();
     const serialized = serializePayload(payload);
-
-    const metadataVersion = await persistPublishedPayload(
+    const metadataVersion = computeMarketingMetadataVersion(
         locale,
         section,
-        payload,
         nextVersion,
-        publishedAt,
     );
 
     await db.insert(marketingContentVersions).values({
@@ -539,6 +443,8 @@ export async function publishMarketingContent(
         targetId: `${locale}:${section}:v${nextVersion}`,
         metadata: JSON.stringify({ metadataVersion }),
     });
+
+    clearStaticConfigCache();
 
     return {
         locale,
