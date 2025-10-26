@@ -7,26 +7,29 @@ import {
 } from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
-export async function GET(request: Request, context: any) {
-    const { params } = context as {
-        params: { locale: string; section: string };
-    };
+type MarketingSectionRouteContext = {
+    params: { locale: string; section: string };
+};
+
+export async function GET(
+    request: Request,
+    context: MarketingSectionRouteContext,
+) {
+    const { params } = context;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
     }
 
-    const draft = await getMarketingContentDraft(
-        params.locale,
-        params.section,
-    );
+    const draft = await getMarketingContentDraft(params.locale, params.section);
     return NextResponse.json({ data: draft });
 }
 
-export async function PUT(request: Request, context: any) {
-    const { params } = context as {
-        params: { locale: string; section: string };
-    };
+export async function PUT(
+    request: Request,
+    context: MarketingSectionRouteContext,
+) {
+    const { params } = context;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (

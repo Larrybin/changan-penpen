@@ -195,13 +195,21 @@ export type MarketingContentDraft = {
     previewTokenExpiresAt: string | null;
 };
 
-function mapDraftRow(
-    locale: AppLocale,
-    section: MarketingSection,
-    payload: MarketingSectionFileInput,
-    row: (typeof marketingContentDrafts)["$inferSelect"] | undefined,
-    lastPublishedVersion: number | null,
-): MarketingContentDraft {
+type MapDraftRowInput = {
+    locale: AppLocale;
+    section: MarketingSection;
+    payload: MarketingSectionFileInput;
+    row: (typeof marketingContentDrafts)["$inferSelect"] | undefined;
+    lastPublishedVersion: number | null;
+};
+
+function mapDraftRow({
+    locale,
+    section,
+    payload,
+    row,
+    lastPublishedVersion,
+}: MapDraftRowInput): MarketingContentDraft {
     if (!row) {
         return {
             locale,
@@ -283,7 +291,13 @@ export async function getMarketingContentDraft(
         locale,
         section,
     );
-    return mapDraftRow(locale, section, payload, row, lastPublishedVersion);
+    return mapDraftRow({
+        locale,
+        section,
+        payload,
+        row,
+        lastPublishedVersion,
+    });
 }
 
 export interface UpsertMarketingContentDraftInput {
@@ -365,13 +379,13 @@ export async function upsertMarketingContentDraft(
         )
         .limit(1);
 
-    return mapDraftRow(
+    return mapDraftRow({
         locale,
         section,
-        parsedPayload,
+        payload: parsedPayload,
         row,
-        latestPublishedVersion,
-    );
+        lastPublishedVersion: latestPublishedVersion,
+    });
 }
 
 export interface GeneratePreviewTokenInput {

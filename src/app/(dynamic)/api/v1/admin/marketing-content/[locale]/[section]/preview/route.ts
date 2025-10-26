@@ -3,10 +3,15 @@ import { NextResponse } from "next/server";
 import { generatePreviewToken } from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
-export async function POST(request: Request, context: any) {
-    const { params } = context as {
-        params: { locale: string; section: string };
-    };
+type MarketingSectionRouteContext = {
+    params: { locale: string; section: string };
+};
+
+export async function POST(
+    request: Request,
+    context: MarketingSectionRouteContext,
+) {
+    const { params } = context;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (
