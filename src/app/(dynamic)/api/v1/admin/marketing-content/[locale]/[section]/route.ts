@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+import type { MarketingSectionRouteContext } from "@/modules/admin/routes/marketing-content.types";
 import {
     getMarketingContentDraft,
     upsertMarketingContentDraft,
 } from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
-
-type MarketingSectionRouteContext = {
-    params: { locale: string; section: string };
-};
 
 export async function GET(
     request: Request,

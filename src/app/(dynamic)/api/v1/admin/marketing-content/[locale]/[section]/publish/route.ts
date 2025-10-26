@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 
+import type { MarketingSectionRouteContext } from "@/modules/admin/routes/marketing-content.types";
 import { publishMarketingContent } from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
-
-type MarketingSectionRouteContext = {
-    params: { locale: string; section: string };
-};
 
 export async function POST(
     request: Request,
