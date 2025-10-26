@@ -4,11 +4,13 @@ import type { MarketingSectionRouteContext } from "@/modules/admin/routes/market
 import { publishMarketingContent } from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
+export const runtime = "nodejs";
+
 export async function POST(
     request: Request,
     context: MarketingSectionRouteContext,
 ) {
-    const { params } = context;
+    const params = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (

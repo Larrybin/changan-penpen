@@ -1,6 +1,6 @@
 export type MarketingSectionRouteContext = {
-    params: {
+    params: Promise<{
         locale: string;
         section: string;
-    };
+    }>;
 };

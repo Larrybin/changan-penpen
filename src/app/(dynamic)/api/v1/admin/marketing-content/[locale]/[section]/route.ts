@@ -8,11 +8,13 @@ import {
 } from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
+export const runtime = "nodejs";
+
 export async function GET(
     request: Request,
     context: MarketingSectionRouteContext,
 ) {
-    const { params } = context;
+    const params = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response) {
         return result.response;
@@ -26,7 +28,7 @@ export async function PUT(
     request: Request,
     context: MarketingSectionRouteContext,
 ) {
-    const { params } = context;
+    const params = await context.params;
     const result = await requireAdminRequest(request);
     if (result.response || !result.user) {
         return (
