@@ -61,11 +61,30 @@ jobs:
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
+        if: steps.fork-check.outputs.can-upload == 'true'
         uses: github/codeql-action/analyze@v3
-        continue-on-error: true
         with:
           output: codeql-results
-          upload: ${{ steps.fork-check.outputs.can-upload }}
+
+      - name: Generate SARIF artifact without upload
+        if: steps.fork-check.outputs.can-upload != 'true'
+        run: |
+          set -euo pipefail
+
+          mkdir -p codeql-results
+          CODEQL_SUITE="codeql_databases/javascript/temp/config-queries.qls"
+
+          if [[ ! -f "${CODEQL_SUITE}" ]]; then
+            echo "::error::Unable to locate generated CodeQL query suite at ${CODEQL_SUITE}" >&2
+            exit 1
+          fi
+
+          codeql database analyze \
+            --format=sarifv2.1.0 \
+            --output=codeql-results/javascript.sarif \
+            --threads=0 \
+            codeql_databases/javascript \
+            "${CODEQL_SUITE}"
 
       - name: Upload CodeQL SARIF as artifact
         if: steps.fork-check.outputs.can-upload != 'true'
