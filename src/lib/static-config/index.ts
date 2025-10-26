@@ -2,7 +2,6 @@ import { desc, eq } from "drizzle-orm";
 
 import { getDb, marketingContentVersions } from "@/db";
 import { type AppLocale, supportedLocales } from "@/i18n/config";
-import { marketingSectionFileSchema } from "@/modules/admin/schemas/marketing-content.schema";
 import deMessages from "@/i18n/messages/de.json";
 import enMessages from "@/i18n/messages/en.json";
 import frMessages from "@/i18n/messages/fr.json";
@@ -12,6 +11,7 @@ import {
     ensureAbsoluteUrl,
     localeCurrencyMap,
 } from "@/lib/seo";
+import { marketingSectionFileSchema } from "@/modules/admin/schemas/marketing-content.schema";
 
 export const MARKETING_SECTIONS = [
     "hero",
@@ -90,6 +90,8 @@ const marketingCache = new Map<string, MarketingSectionFile>();
 const bundleCache = new Map<AppLocale, StaticConfigBundle>();
 const bundlePromises = new Map<AppLocale, Promise<StaticConfigBundle>>();
 const fallbackCache = new Map<AppLocale, StaticConfigBundle>();
+
+type DbClient = Awaited<ReturnType<typeof getDb>>;
 
 function cloneJson<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T;
@@ -708,6 +710,129 @@ function parseSectionPayload(raw: string): MarketingSectionFile | null {
     }
 }
 
+async function tryGetDb(): Promise<DbClient | null> {
+    try {
+        return await getDb();
+    } catch {
+        return null;
+    }
+}
+
+async function fetchMarketingContentRows(db: DbClient, locale: AppLocale) {
+    return db
+        .select({
+            section: marketingContentVersions.section,
+            payload: marketingContentVersions.payload,
+            version: marketingContentVersions.version,
+            metadataVersion: marketingContentVersions.metadataVersion,
+            createdAt: marketingContentVersions.createdAt,
+        })
+        .from(marketingContentVersions)
+        .where(eq(marketingContentVersions.locale, locale))
+        .orderBy(desc(marketingContentVersions.version));
+}
+
+type MarketingContentRow = Awaited<
+    ReturnType<typeof fetchMarketingContentRows>
+>[number];
+
+type ParsedMarketingContentRow = {
+    section: MarketingSection;
+    payload: MarketingSectionFile;
+};
+
+type LatestMetadataState = {
+    publishedAt: string;
+    metadataVersion: string;
+};
+
+function parseMarketingContentRow(
+    row: MarketingContentRow,
+): ParsedMarketingContentRow | null {
+    let section: MarketingSection;
+    try {
+        section = toMarketingSection(row.section);
+    } catch {
+        return null;
+    }
+
+    const payload = parseSectionPayload(row.payload);
+    if (!payload) {
+        return null;
+    }
+
+    return { section, payload };
+}
+
+function updateBundleWithRow(
+    bundle: StaticConfigBundle,
+    parsed: ParsedMarketingContentRow,
+) {
+    const { section, payload } = parsed;
+    bundle.sections[section] = payload;
+    bundle.config.marketing.sections[section] = {
+        ...(bundle.config.marketing.sections[section] ?? {}),
+        defaultVariant: payload.defaultVariant,
+    };
+    bundle.config.marketing.variants[section] = Object.keys(payload.variants);
+}
+
+function updateLatestMetadataState(
+    state: LatestMetadataState,
+    locale: AppLocale,
+    section: MarketingSection,
+    row: MarketingContentRow,
+): LatestMetadataState {
+    const publishedAt = row.createdAt ?? "";
+    if (!publishedAt || publishedAt <= state.publishedAt) {
+        return state;
+    }
+
+    return {
+        publishedAt,
+        metadataVersion:
+            row.metadataVersion ??
+            computeMarketingMetadataVersion(locale, section, row.version),
+    };
+}
+
+function applyRowsToBundle(
+    bundle: StaticConfigBundle,
+    locale: AppLocale,
+    rows: MarketingContentRow[],
+): StaticConfigBundle {
+    const seenSections = new Set<MarketingSection>();
+    let metadataState: LatestMetadataState = {
+        publishedAt: bundle.config.metadata.updatedAt ?? "",
+        metadataVersion: bundle.config.metadata.version ?? "",
+    };
+
+    for (const row of rows) {
+        const parsed = parseMarketingContentRow(row);
+        if (!parsed || seenSections.has(parsed.section)) {
+            continue;
+        }
+
+        updateBundleWithRow(bundle, parsed);
+        seenSections.add(parsed.section);
+        metadataState = updateLatestMetadataState(
+            metadataState,
+            locale,
+            parsed.section,
+            row,
+        );
+    }
+
+    if (metadataState.publishedAt) {
+        bundle.config.metadata.updatedAt = metadataState.publishedAt;
+    }
+    if (metadataState.metadataVersion) {
+        bundle.config.metadata.version = metadataState.metadataVersion;
+    }
+
+    return bundle;
+}
+
 export function computeMarketingMetadataVersion(
     locale: AppLocale,
     section: MarketingSection,
@@ -720,71 +845,17 @@ async function loadBundleFromStore(
     locale: AppLocale,
 ): Promise<StaticConfigBundle> {
     const fallback = buildFallbackBundle(locale);
-    let db;
-    try {
-        db = await getDb();
-    } catch {
+    const db = await tryGetDb();
+    if (!db) {
         return fallback;
     }
 
-    const rows = await db
-        .select({
-            section: marketingContentVersions.section,
-            payload: marketingContentVersions.payload,
-            version: marketingContentVersions.version,
-            metadataVersion: marketingContentVersions.metadataVersion,
-            createdAt: marketingContentVersions.createdAt,
-        })
-        .from(marketingContentVersions)
-        .where(eq(marketingContentVersions.locale, locale))
-        .orderBy(desc(marketingContentVersions.version));
-
-    const seenSections = new Set<MarketingSection>();
-    let latestPublishedAt = fallback.config.metadata.updatedAt ?? "";
-    let latestMetadataVersion = fallback.config.metadata.version ?? "";
-
-    for (const row of rows) {
-        let section: MarketingSection;
-        try {
-            section = toMarketingSection(row.section);
-        } catch {
-            continue;
-        }
-        if (seenSections.has(section)) {
-            continue;
-        }
-        const payload = parseSectionPayload(row.payload);
-        if (!payload) {
-            continue;
-        }
-
-        fallback.sections[section] = payload;
-        fallback.config.marketing.sections[section] = {
-            ...(fallback.config.marketing.sections[section] ?? {}),
-            defaultVariant: payload.defaultVariant,
-        };
-        fallback.config.marketing.variants[section] = Object.keys(
-            payload.variants ?? {},
-        );
-        seenSections.add(section);
-
-        const publishedAt = row.createdAt ?? "";
-        if (!latestPublishedAt || publishedAt > latestPublishedAt) {
-            latestPublishedAt = publishedAt;
-            latestMetadataVersion =
-                row.metadataVersion ??
-                computeMarketingMetadataVersion(locale, section, row.version);
-        }
+    const rows = await fetchMarketingContentRows(db, locale);
+    if (!rows.length) {
+        return fallback;
     }
 
-    if (latestPublishedAt) {
-        fallback.config.metadata.updatedAt = latestPublishedAt;
-    }
-    if (latestMetadataVersion) {
-        fallback.config.metadata.version = latestMetadataVersion;
-    }
-
-    return fallback;
+    return applyRowsToBundle(fallback, locale, rows);
 }
 
 async function ensureBundleLoaded(

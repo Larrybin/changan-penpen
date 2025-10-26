@@ -12,8 +12,8 @@ import {
 } from "@/i18n/config";
 import {
     clearStaticConfigCache,
-    createFallbackMarketingSection,
     computeMarketingMetadataVersion,
+    createFallbackMarketingSection,
     loadMarketingSection,
     MARKETING_SECTIONS,
     type MarketingSection,
