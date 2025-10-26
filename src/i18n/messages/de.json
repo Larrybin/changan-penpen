@@ -361,6 +361,8 @@
         "title": "Nutzung (letzte 30 Tage)",
         "loginRequiredTitle": "Nutzungsberichte",
         "loginRequiredMessage": "Melden Sie sich an, um Ihre aktuellen Aktivitäten zu sehen.",
+        "unavailableTitle": "Nutzungsdaten vorübergehend nicht verfügbar",
+        "unavailableMessage": "Die Nutzungsstatistiken können derzeit nicht angezeigt werden. Bitte versuchen Sie es später erneut.",
         "empty": "Für diesen Zeitraum liegen keine Nutzungsdaten vor.",
         "entry": "{{feature}}: {{total}} {{unit}}"
     },
