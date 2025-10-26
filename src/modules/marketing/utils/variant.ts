@@ -11,7 +11,7 @@ type ResolveVariantOptions = {
 };
 
 type ResolveVariantResult = {
-    variant: string;
+    value: string;
     source: "query" | "cookie" | "default";
 };
 
@@ -39,14 +39,14 @@ export function resolveMarketingVariant({
     const queryKey = `${QUERY_PREFIX}${section}`;
     const queryCandidate = toSingleValue(searchParams?.[queryKey])?.trim();
     if (queryCandidate && allowed.has(queryCandidate)) {
-        return { variant: queryCandidate, source: "query" };
+        return { value: queryCandidate, source: "query" };
     }
 
     const cookieKey = `${COOKIE_PREFIX}${section}`;
     const cookieCandidate = cookies?.get(cookieKey)?.value?.trim();
     if (cookieCandidate && allowed.has(cookieCandidate)) {
-        return { variant: cookieCandidate, source: "cookie" };
+        return { value: cookieCandidate, source: "cookie" };
     }
 
-    return { variant: defaultVariant, source: "default" };
+    return { value: defaultVariant, source: "default" };
 }

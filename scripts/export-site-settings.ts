@@ -33,8 +33,6 @@ type RemoteLocalePayload = StaticSiteConfig & {
     marketingSections?: Partial<Record<MarketingSection, MarketingSectionFile>>;
 };
 
-type DiffAccumulator = Map<AppLocale, string[]>;
-
 function parseCliFlags(): CliFlags {
     const args = process.argv.slice(2);
     return {
@@ -163,73 +161,14 @@ function applyMetadataDefaults(
     } satisfies StaticSiteConfig;
 }
 
-async function writeFileDiff(
-    locale: AppLocale,
-    relativePath: string,
-    absolutePath: string,
-    payload: string,
-    diffAccumulator: DiffAccumulator,
-) {
-    let previous = "";
-    try {
-        previous = await fs.readFile(absolutePath, "utf-8");
-        if (previous === payload) {
-            return;
-        }
-    } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-            throw error;
-        }
-    }
-
-    await fs.writeFile(absolutePath, payload, "utf-8");
-    const diff = formatPseudoDiff(previous, payload);
-    if (!diff) {
-        return;
-    }
-    const entry = `# File: ${relativePath}\n${diff}`;
-    const current = diffAccumulator.get(locale) ?? [];
-    current.push(entry);
-    diffAccumulator.set(locale, current);
-}
-
-function formatPseudoDiff(
-    previousContent: string,
-    nextContent: string,
-): string | null {
-    if (previousContent === nextContent) {
-        return null;
-    }
-    const previousLines = previousContent.split("\n");
-    const nextLines = nextContent.split("\n");
-    const formatted = ["--- previous", "+++ next"];
-    for (const line of previousLines) {
-        if (line.length) {
-            formatted.push(`- ${line}`);
-        }
-    }
-    for (const line of nextLines) {
-        if (line.length) {
-            formatted.push(`+ ${line}`);
-        }
-    }
-    return formatted.join("\n");
-}
-
 async function writeMarketingSections(
     locale: AppLocale,
     context: WriteContext,
     sections: Partial<Record<MarketingSection, MarketingSectionFile>>,
-    diffAccumulator: DiffAccumulator,
 ) {
     const localeRoot = path.join(MARKETING_OUTPUT_ROOT, locale);
     await ensureDirectory(localeRoot);
     for (const section of MARKETING_SECTIONS) {
-        const relativePath = path.join(
-            "config/static/marketing",
-            locale,
-            `${section}.json`,
-        );
         const absolutePath = path.join(localeRoot, `${section}.json`);
         const fallbackSection = createFallbackMarketingSection(
             locale,
@@ -242,13 +181,7 @@ async function writeMarketingSections(
         );
         const sectionPayload = sections?.[section] ?? fallbackSection;
         const payload = `${JSON.stringify(sectionPayload, null, 2)}\n`;
-        await writeFileDiff(
-            locale,
-            relativePath,
-            absolutePath,
-            payload,
-            diffAccumulator,
-        );
+        await fs.writeFile(absolutePath, payload, "utf-8");
     }
 }
 
@@ -257,45 +190,23 @@ async function writeStaticConfig(
     config: StaticSiteConfig,
     context: WriteContext,
     sections: Partial<Record<MarketingSection, MarketingSectionFile>>,
-    diffAccumulator: DiffAccumulator,
 ) {
     await ensureDirectory(OUTPUT_ROOT);
     const normalizedConfig = applyMetadataDefaults(config, context);
     const filePath = path.join(OUTPUT_ROOT, `${locale}.json`);
-    const relative = path.join("config/static", `${locale}.json`);
     const payload = `${JSON.stringify(normalizedConfig, null, 2)}\n`;
-    await writeFileDiff(locale, relative, filePath, payload, diffAccumulator);
-    await writeMarketingSections(locale, context, sections, diffAccumulator);
+    await fs.writeFile(filePath, payload, "utf-8");
+    await writeMarketingSections(locale, context, sections);
 }
 
 async function writeFallbackConfigs(context: WriteContext) {
     console.warn(
         "[static-export] Falling back to bundled messages for static site config generation.",
     );
-    const diffAccumulator: DiffAccumulator = new Map();
     for (const locale of supportedLocales) {
         const config = createFallbackConfig(locale, context);
-        await writeStaticConfig(locale, config, context, {}, diffAccumulator);
+        await writeStaticConfig(locale, config, context, {});
     }
-    await flushDiffReports(diffAccumulator);
-}
-
-async function flushDiffReports(diffAccumulator: DiffAccumulator) {
-    if (!diffAccumulator.size) {
-        return;
-    }
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const diffRoot = path.join(OUTPUT_ROOT, "diff", timestamp);
-    await ensureDirectory(diffRoot);
-    for (const [locale, entries] of diffAccumulator.entries()) {
-        const filePath = path.join(diffRoot, `${locale}.diff`);
-        const content = `${entries.join("\n\n")}\n`;
-        await fs.writeFile(filePath, content, "utf-8");
-    }
-    /* biome-ignore lint/suspicious/noConsole: CLI progress output */
-    console.log(
-        `[static-export] Wrote diff reports for ${diffAccumulator.size} locale(s) to ${path.relative(process.cwd(), diffRoot)}`,
-    );
 }
 
 async function runExport(flags: CliFlags) {
@@ -318,8 +229,6 @@ async function runExport(flags: CliFlags) {
     console.log(
         `[static-export] Using remote export endpoint at ${context.baseUrl} for static config generation.`,
     );
-    const diffAccumulator: DiffAccumulator = new Map();
-
     try {
         const configs = await fetchConfigs(context.baseUrl, token);
         const missingLocales: AppLocale[] = [];
@@ -328,13 +237,7 @@ async function runExport(flags: CliFlags) {
             if (!payload) {
                 missingLocales.push(locale);
                 const fallbackConfig = createFallbackConfig(locale, context);
-                await writeStaticConfig(
-                    locale,
-                    fallbackConfig,
-                    context,
-                    {},
-                    diffAccumulator,
-                );
+                await writeStaticConfig(locale, fallbackConfig, context, {});
                 continue;
             }
             const { marketingSections = {}, ...rest } = payload;
@@ -343,7 +246,6 @@ async function runExport(flags: CliFlags) {
                 applyMetadataDefaults(rest, context),
                 context,
                 marketingSections,
-                diffAccumulator,
             );
         }
         if (missingLocales.length) {
@@ -359,8 +261,6 @@ async function runExport(flags: CliFlags) {
         await writeFallbackConfigs(context);
         return;
     }
-
-    await flushDiffReports(diffAccumulator);
 }
 
 async function main() {

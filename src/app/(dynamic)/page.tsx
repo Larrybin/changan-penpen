@@ -61,7 +61,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         MarketingSectionFile
     >;
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const variantSelections: VariantSelection = {} as VariantSelection;
     for (const section of MARKETING_SECTIONS) {
         const variants = staticConfig.marketing.variants[section] ?? [];

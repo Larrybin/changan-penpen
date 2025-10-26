@@ -19,11 +19,7 @@ Running `pnpm run prebuild:static-config` locally attempts to use the remote exp
 [static-export] Falling back to bundled messages for static site config generation.
 ```
 
-Fallback output includes:
-
-- Full metadata with `version` (resolved from the current commit when possible) and `updatedAt` timestamps.
-- Marketing section files derived from `src/i18n/messages/<locale>.json`.
-- Optional diff reports saved to `config/static/diff/<timestamp>/<locale>.diff` whenever JSON content changes between runs.
+Fallback output includes full metadata with `version` (resolved from the current commit when possible), `updatedAt` timestamps, and marketing section files derived from `src/i18n/messages/<locale>.json`.
 
 You can force remote mode locally by passing `--require-token`. The script exits with a non-zero status if the token is missing when this flag is provided.
 
