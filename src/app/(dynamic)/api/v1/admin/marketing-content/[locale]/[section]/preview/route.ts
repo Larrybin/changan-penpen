@@ -4,8 +4,6 @@ import type { MarketingSectionRouteContext } from "@/modules/admin/routes/market
 import { generatePreviewToken } from "@/modules/admin/services/marketing-content.service";
 import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
 
-export const runtime = "nodejs";
-
 export async function POST(
     request: Request,
     context: MarketingSectionRouteContext,
