@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 import { getDb, siteSettings } from "@/db";
+import { applyRateLimit } from "@/lib/rate-limit";
 import { resolveAppUrl } from "@/lib/seo";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
@@ -211,7 +212,29 @@ export async function GET(request: Request) {
     const fast = computeFast(urlObj);
     const reqOrigin = getRequestOriginSafe(request);
 
-    const { env } = await getCloudflareContext({ async: true });
+    const cfContext = await getCloudflareContext({ async: true });
+    const env = cfContext.env;
+    const waitUntil =
+        typeof cfContext?.ctx?.waitUntil === "function"
+            ? cfContext.ctx.waitUntil.bind(cfContext.ctx)
+            : undefined;
+    const rateLimitResult = await applyRateLimit({
+        request,
+        identifier: "healthcheck",
+        env,
+        waitUntil,
+        message: "Too many health check requests",
+        upstash: {
+            strategy: { type: "sliding", requests: 60, window: "60 s" },
+            prefix: "@ratelimit/health",
+            includeHeaders: true,
+            analytics: true,
+        },
+    });
+    if (!rateLimitResult.ok) {
+        return rateLimitResult.response;
+    }
+
     const envRecord = env as unknown as Record<string, unknown>;
     const providedToken = extractAccessToken(request.headers);
     const allowDetails = resolveAllowDetails(envRecord, providedToken);
