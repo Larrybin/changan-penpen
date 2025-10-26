@@ -29,6 +29,18 @@ const PREVIEW_TOKEN_TTL_MS = 1000 * 60 * 60; // 60 minutes
 const SUPPORTED_LOCALE_SET = new Set(getSupportedAppLocales());
 const SUPPORTED_SECTIONS = new Set<string>(MARKETING_SECTIONS);
 
+type NodeRequireFunction = (id: string) => unknown;
+type NodeCryptoModule = typeof import("node:crypto");
+
+let cachedNodeRandomUuid: (() => string) | null | undefined;
+
+export class PreviewTokenGenerationError extends Error {
+    constructor(message: string, options?: ErrorOptions) {
+        super(message, options);
+        this.name = "PreviewTokenGenerationError";
+    }
+}
+
 function assertLocale(value: string): AppLocale {
     const trimmed = value.trim();
     if (!SUPPORTED_LOCALE_SET.has(trimmed as AppLocale)) {
@@ -71,16 +83,80 @@ function serializePayload(payload: MarketingSectionFileInput) {
     return JSON.stringify(payload);
 }
 
-function generateUuid() {
-    if (
-        typeof globalThis.crypto !== "undefined" &&
-        typeof globalThis.crypto.randomUUID === "function"
-    ) {
-        return globalThis.crypto.randomUUID();
+function uuidFromBytes(bytes: Uint8Array): string {
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+        .slice(6, 8)
+        .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
+function getNodeRandomUuid(): (() => string) | undefined {
+    if (cachedNodeRandomUuid !== undefined) {
+        return cachedNodeRandomUuid ?? undefined;
     }
-    return `${Date.now().toString(36)}-${Math.random()
-        .toString(36)
-        .slice(2, 10)}`;
+
+    const isNodeEnvironment =
+        typeof process !== "undefined" &&
+        typeof process.versions?.node === "string";
+
+    if (!isNodeEnvironment) {
+        cachedNodeRandomUuid = null;
+        return undefined;
+    }
+
+    const globalWithRequire = globalThis as { require?: NodeRequireFunction };
+    const loadModule = (): NodeCryptoModule | undefined => {
+        const possibleIds = ["node:crypto", "crypto"] as const;
+        for (const id of possibleIds) {
+            try {
+                const req =
+                    typeof globalWithRequire.require === "function"
+                        ? globalWithRequire.require
+                        : (Function("return require")() as NodeRequireFunction);
+                return req(id) as NodeCryptoModule;
+            } catch {
+                // Continue trying other module identifiers to locate Node's crypto API.
+            }
+        }
+        return undefined;
+    };
+
+    const nodeCrypto = loadModule();
+    if (!nodeCrypto || typeof nodeCrypto.randomUUID !== "function") {
+        cachedNodeRandomUuid = null;
+        return undefined;
+    }
+
+    cachedNodeRandomUuid = nodeCrypto.randomUUID.bind(nodeCrypto);
+    return cachedNodeRandomUuid ?? undefined;
+}
+
+function generateUuid(): string {
+    const cryptoApi =
+        typeof globalThis !== "undefined"
+            ? (globalThis as { crypto?: Crypto }).crypto
+            : undefined;
+
+    if (cryptoApi && typeof cryptoApi.randomUUID === "function") {
+        return cryptoApi.randomUUID();
+    }
+
+    if (cryptoApi && typeof cryptoApi.getRandomValues === "function") {
+        const bytes = new Uint8Array(16);
+        cryptoApi.getRandomValues(bytes);
+        return uuidFromBytes(bytes);
+    }
+
+    const nodeRandomUuid = getNodeRandomUuid();
+    if (nodeRandomUuid) {
+        return nodeRandomUuid();
+    }
+
+    throw new PreviewTokenGenerationError(
+        "Unable to generate preview token because secure randomness is not available.",
+    );
 }
 
 export type MarketingContentMetadata = {
@@ -306,7 +382,18 @@ export async function generatePreviewToken(input: GeneratePreviewTokenInput) {
     const section = assertSection(input.section);
     const now = new Date();
     const expiresAt = new Date(now.getTime() + PREVIEW_TOKEN_TTL_MS);
-    const token = generateUuid();
+    let token: string;
+    try {
+        token = generateUuid();
+    } catch (error) {
+        if (error instanceof PreviewTokenGenerationError) {
+            throw error;
+        }
+        throw new PreviewTokenGenerationError(
+            "Failed to generate preview token.",
+            error instanceof Error ? { cause: error } : undefined,
+        );
+    }
 
     const db = await getDb();
     const [existing] = await db
