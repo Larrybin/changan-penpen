@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { useServerInsertedHTML } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
 import { WebVitals } from "@/components/performance/web-vitals";
 import { InjectedHtml } from "@/components/seo/custom-html";
+import { HeadInjection } from "@/components/seo/head-injection.client";
 import { resolveAppLocale } from "@/i18n/config";
 import { pickMessages } from "@/lib/intl";
 import { readCspNonce } from "@/lib/security/csp";
@@ -19,17 +19,6 @@ const SHARED_NAMESPACES = [
     "AuthForms",
     "Accessibility",
 ] as const;
-
-function HeadInjection({
-    nodes,
-    nonce,
-}: {
-    nodes: ReturnType<typeof sanitizeCustomHtml>;
-    nonce?: string;
-}) {
-    useServerInsertedHTML(() => <InjectedHtml nodes={nodes} nonce={nonce} />);
-    return null;
-}
 
 export default async function DynamicLayout({
     children,
