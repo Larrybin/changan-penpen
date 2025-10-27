@@ -4,15 +4,21 @@ import baseConfigJson from "../../config/environments/base.json";
 import developmentConfigJson from "../../config/environments/development.json";
 import productionConfigJson from "../../config/environments/production.json";
 import stagingConfigJson from "../../config/environments/staging.json";
-import type { Config, EnvironmentName } from "./types";
+import {
+    type Config,
+    type ConfigOverride,
+    configOverrideSchema,
+    configSchema,
+    type EnvironmentName,
+} from "./types";
 
-const BASE_CONFIG = baseConfigJson as Config;
+const BASE_CONFIG = configSchema.parse(baseConfigJson);
 
-const ENVIRONMENT_OVERRIDES: Partial<Record<EnvironmentName, Partial<Config>>> =
+const ENVIRONMENT_OVERRIDES: Partial<Record<EnvironmentName, ConfigOverride>> =
     {
-        development: developmentConfigJson,
-        production: productionConfigJson,
-        staging: stagingConfigJson,
+        development: configOverrideSchema.parse(developmentConfigJson),
+        production: configOverrideSchema.parse(productionConfigJson),
+        staging: configOverrideSchema.parse(stagingConfigJson),
     };
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -35,16 +41,18 @@ function clone<T>(value: T): T {
     return value;
 }
 
-function deepMerge<T extends Record<string, unknown>>(
-    base: T,
-    override?: Partial<T>,
-): T {
+function deepMerge<
+    T extends Record<string, unknown>,
+    U extends Record<string, unknown>,
+>(base: T, override?: U): T {
     const resultRecord = clone(base) as Record<string, unknown>;
     if (!override) {
         return resultRecord as T;
     }
 
-    for (const [key, value] of Object.entries(override)) {
+    for (const [key, value] of Object.entries(
+        override as Record<string, unknown>,
+    )) {
         if (value === undefined) {
             continue;
         }
@@ -187,7 +195,8 @@ function buildConfig(
 ): Config {
     const override = ENVIRONMENT_OVERRIDES[envName];
     const merged = deepMerge(BASE_CONFIG, override);
-    return applyRuntimeOverrides(merged, runtimeEnv);
+    const runtimeAdjusted = applyRuntimeOverrides(merged, runtimeEnv);
+    return configSchema.parse(runtimeAdjusted);
 }
 
 function gatherRuntimeEnv(
