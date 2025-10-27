@@ -14,7 +14,10 @@ const REQUEST_HEADER = "X-Request-Id";
 const USER_HEADER = "X-User-Id";
 
 function safeRandomId(): string {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    if (
+        typeof crypto !== "undefined" &&
+        typeof crypto.randomUUID === "function"
+    ) {
         return crypto.randomUUID();
     }
     return createRandomId();
@@ -28,7 +31,9 @@ export function createSpanId(): string {
     return safeRandomId();
 }
 
-export function createTraceContext(init: Partial<TraceContext> = {}): TraceContext {
+export function createTraceContext(
+    init: Partial<TraceContext> = {},
+): TraceContext {
     return {
         traceId: init.traceId ?? createTraceId(),
         spanId: init.spanId ?? createSpanId(),
@@ -38,8 +43,9 @@ export function createTraceContext(init: Partial<TraceContext> = {}): TraceConte
     };
 }
 
-export function parseTraceContextFromHeaders(headers: Headers | Record<string, string | null | undefined>):
-    Partial<TraceContext> {
+export function parseTraceContextFromHeaders(
+    headers: Headers | Record<string, string | null | undefined>,
+): Partial<TraceContext> {
     const getHeader = (name: string): string | undefined => {
         if (headers instanceof Headers) {
             return headers.get(name) ?? undefined;
@@ -56,7 +62,10 @@ export function parseTraceContextFromHeaders(headers: Headers | Record<string, s
     };
 }
 
-export function applyTraceContextHeaders(headers: Headers, context: TraceContext): void {
+export function applyTraceContextHeaders(
+    headers: Headers,
+    context: TraceContext,
+): void {
     headers.set(TRACE_HEADER, context.traceId);
     headers.set(SPAN_HEADER, context.spanId);
     if (context.requestId) {

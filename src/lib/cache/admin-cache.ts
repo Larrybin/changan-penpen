@@ -5,16 +5,16 @@
  */
 
 import { config } from "@/config";
-import { getPlatformContext } from "@/lib/platform/context";
+import { getRedisClient } from "@/lib/cache";
 
 import {
     deleteFromMultiLevelCache,
     getMultiLevelCache,
     invalidateMultiLevelCacheStrategy,
 } from "@/lib/cache/multi-level-cache";
-import { getRedisClient } from "@/lib/cache";
+import { getPlatformContext } from "@/lib/platform/context";
 
-interface CacheEnv {
+interface CacheEnv extends Record<string, unknown> {
     UPSTASH_REDIS_REST_URL?: string;
     UPSTASH_REDIS_REST_TOKEN?: string;
 }
@@ -98,7 +98,10 @@ export class AdminCacheManager {
         this.env = env;
     }
 
-    private async resolveExecutionOverrides() {
+    private async resolveExecutionOverrides(): Promise<{
+        env?: Record<string, unknown>;
+        waitUntil?: (promise: Promise<unknown>) => void;
+    }> {
         if (!this.env || !this.waitUntil) {
             const context = await getPlatformContext({ async: true });
             if (context.env) {
@@ -111,13 +114,13 @@ export class AdminCacheManager {
         return {
             env: this.env,
             waitUntil: this.waitUntil,
-        } as {
-            env?: CacheEnv;
-            waitUntil?: (promise: Promise<unknown>) => void;
         };
     }
 
-    private resolveStrategyName(key: string, explicit?: string): string | undefined {
+    private resolveStrategyName(
+        key: string,
+        explicit?: string,
+    ): string | undefined {
         if (explicit) {
             return explicit;
         }
@@ -130,7 +133,10 @@ export class AdminCacheManager {
         return undefined;
     }
 
-    async get<T>(key: string, options?: { strategy?: string }): Promise<T | null> {
+    async get<T>(
+        key: string,
+        options?: { strategy?: string },
+    ): Promise<T | null> {
         const execution = await this.resolveExecutionOverrides();
         const strategy = this.resolveStrategyName(key, options?.strategy);
         const cache = await getMultiLevelCache();
@@ -144,7 +150,10 @@ export class AdminCacheManager {
         try {
             return JSON.parse(value) as T;
         } catch (error) {
-            console.warn("[AdminCache] Failed to parse cached value", { key, error });
+            console.warn("[AdminCache] Failed to parse cached value", {
+                key,
+                error,
+            });
             return null;
         }
     }
@@ -159,7 +168,10 @@ export class AdminCacheManager {
             try {
                 return JSON.stringify(value);
             } catch (error) {
-                console.warn("[AdminCache] Failed to serialize value", { key, error });
+                console.warn("[AdminCache] Failed to serialize value", {
+                    key,
+                    error,
+                });
                 return null;
             }
         })();
@@ -176,7 +188,10 @@ export class AdminCacheManager {
         });
     }
 
-    async mget<T>(keys: string[], options?: { strategy?: string }): Promise<(T | null)[]> {
+    async mget<T>(
+        keys: string[],
+        options?: { strategy?: string },
+    ): Promise<(T | null)[]> {
         if (keys.length === 0) {
             return [];
         }
@@ -187,7 +202,12 @@ export class AdminCacheManager {
     }
 
     async mset<T>(
-        entries: Array<{ key: string; value: T; ttl?: number; strategy?: string }>,
+        entries: Array<{
+            key: string;
+            value: T;
+            ttl?: number;
+            strategy?: string;
+        }>,
     ): Promise<void> {
         if (entries.length === 0) {
             return;
@@ -242,7 +262,10 @@ export class AdminCacheManager {
                 );
             }
         } catch (error) {
-            console.warn("[AdminCache] Pattern invalidation failed", { pattern, error });
+            console.warn("[AdminCache] Pattern invalidation failed", {
+                pattern,
+                error,
+            });
         }
     }
 
@@ -328,6 +351,67 @@ export async function withAdminCache<T>(
 }
 
 // 智能缓存失效函数
+function resolveStrategy(resource: string) {
+    const [namespace, ...segments] = resource.split(":");
+    const lookup: Record<string, string> = {
+        tenants: "admin.tenants",
+        users: "admin.users",
+    };
+    return {
+        name: lookup[namespace],
+        segments,
+    };
+}
+
+async function invalidateStrategyKeys(
+    manager: AdminCacheManager,
+    strategyName: string,
+    segments: string[],
+) {
+    const segmentKey = segments.join(":");
+    const predicate =
+        segmentKey && segmentKey !== "*"
+            ? (key: string) => key.startsWith(segmentKey)
+            : undefined;
+    await invalidateMultiLevelCacheStrategy(strategyName, { predicate });
+    const strategyConfig = config.cache.strategies?.[strategyName];
+    if (!strategyConfig?.keyPrefix) {
+        return;
+    }
+    const pattern =
+        segmentKey && segmentKey !== "*"
+            ? `${strategyConfig.keyPrefix}:${segmentKey}*`
+            : `${strategyConfig.keyPrefix}:*`;
+    await manager.invalidatePattern(pattern);
+}
+
+async function invalidateByLevel(
+    manager: AdminCacheManager,
+    resource: string,
+    level: keyof typeof CACHE_LEVELS,
+    tenantId?: string,
+) {
+    switch (level) {
+        case "STATIC":
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.STATIC.prefix}:${resource}:*`,
+            );
+            break;
+        case "USER": {
+            const suffix = tenantId ? `:${tenantId}*` : "*";
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.USER.prefix}:${resource}:*${suffix}`,
+            );
+            break;
+        }
+        case "REALTIME":
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.REALTIME.prefix}:${resource}:*`,
+            );
+            break;
+    }
+}
+
 export async function invalidateAdminCache(
     resource: string,
     options?: {
@@ -337,49 +421,11 @@ export async function invalidateAdminCache(
     },
 ): Promise<void> {
     const manager = getAdminCacheManager();
-    const level = options?.level ?? "USER";
-
-    const [namespace, ...segments] = resource.split(":");
-    const strategyLookup: Record<string, string> = {
-        tenants: "admin.tenants",
-        users: "admin.users",
-    };
-    const strategyName = strategyLookup[namespace];
+    const { name: strategyName, segments } = resolveStrategy(resource);
     if (strategyName) {
-        const segmentKey = segments.join(":");
-        const predicate = segmentKey && segmentKey !== "*"
-            ? (key: string) => key.startsWith(segmentKey)
-            : undefined;
-        await invalidateMultiLevelCacheStrategy(strategyName, { predicate });
-        const strategyConfig = config.cache.strategies?.[strategyName];
-        if (strategyConfig?.keyPrefix) {
-            const pattern = segmentKey && segmentKey !== "*"
-                ? `${strategyConfig.keyPrefix}:${segmentKey}*`
-                : `${strategyConfig.keyPrefix}:*`;
-            await manager.invalidatePattern(pattern);
-        }
+        await invalidateStrategyKeys(manager, strategyName, segments);
     }
 
-    if (level === "STATIC") {
-        // 失效静态缓存
-        await manager.invalidatePattern(
-            `${CACHE_LEVELS.STATIC.prefix}:${resource}:*`,
-        );
-    } else if (level === "USER") {
-        // 失效用户缓存
-        if (options?.tenantId) {
-            await manager.invalidatePattern(
-                `${CACHE_LEVELS.USER.prefix}:${resource}:*:${options.tenantId}*`,
-            );
-        } else {
-            await manager.invalidatePattern(
-                `${CACHE_LEVELS.USER.prefix}:${resource}:*`,
-            );
-        }
-    } else if (level === "REALTIME") {
-        // 失效实时缓存
-        await manager.invalidatePattern(
-            `${CACHE_LEVELS.REALTIME.prefix}:${resource}:*`,
-        );
-    }
+    const level = options?.level ?? "USER";
+    await invalidateByLevel(manager, resource, level, options?.tenantId);
 }

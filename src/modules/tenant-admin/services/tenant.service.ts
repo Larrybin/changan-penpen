@@ -35,11 +35,15 @@ function createTenantSummaries(
         id: string;
         email: string | null;
         name: string | null;
-        createdAt: Date;
-        lastSignIn: Date | null;
+        createdAt: Date | string;
+        lastSignIn: Date | string | null;
     }>,
     context: {
-        customers: Array<{ userId: string; credits: number; customerId: string }>;
+        customers: Array<{
+            userId: string;
+            credits: number;
+            customerId: number;
+        }>;
         subscriptions: Array<{ userId: string; status: string | null }>;
         orders: Array<{
             userId: string;
@@ -71,6 +75,221 @@ function createTenantSummaries(
     });
 }
 
+type TenantRow = {
+    id: string;
+    email: string | null;
+    name: string | null;
+    createdAt: Date | string;
+    lastSignIn: Date | string | null;
+};
+
+type TenantCustomerRecord = {
+    id: number;
+    credits: number;
+};
+
+type TenantDetailContext = {
+    subscriptions: Array<{
+        id: number;
+        status: string | null;
+        currentPeriodStart: Date | string | null;
+        currentPeriodEnd: Date | string | null;
+        canceledAt: Date | string | null;
+        createdAt: Date | string | null;
+        updatedAt: Date | string | null;
+    }>;
+    credits: Array<{
+        id: number;
+        amount: number;
+        type: string;
+        createdAt: Date | string;
+    }>;
+    usage: Array<{
+        date: Date | string;
+        total: number;
+        unit: string | null;
+    }>;
+    order: { revenue: number; ordersCount: number } | null;
+};
+
+async function fetchTenantRow(
+    db: Awaited<ReturnType<typeof getDb>>,
+    userId: string,
+): Promise<TenantRow | null> {
+    const [row] = await db
+        .select({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            createdAt: user.createdAt,
+            lastSignIn: user.updatedAt,
+        })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+
+    return (row ?? null) as TenantRow | null;
+}
+
+async function fetchTenantCustomer(
+    db: Awaited<ReturnType<typeof getDb>>,
+    userId: string,
+): Promise<TenantCustomerRecord | null> {
+    const [customerRow] = await db
+        .select({
+            id: customers.id,
+            credits: customers.credits,
+        })
+        .from(customers)
+        .where(eq(customers.userId, userId))
+        .limit(1);
+
+    if (!customerRow) {
+        return null;
+    }
+
+    return {
+        id: customerRow.id,
+        credits: customerRow.credits,
+    };
+}
+
+async function fetchTenantContext(
+    db: Awaited<ReturnType<typeof getDb>>,
+    userId: string,
+    customerId: number | null,
+): Promise<TenantDetailContext> {
+    const [subscriptionsResult, creditsResult, usageResult, orderResult] =
+        await Promise.all([
+            customerId
+                ? db
+                      .select({
+                          id: subscriptions.id,
+                          status: subscriptions.status,
+                          currentPeriodStart: subscriptions.currentPeriodStart,
+                          currentPeriodEnd: subscriptions.currentPeriodEnd,
+                          canceledAt: subscriptions.canceledAt,
+                          createdAt: subscriptions.createdAt,
+                          updatedAt: subscriptions.updatedAt,
+                      })
+                      .from(subscriptions)
+                      .where(eq(subscriptions.customerId, customerId))
+                      .orderBy(desc(subscriptions.createdAt))
+                : Promise.resolve([]),
+            customerId
+                ? db
+                      .select({
+                          id: creditsHistory.id,
+                          amount: creditsHistory.amount,
+                          type: creditsHistory.type,
+                          createdAt: creditsHistory.createdAt,
+                      })
+                      .from(creditsHistory)
+                      .where(eq(creditsHistory.customerId, customerId))
+                      .orderBy(desc(creditsHistory.createdAt))
+                      .limit(20)
+                : Promise.resolve([]),
+            db
+                .select({
+                    date: usageDaily.date,
+                    total: sql<number>`sum(${usageDaily.totalAmount})`,
+                    unit: sql<string>`max(${usageDaily.unit})`,
+                })
+                .from(usageDaily)
+                .where(eq(usageDaily.userId, userId))
+                .groupBy(usageDaily.date)
+                .orderBy(desc(usageDaily.date))
+                .limit(30),
+            customerId
+                ? db
+                      .select({
+                          revenue: sql<number>`coalesce(sum(${orders.amountCents}), 0)`,
+                          ordersCount: sql<number>`count(*)`,
+                      })
+                      .from(orders)
+                      .where(eq(orders.customerId, customerId))
+                      .limit(1)
+                : Promise.resolve([]),
+        ]);
+
+    const order = Array.isArray(orderResult) ? (orderResult[0] ?? null) : null;
+
+    return {
+        subscriptions: subscriptionsResult,
+        credits: creditsResult,
+        usage: usageResult,
+        order: order
+            ? { revenue: order.revenue, ordersCount: order.ordersCount }
+            : null,
+    } satisfies TenantDetailContext;
+}
+
+function buildTenantDetail(
+    tenant: TenantRow,
+    customer: TenantCustomerRecord | null,
+    context: TenantDetailContext,
+): TenantDetail {
+    return {
+        ...tenant,
+        credits: customer?.credits ?? 0,
+        hasCustomer: Boolean(customer?.id),
+        subscriptionStatus: context.subscriptions[0]?.status ?? null,
+        ordersCount: context.order?.ordersCount ?? 0,
+        revenueCents: context.order?.revenue ?? 0,
+        creditsHistory: context.credits.map((entry) => ({
+            id: String(entry.id),
+            amount: entry.amount,
+            type: entry.type,
+            createdAt: entry.createdAt,
+        })),
+        subscriptions: context.subscriptions.map((subscription) => ({
+            id: String(subscription.id),
+            status: subscription.status,
+            currentPeriodStart: subscription.currentPeriodStart,
+            currentPeriodEnd: subscription.currentPeriodEnd,
+            canceledAt: subscription.canceledAt,
+            createdAt: subscription.createdAt,
+            updatedAt: subscription.updatedAt,
+        })),
+        usage: context.usage.map((entry) => ({
+            date: entry.date,
+            total: entry.total,
+            unit: entry.unit,
+        })),
+    } satisfies TenantDetail;
+}
+
+async function readCachedTenantDetail(
+    cacheKey: string,
+): Promise<TenantDetail | null> {
+    const cache = await getMultiLevelCache();
+    const cached = await cache.getValue(cacheKey, {
+        strategy: "admin.tenants",
+    });
+    if (cached.value === null) {
+        return null;
+    }
+    try {
+        return JSON.parse(cached.value) as TenantDetail;
+    } catch (error) {
+        console.warn("[TenantAdmin] Failed to parse cached tenant detail", {
+            cacheKey,
+            error,
+        });
+        return null;
+    }
+}
+
+async function writeTenantDetailToCache(
+    cacheKey: string,
+    detail: TenantDetail,
+) {
+    const cache = await getMultiLevelCache();
+    await cache.setValue(cacheKey, JSON.stringify(detail), {
+        strategy: "admin.tenants",
+    });
+}
+
 export function createTenantAdminService(
     dependencies: TenantServiceDependencies = defaultDependencies,
 ): TenantAdminService {
@@ -84,47 +303,53 @@ export function createTenantAdminService(
         const offset = (page - 1) * perPage;
         const cacheKey = `list:${page}:${perPage}:${options.search ?? "-"}`;
 
-        const result = await readThroughMultiLevelCache(cacheKey, async () => {
-            const db = await dependencies.getDb();
-            const whereClause = options.search
-                ? or(
-                      like(user.email, `%${options.search}%`),
-                      like(user.name, `%${options.search}%`),
-                  )
-                : undefined;
+        const result = await readThroughMultiLevelCache(
+            cacheKey,
+            async () => {
+                const db = await dependencies.getDb();
+                const whereClause = options.search
+                    ? or(
+                          like(user.email, `%${options.search}%`),
+                          like(user.name, `%${options.search}%`),
+                      )
+                    : undefined;
 
-            const tenantQuery = db
-                .select({
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    createdAt: user.createdAt,
-                    lastSignIn: user.updatedAt,
-                })
-                .from(user)
-                .orderBy(desc(user.createdAt))
-                .limit(perPage)
-                .offset(offset);
+                const tenantQuery = db
+                    .select({
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        createdAt: user.createdAt,
+                        lastSignIn: user.updatedAt,
+                    })
+                    .from(user)
+                    .orderBy(desc(user.createdAt))
+                    .limit(perPage)
+                    .offset(offset);
 
-            const tenantRows = whereClause
-                ? await tenantQuery.where(whereClause)
-                : await tenantQuery;
+                const tenantRows = whereClause
+                    ? await tenantQuery.where(whereClause)
+                    : await tenantQuery;
 
-            const totalQuery = db
-                .select({ count: sql<number>`count(*)` })
-                .from(user);
-            const totalRows = whereClause
-                ? await totalQuery.where(whereClause)
-                : await totalQuery;
+                const totalQuery = db
+                    .select({ count: sql<number>`count(*)` })
+                    .from(user);
+                const totalRows = whereClause
+                    ? await totalQuery.where(whereClause)
+                    : await totalQuery;
 
-            const tenantIds = tenantRows.map((row) => row.id);
+                const tenantIds = tenantRows.map((row) => row.id);
 
-            if (tenantIds.length === 0) {
-                return { data: [], total: 0 } satisfies TenantListResult;
-            }
+                if (tenantIds.length === 0) {
+                    return { data: [], total: 0 } satisfies TenantListResult;
+                }
 
-            const [customerRows, subscriptionRows, orderTotals, usageTotals] =
-                await Promise.all([
+                const [
+                    customerRows,
+                    subscriptionRows,
+                    orderTotals,
+                    usageTotals,
+                ] = await Promise.all([
                     db
                         .select({
                             userId: customers.userId,
@@ -167,20 +392,22 @@ export function createTenantAdminService(
                         .groupBy(usageDaily.userId),
                 ]);
 
-            const summaries = createTenantSummaries(tenantRows, {
-                customers: customerRows,
-                subscriptions: subscriptionRows,
-                orders: orderTotals,
-                usage: usageTotals,
-            });
+                const summaries = createTenantSummaries(tenantRows, {
+                    customers: customerRows,
+                    subscriptions: subscriptionRows,
+                    orders: orderTotals,
+                    usage: usageTotals,
+                });
 
-            return {
-                data: summaries,
-                total: totalRows[0]?.count ?? 0,
-            } satisfies TenantListResult;
-        }, {
-            strategy: "admin.tenants",
-        });
+                return {
+                    data: summaries,
+                    total: totalRows[0]?.count ?? 0,
+                } satisfies TenantListResult;
+            },
+            {
+                strategy: "admin.tenants",
+            },
+        );
 
         return result.value;
     };
@@ -192,131 +419,28 @@ export function createTenantAdminService(
             return null;
         }
 
-        const cache = await getMultiLevelCache();
         const cacheKey = `detail:${userId}`;
-        const cached = await cache.getValue(cacheKey, {
-            strategy: "admin.tenants",
-        });
-        if (cached.value !== null) {
-            try {
-                return JSON.parse(cached.value) as TenantDetail;
-            } catch (error) {
-                console.warn("[TenantAdmin] Failed to parse cached tenant detail", {
-                    userId,
-                    error,
-                });
-            }
+        const cached = await readCachedTenantDetail(cacheKey);
+        if (cached) {
+            return cached;
         }
 
         const db = await dependencies.getDb();
-        const [tenant] = await db
-            .select({
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                createdAt: user.createdAt,
-                lastSignIn: user.updatedAt,
-            })
-            .from(user)
-            .where(eq(user.id, userId))
-            .limit(1);
-
+        const tenant = await fetchTenantRow(db, userId);
         if (!tenant) {
             return null;
         }
 
-        const [customer] = await db
-            .select({
-                id: customers.id,
-                credits: customers.credits,
-            })
-            .from(customers)
-            .where(eq(customers.userId, userId))
-            .limit(1);
-
-        const [subscriptionRows, creditRows, usageRows, orderAggregate] =
-            await Promise.all([
-                customer
-                    ? db
-                          .select()
-                          .from(subscriptions)
-                          .where(eq(subscriptions.customerId, customer.id))
-                          .orderBy(desc(subscriptions.createdAt))
-                    : Promise.resolve([]),
-                customer
-                    ? db
-                          .select({
-                              id: creditsHistory.id,
-                              amount: creditsHistory.amount,
-                              type: creditsHistory.type,
-                              createdAt: creditsHistory.createdAt,
-                          })
-                          .from(creditsHistory)
-                          .where(eq(creditsHistory.customerId, customer.id))
-                          .orderBy(desc(creditsHistory.createdAt))
-                          .limit(20)
-                    : Promise.resolve([]),
-                db
-                    .select({
-                        date: usageDaily.date,
-                        total: sql<number>`sum(${usageDaily.totalAmount})`,
-                        unit: sql<string>`max(${usageDaily.unit})`,
-                    })
-                    .from(usageDaily)
-                    .where(eq(usageDaily.userId, userId))
-                    .groupBy(usageDaily.date)
-                    .orderBy(desc(usageDaily.date))
-                    .limit(30),
-                customer
-                    ? db
-                          .select({
-                              revenue: sql<number>`coalesce(sum(${orders.amountCents}), 0)`,
-                              ordersCount: sql<number>`count(*)`,
-                          })
-                          .from(orders)
-                          .where(eq(orders.customerId, customer.id))
-                          .limit(1)
-                    : Promise.resolve([]),
-            ]);
-
-        const orderInfo = Array.isArray(orderAggregate)
-            ? orderAggregate[0]
-            : undefined;
-
-        const detail: TenantDetail = {
-            ...tenant,
-            credits: customer?.credits ?? 0,
-            hasCustomer: Boolean(customer?.id),
-            subscriptionStatus: subscriptionRows[0]?.status ?? null,
-            ordersCount: orderInfo?.ordersCount ?? 0,
-            revenueCents: orderInfo?.revenue ?? 0,
-            totalUsage: usageRows.reduce((acc, row) => acc + row.total, 0),
-            creditsHistory: creditRows.map((entry) => ({
-                id: entry.id,
-                amount: entry.amount,
-                type: entry.type,
-                createdAt: entry.createdAt,
-            })),
-            subscriptions: subscriptionRows.map((subscription) => ({
-                id: subscription.id,
-                status: subscription.status,
-                currentPeriodStart: subscription.currentPeriodStart,
-                currentPeriodEnd: subscription.currentPeriodEnd,
-                canceledAt: subscription.canceledAt,
-                createdAt: subscription.createdAt,
-                updatedAt: subscription.updatedAt,
-            })),
-            usage: usageRows.map((entry) => ({
-                date: entry.date,
-                total: entry.total,
-                unit: entry.unit,
-            })),
-        };
+        const customer = await fetchTenantCustomer(db, userId);
+        const context = await fetchTenantContext(
+            db,
+            userId,
+            customer?.id ?? null,
+        );
+        const detail = buildTenantDetail(tenant, customer, context);
 
         try {
-            await cache.setValue(cacheKey, JSON.stringify(detail), {
-                strategy: "admin.tenants",
-            });
+            await writeTenantDetailToCache(cacheKey, detail);
         } catch (error) {
             console.warn("[TenantAdmin] Failed to cache tenant detail", {
                 userId,

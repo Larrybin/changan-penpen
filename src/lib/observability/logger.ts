@@ -18,7 +18,11 @@ export interface Logger {
     error(message: string, metadata?: Record<string, unknown>): void;
 }
 
-function writeLog(level: LogLevel, message: string, payload: Record<string, unknown>) {
+function writeLog(
+    level: LogLevel,
+    message: string,
+    payload: Record<string, unknown>,
+) {
     const entry = {
         level,
         message,
@@ -26,18 +30,25 @@ function writeLog(level: LogLevel, message: string, payload: Record<string, unkn
         ...payload,
     };
     const serialized = JSON.stringify(entry);
+    const transport = globalThis.console;
+    if (!transport) {
+        return;
+    }
     if (level === "error") {
-        console.error(serialized);
+        transport.error?.(serialized);
     } else if (level === "warn") {
-        console.warn(serialized);
+        transport.warn?.(serialized);
     } else if (level === "debug") {
-        console.debug(serialized);
+        transport.debug?.(serialized);
     } else {
-        console.log(serialized);
+        transport.log?.(serialized);
     }
 }
 
-function buildPayload(context: LoggerContext, metadata?: Record<string, unknown>) {
+function buildPayload(
+    context: LoggerContext,
+    metadata?: Record<string, unknown>,
+) {
     const base: Record<string, unknown> = { ...context };
     if (metadata) {
         Object.assign(base, metadata);
@@ -46,7 +57,11 @@ function buildPayload(context: LoggerContext, metadata?: Record<string, unknown>
 }
 
 export function createLogger(context: LoggerContext = {}): Logger {
-    const log = (level: LogLevel, message: string, metadata?: Record<string, unknown>) => {
+    const log = (
+        level: LogLevel,
+        message: string,
+        metadata?: Record<string, unknown>,
+    ) => {
         writeLog(level, message, buildPayload(context, metadata));
     };
 
@@ -69,7 +84,10 @@ export function createLogger(context: LoggerContext = {}): Logger {
     };
 }
 
-export function loggerFromTrace(trace: TraceContext, context: Partial<LoggerContext> = {}): Logger {
+export function loggerFromTrace(
+    trace: TraceContext,
+    context: Partial<LoggerContext> = {},
+): Logger {
     return createLogger({
         traceId: trace.traceId,
         spanId: trace.spanId,

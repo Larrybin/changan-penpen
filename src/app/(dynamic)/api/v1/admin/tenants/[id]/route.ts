@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getTenantDetail } from "@/modules/tenant-admin/services/tenant.service";
 import { withAdminRoute } from "@/modules/admin/utils/api-guard";
+import { getTenantDetail } from "@/modules/tenant-admin/services/tenant.service";
 
 interface Params {
     id: string;

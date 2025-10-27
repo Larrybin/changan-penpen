@@ -27,9 +27,7 @@ export type CacheLayerConfig = z.infer<typeof cacheLayerConfigSchema>;
 const cacheStrategyConfigSchema = z
     .object({
         layers: z.array(z.string()).min(1),
-        ttlSeconds: z
-            .record(z.string(), z.number().int().min(0))
-            .optional(),
+        ttlSeconds: z.record(z.string(), z.number().int().min(0)).optional(),
         keyPrefix: z.string().optional(),
     })
     .passthrough();
@@ -39,9 +37,7 @@ export type CacheStrategyConfig = z.infer<typeof cacheStrategyConfigSchema>;
 export const cacheConfigSchema = z.object({
     defaultTtlSeconds: z.number().int().min(0),
     layers: z.record(z.string(), cacheLayerConfigSchema).optional(),
-    strategies: z
-        .record(z.string(), cacheStrategyConfigSchema)
-        .optional(),
+    strategies: z.record(z.string(), cacheStrategyConfigSchema).optional(),
 });
 
 export type CacheConfig = z.infer<typeof cacheConfigSchema>;

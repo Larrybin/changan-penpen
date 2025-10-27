@@ -1,6 +1,6 @@
 import { desc, sql } from "drizzle-orm";
 import { adminAuditLogs, getDb } from "@/db";
-import { normalizePagination } from "../utils/pagination";
+import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
 
 export interface RecordAdminAuditLogInput {
     adminEmail: string;

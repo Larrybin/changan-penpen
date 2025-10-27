@@ -1,5 +1,5 @@
 import { getDb } from "@/db";
-import { normalizePagination } from "../utils/pagination";
+import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
 
 interface PaginationArgs {
     page?: number;

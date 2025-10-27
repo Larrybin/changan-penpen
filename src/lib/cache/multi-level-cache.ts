@@ -1,11 +1,15 @@
 import { config } from "@/config";
 import type { CacheConfig } from "@/config/types";
-import { getPlatformContext } from "@/lib/platform/context";
 import { getRedisClient } from "@/lib/cache";
+import { getPlatformContext } from "@/lib/platform/context";
 
 interface KvNamespaceLike {
     get(key: string): Promise<string | null>;
-    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+    put(
+        key: string,
+        value: string,
+        options?: { expirationTtl?: number },
+    ): Promise<void>;
     delete(key: string): Promise<void>;
 }
 
@@ -123,14 +127,16 @@ class RedisCacheLayer implements CacheLayerAdapter {
     constructor(private readonly env?: Record<string, unknown>) {}
 
     private async resolveClient() {
-        return getRedisClient(this.env as { [key: string]: unknown } | undefined);
+        return getRedisClient(
+            this.env as { [key: string]: unknown } | undefined,
+        );
     }
 
     async get(key: string): Promise<string | null> {
         try {
             const client = await this.resolveClient();
             if (!client) return null;
-            return (await client.get<string>(key)) ?? null;
+            return (await client.get(key)) ?? null;
         } catch (error) {
             console.warn("[cache] redis get failed", { key, error });
             return null;
@@ -192,7 +198,15 @@ class MultiLevelCache {
     private readonly cacheConfig: CacheConfig;
     private readonly memoryLayer: MemoryCacheLayer;
     private adapters = new Map<string, CacheLayerAdapter | null>();
-    private readonly layersConfig: Record<string, { ttlSeconds?: number; enabled?: boolean; binding?: string; maxEntries?: number }>;
+    private readonly layersConfig: Record<
+        string,
+        {
+            ttlSeconds?: number;
+            enabled?: boolean;
+            binding?: string;
+            maxEntries?: number;
+        }
+    >;
     private readonly defaultLayers: string[];
     private readonly strategyKeyIndex = new Map<string, Set<string>>();
 
@@ -204,7 +218,9 @@ class MultiLevelCache {
         });
         this.adapters.set(
             "memory",
-            this.layersConfig.memory?.enabled === false ? null : this.memoryLayer,
+            this.layersConfig.memory?.enabled === false
+                ? null
+                : this.memoryLayer,
         );
         this.defaultLayers = this.computeDefaultLayers();
     }
@@ -240,16 +256,24 @@ class MultiLevelCache {
             const layer = this.layersConfig[name];
             return layer?.enabled !== false;
         });
-        const ordered = DEFAULT_LAYER_ORDER.filter((layer) => configured.includes(layer));
+        const ordered = DEFAULT_LAYER_ORDER.filter((layer) =>
+            configured.includes(layer),
+        );
         const extras = configured.filter(
-            (layer) => !DEFAULT_LAYER_ORDER.includes(layer as typeof DEFAULT_LAYER_ORDER[number]),
+            (layer) =>
+                !DEFAULT_LAYER_ORDER.includes(
+                    layer as (typeof DEFAULT_LAYER_ORDER)[number],
+                ),
         );
         return [...ordered, ...extras];
     }
 
     private async resolveExecution(
         overrides?: CacheExecutionOverrides,
-    ): Promise<{ env?: Record<string, unknown>; waitUntil?: (promise: Promise<unknown>) => void }> {
+    ): Promise<{
+        env?: Record<string, unknown>;
+        waitUntil?: (promise: Promise<unknown>) => void;
+    }> {
         if (overrides?.env || overrides?.waitUntil) {
             return {
                 env: overrides.env,
@@ -266,17 +290,22 @@ class MultiLevelCache {
     private resolveStrategy(name?: string): ResolvedStrategy {
         const strategies = this.cacheConfig.strategies ?? {};
         const strategyConfig = name ? strategies[name] : undefined;
-        const layers = (strategyConfig?.layers ?? this.defaultLayers).filter((layer) => {
-            const layerConfig = this.layersConfig[layer];
-            if (!layerConfig) return true;
-            return layerConfig.enabled !== false;
-        });
-        const prefix = strategyConfig?.keyPrefix ?? (name ? name.replace(/\s+/g, ":") : "cache");
+        const layers = (strategyConfig?.layers ?? this.defaultLayers).filter(
+            (layer) => {
+                const layerConfig = this.layersConfig[layer];
+                if (!layerConfig) return true;
+                return layerConfig.enabled !== false;
+            },
+        );
+        const prefix =
+            strategyConfig?.keyPrefix ??
+            (name ? name.replace(/\s+/g, ":") : "cache");
         const ttlByLayer = new Map<string, number>();
         layers.forEach((layer) => {
             const override = strategyConfig?.ttlSeconds?.[layer];
             const layerDefault = this.layersConfig[layer]?.ttlSeconds;
-            const ttl = override ?? layerDefault ?? this.cacheConfig.defaultTtlSeconds;
+            const ttl =
+                override ?? layerDefault ?? this.cacheConfig.defaultTtlSeconds;
             ttlByLayer.set(layer, Math.max(0, ttl));
         });
         return { layers, keyPrefix: prefix, ttlByLayer };
@@ -345,7 +374,9 @@ class MultiLevelCache {
             waitUntil(aggregate);
         } else {
             aggregate.catch((error) => {
-                console.warn("[cache] background cache operation failed", { error });
+                console.warn("[cache] background cache operation failed", {
+                    error,
+                });
             });
         }
     }
@@ -380,9 +411,14 @@ class MultiLevelCache {
             const warmupPromises: Promise<unknown>[] = [];
             for (let i = 0; i < hitLayerIndex; i++) {
                 const layerName = strategy.layers[i];
-                const adapter = await this.resolveAdapter(layerName, execution.env);
+                const adapter = await this.resolveAdapter(
+                    layerName,
+                    execution.env,
+                );
                 if (!adapter) continue;
-                const ttl = strategy.ttlByLayer.get(layerName) ?? this.cacheConfig.defaultTtlSeconds;
+                const ttl =
+                    strategy.ttlByLayer.get(layerName) ??
+                    this.cacheConfig.defaultTtlSeconds;
                 warmupPromises.push(adapter.set(composedKey, cachedValue, ttl));
             }
             this.schedule(warmupPromises, execution.waitUntil);
@@ -407,7 +443,10 @@ class MultiLevelCache {
         for (const layerName of strategy.layers) {
             const adapter = await this.resolveAdapter(layerName, execution.env);
             if (!adapter) continue;
-            const ttl = ttlOverride ?? strategy.ttlByLayer.get(layerName) ?? this.cacheConfig.defaultTtlSeconds;
+            const ttl =
+                ttlOverride ??
+                strategy.ttlByLayer.get(layerName) ??
+                this.cacheConfig.defaultTtlSeconds;
             tasks.push(adapter.set(composedKey, value, ttl));
         }
         this.schedule(tasks, execution.waitUntil);
@@ -475,18 +514,19 @@ export async function readThroughMultiLevelCache<T>(
     },
 ): Promise<{ value: T; hit: boolean }> {
     const cache = await getMultiLevelCache();
-    const serializer = options?.serializer ?? defaultSerializer;
-    const cached = await cache.getValue(key, options);
+    const { serializer, ...cacheOptions } = options ?? {};
+    const activeSerializer = serializer ?? defaultSerializer;
+    const cached = await cache.getValue(key, cacheOptions);
     if (cached.value !== null) {
-        const parsed = serializer.deserialize<T>(cached.value);
+        const parsed = activeSerializer.deserialize(cached.value);
         if (parsed !== null) {
             return { value: parsed, hit: true };
         }
     }
     const computed = await compute();
-    const serialized = serializer.serialize(computed);
+    const serialized = activeSerializer.serialize(computed);
     if (serialized !== null) {
-        await cache.setValue(key, serialized, options);
+        await cache.setValue(key, serialized, cacheOptions);
     }
     return { value: computed, hit: false };
 }
