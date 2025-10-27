@@ -79,8 +79,8 @@ importers:
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@sentry/cloudflare':
-        specifier: ^10.20.0
-        version: 10.20.0(@cloudflare/workers-types@4.20251011.0)
+        specifier: ^10.22.0
+        version: 10.22.0(@cloudflare/workers-types@4.20251011.0)
       '@tanstack/react-query':
         specifier: ^5.90.5
         version: 5.90.5(react@19.2.0)
@@ -2032,8 +2032,8 @@ packages:
   '@schummar/icu-type-parser@1.21.5':
     resolution: {integrity: sha512-bXHSaW5jRTmke9Vd0h5P7BtWZG9Znqb8gSDxZnxaGSJnGwPLDPfS+3g0BKzeWqzgZPsIVZkM7m2tbo18cm5HBw==}
 
-  '@sentry/cloudflare@10.20.0':
-    resolution: {integrity: sha512-/ZyTropTlZoDxohQp2VTQhACzYm9paUBqgPztGNWqSiUyDhOPXzUnTeDWwmiC19DInA/zg1amFbpUr8l0rUrwg==}
+  '@sentry/cloudflare@10.22.0':
+    resolution: {integrity: sha512-uyONKTs5chatOnHC1xoEN7Dy4QhdQop9CB0IYVQ1K4EVpCskKKtoqWglB2NxkDNN7B8UerRuCHFiFHrKuHodPQ==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cloudflare/workers-types': ^4.x
@@ -2041,8 +2041,8 @@ packages:
       '@cloudflare/workers-types':
         optional: true
 
-  '@sentry/core@10.20.0':
-    resolution: {integrity: sha512-S291KihnOIB8i7mVJIJBVHBMcCfIoY/KDJBHEfBoHY9M56g2An4FVhM9+/xR85+IoMkTySdXN08k9LEyQz4FpQ==}
+  '@sentry/core@10.22.0':
+    resolution: {integrity: sha512-V1oeHbrOKzxadsCmgtPku3v3Emo/Bpb3VSuKmlLrQefiHX98MWtjJ3XDGfduzD5/dCdh0r/OOLwjcmrO/PZ2aw==}
     engines: {node: '>=18'}
 
   '@simplewebauthn/browser@13.2.2':
@@ -2766,6 +2766,9 @@ packages:
 
   '@types/node@24.9.0':
     resolution: {integrity: sha512-MKNwXh3seSK8WurXF7erHPJ2AONmMwkI7zAMrXZDPIru8jRqkk6rGDBVbw4mLwfqA+ZZliiDPg05JQ3uW66tKQ==}
+
+  '@types/node@24.9.1':
+    resolution: {integrity: sha512-QoiaXANRkSXK6p0Duvt56W208du4P9Uye9hWLWgGMDTEoKPhuenzNcC4vGUmrNkiOKTlIrBoyNQYNpSwfEZXSg==}
 
   '@types/pg@8.15.5':
     resolution: {integrity: sha512-LF7lF6zWEKxuT3/OR8wAZGzkg4ENGXFNyiV/JeOt9z5B+0ZVwbql9McqX5c/WStFq1GaGso7H1AzP/qSzmlCKQ==}
@@ -8170,14 +8173,14 @@ snapshots:
 
   '@schummar/icu-type-parser@1.21.5': {}
 
-  '@sentry/cloudflare@10.20.0(@cloudflare/workers-types@4.20251011.0)':
+  '@sentry/cloudflare@10.22.0(@cloudflare/workers-types@4.20251011.0)':
     dependencies:
       '@opentelemetry/api': 1.9.0
-      '@sentry/core': 10.20.0
+      '@sentry/core': 10.22.0
     optionalDependencies:
       '@cloudflare/workers-types': 4.20251011.0
 
-  '@sentry/core@10.20.0': {}
+  '@sentry/core@10.22.0': {}
 
   '@simplewebauthn/browser@13.2.2': {}
 
@@ -9511,9 +9514,14 @@ snapshots:
     dependencies:
       undici-types: 7.16.0
 
+  '@types/node@24.9.1':
+    dependencies:
+      undici-types: 7.16.0
+    optional: true
+
   '@types/pg@8.15.5':
     dependencies:
-      '@types/node': 24.9.0
+      '@types/node': 24.9.1
       pg-protocol: 1.10.3
       pg-types: 2.2.0
     optional: true
@@ -9551,7 +9559,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.9.0
+      '@types/node': 24.9.1
     optional: true
 
   '@upstash/core-analytics@0.0.10':
