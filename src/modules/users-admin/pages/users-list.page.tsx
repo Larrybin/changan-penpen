@@ -1,8 +1,8 @@
 import type { JSX } from "react";
-import type { ListUsersOptions } from "@/modules/admin/services/user.service";
-import { listUsers } from "@/modules/admin/services/user.service";
-import { UsersListClient } from "@/modules/admin/users/components/users-list-client";
-import { parsePaginationParams } from "@/modules/admin/utils/pagination";
+import { parsePaginationParams } from "@/modules/admin-shared/utils/pagination";
+import { UsersListClient } from "@/modules/users-admin/components/users-list-client";
+import type { ListUsersOptions } from "@/modules/users-admin/contracts";
+import { listUsers } from "@/modules/users-admin/services/user.service";
 
 function toURLSearchParams(
     searchParams?: Record<string, string | string[] | undefined>,

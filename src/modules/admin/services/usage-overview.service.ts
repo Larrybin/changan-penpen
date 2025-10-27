@@ -1,8 +1,8 @@
 import { desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getDb, usageDaily, user } from "@/db";
-import { normalizePagination } from "@/modules/admin/utils/pagination";
 import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
+import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
 
 export interface ListUsageOptions {
     page?: number;

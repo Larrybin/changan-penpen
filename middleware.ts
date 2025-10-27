@@ -11,6 +11,12 @@ import {
 import { CSP_NONCE_HEADER, generateCspNonce } from "./src/lib/security/csp";
 import { resolveAppUrl } from "./src/lib/seo";
 import { getSiteSettingsPayload } from "./src/modules/admin/services/site-settings.service";
+import {
+    applyTraceContextHeaders,
+    createTraceContext,
+    parseTraceContextFromHeaders,
+    type TraceContext,
+} from "./src/lib/observability/trace";
 
 type SiteSettingsPayload = Awaited<ReturnType<typeof getSiteSettingsPayload>>;
 
@@ -113,6 +119,7 @@ function enforceCanonicalOrigin(
     request: NextRequest,
     settings: SiteSettingsPayload,
     nonce: string,
+    traceContext: TraceContext,
 ): NextResponse | null {
     const origin = resolveCanonicalOrigin(settings);
     if (!shouldEnforceOrigin(origin)) {
@@ -141,6 +148,7 @@ function enforceCanonicalOrigin(
             redirect,
             { isApi, apiVersion: isApi ? CURRENT_API_VERSION : undefined },
             nonce,
+            traceContext,
         );
     }
 
@@ -151,6 +159,7 @@ function applySecurityHeaders(
     response: NextResponse,
     options: { isApi: boolean; apiVersion?: string },
     nonce: string,
+    traceContext: TraceContext,
 ) {
     const headers = response.headers;
 
@@ -182,10 +191,16 @@ function applySecurityHeaders(
         headers.set("Supported-Versions", CURRENT_API_VERSION);
     }
 
+    applyTraceContextHeaders(headers, traceContext);
+
     return response;
 }
 
-function rewriteToCurrentVersion(request: NextRequest, nonce: string) {
+function rewriteToCurrentVersion(
+    request: NextRequest,
+    nonce: string,
+    traceContext: TraceContext,
+) {
     const rewriteUrl = request.nextUrl.clone();
     const suffix = request.nextUrl.pathname.slice("/api".length);
     rewriteUrl.pathname = `/api/${CURRENT_API_VERSION}${suffix}`;
@@ -194,13 +209,24 @@ function rewriteToCurrentVersion(request: NextRequest, nonce: string) {
     return applySecurityHeaders(response, {
         isApi: true,
         apiVersion: CURRENT_API_VERSION,
-    }, nonce);
+    }, nonce, traceContext);
 }
 
 export async function middleware(request: NextRequest) {
     const nonce = generateCspNonce();
     const forwardedHeaders = new Headers(request.headers);
     forwardedHeaders.set(CSP_NONCE_HEADER, nonce);
+    const incomingTrace = parseTraceContextFromHeaders(request.headers);
+    const traceContext = createTraceContext({
+        traceId: incomingTrace.traceId,
+        spanId: incomingTrace.spanId,
+        requestId: incomingTrace.requestId ?? request.headers.get("X-Request-Id") ?? undefined,
+    });
+    forwardedHeaders.set("X-Trace-Id", traceContext.traceId);
+    forwardedHeaders.set("X-Span-Id", traceContext.spanId);
+    if (traceContext.requestId) {
+        forwardedHeaders.set("X-Request-Id", traceContext.requestId);
+    }
     const { pathname } = request.nextUrl;
     let siteSettings: SiteSettingsPayload | undefined;
     try {
@@ -210,7 +236,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const canonicalRedirect = siteSettings
-        ? enforceCanonicalOrigin(request, siteSettings, nonce)
+        ? enforceCanonicalOrigin(request, siteSettings, nonce, traceContext)
         : null;
     if (canonicalRedirect) {
         return canonicalRedirect;
@@ -219,22 +245,32 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith("/api")) {
         if (pathname === "/api" || pathname === "/api/") {
             const response = NextResponse.next({ request: { headers: forwardedHeaders } });
-            return applySecurityHeaders(response, {
-                isApi: true,
-                apiVersion: CURRENT_API_VERSION,
-            }, nonce);
+            return applySecurityHeaders(
+                response,
+                {
+                    isApi: true,
+                    apiVersion: CURRENT_API_VERSION,
+                },
+                nonce,
+                traceContext,
+            );
         }
 
         const versionMatch = pathname.match(/^\/api\/(v\d+)(?:\/|$)/);
         if (!versionMatch) {
-            return rewriteToCurrentVersion(request, nonce);
+            return rewriteToCurrentVersion(request, nonce, traceContext);
         }
 
         const response = NextResponse.next({ request: { headers: forwardedHeaders } });
-        return applySecurityHeaders(response, {
-            isApi: true,
-            apiVersion: versionMatch[1],
-        }, nonce);
+        return applySecurityHeaders(
+            response,
+            {
+                isApi: true,
+                apiVersion: versionMatch[1],
+            },
+            nonce,
+            traceContext,
+        );
     }
 
     let response = await handleI18nRouting(request, siteSettings);
@@ -257,13 +293,23 @@ export async function middleware(request: NextRequest) {
                 const redirect = NextResponse.redirect(
                     new URL("/login", request.url),
                 );
-                return applySecurityHeaders(redirect, { isApi: false }, nonce);
+                return applySecurityHeaders(
+                    redirect,
+                    { isApi: false },
+                    nonce,
+                    traceContext,
+                );
             }
         } catch (_error) {
             const redirect = NextResponse.redirect(
                 new URL("/login", request.url),
             );
-            return applySecurityHeaders(redirect, { isApi: false }, nonce);
+            return applySecurityHeaders(
+                redirect,
+                { isApi: false },
+                nonce,
+                traceContext,
+            );
         }
     }
 
@@ -295,7 +341,7 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    return applySecurityHeaders(response, { isApi: false }, nonce);
+    return applySecurityHeaders(response, { isApi: false }, nonce, traceContext);
 }
 
 export const config = {

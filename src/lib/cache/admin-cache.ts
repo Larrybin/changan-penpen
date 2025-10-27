@@ -4,11 +4,17 @@
  * 针对管理员仪表盘优化性能
  */
 
-import { Redis } from "@upstash/redis/cloudflare";
+import { config } from "@/config";
+import { getRedisClient } from "@/lib/cache";
 
+import {
+    deleteFromMultiLevelCache,
+    getMultiLevelCache,
+    invalidateMultiLevelCacheStrategy,
+} from "@/lib/cache/multi-level-cache";
 import { getPlatformContext } from "@/lib/platform/context";
 
-interface CacheEnv {
+interface CacheEnv extends Record<string, unknown> {
     UPSTASH_REDIS_REST_URL?: string;
     UPSTASH_REDIS_REST_TOKEN?: string;
 }
@@ -85,134 +91,148 @@ export const AdminCacheKeyBuilder = {
 
 // 智能缓存管理器
 export class AdminCacheManager {
-    private redis: Redis | null = null;
     private env: CacheEnv | undefined;
+    private waitUntil?: (promise: Promise<unknown>) => void;
 
     constructor(env?: CacheEnv) {
         this.env = env;
-        this.initRedis();
     }
 
-    private async initRedis(): Promise<void> {
-        if (this.redis) return;
-
-        const resolvedEnv = this.env;
-        if (!resolvedEnv) {
+    private async resolveExecutionOverrides(): Promise<{
+        env?: Record<string, unknown>;
+        waitUntil?: (promise: Promise<unknown>) => void;
+    }> {
+        if (!this.env || !this.waitUntil) {
             const context = await getPlatformContext({ async: true });
             if (context.env) {
                 this.env = context.env as CacheEnv;
             }
+            if (context.ctx?.waitUntil) {
+                this.waitUntil = context.ctx.waitUntil.bind(context.ctx);
+            }
         }
-
-        const effectiveEnv = this.env;
-
-        if (
-            !effectiveEnv?.UPSTASH_REDIS_REST_URL ||
-            !effectiveEnv?.UPSTASH_REDIS_REST_TOKEN
-        ) {
-            console.warn("[AdminCache] Upstash Redis configuration missing");
-            return;
-        }
-
-        this.redis = new Redis({
-            url: effectiveEnv.UPSTASH_REDIS_REST_URL,
-            token: effectiveEnv.UPSTASH_REDIS_REST_TOKEN,
-            // 启用自动管道化优化性能
-            enableAutoPipelining: true,
-            responseEncoding: "base64",
-        });
+        return {
+            env: this.env,
+            waitUntil: this.waitUntil,
+        };
     }
 
-    // 通用缓存获取方法
-    async get<T>(key: string): Promise<T | null> {
-        if (!this.redis) return null;
+    private resolveStrategyName(
+        key: string,
+        explicit?: string,
+    ): string | undefined {
+        if (explicit) {
+            return explicit;
+        }
+        if (key.startsWith("admin:tenants")) {
+            return "admin.tenants";
+        }
+        if (key.startsWith("admin:users")) {
+            return "admin.users";
+        }
+        return undefined;
+    }
 
+    async get<T>(
+        key: string,
+        options?: { strategy?: string },
+    ): Promise<T | null> {
+        const execution = await this.resolveExecutionOverrides();
+        const strategy = this.resolveStrategyName(key, options?.strategy);
+        const cache = await getMultiLevelCache();
+        const { value } = await cache.getValue(key, {
+            strategy,
+            execution,
+        });
+        if (value === null) {
+            return null;
+        }
         try {
-            const cached = await this.redis.get<string>(key);
-            if (!cached) return null;
-
-            return JSON.parse(cached) as T;
+            return JSON.parse(value) as T;
         } catch (error) {
-            console.warn("[AdminCache] Cache get failed", { key, error });
+            console.warn("[AdminCache] Failed to parse cached value", {
+                key,
+                error,
+            });
             return null;
         }
     }
 
-    // 通用缓存设置方法
-    async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
-        if (!this.redis) return;
-
-        try {
-            const serialized = JSON.stringify(value);
-            if (ttlSeconds) {
-                await this.redis.set(key, serialized, { ex: ttlSeconds });
-            } else {
-                await this.redis.set(key, serialized);
-            }
-        } catch (error) {
-            console.warn("[AdminCache] Cache set failed", { key, error });
-        }
-    }
-
-    // 批量获取（利用自动管道化）
-    async mget<T>(keys: string[]): Promise<(T | null)[]> {
-        if (!this.redis || keys.length === 0)
-            return new Array(keys.length).fill(null);
-
-        try {
-            const values = await this.redis.mget<string[]>(...keys);
-            return values.map((value) => {
-                if (!value) return null;
-                try {
-                    return JSON.parse(value) as T;
-                } catch {
-                    return null;
-                }
-            });
-        } catch (error) {
-            console.warn("[AdminCache] Batch get failed", { keys, error });
-            return new Array(keys.length).fill(null);
-        }
-    }
-
-    // 批量设置（利用自动管道化）
-    async mset<T>(
-        entries: Array<{ key: string; value: T; ttl?: number }>,
+    async set<T>(
+        key: string,
+        value: T,
+        ttlSeconds?: number,
+        options?: { strategy?: string },
     ): Promise<void> {
-        if (!this.redis || entries.length === 0) return;
-
-        try {
-            const pipeline = this.redis.multi();
-
-            entries.forEach(({ key, value, ttl }) => {
-                const serialized = JSON.stringify(value);
-                if (ttl) {
-                    pipeline.set(key, serialized, { ex: ttl });
-                } else {
-                    pipeline.set(key, serialized);
-                }
-            });
-
-            await pipeline.exec();
-        } catch (error) {
-            console.warn("[AdminCache] Batch set failed", { entries, error });
+        const serialized = (() => {
+            try {
+                return JSON.stringify(value);
+            } catch (error) {
+                console.warn("[AdminCache] Failed to serialize value", {
+                    key,
+                    error,
+                });
+                return null;
+            }
+        })();
+        if (serialized === null) {
+            return;
         }
+        const execution = await this.resolveExecutionOverrides();
+        const strategy = this.resolveStrategyName(key, options?.strategy);
+        const cache = await getMultiLevelCache();
+        await cache.setValue(key, serialized, {
+            strategy,
+            ttlSeconds,
+            execution,
+        });
     }
 
-    // 删除缓存
-    async del(key: string): Promise<void> {
-        if (!this.redis) return;
-
-        try {
-            await this.redis.del(key);
-        } catch (error) {
-            console.warn("[AdminCache] Cache delete failed", { key, error });
+    async mget<T>(
+        keys: string[],
+        options?: { strategy?: string },
+    ): Promise<(T | null)[]> {
+        if (keys.length === 0) {
+            return [];
         }
+        const results = await Promise.all(
+            keys.map((key) => this.get<T>(key, options)),
+        );
+        return results;
     }
 
-    // 模式匹配删除（用于失效策略）
+    async mset<T>(
+        entries: Array<{
+            key: string;
+            value: T;
+            ttl?: number;
+            strategy?: string;
+        }>,
+    ): Promise<void> {
+        if (entries.length === 0) {
+            return;
+        }
+        await Promise.all(
+            entries.map((entry) =>
+                this.set(entry.key, entry.value, entry.ttl, {
+                    strategy: entry.strategy,
+                }),
+            ),
+        );
+    }
+
+    async del(key: string, options?: { strategy?: string }): Promise<void> {
+        const execution = await this.resolveExecutionOverrides();
+        const strategy = this.resolveStrategyName(key, options?.strategy);
+        await deleteFromMultiLevelCache(key, {
+            strategy,
+            execution,
+        });
+    }
+
     async invalidatePattern(pattern: string): Promise<void> {
-        const redis = this.redis;
+        const execution = await this.resolveExecutionOverrides();
+        const redis = getRedisClient(execution.env);
         if (!redis) {
             return;
         }
@@ -220,21 +240,18 @@ export class AdminCacheManager {
         try {
             let cursor = "0";
             const deletions: Promise<unknown>[] = [];
-
             do {
                 const [nextCursor, keys] = await redis.scan(cursor, {
                     match: pattern,
                     count: 100,
                 });
-
-                if (Array.isArray(keys) && keys.length > 0) {
-                    keys.forEach((key) => {
+                if (Array.isArray(keys)) {
+                    for (const key of keys) {
                         if (typeof key === "string" && key) {
                             deletions.push(redis.del(key));
                         }
-                    });
+                    }
                 }
-
                 cursor = nextCursor;
             } while (cursor !== "0");
 
@@ -252,19 +269,20 @@ export class AdminCacheManager {
         }
     }
 
-    // 原子性计数器操作（用于统计缓存命中）
     async increment(key: string, amount: number = 1): Promise<number> {
-        if (!this.redis) return 0;
-
+        const execution = await this.resolveExecutionOverrides();
+        const redis = getRedisClient(execution.env);
+        if (!redis) {
+            return 0;
+        }
         try {
-            return await this.redis.incrby(key, amount);
+            return await redis.incrby(key, amount);
         } catch (error) {
             console.warn("[AdminCache] Increment failed", { key, error });
             return 0;
         }
     }
 
-    // 获取缓存统计
     async getStats(): Promise<{
         hits: number;
         misses: number;
@@ -274,7 +292,7 @@ export class AdminCacheManager {
         const missesKey = "admin:cache:stats:misses";
 
         const [hits, misses] = await Promise.all([
-            this.increment(hitsKey, 0), // 读取当前值
+            this.increment(hitsKey, 0),
             this.increment(missesKey, 0),
         ]);
 
@@ -304,6 +322,7 @@ export async function withAdminCache<T>(
         tenantId?: string;
         userId?: string;
         customTtl?: number;
+        strategy?: string;
     },
 ): Promise<{ value: T; hit: boolean }> {
     const manager = getAdminCacheManager();
@@ -312,14 +331,16 @@ export async function withAdminCache<T>(
     const ttl = options?.customTtl ?? cacheConfig.ttl;
 
     try {
-        const cached = await manager.get<T>(key);
+        const cached = await manager.get<T>(key, {
+            strategy: options?.strategy,
+        });
         if (cached !== null) {
             await manager.increment("admin:cache:stats:hits");
             return { value: cached, hit: true };
         }
 
         const value = await compute();
-        await manager.set(key, value, ttl);
+        await manager.set(key, value, ttl, { strategy: options?.strategy });
         await manager.increment("admin:cache:stats:misses");
         return { value, hit: false };
     } catch (error) {
@@ -330,6 +351,67 @@ export async function withAdminCache<T>(
 }
 
 // 智能缓存失效函数
+function resolveStrategy(resource: string) {
+    const [namespace, ...segments] = resource.split(":");
+    const lookup: Record<string, string> = {
+        tenants: "admin.tenants",
+        users: "admin.users",
+    };
+    return {
+        name: lookup[namespace],
+        segments,
+    };
+}
+
+async function invalidateStrategyKeys(
+    manager: AdminCacheManager,
+    strategyName: string,
+    segments: string[],
+) {
+    const segmentKey = segments.join(":");
+    const predicate =
+        segmentKey && segmentKey !== "*"
+            ? (key: string) => key.startsWith(segmentKey)
+            : undefined;
+    await invalidateMultiLevelCacheStrategy(strategyName, { predicate });
+    const strategyConfig = config.cache.strategies?.[strategyName];
+    if (!strategyConfig?.keyPrefix) {
+        return;
+    }
+    const pattern =
+        segmentKey && segmentKey !== "*"
+            ? `${strategyConfig.keyPrefix}:${segmentKey}*`
+            : `${strategyConfig.keyPrefix}:*`;
+    await manager.invalidatePattern(pattern);
+}
+
+async function invalidateByLevel(
+    manager: AdminCacheManager,
+    resource: string,
+    level: keyof typeof CACHE_LEVELS,
+    tenantId?: string,
+) {
+    switch (level) {
+        case "STATIC":
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.STATIC.prefix}:${resource}:*`,
+            );
+            break;
+        case "USER": {
+            const suffix = tenantId ? `:${tenantId}*` : "*";
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.USER.prefix}:${resource}:*${suffix}`,
+            );
+            break;
+        }
+        case "REALTIME":
+            await manager.invalidatePattern(
+                `${CACHE_LEVELS.REALTIME.prefix}:${resource}:*`,
+            );
+            break;
+    }
+}
+
 export async function invalidateAdminCache(
     resource: string,
     options?: {
@@ -339,28 +421,11 @@ export async function invalidateAdminCache(
     },
 ): Promise<void> {
     const manager = getAdminCacheManager();
-    const level = options?.level ?? "USER";
-
-    if (level === "STATIC") {
-        // 失效静态缓存
-        await manager.invalidatePattern(
-            `${CACHE_LEVELS.STATIC.prefix}:${resource}:*`,
-        );
-    } else if (level === "USER") {
-        // 失效用户缓存
-        if (options?.tenantId) {
-            await manager.invalidatePattern(
-                `${CACHE_LEVELS.USER.prefix}:${resource}:*:${options.tenantId}*`,
-            );
-        } else {
-            await manager.invalidatePattern(
-                `${CACHE_LEVELS.USER.prefix}:${resource}:*`,
-            );
-        }
-    } else if (level === "REALTIME") {
-        // 失效实时缓存
-        await manager.invalidatePattern(
-            `${CACHE_LEVELS.REALTIME.prefix}:${resource}:*`,
-        );
+    const { name: strategyName, segments } = resolveStrategy(resource);
+    if (strategyName) {
+        await invalidateStrategyKeys(manager, strategyName, segments);
     }
+
+    const level = options?.level ?? "USER";
+    await invalidateByLevel(manager, resource, level, options?.tenantId);
 }

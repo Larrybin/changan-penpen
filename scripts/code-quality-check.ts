@@ -142,6 +142,59 @@ class CodeQualityChecker {
     }
 
     /**
+     * 检查模块依赖边界
+     */
+    async checkModuleBoundaries(): Promise<CheckResult> {
+        const result: CheckResult = {
+            name: "模块依赖边界",
+            passed: true,
+            errors: [],
+            warnings: [],
+            suggestions: [],
+        };
+
+        try {
+            console.info("🔍 检查模块依赖边界...");
+            execSync("pnpm deps:lint", {
+                stdio: "pipe",
+                cwd: this.projectRoot,
+            });
+            console.info("✅ 模块依赖检查通过");
+        } catch (error) {
+            const typedError = error as {
+                stdout?: Buffer;
+                stderr?: Buffer;
+                message: string;
+            };
+            result.passed = false;
+            const output =
+                typedError.stdout?.toString() ||
+                typedError.stderr?.toString() ||
+                typedError.message;
+
+            const lines = output.split("\n").filter((line) => line.trim());
+            lines.forEach((line: string) => {
+                if (line.toLowerCase().includes("error")) {
+                    result.errors.push(line);
+                } else {
+                    result.warnings.push(line);
+                }
+            });
+
+            console.error("❌ 模块依赖检查失败");
+            result.errors.forEach((errLine) => {
+                console.error(`  🚨 ${errLine}`);
+            });
+            result.warnings.forEach((warning) => {
+                console.warn(`  ⚠️  ${warning}`);
+            });
+        }
+
+        this.results.push(result);
+        return result;
+    }
+
+    /**
      * 检查package.json依赖
      */
     async checkDependencies(): Promise<CheckResult> {
@@ -478,6 +531,7 @@ class CodeQualityChecker {
 
         await this.checkTypeScript();
         await this.checkBiome();
+        await this.checkModuleBoundaries();
         await this.checkDependencies();
         await this.checkPerformance();
         await this.checkSEO();

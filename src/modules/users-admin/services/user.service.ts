@@ -10,30 +10,20 @@ import {
     usageDaily,
     user,
 } from "@/db";
-import type {
-    AdminUserDetail,
-    AdminUserListItem,
-    AdminUserRole,
-    AdminUserTransaction,
-} from "@/modules/admin/users/models";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
 import { computeWithAdminCache } from "@/modules/admin/utils/cache";
-import { normalizePagination } from "@/modules/admin/utils/pagination";
 import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
-
-export interface ListUsersOptions {
-    page?: number;
-    perPage?: number;
-    email?: string;
-    name?: string;
-}
-
-export interface ListUsersResult {
-    data: AdminUserListItem[];
-    total: number;
-    page: number;
-    perPage: number;
-}
+import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
+import type {
+    AdminUserService,
+    ListUsersOptions,
+    ListUsersResult,
+} from "@/modules/users-admin/contracts";
+import type {
+    AdminUserDetail,
+    AdminUserRole,
+    AdminUserTransaction,
+} from "@/modules/users-admin/models";
 
 const toNullableString = (value: unknown): string | null => {
     if (value instanceof Date) {
@@ -416,7 +406,7 @@ export function createAdminUserService(
         } satisfies AdminUserDetail;
     };
 
-    return { listUsers, getUserDetail } as const;
+    return { listUsers, getUserDetail } satisfies AdminUserService;
 }
 
 const defaultService = createAdminUserService();

@@ -16,7 +16,7 @@ import { adminQueryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 import { fetchAdminRecord } from "@/modules/admin/api/resources";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
-import type { AdminUserDetail } from "@/modules/admin/users/models";
+import type { AdminUserDetail } from "@/modules/users-admin/models";
 
 interface UserDetailClientProps {
     userId: string;

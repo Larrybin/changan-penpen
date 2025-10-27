@@ -10,7 +10,38 @@
     "maxPageSize": 100
   },
   "cache": {
-    "defaultTtlSeconds": 60
+    "defaultTtlSeconds": 60,
+    "layers": {
+      "memory": {
+        "maxEntries": 512,
+        "ttlSeconds": 30
+      },
+      "kv": {
+        "enabled": false,
+        "binding": "APP_CACHE_KV"
+      },
+      "redis": {
+        "ttlSeconds": 300
+      }
+    },
+    "strategies": {
+      "admin.tenants": {
+        "layers": ["memory", "redis"],
+        "ttlSeconds": {
+          "memory": 45,
+          "redis": 240
+        },
+        "keyPrefix": "admin:tenants"
+      },
+      "admin.users": {
+        "layers": ["memory", "redis"],
+        "ttlSeconds": {
+          "memory": 30,
+          "redis": 180
+        },
+        "keyPrefix": "admin:users"
+      }
+    }
   },
   "database": {
     "provider": "cloudflare_d1",
