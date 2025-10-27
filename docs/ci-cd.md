@@ -1,3 +1,8 @@
+### 2025-10 - pnpm 8.15.9 alignment
+- Workflows now pin pnpm 8.15.9 via .github/actions/setup-node-pnpm and pass the same version in CI/Deploy/Security jobs.
+- Dependabot PRs must retain the v8 lockfile format; regenerate with pnpm@8.15.9 (pnpm install --lockfile-only) before merging.
+- When upgrading pnpm, update the composite action and every workflow input together, then refresh this note.
+
 # CI/CD 流程与策略
 本文档描述仓库的持续集成与持续部署策略，包括工作流触发条件、质量门以及依赖升级（Dependabot）分组与自动合并策略。
 
@@ -74,3 +79,10 @@
 - `deploy.yml` 将 `actions/github-script` 从一个无效的提交 SHA 固定，调整为稳定标签 `v7`，修复运行时报错：
   `An action could not be found at the URI ... actions/github-script/tarball/<SHA>`。
   若需继续使用 SHA 固定，请在后续安全审计中替换为官方 `v7` 对应的可信提交哈希。
+
+
+
+
+
+
+
