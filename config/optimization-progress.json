@@ -1,0 +1,74 @@
+{
+  "items": [
+    {
+      "id": "bundle-size-guardrail",
+      "title": "Add worker bundle size guardrail in CI",
+      "status": "done",
+      "summary": "Fail the deploy workflow when the gzipped OpenNext worker exceeds the defined budget.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "incremental-cache-r2",
+      "title": "Back ISR by R2 + Durable Object queue",
+      "status": "done",
+      "summary": "Enable the OpenNext R2 incremental cache and bind the queue/tag Durable Objects in wrangler.toml.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "cache-components",
+      "title": "Adopt Cache Components for marketing shell",
+      "status": "done",
+      "summary": "Turn on experimental cache components and tag-based caching for site settings and marketing content.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "ppr-streaming",
+      "title": "Stream marketing sections with Suspense",
+      "status": "done",
+      "summary": "Wrap long-running marketing sections in Suspense boundaries with server fallbacks.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "root-metadata",
+      "title": "Provide layout-level metadata defaults",
+      "status": "done",
+      "summary": "Expose canonical metadata from the root layout when page-level metadata is absent.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "static-headers",
+      "title": "Align static header generator with security policy",
+      "status": "done",
+      "summary": "Regenerate public/_headers via script with stricter CSP and shared caching semantics.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "edge-preload",
+      "title": "Expose font preconnect hints from the worker",
+      "status": "done",
+      "summary": "Attach Link headers for critical font origins when returning HTML.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "turnstile-protection",
+      "title": "Protect signup with Cloudflare Turnstile",
+      "status": "done",
+      "summary": "Embed the Turnstile widget on signup and verify tokens server-side.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "tag-revalidate-endpoint",
+      "title": "Add authenticated cache tag revalidation API",
+      "status": "done",
+      "summary": "Provide an admin endpoint that revalidates cache tags via authenticated webhook calls.",
+      "updatedAt": "2025-03-01"
+    },
+    {
+      "id": "cloudflare-images-loader",
+      "title": "Switch Next Image to Cloudflare Images loader",
+      "status": "todo",
+      "summary": "Requires asset migration and delivery hash; keep on hold until Cloudflare Images is provisioned.",
+      "updatedAt": "2025-03-01"
+    }
+  ]
+}

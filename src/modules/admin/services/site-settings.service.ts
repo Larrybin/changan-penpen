@@ -1,15 +1,12 @@
-﻿import { eq } from "drizzle-orm";
+import { revalidateTag, unstable_cacheLife, unstable_cacheTag } from "next/cache";
+import { eq } from "drizzle-orm";
 import { getDb, siteSettings } from "@/db";
 import {
     type AppLocale,
     getSupportedAppLocales,
     setRuntimeI18nConfig,
 } from "@/i18n/config";
-import {
-    clearSiteSettingsCache,
-    getCachedSiteSettings,
-    setCachedSiteSettings,
-} from "@/modules/admin/services/site-settings-cache";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 
 export type LocalizedSeoFieldMap = Partial<Record<AppLocale, string>>;
 
@@ -286,15 +283,12 @@ function mapRowToPayload(
 }
 
 export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
-    const cached = getCachedSiteSettings<SiteSettingsPayload>();
-    if (cached) {
-        syncRuntimeLocales(cached);
-        return cached;
-    }
+    "use cache";
+    unstable_cacheTag(CACHE_TAGS.siteSettings);
+    unstable_cacheLife("hours");
 
     if (shouldBypassDatabaseForStaticBuild()) {
         const fallbackSettings = getStaticBuildFallbackSettings();
-        setCachedSiteSettings(fallbackSettings);
         syncRuntimeLocales(fallbackSettings);
         return fallbackSettings;
     }
@@ -304,18 +298,15 @@ export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
         const rows = await db.select().from(siteSettings).limit(1);
 
         if (!rows.length) {
-            setCachedSiteSettings(EMPTY_SETTINGS);
             syncRuntimeLocales(EMPTY_SETTINGS);
             return EMPTY_SETTINGS;
         }
 
         const payload = mapRowToPayload(rows[0]);
-        setCachedSiteSettings(payload);
         syncRuntimeLocales(payload);
         return payload;
     } catch (error) {
         console.warn("Failed to load site settings from database", error);
-        setCachedSiteSettings(EMPTY_SETTINGS);
         syncRuntimeLocales(EMPTY_SETTINGS);
         return EMPTY_SETTINGS;
     }
@@ -453,7 +444,10 @@ export async function updateSiteSettings(
         });
     }
 
-    clearSiteSettingsCache();
+    revalidateTag(CACHE_TAGS.siteSettings);
+    for (const locale of getSupportedAppLocales()) {
+        revalidateTag(CACHE_TAGS.staticConfig(locale));
+    }
     const fresh = await getSiteSettingsPayload();
 
     await recordSettingsAudit(adminEmail, input);

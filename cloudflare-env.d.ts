@@ -5,13 +5,18 @@ declare namespace Cloudflare {
 	interface GlobalProps {
 		mainModule: typeof import("./worker");
 	}
-	interface Env {
-		next_cf_app_bucket: R2Bucket;
-		next_cf_app: D1Database;
-		AI: Ai;
-		CF_VERSION_METADATA: WorkerVersionMetadata;
-		ASSETS: Fetcher;
-	}
+        interface Env {
+                next_cf_app_bucket: R2Bucket;
+                NEXT_INC_CACHE_R2_BUCKET: R2Bucket;
+                next_cf_app: D1Database;
+                NEXT_CACHE_DO_QUEUE: DurableObjectNamespace;
+                NEXT_TAG_CACHE_DO_SHARDED: DurableObjectNamespace;
+                AI: Ai;
+                CF_VERSION_METADATA: WorkerVersionMetadata;
+                ASSETS: Fetcher;
+                TURNSTILE_SECRET?: string;
+                CACHE_REVALIDATE_TOKEN?: string;
+        }
 }
 interface CloudflareEnv extends Cloudflare.Env {}
 

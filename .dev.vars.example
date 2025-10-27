@@ -49,6 +49,10 @@ BETTER_AUTH_URL=http://localhost:3000 # Base URL of your app - should use the de
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
+# Cloudflare Turnstile
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-turnstile-site-key
+TURNSTILE_SECRET=your-turnstile-secret
+
 # Admin dashboard access
 ADMIN_ALLOWED_EMAILS=admin@example.com
 ADMIN_ENTRY_TOKEN=local-admin-token

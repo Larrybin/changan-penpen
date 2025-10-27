@@ -13,6 +13,7 @@ import {
     useZodForm,
 } from "@/components/form";
 import { Button } from "@/components/ui/button";
+import { TurnstileWidget } from "@/components/security/turnstile-widget";
 import {
     Card,
     CardContent,
@@ -40,13 +41,23 @@ export function SignupForm({
     const tShared = useTranslations("AuthForms.Shared");
     const tValidation = useTranslations("AuthForms.Validation");
     const tMessages = useTranslations("AuthForms.Messages");
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+    const turnstileUnavailable = !turnstileSiteKey;
 
-    const { form, isSubmitting, handleSubmit, getFieldError } = useZodForm({
+    const {
+        form,
+        isSubmitting,
+        handleSubmit,
+        getFieldError,
+        setFieldError,
+        clearFieldError,
+    } = useZodForm({
         schema: createSignUpSchema(tValidation),
         defaultValues: {
             username: "",
             email: "",
             password: "",
+            turnstileToken: "",
         },
         onSubmit: async (values: SignUpSchema) => {
             const { success, messageKey } = await signUp(values);
@@ -156,8 +167,56 @@ export function SignupForm({
                                         <FormMessage field="password" />
                                     </div>
 
+                                    <input
+                                        type="hidden"
+                                        {...form.register("turnstileToken")}
+                                    />
+                                    <div className="flex flex-col gap-2">
+                                        <TurnstileWidget
+                                            siteKey={turnstileSiteKey}
+                                            onVerify={(token) => {
+                                                form.setValue(
+                                                    "turnstileToken",
+                                                    token,
+                                                    { shouldValidate: true },
+                                                );
+                                                clearFieldError(
+                                                    "turnstileToken",
+                                                );
+                                            }}
+                                            onExpire={() => {
+                                                form.setValue(
+                                                    "turnstileToken",
+                                                    "",
+                                                );
+                                                setFieldError(
+                                                    "turnstileToken",
+                                                    tValidation(
+                                                        "captcha.required",
+                                                    ),
+                                                );
+                                            }}
+                                            onError={() => {
+                                                setFieldError(
+                                                    "turnstileToken",
+                                                    tValidation(
+                                                        "captcha.error",
+                                                    ),
+                                                );
+                                            }}
+                                            className="overflow-hidden rounded-md border border-border/60 bg-background"
+                                        />
+                                        <FormMessage field="turnstileToken" />
+                                        {turnstileUnavailable ? (
+                                            <p className="text-destructive text-sm">
+                                                {tMessages("captchaUnavailable")}
+                                            </p>
+                                        ) : null}
+                                    </div>
+
                                     <FormSubmit
                                         isSubmitting={isSubmitting}
+                                        disabled={isSubmitting || turnstileUnavailable}
                                         className="w-full"
                                     >
                                         {isSubmitting ? (

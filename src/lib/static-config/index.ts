@@ -1,3 +1,4 @@
+import { unstable_cacheLife, unstable_cacheTag } from "next/cache";
 import { desc, eq } from "drizzle-orm";
 
 import { getDb, marketingContentVersions } from "@/db";
@@ -12,6 +13,7 @@ import {
     localeCurrencyMap,
 } from "@/lib/seo";
 import { marketingSectionFileSchema } from "@/modules/admin/schemas/marketing-content.schema";
+import { CACHE_TAGS } from "../cache/cache-tags";
 
 export const MARKETING_SECTIONS = [
     "hero",
@@ -885,7 +887,10 @@ async function ensureBundleLoaded(
 }
 
 export async function loadStaticConfig(locale: AppLocale) {
+    "use cache";
     const normalized = assertLocale(locale);
+    unstable_cacheTag(CACHE_TAGS.staticConfig(normalized));
+    unstable_cacheLife("hours");
     const bundle = await ensureBundleLoaded(normalized);
     return bundle.config;
 }
@@ -906,8 +911,14 @@ export async function loadMarketingSection(
     locale: AppLocale,
     section: MarketingSection,
 ) {
+    "use cache";
     const normalizedLocale = assertLocale(locale);
     const normalizedSection = toMarketingSection(section);
+    unstable_cacheTag(CACHE_TAGS.staticConfig(normalizedLocale));
+    unstable_cacheTag(
+        CACHE_TAGS.marketingSection(normalizedLocale, normalizedSection),
+    );
+    unstable_cacheLife("hours");
     const key = getSectionCacheKey(normalizedLocale, normalizedSection);
     const cached = marketingCache.get(key);
     if (cached) {

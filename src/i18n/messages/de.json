@@ -30,7 +30,9 @@
             "signUpSuccess": "Erfolgreich registriert",
             "signOutSuccess": "Erfolgreich abgemeldet",
             "unknownError": "Ein unbekannter Fehler ist aufgetreten.",
-            "socialSignInError": "Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut."
+            "socialSignInError": "Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
+            "captchaUnavailable": "Captcha ist derzeit nicht verfügbar. Bitte versuche es später erneut.",
+            "captchaFailed": "Die Captcha-Überprüfung ist fehlgeschlagen. Bitte lade die Seite neu und versuche es erneut."
         },
         "Shared": {
             "continueWith": "Oder weiter mit",
@@ -86,6 +88,10 @@
             "username": {
                 "required": "Benutzername ist erforderlich",
                 "min": "Der Benutzername muss mindestens {count} Zeichen enthalten"
+            },
+            "captcha": {
+                "required": "Bitte schließe die Captcha-Prüfung ab",
+                "error": "Die Captcha-Überprüfung ist fehlgeschlagen. Bitte versuche es erneut."
             }
         }
     },

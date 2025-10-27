@@ -36,6 +36,7 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
   - CI 变量名兼容：`CREEM_API_URL`（优先）或 `CREEM_API_URL_PRODUCTION`（回退）。
 - `ADMIN_ALLOWED_EMAILS`、`ADMIN_ENTRY_TOKEN`、`ADMIN_FORCE_SECURE_COOKIES`: 管理后台访问控制策略。
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Google OAuth。
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET`: Cloudflare Turnstile 小组件与服务端验证密钥。
 
 ### Runtime & deployment metadata
 - `NEXTJS_ENV`: 自定义环境标识（覆盖默认的 `NODE_ENV`）。
@@ -101,8 +102,10 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `HEALTH_ACCESS_TOKEN`
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
 - `NEXTJS_ENV`
 - `NEXT_PUBLIC_APP_URL`
+- `TURNSTILE_SECRET`
 - `OPENAI_API_KEY`
 - `OPENAI_BASE_URL`
 - `OPENAI_TRANSLATION_MODEL`

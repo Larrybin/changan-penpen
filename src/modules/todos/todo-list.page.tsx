@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import getAllTodos from "@/modules/todos/actions/get-todos.action";
 import { TodoCard } from "@/modules/todos/components/todo-card";
+import { OptimizationProgressList } from "@/modules/todos/components/optimization-progress";
 import todosRoutes from "./todos.route";
 
 export default async function TodoListPage() {
@@ -23,6 +24,10 @@ export default async function TodoListPage() {
                         Add Todo
                     </Button>
                 </Link>
+            </div>
+
+            <div className="mb-8">
+                <OptimizationProgressList />
             </div>
 
             {todos.length === 0 ? (

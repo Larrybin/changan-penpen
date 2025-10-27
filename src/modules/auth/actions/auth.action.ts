@@ -6,6 +6,10 @@ import type {
     SignUpSchema,
 } from "@/modules/auth/models/auth.model";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
+import { createLogger } from "@/lib/observability/logger";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
+
+const logger = createLogger({ source: "auth.signUp" });
 
 // #region SERVER ACTIONS
 
@@ -42,8 +46,29 @@ export const signUp = async ({
     email,
     password,
     username,
+    turnstileToken,
 }: SignUpSchema): Promise<AuthResponse> => {
     try {
+        const verification = await verifyTurnstileToken(turnstileToken);
+        if (!verification.success) {
+            const messageKey =
+                verification.error === "missing-secret" ||
+                verification.error === "request-failed"
+                    ? "captchaUnavailable"
+                    : "captchaFailed";
+
+            logger.warn("Turnstile verification failed for signup", {
+                error: verification.error,
+                errorCodes: verification.errorCodes,
+            });
+
+            return {
+                success: false,
+                code: "ERROR",
+                messageKey,
+            };
+        }
+
         const auth = await getAuthInstance();
         await auth.api.signUpEmail({
             body: {
