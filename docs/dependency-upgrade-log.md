@@ -32,3 +32,13 @@
   - `pnpm typecheck`
 - Impact summary: Regenerated `pnpm-lock.yaml` with pnpm 8.15.9 and pinned the workspace `packageManager` to keep Dependabot parsing. Verified that lint/build/typecheck workflows succeed without requiring changes to other modules.
 - Follow-up: Revisit once Dependabot supports pnpm lockfile v9 so we can upgrade the package manager again.
+
+### 2025-10-28 – pnpm workflow alignment
+- PR: _pending_ (`ci: align GitHub Actions with pnpm 8.15.9`)
+- Upstream release notes / breaking changes: [pnpm releases](https://github.com/pnpm/pnpm/releases/tag/v8.15.9)
+- Manual checks:
+  - `pnpm lint`
+  - `pnpm build`
+  - `pnpm typecheck`
+- Impact summary: Updated reusable `setup-node-pnpm` action and all workflows to install pnpm 8.15.9, matching the workspace `packageManager` constraint. Prevents `ERR_PNPM_BAD_PM_VERSION` during CI runs triggered by mismatched pnpm 10 installs.
+- Follow-up: When Dependabot supports pnpm lockfile v9, bump the pinned pnpm version across `package.json` and workflow inputs together.
