@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { type AppLocale, supportedLocales } from "@/i18n/config";
+import handleApiError from "@/lib/api-error";
+import { ApiError } from "@/lib/http-error";
 import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
 import {
     createStaticConfigBundleFromMessages,
@@ -45,7 +47,14 @@ function readBearerToken(request: NextRequest): string | null {
 function readStaticExportSecret(): string {
     const token = process.env.STATIC_EXPORT_TOKEN;
     if (!token?.trim().length) {
-        throw new Error("STATIC_EXPORT_TOKEN is not configured");
+        throw new ApiError("Static export token is not configured", {
+            status: 500,
+            code: "CONFIGURATION_ERROR",
+            severity: "high",
+            details: {
+                environmentVariable: "STATIC_EXPORT_TOKEN",
+            },
+        });
     }
     return token.trim();
 }
@@ -90,67 +99,62 @@ function resolveExportUpdatedAt(): string {
 }
 
 export async function GET(request: NextRequest) {
-    let secret: string;
     try {
-        secret = readStaticExportSecret();
+        const secret = readStaticExportSecret();
+
+        const providedToken = readBearerToken(request);
+        if (!providedToken || providedToken !== secret) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const settings = await getSiteSettingsPayload();
+        const envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+        const appUrl = resolveAppUrl(settings, { envAppUrl });
+        const version = resolveExportVersion();
+        const updatedAt = resolveExportUpdatedAt();
+
+        const configs: Record<AppLocale, RemotePayload> = {} as Record<
+            AppLocale,
+            RemotePayload
+        >;
+
+        for (const locale of supportedLocales) {
+            const messagesModule = (await import(
+                `@/i18n/messages/${locale}.json`
+            )) as MessagesModule;
+            const metadataMessages = messagesModule.Metadata ?? { openGraph: {} };
+            const openGraphSiteName = metadataMessages.openGraph?.siteName ?? "";
+            const resolvedSiteName = settings.siteName?.trim().length
+                ? settings.siteName.trim()
+                : openGraphSiteName;
+            const ogImage = resolveOgImage(locale, appUrl, settings);
+
+            const bundle = createStaticConfigBundleFromMessages(
+                locale,
+                messagesModule,
+                {
+                    baseUrl: appUrl,
+                    version,
+                    updatedAt,
+                    siteName: resolvedSiteName,
+                    ogImage,
+                },
+            );
+
+            configs[locale] = {
+                ...bundle.config,
+                metadata: {
+                    ...bundle.config.metadata,
+                    baseUrl: appUrl,
+                    siteName: resolvedSiteName,
+                    ogImage,
+                },
+                marketingSections: bundle.sections,
+            } satisfies RemotePayload;
+        }
+
+        return NextResponse.json(configs);
     } catch (error) {
-        console.error("Static export token is missing", error);
-        return NextResponse.json(
-            { error: "Static export token is not configured" },
-            { status: 500 },
-        );
+        return handleApiError(error);
     }
-
-    const providedToken = readBearerToken(request);
-    if (!providedToken || providedToken !== secret) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const settings = await getSiteSettingsPayload();
-    const envAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-    const appUrl = resolveAppUrl(settings, { envAppUrl });
-    const version = resolveExportVersion();
-    const updatedAt = resolveExportUpdatedAt();
-
-    const configs: Record<AppLocale, RemotePayload> = {} as Record<
-        AppLocale,
-        RemotePayload
-    >;
-
-    for (const locale of supportedLocales) {
-        const messagesModule = (await import(
-            `@/i18n/messages/${locale}.json`
-        )) as MessagesModule;
-        const metadataMessages = messagesModule.Metadata ?? { openGraph: {} };
-        const openGraphSiteName = metadataMessages.openGraph?.siteName ?? "";
-        const resolvedSiteName = settings.siteName?.trim().length
-            ? settings.siteName.trim()
-            : openGraphSiteName;
-        const ogImage = resolveOgImage(locale, appUrl, settings);
-
-        const bundle = createStaticConfigBundleFromMessages(
-            locale,
-            messagesModule,
-            {
-                baseUrl: appUrl,
-                version,
-                updatedAt,
-                siteName: resolvedSiteName,
-                ogImage,
-            },
-        );
-
-        configs[locale] = {
-            ...bundle.config,
-            metadata: {
-                ...bundle.config.metadata,
-                baseUrl: appUrl,
-                siteName: resolvedSiteName,
-                ogImage,
-            },
-            marketingSections: bundle.sections,
-        } satisfies RemotePayload;
-    }
-
-    return NextResponse.json(configs);
 }
