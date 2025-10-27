@@ -146,10 +146,10 @@ MIT © 2025 Muhammad Arifin
 #### Common Scripts Snapshot
 | Script | Command |
 | --- | --- |
-| `dev` | `pnpm exec next dev` |
+| `dev` | `next dev` |
 | `dev:cf` | `cross-env-shell "npx @opennextjs/cloudflare build && wrangler dev"` |
-| `build` | `pnpm exec next build` |
-| `start` | `pnpm exec next start` |
+| `build` | `next build` |
+| `start` | `next start` |
 | `check:all` | `node scripts/check-all.mjs` |
 | `typecheck` | `pnpm run cf-typegen && pnpm exec tsc --noEmit` |
 | `lint` | `pnpm exec biome check . --write --unsafe` |
@@ -162,7 +162,9 @@ MIT © 2025 Muhammad Arifin
 | CI |  | .github/workflows/ci.yml |
 | Dependabot Auto‑Merge |  | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare |  | .github/workflows/deploy.yml |
-| Build (SonarCloud scan) |  | .github/workflows/build.yml |
+| Performance Monitoring |  | .github/workflows/performance-monitoring.yml |
+| Release |  | .github/workflows/release.yml |
+| Security Scan |  | .github/workflows/security-scan.yml |
 
 <!-- DOCSYNC:README_AUTOMATION END -->
 

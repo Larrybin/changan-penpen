@@ -10,10 +10,10 @@
 - CI（`.github/workflows/ci.yml`）
   - 触发：push / pull_request（忽略 main 的纯文档变更），以及 `workflow_call`（被部署复用）
 - Jobs：
-    - `lint-docs`：Biome、OpenAPI 快照校验（`pnpm openapi:check`）、Spectral 校验、链接检查，同时确保 i18n 字段规范化
-    - `typecheck`：TypeScript `tsc --noEmit`
-    - `supply-chain`：PR 环境执行 gitleaks、`pnpm dedupe --check`、`pnpm audit --prod`
-    - `build`：复用 `.next/cache` 执行 `pnpm build`
+    - `lint-docs`：在 Node 20 环境中运行静态配置导出（`pnpm run prebuild:static-config`）、配置校验、`pnpm run fix:i18n`（并校验无 diff）、`pnpm exec biome check .`、OpenAPI 生成/校验/规范检查以及 `pnpm run check:links`
+    - `typecheck`：Node 20 上执行 `pnpm exec tsc --noEmit`
+    - `supply-chain`：PR 环境执行 gitleaks 扫描、`pnpm dedupe --check`、分级 `pnpm audit`（高危报错、Moderate 提醒）以及 `npx license-checker --summary`
+    - `build`：缓存 `.next/cache` 后执行 `pnpm build`，在 Secrets 完整时追加 `pnpm run build:cf -- --skipNextBuild` 并上传产物
 - 部署（`.github/workflows/deploy.yml`）
   - 触发：push 到 main、pull_request 到 main、`workflow_dispatch`（手动）
   - 生产部署 Job 条件：push 到 main 且非文档-only，或手动触发；并且质量门成功
@@ -65,6 +65,9 @@
 | CI | workflow_dispatch, push, pull_request, workflow_call | .github/workflows/ci.yml |
 | Dependabot Auto‑Merge | pull_request_target | .github/workflows/dependabot-automerge.yml |
 | Deploy Next.js App to Cloudflare | workflow_dispatch, push, pull_request | .github/workflows/deploy.yml |
+| Performance Monitoring | workflow_dispatch, schedule, pull_request | .github/workflows/performance-monitoring.yml |
+| Release | workflow_dispatch, push | .github/workflows/release.yml |
+| Security Scan | workflow_dispatch, schedule | .github/workflows/security-scan.yml |
 <!-- DOCSYNC:WORKFLOWS_TABLE END -->
 
 <!-- sync: workflows updated in build.yml; table kept in sync by autogen -->

@@ -77,13 +77,13 @@ Keep docs living: add recurring issues or new workflows to `docs/local-dev.md` a
 | `deploy` | `npx @opennextjs/cloudflare deploy` |
 | `deploy:cf` | `npx @opennextjs/cloudflare deploy` |
 | `dev` | `next dev` |
-| `dev:cf` | `npx @opennextjs/cloudflare build && wrangler dev` |
-| `dev:remote` | `npx @opennextjs/cloudflare build && wrangler dev --remote` |
+| `dev:cf` | `cross-env-shell "npx @opennextjs/cloudflare build && wrangler dev"` |
+| `dev:remote` | `cross-env-shell "npx @opennextjs/cloudflare build && wrangler dev --remote"` |
 | `fix:i18n` | `node scripts/fix-i18n-encoding.mjs` |
 | `openapi:check` | `pnpm exec tsx scripts/generate-openapi.ts --check` |
 | `openapi:lint` | `pnpm exec spectral lint --fail-severity=warn --ruleset=spectral.yaml public/openapi.json` |
 | `lint` | `pnpm exec biome check . --write --unsafe` |
-| `prebuild` | `pnpm run fix:i18n && pnpm run config:headers` |
+| `prebuild` | `pnpm run prebuild:static-config && pnpm run validate:static-config && pnpm run fix:i18n && pnpm run config:headers` |
 | `prebuild:cf` | `node scripts/prebuild-cf.mjs && pnpm run config:headers` |
 | `start` | `next start` |
 | `translate` | `pnpm exec tsc --project tsconfig.translate.json && node dist/scripts/scripts/translate-locales.js` |
