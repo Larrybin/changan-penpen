@@ -1,5 +1,6 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Redis } from "@upstash/redis/cloudflare";
+
+import { getPlatformContext, getPlatformWaitUntil } from "@/lib/platform/context";
 
 interface CacheEnv {
     UPSTASH_REDIS_REST_URL?: string;
@@ -99,12 +100,12 @@ async function removeIndexedKey(redis: Redis, key: string) {
 
 async function resolveRedisForEnv<Env extends CacheEnv>(env?: Env) {
     const providedEnv = env;
-    const context = providedEnv
-        ? null
-        : await getCloudflareContext({ async: true }).catch(() => null);
-    const resolvedEnv =
-        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
-    return getRedisClient(resolvedEnv);
+    if (providedEnv) {
+        return getRedisClient(providedEnv);
+    }
+
+    const context = await getPlatformContext({ async: true });
+    return getRedisClient(context.env as CacheEnv | undefined);
 }
 
 async function invalidateUsingIndexedSet(redis: Redis, prefix: string) {
@@ -179,10 +180,9 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
 
     const providedEnv = options.env;
     const context = providedEnv
-        ? null
-        : await getCloudflareContext({ async: true }).catch(() => null);
-    const env =
-        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
+        ? undefined
+        : await getPlatformContext({ async: true });
+    const env = providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
     const redis = getRedisClient(env);
     if (!redis) {
         const value = await compute();
@@ -210,7 +210,10 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
                 }
             });
         const asyncWaiter =
-            waitUntil ?? context?.ctx?.waitUntil?.bind(context?.ctx ?? {});
+            waitUntil ??
+            (context?.ctx
+                ? context.ctx.waitUntil.bind(context.ctx)
+                : await getPlatformWaitUntil({ async: true }));
         if (asyncWaiter) {
             asyncWaiter(persist);
         } else {

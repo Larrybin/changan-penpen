@@ -21,6 +21,7 @@
   - `pnpm run cf-typegen`（仅绑定文件变更时）
   - `pnpm exec tsc --noEmit`
   - `pnpm run check:docs`、`pnpm run check:links`
+  - 结构性重构（服务拆分、缓存策略更新等）完成后，请再次运行 `pnpm run check:docs`，确保引用与架构示意保持一致。
   - 视情况补跑 `pnpm lint`、`pnpm typecheck`、`pnpm build`
 - 若团队需要自动化提交/备份，可在仓库外编写自定义脚本或 Git 钩子，本仓库默认不再提供内置 push 助手。
 

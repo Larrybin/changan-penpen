@@ -1,6 +1,8 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
+import { config } from "@/config";
 import { createApiErrorResponse } from "@/lib/http-error";
+import { enableFaultInjection } from "@/lib/observability/fault-injection";
+import { getPlatformContext } from "@/lib/platform/context";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import type { AiBinding } from "@/services/summarizer.service";
 import {
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
             });
         }
 
-        const { env } = await getCloudflareContext({ async: true });
+        const { env } = await getPlatformContext({ async: true });
 
         function hasAI(e: unknown): e is { AI: AiBinding } {
             try {
@@ -53,7 +55,19 @@ export async function POST(request: Request) {
         const body = await request.json();
         const validated = summarizeRequestSchema.parse(body);
 
-        const summarizerService = new SummarizerService(env.AI);
+        const faultHeader = request.headers.get("x-fault-injection");
+        if (faultHeader) {
+            enableFaultInjection(faultHeader);
+        }
+
+        const retryConfig = config.services?.external_apis;
+        const summarizerService = new SummarizerService(env.AI, {
+            retry: {
+                attempts: retryConfig?.retry_attempts ?? 3,
+                backoffFactor: 2,
+                initialDelayMs: 250,
+            },
+        });
         const result = await summarizerService.summarize(
             validated.text,
             validated.config,

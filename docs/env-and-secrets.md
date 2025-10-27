@@ -54,6 +54,10 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 ### Optional integrations
 - `OPENAI_API_KEY` / `GEMINI_API_KEY`: AI providers（可选）。
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`: 速率限制与缓存（可选）。
+- `EXTERNAL_API_RETRY_ATTEMPTS`: 覆盖外部 API 的重试次数（默认为配置文件中的值）。
+- `EXTERNAL_API_FAILURE_THRESHOLD`: 自定义熔断阈值（连续失败次数）。
+- `EXTERNAL_API_RECOVERY_TIMEOUT_SECONDS`: 熔断进入半开状态前的等待时间（秒）。
+- `FAULT_INJECTION`: 以逗号分隔的故障注入标识（例如 `summarizer.before-run`），用于预生产演练。
 
 ## Rotation Policy
 - Use `wrangler secret put <NAME>` for production secrets

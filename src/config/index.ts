@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getPlatformContext } from "@/lib/platform/context";
 
 import baseConfigJson from "../../config/environments/base.json";
 import developmentConfigJson from "../../config/environments/development.json";
@@ -173,6 +173,45 @@ function applyRuntimeOverrides(
         }
     }
 
+    const services = config.services?.external_apis;
+    if (services) {
+        const retryOverride = coerceNumber(
+            selectEnvValue(env, [
+                "EXTERNAL_API_RETRY_ATTEMPTS",
+                "SERVICES_EXTERNAL_APIS_RETRY_ATTEMPTS",
+            ]),
+        );
+        if (retryOverride !== undefined) {
+            services.retry_attempts = Math.max(0, Math.floor(retryOverride));
+        }
+
+        if (services.circuit_breaker) {
+            const failureThreshold = coerceNumber(
+                selectEnvValue(env, [
+                    "EXTERNAL_API_FAILURE_THRESHOLD",
+                    "SERVICES_EXTERNAL_APIS_FAILURE_THRESHOLD",
+                ]),
+            );
+            if (failureThreshold !== undefined) {
+                services.circuit_breaker.failure_threshold = Math.max(
+                    1,
+                    Math.floor(failureThreshold),
+                );
+            }
+
+            const recoverySeconds = coerceNumber(
+                selectEnvValue(env, [
+                    "EXTERNAL_API_RECOVERY_TIMEOUT_SECONDS",
+                    "SERVICES_EXTERNAL_APIS_RECOVERY_TIMEOUT_SECONDS",
+                ]),
+            );
+            if (recoverySeconds !== undefined) {
+                const sanitized = Math.max(1, Math.floor(recoverySeconds));
+                services.circuit_breaker.recovery_timeout = `${sanitized}s`;
+            }
+        }
+    }
+
     return config;
 }
 
@@ -217,11 +256,8 @@ export function resolveConfigSync(envName?: string): Config {
 }
 
 export async function resolveConfig(envName?: string): Promise<Config> {
-    const context = await getCloudflareContext({ async: true }).catch(
-        () => null,
-    );
-    const cloudflareEnv =
-        (context?.env as Record<string, unknown> | undefined) ?? undefined;
+    const context = await getPlatformContext({ async: true });
+    const cloudflareEnv = context.env;
     const runtimeEnv = gatherRuntimeEnv(cloudflareEnv);
     const inferredEnvName =
         envName ??

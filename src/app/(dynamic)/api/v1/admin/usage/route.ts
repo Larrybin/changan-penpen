@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { withApiCache } from "@/lib/cache";
+import { config } from "@/config";
+import { createAdminCachedJsonResponse, computeWithAdminCache } from "@/modules/admin/utils/cache";
 import { listUsage } from "@/modules/admin/services/usage-overview.service";
 import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 import { parsePaginationParams } from "@/modules/admin/utils/pagination";
@@ -10,19 +10,20 @@ export const GET = withAdminRoute(async ({ request }) => {
     const tenantId = url.searchParams.get("tenantId") ?? undefined;
     const feature = url.searchParams.get("feature") ?? undefined;
 
-    const cacheKey = [
-        "admin-usage",
-        `tenant:${tenantId ?? "all"}`,
-        `feature:${feature ?? "all"}`,
-        `page:${page}`,
-        `perPage:${perPage}`,
-    ].join("|");
+    const ttlSeconds = Math.max(config.cache.defaultTtlSeconds ?? 0, 120);
 
-    const { value, hit } = await withApiCache(
+    const { value, hit } = await computeWithAdminCache(
         {
-            key: cacheKey,
-            ttlSeconds: 120,
+            resource: "usage",
+            scope: "list",
+            params: {
+                tenantId: tenantId ?? null,
+                feature: feature ?? null,
+                page,
+                perPage,
+            },
         },
+        { ttlSeconds },
         () =>
             listUsage({
                 page,
@@ -32,11 +33,5 @@ export const GET = withAdminRoute(async ({ request }) => {
             }),
     );
 
-    const response = NextResponse.json(value);
-    response.headers.set("X-Cache", hit ? "HIT" : "MISS");
-    response.headers.set(
-        "Cache-Control",
-        "private, max-age=0, must-revalidate",
-    );
-    return response;
+    return createAdminCachedJsonResponse(value, { hit });
 });

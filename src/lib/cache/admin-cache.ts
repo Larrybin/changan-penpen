@@ -4,8 +4,9 @@
  * 针对管理员仪表盘优化性能
  */
 
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Redis } from "@upstash/redis/cloudflare";
+
+import { getPlatformContext } from "@/lib/platform/context";
 
 interface CacheEnv {
     UPSTASH_REDIS_REST_URL?: string;
@@ -95,24 +96,27 @@ export class AdminCacheManager {
     private async initRedis(): Promise<void> {
         if (this.redis) return;
 
-        const context = this.env
-            ? null
-            : await getCloudflareContext({ async: true }).catch(() => null);
+        const resolvedEnv = this.env;
+        if (!resolvedEnv) {
+            const context = await getPlatformContext({ async: true });
+            if (context.env) {
+                this.env = context.env as CacheEnv;
+            }
+        }
 
-        const resolvedEnv =
-            this.env ?? (context?.env as CacheEnv | undefined) ?? undefined;
+        const effectiveEnv = this.env;
 
         if (
-            !resolvedEnv?.UPSTASH_REDIS_REST_URL ||
-            !resolvedEnv?.UPSTASH_REDIS_REST_TOKEN
+            !effectiveEnv?.UPSTASH_REDIS_REST_URL ||
+            !effectiveEnv?.UPSTASH_REDIS_REST_TOKEN
         ) {
             console.warn("[AdminCache] Upstash Redis configuration missing");
             return;
         }
 
         this.redis = new Redis({
-            url: resolvedEnv.UPSTASH_REDIS_REST_URL,
-            token: resolvedEnv.UPSTASH_REDIS_REST_TOKEN,
+            url: effectiveEnv.UPSTASH_REDIS_REST_URL,
+            token: effectiveEnv.UPSTASH_REDIS_REST_TOKEN,
             // 启用自动管道化优化性能
             enableAutoPipelining: true,
             responseEncoding: "base64",
