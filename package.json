@@ -117,7 +117,7 @@
         "@babel/parser": "^7.28.4",
         "@biomejs/biome": "2.2.6",
         "@changesets/cli": "^2.27.9",
-        "@next/bundle-analyzer": "^15.5.6",
+        "@next/bundle-analyzer": "^16.0.0",
         "@simplewebauthn/browser": "^13.2.2",
         "@stoplight/spectral-cli": "^6.15.0",
         "@tailwindcss/postcss": "^4",

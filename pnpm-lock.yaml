@@ -161,8 +161,8 @@ importers:
         specifier: ^2.27.9
         version: 2.29.7(@types/node@24.9.0)
       '@next/bundle-analyzer':
-        specifier: ^15.5.6
-        version: 15.5.6
+        specifier: ^16.0.0
+        version: 16.0.0
       '@simplewebauthn/browser':
         specifier: ^13.2.2
         version: 13.2.2
@@ -1368,8 +1368,8 @@ packages:
   '@neon-rs/load@0.0.4':
     resolution: {integrity: sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw==}
 
-  '@next/bundle-analyzer@15.5.6':
-    resolution: {integrity: sha512-IHeyk2s9/fVDAGDLNbBkCSG8XBabhuMajiaJggjsg4GyFIswh78DzLo5Nl5th8QTs3U/teYeczvfeV9w1Tx3qA==}
+  '@next/bundle-analyzer@16.0.0':
+    resolution: {integrity: sha512-OYufQoNm/Im2fYQBdXu9fqUrXaP3lPuPnryW0XNGG7kJiGxH/VWS8zc2/x4aW2LQGn+opqIJYNRXy7k5qV/09g==}
 
   '@next/env@15.5.6':
     resolution: {integrity: sha512-3qBGRW+sCGzgbpc5TS1a0p7eNxnOarGVQhZxfvTdnV0gFI61lX7QNtQ4V1TSREctXzYn5NetbUsLvyqwLFJM6Q==}
@@ -2767,6 +2767,9 @@ packages:
   '@types/node@24.9.0':
     resolution: {integrity: sha512-MKNwXh3seSK8WurXF7erHPJ2AONmMwkI7zAMrXZDPIru8jRqkk6rGDBVbw4mLwfqA+ZZliiDPg05JQ3uW66tKQ==}
 
+  '@types/node@24.9.1':
+    resolution: {integrity: sha512-QoiaXANRkSXK6p0Duvt56W208du4P9Uye9hWLWgGMDTEoKPhuenzNcC4vGUmrNkiOKTlIrBoyNQYNpSwfEZXSg==}
+
   '@types/pg@8.15.5':
     resolution: {integrity: sha512-LF7lF6zWEKxuT3/OR8wAZGzkg4ENGXFNyiV/JeOt9z5B+0ZVwbql9McqX5c/WStFq1GaGso7H1AzP/qSzmlCKQ==}
 
@@ -2827,6 +2830,10 @@ packages:
 
   acorn-walk@8.3.2:
     resolution: {integrity: sha512-cjkyv4OtNCIeqhHrfS81QWXoCBPExR/J62oyEqepVw8WaQeSqpW2uhuLPh1m9eWhDuOo/jUXVTlifvesOWp/4A==}
+    engines: {node: '>=0.4.0'}
+
+  acorn-walk@8.3.4:
+    resolution: {integrity: sha512-ueEepnujpqee2o5aIYnvHU6C0A42MNdsIDeqy5BydrkuC5R1ZuUFnm27EeFJGoEHJQgn3uleRvmTXaJgfXbt4g==}
     engines: {node: '>=0.4.0'}
 
   acorn@8.14.0:
@@ -7403,7 +7410,7 @@ snapshots:
   '@neon-rs/load@0.0.4':
     optional: true
 
-  '@next/bundle-analyzer@15.5.6':
+  '@next/bundle-analyzer@16.0.0':
     dependencies:
       webpack-bundle-analyzer: 4.10.1
     transitivePeerDependencies:
@@ -9511,9 +9518,14 @@ snapshots:
     dependencies:
       undici-types: 7.16.0
 
+  '@types/node@24.9.1':
+    dependencies:
+      undici-types: 7.16.0
+    optional: true
+
   '@types/pg@8.15.5':
     dependencies:
-      '@types/node': 24.9.0
+      '@types/node': 24.9.1
       pg-protocol: 1.10.3
       pg-types: 2.2.0
     optional: true
@@ -9551,7 +9563,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.9.0
+      '@types/node': 24.9.1
     optional: true
 
   '@upstash/core-analytics@0.0.10':
@@ -9577,6 +9589,10 @@ snapshots:
       negotiator: 1.0.0
 
   acorn-walk@8.3.2: {}
+
+  acorn-walk@8.3.4:
+    dependencies:
+      acorn: 8.15.0
 
   acorn@8.14.0: {}
 
@@ -12288,7 +12304,7 @@ snapshots:
     dependencies:
       '@discoveryjs/json-ext': 0.5.7
       acorn: 8.15.0
-      acorn-walk: 8.3.2
+      acorn-walk: 8.3.4
       commander: 7.2.0
       debounce: 1.2.1
       escape-string-regexp: 4.0.0
