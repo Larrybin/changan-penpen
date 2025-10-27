@@ -1,6 +1,8 @@
+export interface MarketingSectionParams {
+    locale: string;
+    section: string;
+}
+
 export type MarketingSectionRouteContext = {
-    params: Promise<{
-        locale: string;
-        section: string;
-    }>;
+    params: MarketingSectionParams;
 };

@@ -1,40 +1,27 @@
 import { NextResponse } from "next/server";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
+import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 import {
     createTodoForTenant,
     listTodosForAdmin,
     type TodoCreateInput,
 } from "@/modules/todos/services/todo.service";
 
-export async function GET(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
+export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);
-    const page = Number.parseInt(url.searchParams.get("page") ?? "1", 10);
-    const perPage = Number.parseInt(
-        url.searchParams.get("perPage") ?? "20",
-        10,
-    );
+    const { page, perPage } = parsePaginationParams(url.searchParams);
     const tenantId = url.searchParams.get("tenantId") ?? undefined;
 
     const { data, total } = await listTodosForAdmin({
-        page: Number.isNaN(page) ? 1 : Math.max(page, 1),
-        perPage: Number.isNaN(perPage) ? 20 : Math.max(perPage, 1),
+        page,
+        perPage,
         tenantId: tenantId || undefined,
     });
 
     return NextResponse.json({ data, total });
-}
+});
 
-export async function POST(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
+export const POST = withAdminRoute(async ({ request }) => {
     try {
         const payload = (await request.json()) as Partial<TodoCreateInput> & {
             userId?: string;
@@ -71,4 +58,4 @@ export async function POST(request: Request) {
             { status: 400 },
         );
     }
-}
+});

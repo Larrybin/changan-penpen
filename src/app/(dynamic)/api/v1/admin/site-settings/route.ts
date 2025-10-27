@@ -4,31 +4,15 @@ import {
     type UpdateSiteSettingsInput,
     updateSiteSettings,
 } from "@/modules/admin/services/site-settings.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
-export async function GET(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
+export const GET = withAdminRoute(async () => {
     const settings = await getSiteSettingsPayload();
     return NextResponse.json({ data: settings });
-}
+});
 
-export async function PATCH(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response || !result.user) {
-        return (
-            result.response ??
-            NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-        );
-    }
-
+export const PATCH = withAdminRoute(async ({ request, user }) => {
     const body = (await request.json()) as UpdateSiteSettingsInput;
-    const updated = await updateSiteSettings(
-        body,
-        result.user.email ?? "admin",
-    );
+    const updated = await updateSiteSettings(body, user.email ?? "admin");
     return NextResponse.json({ data: updated });
-}
+});

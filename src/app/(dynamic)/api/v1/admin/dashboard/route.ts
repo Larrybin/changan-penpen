@@ -6,7 +6,7 @@ import {
 } from "@/lib/cache/admin-cache";
 import type { DashboardMetricsResponse } from "@/modules/admin/services/analytics.service";
 import { getDashboardMetrics } from "@/modules/admin/services/analytics.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
 /**
  * 优化的仪表盘API路由
@@ -17,14 +17,8 @@ import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
  * - 用户级数据（基本统计）：1分钟缓存
  * - 实时数据（最新订单/积分）：10秒缓存
  */
-export async function GET(request: Request) {
+export const GET = withAdminRoute(async ({ request }) => {
     const startTime = performance.now();
-
-    // 权限验证
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
 
     // 解析查询参数
     const url = new URL(request.url);
@@ -96,7 +90,7 @@ export async function GET(request: Request) {
             { status: 500 },
         );
     }
-}
+});
 
 /**
  * 带缓存的数据聚合函数

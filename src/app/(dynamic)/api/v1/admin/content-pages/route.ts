@@ -4,28 +4,15 @@ import {
     createContentPage,
     listContentPages,
 } from "@/modules/admin/services/catalog.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
-export async function GET(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response) {
-        return result.response;
-    }
-
+export const GET = withAdminRoute(async () => {
     const pages = await listContentPages();
     return NextResponse.json({ data: pages, total: pages.length });
-}
+});
 
-export async function POST(request: Request) {
-    const result = await requireAdminRequest(request);
-    if (result.response || !result.user) {
-        return (
-            result.response ??
-            NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-        );
-    }
-
+export const POST = withAdminRoute(async ({ request, user }) => {
     const body = (await request.json()) as ContentPageInput;
-    const created = await createContentPage(body, result.user.email ?? "admin");
+    const created = await createContentPage(body, user.email ?? "admin");
     return NextResponse.json({ data: created });
-}
+});

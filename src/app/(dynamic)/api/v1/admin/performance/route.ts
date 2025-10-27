@@ -20,7 +20,7 @@ import type {
     PerformanceQueryParams as ServicePerformanceQueryParams,
 } from "@/modules/admin/services/performance-data.service";
 import { getAdminPerformanceMetrics } from "@/modules/admin/services/performance-data.service";
-import { requireAdminRequest } from "@/modules/admin/utils/api-guard";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
 // 性能数据查询参数
 type PerformanceQueryParams = ServicePerformanceQueryParams & {
@@ -74,137 +74,16 @@ function buildErrorResponse(
     );
 }
 
-export async function GET(
-    request: Request,
-): Promise<NextResponse<APIResponse>> {
-    const startTime = performance.now();
+export const GET = withAdminRoute(
+    async ({ request }) => {
+        const startTime = performance.now();
 
-    // 权限验证
-    const authResult = await requireAdminRequest(request);
-    if (authResult.response) {
-        return buildErrorResponse("UNAUTHORIZED", "Unauthorized", {
-            status: authResult.response.status,
-        });
-    }
-
-    // 解析查询参数
-    const url = new URL(request.url);
-    const timeframeParam = url.searchParams.get("timeframe");
-    if (
-        timeframeParam !== null &&
-        !isValidPerformanceTimeframe(timeframeParam)
-    ) {
-        return buildErrorResponse(
-            "INVALID_TIMEFRAME",
-            `Invalid timeframe. Must be one of: ${PERFORMANCE_TIMEFRAMES.join(", ")}`,
-            { status: 400 },
-        );
-    }
-
-    const params: PerformanceQueryParams = {
-        timeframe: isValidPerformanceTimeframe(timeframeParam)
-            ? timeframeParam
-            : "24h",
-        metrics: url.searchParams.get("metrics")?.split(","),
-        bypassCache: url.searchParams.get("bypassCache") ?? "false",
-        tenantId: url.searchParams.get("tenantId") ?? undefined,
-    };
-
-    // 缓存键生成
-    const cacheKey = AdminCacheKeyBuilder.performanceMetrics(
-        params.timeframe,
-        params.tenantId,
-    );
-
-    try {
-        let performanceData: PerformanceMetrics;
-        let cacheHit = false;
-
-        if (params.bypassCache !== "true") {
-            // 尝试从缓存获取数据
-            const cacheResult = await withAdminCache(
-                "USER",
-                () => cacheKey,
-                () => getAdminPerformanceMetrics(params),
-                { tenantId: params.tenantId, customTtl: 30 }, // 30秒缓存
-            );
-
-            performanceData = cacheResult.value;
-            cacheHit = cacheResult.hit;
-        } else {
-            // 强制刷新缓存
-            performanceData = await getAdminPerformanceMetrics(params);
-
-            // 更新缓存
-            const manager = getAdminCacheManager();
-            await manager.set(cacheKey, performanceData, 30);
-        }
-
-        const responseTime = Math.round(performance.now() - startTime);
-
-        // 记录性能指标
-        console.info(
-            `[Performance API] ${cacheHit ? "Cache HIT" : "Cache MISS"} - ${responseTime}ms`,
-            {
-                timeframe: params.timeframe,
-                tenantId: params.tenantId,
-                cacheHit,
-                responseTime,
-            },
-        );
-
-        return NextResponse.json<APIResponse<PerformanceMetrics>>({
-            success: true,
-            data: performanceData,
-            meta: {
-                cacheHit,
-                responseTime,
-                timestamp: new Date().toISOString(),
-                timeframe: params.timeframe,
-            },
-        });
-    } catch (error) {
-        console.error("[Performance API] Error fetching performance metrics", {
-            error: error instanceof Error ? error.message : String(error),
-            timeframe: params.timeframe,
-            tenantId: params.tenantId,
-        });
-
-        return buildErrorResponse(
-            "PERFORMANCE_DATA_ERROR",
-            "Failed to fetch performance metrics",
-            { status: 500 },
-            error instanceof Error ? error.stack : undefined,
-        );
-    }
-}
-
-/**
- * POST /api/v1/admin/performance/refresh
- * 强制刷新性能数据缓存
- */
-export async function POST(
-    request: Request,
-): Promise<NextResponse<APIResponse>> {
-    const startTime = performance.now();
-
-    // 权限验证
-    const authResult = await requireAdminRequest(request);
-    if (authResult.response) {
-        return buildErrorResponse("UNAUTHORIZED", "Unauthorized", {
-            status: authResult.response.status,
-        });
-    }
-
-    try {
-        const body = (await request.json().catch(() => ({}))) as Record<
-            string,
-            unknown
-        >;
-        const timeframeValue = body.timeframe;
+        // 解析查询参数
+        const url = new URL(request.url);
+        const timeframeParam = url.searchParams.get("timeframe");
         if (
-            timeframeValue !== undefined &&
-            !isValidPerformanceTimeframe(timeframeValue)
+            timeframeParam !== null &&
+            !isValidPerformanceTimeframe(timeframeParam)
         ) {
             return buildErrorResponse(
                 "INVALID_TIMEFRAME",
@@ -214,55 +93,185 @@ export async function POST(
         }
 
         const params: PerformanceQueryParams = {
-            timeframe: isValidPerformanceTimeframe(timeframeValue)
-                ? timeframeValue
+            timeframe: isValidPerformanceTimeframe(timeframeParam)
+                ? timeframeParam
                 : "24h",
-            tenantId:
-                typeof body.tenantId === "string" ? body.tenantId : undefined,
+            metrics: url.searchParams.get("metrics")?.split(","),
+            bypassCache: url.searchParams.get("bypassCache") ?? "false",
+            tenantId: url.searchParams.get("tenantId") ?? undefined,
         };
 
-        // 强制刷新数据
-        const performanceData = await getAdminPerformanceMetrics(params, true);
-
-        // 更新缓存
+        // 缓存键生成
         const cacheKey = AdminCacheKeyBuilder.performanceMetrics(
             params.timeframe,
             params.tenantId,
         );
-        const manager = getAdminCacheManager();
-        await manager.set(cacheKey, performanceData, 30);
 
-        const responseTime = Math.round(performance.now() - startTime);
+        try {
+            let performanceData: PerformanceMetrics;
+            let cacheHit = false;
 
-        console.info(
-            `[Performance API] Cache refresh completed - ${responseTime}ms`,
-            {
-                timeframe: params.timeframe,
-                tenantId: params.tenantId,
-            },
-        );
+            if (params.bypassCache !== "true") {
+                // 尝试从缓存获取数据
+                const cacheResult = await withAdminCache(
+                    "USER",
+                    () => cacheKey,
+                    () => getAdminPerformanceMetrics(params),
+                    { tenantId: params.tenantId, customTtl: 30 }, // 30秒缓存
+                );
 
-        return NextResponse.json<APIResponse<PerformanceMetrics>>({
-            success: true,
-            data: performanceData,
-            meta: {
-                cacheHit: false,
-                responseTime,
-                timestamp: new Date().toISOString(),
-                timeframe: params.timeframe,
-                refreshed: true,
-            },
-        });
-    } catch (error) {
-        console.error("[Performance API] Error refreshing performance data", {
-            error: error instanceof Error ? error.message : String(error),
-        });
+                performanceData = cacheResult.value;
+                cacheHit = cacheResult.hit;
+            } else {
+                // 强制刷新缓存
+                performanceData = await getAdminPerformanceMetrics(params);
 
-        return buildErrorResponse(
-            "REFRESH_ERROR",
-            "Failed to refresh performance data",
-            { status: 500 },
-            error instanceof Error ? error.stack : undefined,
-        );
-    }
-}
+                // 更新缓存
+                const manager = getAdminCacheManager();
+                await manager.set(cacheKey, performanceData, 30);
+            }
+
+            const responseTime = Math.round(performance.now() - startTime);
+
+            // 记录性能指标
+            console.info(
+                `[Performance API] ${cacheHit ? "Cache HIT" : "Cache MISS"} - ${responseTime}ms`,
+                {
+                    timeframe: params.timeframe,
+                    tenantId: params.tenantId,
+                    cacheHit,
+                    responseTime,
+                },
+            );
+
+            return NextResponse.json<APIResponse<PerformanceMetrics>>({
+                success: true,
+                data: performanceData,
+                meta: {
+                    cacheHit,
+                    responseTime,
+                    timestamp: new Date().toISOString(),
+                    timeframe: params.timeframe,
+                },
+            });
+        } catch (error) {
+            console.error(
+                "[Performance API] Error fetching performance metrics",
+                {
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                    timeframe: params.timeframe,
+                    tenantId: params.tenantId,
+                },
+            );
+
+            return buildErrorResponse(
+                "PERFORMANCE_DATA_ERROR",
+                "Failed to fetch performance metrics",
+                { status: 500 },
+                error instanceof Error ? error.stack : undefined,
+            );
+        }
+    },
+    {
+        onUnauthorized: (result) =>
+            buildErrorResponse("UNAUTHORIZED", "Unauthorized", {
+                status: result.response?.status ?? 401,
+            }),
+    },
+);
+
+/**
+ * POST /api/v1/admin/performance/refresh
+ * 强制刷新性能数据缓存
+ */
+export const POST = withAdminRoute(
+    async ({ request }) => {
+        const startTime = performance.now();
+
+        try {
+            const body = (await request.json().catch(() => ({}))) as Record<
+                string,
+                unknown
+            >;
+            const timeframeValue = body.timeframe;
+            if (
+                timeframeValue !== undefined &&
+                !isValidPerformanceTimeframe(timeframeValue)
+            ) {
+                return buildErrorResponse(
+                    "INVALID_TIMEFRAME",
+                    `Invalid timeframe. Must be one of: ${PERFORMANCE_TIMEFRAMES.join(", ")}`,
+                    { status: 400 },
+                );
+            }
+
+            const params: PerformanceQueryParams = {
+                timeframe: isValidPerformanceTimeframe(timeframeValue)
+                    ? timeframeValue
+                    : "24h",
+                tenantId:
+                    typeof body.tenantId === "string"
+                        ? body.tenantId
+                        : undefined,
+            };
+
+            // 强制刷新数据
+            const performanceData = await getAdminPerformanceMetrics(
+                params,
+                true,
+            );
+
+            // 更新缓存
+            const cacheKey = AdminCacheKeyBuilder.performanceMetrics(
+                params.timeframe,
+                params.tenantId,
+            );
+            const manager = getAdminCacheManager();
+            await manager.set(cacheKey, performanceData, 30);
+
+            const responseTime = Math.round(performance.now() - startTime);
+
+            console.info(
+                `[Performance API] Cache refresh completed - ${responseTime}ms`,
+                {
+                    timeframe: params.timeframe,
+                    tenantId: params.tenantId,
+                },
+            );
+
+            return NextResponse.json<APIResponse<PerformanceMetrics>>({
+                success: true,
+                data: performanceData,
+                meta: {
+                    cacheHit: false,
+                    responseTime,
+                    timestamp: new Date().toISOString(),
+                    timeframe: params.timeframe,
+                    refreshed: true,
+                },
+            });
+        } catch (error) {
+            console.error(
+                "[Performance API] Error refreshing performance data",
+                {
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                },
+            );
+
+            return buildErrorResponse(
+                "REFRESH_ERROR",
+                "Failed to refresh performance data",
+                { status: 500 },
+                error instanceof Error ? error.stack : undefined,
+            );
+        }
+    },
+    {
+        onUnauthorized: (result) =>
+            buildErrorResponse("UNAUTHORIZED", "Unauthorized", {
+                status: result.response?.status ?? 401,
+            }),
+    },
+);
