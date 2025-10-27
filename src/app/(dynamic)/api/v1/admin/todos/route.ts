@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAdminRoute } from "@/modules/admin/utils/api-guard";
-import { parsePaginationParams } from "@/modules/admin/utils/pagination";
+import { parsePaginationParams } from "@/modules/admin-shared/utils/pagination";
 import {
     createTodoForTenant,
     listTodosForAdmin,

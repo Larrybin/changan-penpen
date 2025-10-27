@@ -13,8 +13,35 @@ export const paginationConfigSchema = z.object({
 
 export type PaginationConfig = z.infer<typeof paginationConfigSchema>;
 
+const cacheLayerConfigSchema = z
+    .object({
+        enabled: z.boolean().optional(),
+        ttlSeconds: z.number().int().min(0).optional(),
+        maxEntries: z.number().int().min(1).optional(),
+        binding: z.string().optional(),
+    })
+    .passthrough();
+
+export type CacheLayerConfig = z.infer<typeof cacheLayerConfigSchema>;
+
+const cacheStrategyConfigSchema = z
+    .object({
+        layers: z.array(z.string()).min(1),
+        ttlSeconds: z
+            .record(z.string(), z.number().int().min(0))
+            .optional(),
+        keyPrefix: z.string().optional(),
+    })
+    .passthrough();
+
+export type CacheStrategyConfig = z.infer<typeof cacheStrategyConfigSchema>;
+
 export const cacheConfigSchema = z.object({
     defaultTtlSeconds: z.number().int().min(0),
+    layers: z.record(z.string(), cacheLayerConfigSchema).optional(),
+    strategies: z
+        .record(z.string(), cacheStrategyConfigSchema)
+        .optional(),
 });
 
 export type CacheConfig = z.infer<typeof cacheConfigSchema>;

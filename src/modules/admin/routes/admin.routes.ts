@@ -1,3 +1,6 @@
+import { tenantAdminRoutes } from "@/modules/tenant-admin/routes";
+import { usersAdminRoutes } from "@/modules/users-admin/routes";
+
 const adminRoutes = {
     root: "/admin",
     todos: {
@@ -8,10 +11,7 @@ const adminRoutes = {
     dashboard: {
         overview: "/admin",
     },
-    tenants: {
-        list: "/admin/tenants",
-        show: (id: string) => `/admin/tenants/${id}`,
-    },
+    tenants: tenantAdminRoutes,
     billing: {
         orders: "/admin/billing/orders",
         credits: "/admin/billing/credits",
@@ -19,10 +19,7 @@ const adminRoutes = {
     usage: {
         list: "/admin/usage",
     },
-    users: {
-        list: "/admin/users",
-        show: (id: string) => `/admin/users/${id}`,
-    },
+    users: usersAdminRoutes,
     settings: {
         site: "/admin/settings/site",
         marketing: "/admin/settings/marketing",

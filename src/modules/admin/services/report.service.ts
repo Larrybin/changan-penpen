@@ -8,7 +8,7 @@ import {
     usageDaily,
 } from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
-import { normalizePagination } from "@/modules/admin/utils/pagination";
+import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
 
 export interface ListReportsOptions {
     page?: number;

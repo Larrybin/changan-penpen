@@ -1,4 +1,4 @@
-import { UserDetailClient } from "@/modules/admin/users/components/user-detail.client";
+import { UserDetailClient } from "@/modules/users-admin/components/user-detail.client";
 
 interface UserDetailPageProps {
     userId: string;

@@ -11,7 +11,38 @@
     "maxPageSize": 50
   },
   "cache": {
-    "defaultTtlSeconds": 15
+    "defaultTtlSeconds": 15,
+    "layers": {
+      "memory": {
+        "maxEntries": 256,
+        "ttlSeconds": 10
+      },
+      "kv": {
+        "enabled": false,
+        "binding": "APP_CACHE_KV"
+      },
+      "redis": {
+        "ttlSeconds": 120
+      }
+    },
+    "strategies": {
+      "admin.tenants": {
+        "layers": ["memory", "redis"],
+        "ttlSeconds": {
+          "memory": 20,
+          "redis": 90
+        },
+        "keyPrefix": "dev:admin:tenants"
+      },
+      "admin.users": {
+        "layers": ["memory", "redis"],
+        "ttlSeconds": {
+          "memory": 15,
+          "redis": 60
+        },
+        "keyPrefix": "dev:admin:users"
+      }
+    }
   },
   "database": {
     "binding": "next_cf_app",

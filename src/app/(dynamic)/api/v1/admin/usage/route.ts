@@ -5,7 +5,7 @@ import {
     computeWithAdminCache,
     createAdminCachedJsonResponse,
 } from "@/modules/admin/utils/cache";
-import { parsePaginationParams } from "@/modules/admin/utils/pagination";
+import { parsePaginationParams } from "@/modules/admin-shared/utils/pagination";
 
 export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);

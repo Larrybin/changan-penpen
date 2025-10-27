@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { listTenants } from "@/modules/admin/services/tenant.service";
+import { listTenants } from "@/modules/tenant-admin/services/tenant.service";
 import { withAdminRoute } from "@/modules/admin/utils/api-guard";
-import { parsePaginationParams } from "@/modules/admin/utils/pagination";
+import { parsePaginationParams } from "@/modules/admin-shared/utils/pagination";
 
 export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);

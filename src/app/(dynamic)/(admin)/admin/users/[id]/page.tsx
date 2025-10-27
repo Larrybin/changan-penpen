@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { generateAdminMetadata } from "@/modules/admin/metadata";
-import { UserDetailPage } from "@/modules/admin/users/pages/user-detail.page";
+import { UserDetailPage } from "@/modules/users-admin/pages/user-detail.page";
 
 interface AdminUserDetailPageProps {
     params: Promise<{

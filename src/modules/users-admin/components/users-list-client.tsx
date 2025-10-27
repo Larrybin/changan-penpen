@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
-import type { AdminUserListItem } from "@/modules/admin/users/models";
+import type { AdminUserListItem } from "@/modules/users-admin/models";
 
 interface UsersListClientProps {
     data: AdminUserListItem[];

@@ -72,7 +72,7 @@ const ChartSkeleton = () => (
 
 // 懒加载的核心业务组件
 export const LazyUserDetail = lazy(() =>
-    import("@/modules/admin/users/components/user-detail.client").then(
+    import("@/modules/users-admin/components/user-detail.client").then(
         (module) => ({
             default: module.UserDetailClient,
         }),
@@ -80,7 +80,7 @@ export const LazyUserDetail = lazy(() =>
 );
 
 export const LazyUsersListClient = lazy(() =>
-    import("@/modules/admin/users/components/users-list-client").then(
+    import("@/modules/users-admin/components/users-list-client").then(
         (module) => ({
             default: module.UsersListClient,
         }),
@@ -320,12 +320,12 @@ export function prefetchComponent(componentName: string): void {
             switch (componentName) {
                 case "UserDetail":
                     import(
-                        "@/modules/admin/users/components/user-detail.client"
+                        "@/modules/users-admin/components/user-detail.client"
                     );
                     break;
                 case "UsersList":
                     import(
-                        "@/modules/admin/users/components/users-list-client"
+                        "@/modules/users-admin/components/users-list-client"
                     );
                     break;
                 case "TodoForm":

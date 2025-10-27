@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { config } from "@/config";
-import { listUsers } from "@/modules/admin/services/user.service";
+import { listUsers } from "@/modules/users-admin/services/user.service";
 import { withAdminRoute } from "@/modules/admin/utils/api-guard";
-import { parsePaginationParams } from "@/modules/admin/utils/pagination";
+import { parsePaginationParams } from "@/modules/admin-shared/utils/pagination";
 
 export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);
