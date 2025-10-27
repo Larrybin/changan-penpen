@@ -22,4 +22,13 @@
 ```
 
 ## 2025
-- _No dependency upgrade entries logged yet. Add one when the next Radix/Tailwind/etc. bump lands._
+
+### 2025-10-27 – pnpm lockfile compatibility
+- PR: _pending_ (`fix: rewrite pnpm lockfile for dependabot compatibility`)
+- Upstream release notes / breaking changes: [pnpm v9 lockfile format announcement](https://pnpm.io/installation#lockfile)
+- Manual checks:
+  - `pnpm lint`
+  - `pnpm build`
+  - `pnpm typecheck`
+- Impact summary: Regenerated `pnpm-lock.yaml` with pnpm 8.15.9 and pinned the workspace `packageManager` to keep Dependabot parsing. Verified that lint/build/typecheck workflows succeed without requiring changes to other modules.
+- Follow-up: Revisit once Dependabot supports pnpm lockfile v9 so we can upgrade the package manager again.
