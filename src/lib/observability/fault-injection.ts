@@ -32,7 +32,10 @@ export function isFaultEnabled(identifier: string): boolean {
     return normalized.includes(identifier);
 }
 
-export function maybeInjectFault(identifier: string, error?: () => Error): void {
+export function maybeInjectFault(
+    identifier: string,
+    error?: () => Error,
+): void {
     if (!isFaultEnabled(identifier)) {
         return;
     }
@@ -50,5 +53,6 @@ export function enableFaultInjection(identifier: string): void {
     if (!entries.includes(identifier)) {
         entries.push(identifier);
     }
-    (globalThis as Record<string, unknown>)[GLOBAL_FLAG_KEY] = entries.join(",");
+    (globalThis as Record<string, unknown>)[GLOBAL_FLAG_KEY] =
+        entries.join(",");
 }

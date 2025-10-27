@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/http-error";
 import { getUserDetail } from "@/modules/admin/services/user.service";
-import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 import { adminUserIdParamsSchema } from "@/modules/admin/users/schemas";
+import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
 interface Params {
     id: string;

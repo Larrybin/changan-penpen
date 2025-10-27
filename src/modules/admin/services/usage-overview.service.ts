@@ -1,8 +1,8 @@
 import { desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getDb, usageDaily, user } from "@/db";
-import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
 import { normalizePagination } from "@/modules/admin/utils/pagination";
+import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
 
 export interface ListUsageOptions {
     page?: number;
@@ -21,8 +21,12 @@ export async function listUsage(options: ListUsageOptions = {}) {
         page,
         perPage,
         filters: [
-            options.tenantId ? eq(usageDaily.userId, options.tenantId) : undefined,
-            options.feature ? eq(usageDaily.feature, options.feature) : undefined,
+            options.tenantId
+                ? eq(usageDaily.userId, options.tenantId)
+                : undefined,
+            options.feature
+                ? eq(usageDaily.feature, options.feature)
+                : undefined,
         ],
         fetchRows: async ({ limit, offset, where }) => {
             const baseQuery = db

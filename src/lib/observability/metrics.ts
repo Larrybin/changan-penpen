@@ -12,7 +12,11 @@ interface MetricRecord {
 const bufferedMetrics: MetricRecord[] = [];
 const MAX_BUFFER_SIZE = 200;
 
-export function recordMetric(name: string, value = 1, tags: MetricTags = {}): void {
+export function recordMetric(
+    name: string,
+    value = 1,
+    tags: MetricTags = {},
+): void {
     bufferedMetrics.push({ name, value, tags, timestamp: Date.now() });
     if (bufferedMetrics.length > MAX_BUFFER_SIZE) {
         bufferedMetrics.shift();

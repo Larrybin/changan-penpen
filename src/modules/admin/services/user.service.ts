@@ -10,8 +10,6 @@ import {
     usageDaily,
     user,
 } from "@/db";
-import { computeWithAdminCache } from "@/modules/admin/utils/cache";
-import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
 import type {
     AdminUserDetail,
     AdminUserListItem,
@@ -19,7 +17,9 @@ import type {
     AdminUserTransaction,
 } from "@/modules/admin/users/models";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
+import { computeWithAdminCache } from "@/modules/admin/utils/cache";
 import { normalizePagination } from "@/modules/admin/utils/pagination";
+import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
 
 export interface ListUsersOptions {
     page?: number;
@@ -237,42 +237,50 @@ export function createAdminUserService(
             const db = await dependencies.getDb();
             const adminEmails = await dependencies.resolveAdminEmails();
 
-            const { rows, total, page: resolvedPage, perPage: resolvedPerPage } =
-                await executePaginatedQuery({
-                    page,
-                    perPage,
-                    filters: [
-                        emailFilter ? like(user.email, `%${emailFilter}%`) : undefined,
-                        nameFilter ? like(user.name, `%${nameFilter}%`) : undefined,
-                    ],
-                    operator: "or",
-                    fetchRows: async ({ limit, offset, where }) => {
-                        const baseQuery = db
-                            .select({
-                                id: user.id,
-                                email: user.email,
-                                name: user.name,
-                                emailVerified: user.emailVerified,
-                                createdAt: user.createdAt,
-                                currentCredits: user.currentCredits,
-                            })
-                            .from(user)
-                            .orderBy(desc(user.createdAt))
-                            .limit(limit)
-                            .offset(offset);
-                        return where ? await baseQuery.where(where) : await baseQuery;
-                    },
-                    fetchTotal: async (where) => {
-                        const totalQuery = db
-                            .select({ count: sql<number>`count(*)` })
-                            .from(user)
-                            .limit(1);
-                        const result = where
-                            ? await totalQuery.where(where)
-                            : await totalQuery;
-                        return result[0]?.count ?? 0;
-                    },
-                });
+            const {
+                rows,
+                total,
+                page: resolvedPage,
+                perPage: resolvedPerPage,
+            } = await executePaginatedQuery({
+                page,
+                perPage,
+                filters: [
+                    emailFilter
+                        ? like(user.email, `%${emailFilter}%`)
+                        : undefined,
+                    nameFilter ? like(user.name, `%${nameFilter}%`) : undefined,
+                ],
+                operator: "or",
+                fetchRows: async ({ limit, offset, where }) => {
+                    const baseQuery = db
+                        .select({
+                            id: user.id,
+                            email: user.email,
+                            name: user.name,
+                            emailVerified: user.emailVerified,
+                            createdAt: user.createdAt,
+                            currentCredits: user.currentCredits,
+                        })
+                        .from(user)
+                        .orderBy(desc(user.createdAt))
+                        .limit(limit)
+                        .offset(offset);
+                    return where
+                        ? await baseQuery.where(where)
+                        : await baseQuery;
+                },
+                fetchTotal: async (where) => {
+                    const totalQuery = db
+                        .select({ count: sql<number>`count(*)` })
+                        .from(user)
+                        .limit(1);
+                    const result = where
+                        ? await totalQuery.where(where)
+                        : await totalQuery;
+                    return result[0]?.count ?? 0;
+                },
+            });
 
             return {
                 data: rows.map((row) => ({
@@ -348,14 +356,20 @@ export function createAdminUserService(
                 updatedAt: toNullableString(userRow.updatedAt),
                 image: userRow.image ?? null,
                 currentCredits: userRow.currentCredits ?? 0,
-                lastCreditRefreshAt: toNullableString(userRow.lastCreditRefreshAt),
+                lastCreditRefreshAt: toNullableString(
+                    userRow.lastCreditRefreshAt,
+                ),
             },
             customer: customerBundle.customer
                 ? {
                       id: customerBundle.customer.id,
                       credits: customerBundle.customer.credits,
-                      createdAt: toNullableString(customerBundle.customer.createdAt),
-                      updatedAt: toNullableString(customerBundle.customer.updatedAt),
+                      createdAt: toNullableString(
+                          customerBundle.customer.createdAt,
+                      ),
+                      updatedAt: toNullableString(
+                          customerBundle.customer.updatedAt,
+                      ),
                   }
                 : null,
             subscriptions: customerBundle.subscriptions.map((subscription) => ({
@@ -364,7 +378,9 @@ export function createAdminUserService(
                 currentPeriodStart: toNullableString(
                     subscription.currentPeriodStart,
                 ),
-                currentPeriodEnd: toNullableString(subscription.currentPeriodEnd),
+                currentPeriodEnd: toNullableString(
+                    subscription.currentPeriodEnd,
+                ),
                 canceledAt: toNullableString(subscription.canceledAt),
                 createdAt: toNullableString(subscription.createdAt),
                 updatedAt: toNullableString(subscription.updatedAt),
@@ -390,7 +406,9 @@ export function createAdminUserService(
                     remainingAmount: transaction.remainingAmount,
                     type: transaction.type,
                     description: transaction.description,
-                    expirationDate: toNullableString(transaction.expirationDate),
+                    expirationDate: toNullableString(
+                        transaction.expirationDate,
+                    ),
                     paymentIntentId: transaction.paymentIntentId ?? null,
                     createdAt: toNullableString(transaction.createdAt),
                 }),

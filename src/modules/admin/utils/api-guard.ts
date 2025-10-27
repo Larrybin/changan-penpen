@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import type { AppRouteHandlerFn } from "next/dist/server/route-modules/app-route/module";
+import { NextResponse } from "next/server";
 
 import handleApiError from "@/lib/api-error";
 import { checkAdminAccessFromHeaders } from "@/modules/admin/utils/admin-access";

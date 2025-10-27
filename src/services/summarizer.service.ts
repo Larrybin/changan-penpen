@@ -151,7 +151,9 @@ export class SummarizerService {
                     );
                     const output = result.response?.trim();
                     if (!output) {
-                        throw new Error("Empty response received from AI binding");
+                        throw new Error(
+                            "Empty response received from AI binding",
+                        );
                     }
                     return output;
                 },

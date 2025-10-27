@@ -40,14 +40,16 @@ export async function getPlatformContext(
 
         return { env, ctx } satisfies PlatformContextResult;
     } catch (error) {
-        console.warn("[platform] failed to resolve Cloudflare context", { error });
+        console.warn("[platform] failed to resolve Cloudflare context", {
+            error,
+        });
         return {};
     }
 }
 
-export async function getPlatformEnv<TEnv extends Record<string, unknown> = Record<string, unknown>>(
-    options?: ResolveOptions,
-): Promise<TEnv> {
+export async function getPlatformEnv<
+    TEnv extends Record<string, unknown> = Record<string, unknown>,
+>(options?: ResolveOptions): Promise<TEnv> {
     const context = await getPlatformContext(options);
     return (context.env ?? {}) as TEnv;
 }

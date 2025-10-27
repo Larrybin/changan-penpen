@@ -1,6 +1,9 @@
 import { Redis } from "@upstash/redis/cloudflare";
 
-import { getPlatformContext, getPlatformWaitUntil } from "@/lib/platform/context";
+import {
+    getPlatformContext,
+    getPlatformWaitUntil,
+} from "@/lib/platform/context";
 
 interface CacheEnv {
     UPSTASH_REDIS_REST_URL?: string;
@@ -182,7 +185,8 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     const context = providedEnv
         ? undefined
         : await getPlatformContext({ async: true });
-    const env = providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
+    const env =
+        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
     const redis = getRedisClient(env);
     if (!redis) {
         const value = await compute();

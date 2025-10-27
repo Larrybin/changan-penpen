@@ -1,7 +1,10 @@
 import { config } from "@/config";
-import { createAdminCachedJsonResponse, computeWithAdminCache } from "@/modules/admin/utils/cache";
 import { listUsage } from "@/modules/admin/services/usage-overview.service";
 import { withAdminRoute } from "@/modules/admin/utils/api-guard";
+import {
+    computeWithAdminCache,
+    createAdminCachedJsonResponse,
+} from "@/modules/admin/utils/cache";
 import { parsePaginationParams } from "@/modules/admin/utils/pagination";
 
 export const GET = withAdminRoute(async ({ request }) => {
