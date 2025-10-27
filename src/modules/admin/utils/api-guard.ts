@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import type { AppRouteHandlerFn } from "next/dist/server/route-modules/app-route/module";
+import { NextResponse } from "next/server";
 import { checkAdminAccessFromHeaders } from "@/modules/admin/utils/admin-access";
 import type { AuthUser } from "@/modules/auth/models/user.model";
 import { getCurrentUser } from "@/modules/auth/utils/auth-utils";
