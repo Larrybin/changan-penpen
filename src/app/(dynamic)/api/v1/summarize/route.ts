@@ -1,7 +1,7 @@
 import { config } from "@/config";
 import handleApiError from "@/lib/api-error";
 import { createApiErrorResponse } from "@/lib/http-error";
-import { enableFaultInjection } from "@/lib/observability/fault-injection";
+import { parseFaultInjectionTargets } from "@/lib/observability/fault-injection";
 import { getPlatformContext } from "@/lib/platform/context";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import type { AiBinding } from "@/services/summarizer.service";
@@ -56,9 +56,7 @@ export async function POST(request: Request) {
         const validated = summarizeRequestSchema.parse(body);
 
         const faultHeader = request.headers.get("x-fault-injection");
-        if (faultHeader) {
-            enableFaultInjection(faultHeader);
-        }
+        const faultTargets = parseFaultInjectionTargets(faultHeader);
 
         const retryConfig = config.services?.external_apis;
         const summarizerService = new SummarizerService(env.AI, {
@@ -67,6 +65,8 @@ export async function POST(request: Request) {
                 backoffFactor: 2,
                 initialDelayMs: 250,
             },
+            faultInjection:
+                faultTargets.length > 0 ? { flags: faultTargets } : undefined,
         });
         const result = await summarizerService.summarize(
             validated.text,

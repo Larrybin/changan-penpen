@@ -1,5 +1,18 @@
 const GLOBAL_FLAG_KEY = "__FAULT_INJECTION__";
 
+export function parseFaultInjectionTargets(
+    value: string | null | undefined,
+): string[] {
+    if (!value) {
+        return [];
+    }
+
+    return value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
 function getGlobalFlag(): string | undefined {
     if (typeof globalThis === "undefined") {
         return undefined;
@@ -20,10 +33,7 @@ export function isFaultEnabled(identifier: string): boolean {
         return false;
     }
 
-    const normalized = flag
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
+    const normalized = parseFaultInjectionTargets(flag);
 
     if (normalized.includes("*")) {
         return true;

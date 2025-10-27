@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 
 import "@/lib/openapi/extend";
-import { maybeInjectFault } from "@/lib/observability/fault-injection";
+import { isFaultEnabled as isGlobalFaultEnabled } from "@/lib/observability/fault-injection";
 import { recordMetric } from "@/lib/observability/metrics";
 import { retry } from "@/lib/utils/retry";
 
@@ -108,13 +108,27 @@ export interface SummarizerServiceOptions {
         initialDelayMs?: number;
         backoffFactor?: number;
     };
+    faultInjection?: {
+        flags: readonly string[];
+    };
 }
 
 export class SummarizerService {
+    private readonly faultFlags?: Set<string>;
+
     constructor(
         private readonly ai: AiBinding,
         private readonly options: SummarizerServiceOptions = {},
-    ) {}
+    ) {
+        const flags = this.options.faultInjection?.flags ?? [];
+        if (flags.length > 0) {
+            this.faultFlags = new Set(
+                flags
+                    .map((flag) => flag.trim())
+                    .filter((flag) => flag.length > 0),
+            );
+        }
+    }
 
     async summarize(
         text: string,
@@ -139,12 +153,12 @@ export class SummarizerService {
             },
         ];
 
-        maybeInjectFault("summarizer.before-run");
+        this.maybeInjectFault("summarizer.before-run");
 
         try {
             const summary = await retry(
                 async () => {
-                    maybeInjectFault("summarizer.retry-attempt");
+                    this.maybeInjectFault("summarizer.retry-attempt");
                     const result = await this.ai.run(
                         "@cf/meta/llama-3.2-1b-instruct",
                         { messages: requestMessages },
@@ -176,7 +190,7 @@ export class SummarizerService {
                 style,
                 language,
             });
-            maybeInjectFault("summarizer.after-run");
+            this.maybeInjectFault("summarizer.after-run");
 
             return {
                 summary,
@@ -194,7 +208,7 @@ export class SummarizerService {
             recordMetric("summarizer.fallback", 1, {
                 status: this.extractStatus(error) ?? "unknown",
             });
-            maybeInjectFault("summarizer.fallback");
+            this.maybeInjectFault("summarizer.fallback");
 
             return {
                 summary: fallback,
@@ -284,5 +298,23 @@ export class SummarizerService {
                 : candidate;
 
         return truncated;
+    }
+
+    private maybeInjectFault(identifier: string, error?: () => Error): void {
+        if (!this.isFaultEnabled(identifier)) {
+            return;
+        }
+
+        throw error ? error() : new Error(`[fault-injection] ${identifier}`);
+    }
+
+    private isFaultEnabled(identifier: string): boolean {
+        if (this.faultFlags && this.faultFlags.size > 0) {
+            if (this.faultFlags.has("*") || this.faultFlags.has(identifier)) {
+                return true;
+            }
+        }
+
+        return isGlobalFaultEnabled(identifier);
     }
 }
