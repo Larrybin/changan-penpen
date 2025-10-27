@@ -4,7 +4,6 @@
 
 /* Dark mode is not used; removing custom variant */
 
-/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind CSS theme directive */
 @theme inline {
     /* Custom breakpoints (gradual adoption). Do not override defaults. */
     --breakpoint-xs: 576px; /* new: xs */
@@ -278,11 +277,9 @@
 
 @layer base {
     * {
-        /* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind CSS apply directive */
         @apply border-border outline-ring/50;
     }
     body {
-        /* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind CSS apply directive */
         @apply bg-background text-foreground;
     }
     /* Default link styling via tokens (opt-out with data-unstyled) */

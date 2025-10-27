@@ -122,8 +122,11 @@ export async function GET(request: NextRequest) {
             const messagesModule = (await import(
                 `@/i18n/messages/${locale}.json`
             )) as MessagesModule;
-            const metadataMessages = messagesModule.Metadata ?? { openGraph: {} };
-            const openGraphSiteName = metadataMessages.openGraph?.siteName ?? "";
+            const metadataMessages = messagesModule.Metadata ?? {
+                openGraph: {},
+            };
+            const openGraphSiteName =
+                metadataMessages.openGraph?.siteName ?? "";
             const resolvedSiteName = settings.siteName?.trim().length
                 ? settings.siteName.trim()
                 : openGraphSiteName;
