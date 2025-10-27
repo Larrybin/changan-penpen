@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { generateAdminMetadata } from "@/modules/admin/metadata";
-import { TenantDetailPage } from "@/modules/admin/tenants/pages/tenant-detail.page";
+import { TenantDetailPage } from "@/modules/tenant-admin/pages/tenant-detail.page";
 
 interface Params {
     id: string;

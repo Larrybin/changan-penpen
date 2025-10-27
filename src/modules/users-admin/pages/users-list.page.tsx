@@ -1,6 +1,6 @@
 import type { JSX } from "react";
-import type { ListUsersOptions } from "@/modules/admin/services/user.service";
-import { listUsers } from "@/modules/admin/services/user.service";
+import type { ListUsersOptions } from "@/modules/users-admin/services/user.service";
+import { listUsers } from "@/modules/users-admin/services/user.service";
 import { UsersListClient } from "@/modules/users-admin/components/users-list-client";
 import { parsePaginationParams } from "@/modules/admin-shared/utils/pagination";
 
