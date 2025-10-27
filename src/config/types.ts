@@ -1,3 +1,4 @@
+import type { ZodTypeAny } from "zod";
 import { z } from "zod";
 
 export type EnvironmentName = "development" | "staging" | "production" | "test";
@@ -205,6 +206,86 @@ export const configSchema = z
 
 export type Config = z.infer<typeof configSchema>;
 
-export const configOverrideSchema = configSchema.deepPartial();
+type DeepPartial<T> = T extends (infer Item)[]
+    ? DeepPartial<Item>[]
+    : T extends object
+      ? { [Key in keyof T]?: DeepPartial<T[Key]> }
+      : T;
+
+const toDeepPartialSchema = (schema: ZodTypeAny): ZodTypeAny => {
+    if (schema instanceof z.ZodObject) {
+        const newShape: Record<string, ZodTypeAny> = {};
+        for (const key of Object.keys(schema.shape)) {
+            newShape[key] = toDeepPartialSchema(schema.shape[key]).optional();
+        }
+
+        return schema.clone({
+            ...schema.def,
+            shape: () => newShape,
+        });
+    }
+
+    if (schema instanceof z.ZodArray) {
+        const arraySchema = schema as unknown as {
+            clone(def: unknown): ZodTypeAny;
+            def: { element: ZodTypeAny };
+            element: ZodTypeAny;
+        };
+        return arraySchema.clone({
+            ...arraySchema.def,
+            element: toDeepPartialSchema(arraySchema.element),
+        });
+    }
+
+    if (schema instanceof z.ZodRecord) {
+        const recordSchema = schema as unknown as {
+            clone(def: unknown): ZodTypeAny;
+            def: { valueType?: ZodTypeAny };
+            valueType?: ZodTypeAny;
+        };
+        const valueType = recordSchema.valueType;
+        const nextValueType =
+            valueType === undefined
+                ? valueType
+                : toDeepPartialSchema(valueType);
+
+        return recordSchema.clone({
+            ...recordSchema.def,
+            valueType: nextValueType,
+        });
+    }
+
+    if (schema instanceof z.ZodTuple) {
+        const tupleSchema = schema as unknown as {
+            clone(def: unknown): ZodTypeAny;
+            def: { items: ZodTypeAny[] };
+            items: ZodTypeAny[];
+        };
+        return tupleSchema.clone({
+            ...tupleSchema.def,
+            items: tupleSchema.items.map((item) => toDeepPartialSchema(item)),
+        });
+    }
+
+    if (schema instanceof z.ZodOptional) {
+        return toDeepPartialSchema(
+            schema.unwrap() as unknown as ZodTypeAny,
+        ).optional();
+    }
+
+    if (schema instanceof z.ZodNullable) {
+        return toDeepPartialSchema(
+            schema.unwrap() as unknown as ZodTypeAny,
+        ).nullable();
+    }
+
+    return schema;
+};
+
+const configOverrideSchemaBase = toDeepPartialSchema(
+    configSchema,
+) as unknown as z.ZodType<DeepPartial<Config>>;
+
+export const configOverrideSchema = configOverrideSchemaBase;
 
 export type ConfigOverride = z.infer<typeof configOverrideSchema>;
