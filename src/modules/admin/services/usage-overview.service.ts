@@ -1,6 +1,8 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
+
 import { getDb, usageDaily, user } from "@/db";
-import { normalizePagination } from "../utils/pagination";
+import { normalizePagination } from "@/modules/admin/utils/pagination";
+import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
 
 export interface ListUsageOptions {
     page?: number;
@@ -15,39 +17,43 @@ export async function listUsage(options: ListUsageOptions = {}) {
         normalizePagination(options);
     const page = Math.max(normalizedPage, 1);
     const perPage = Math.min(Math.max(normalizedPerPage, 1), 100);
-    const offset = (page - 1) * perPage;
+    const { rows, total } = await executePaginatedQuery({
+        page,
+        perPage,
+        filters: [
+            options.tenantId
+                ? eq(usageDaily.userId, options.tenantId)
+                : undefined,
+            options.feature
+                ? eq(usageDaily.feature, options.feature)
+                : undefined,
+        ],
+        fetchRows: async ({ limit, offset, where }) => {
+            const baseQuery = db
+                .select({
+                    userId: usageDaily.userId,
+                    date: usageDaily.date,
+                    feature: usageDaily.feature,
+                    totalAmount: usageDaily.totalAmount,
+                    unit: usageDaily.unit,
+                })
+                .from(usageDaily)
+                .orderBy(desc(usageDaily.date))
+                .limit(limit)
+                .offset(offset);
 
-    const query = db
-        .select({
-            userId: usageDaily.userId,
-            date: usageDaily.date,
-            feature: usageDaily.feature,
-            totalAmount: usageDaily.totalAmount,
-            unit: usageDaily.unit,
-        })
-        .from(usageDaily)
-        .orderBy(desc(usageDaily.date))
-        .limit(perPage)
-        .offset(offset);
-
-    const conditions = [] as ReturnType<typeof eq>[];
-    if (options.tenantId) {
-        conditions.push(eq(usageDaily.userId, options.tenantId));
-    }
-    if (options.feature) {
-        conditions.push(eq(usageDaily.feature, options.feature));
-    }
-
-    const whereClause = conditions.length ? and(...conditions) : undefined;
-
-    const rows = whereClause ? await query.where(whereClause) : await query;
-
-    const totalQuery = db
-        .select({ count: sql<number>`count(*)` })
-        .from(usageDaily);
-    const totalRows = whereClause
-        ? await totalQuery.where(whereClause)
-        : await totalQuery;
+            return where ? await baseQuery.where(where) : await baseQuery;
+        },
+        fetchTotal: async (where) => {
+            const totalQuery = db
+                .select({ count: sql<number>`count(*)` })
+                .from(usageDaily);
+            const result = where
+                ? await totalQuery.where(where)
+                : await totalQuery;
+            return result[0]?.count ?? 0;
+        },
+    });
 
     const userIds = Array.from(new Set(rows.map((row) => row.userId))).filter(
         Boolean,
@@ -67,6 +73,6 @@ export async function listUsage(options: ListUsageOptions = {}) {
             ...row,
             email: userMap.get(row.userId) ?? null,
         })),
-        total: totalRows[0]?.count ?? 0,
+        total,
     };
 }

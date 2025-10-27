@@ -1,15 +1,15 @@
-import { desc, eq, like, or, sql } from "drizzle-orm";
+import { desc, eq, like, sql } from "drizzle-orm";
+
 import { config } from "@/config";
 import {
     creditsHistory,
     creditTransactions,
     customers,
     getDb,
-    subscriptions,
+    subscriptions as subscriptionTable,
     usageDaily,
     user,
 } from "@/db";
-import { withApiCache } from "@/lib/cache";
 import type {
     AdminUserDetail,
     AdminUserListItem,
@@ -17,7 +17,9 @@ import type {
     AdminUserTransaction,
 } from "@/modules/admin/users/models";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
+import { computeWithAdminCache } from "@/modules/admin/utils/cache";
 import { normalizePagination } from "@/modules/admin/utils/pagination";
+import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
 
 export interface ListUsersOptions {
     page?: number;
@@ -49,11 +51,6 @@ const toNullableString = (value: unknown): string | null => {
     return null;
 };
 
-const getAdminEmailSet = async () => {
-    const { allowedEmails } = await getAdminAccessConfig();
-    return new Set(allowedEmails.map((email) => email.toLowerCase()));
-};
-
 const resolveRole = (
     email: string | null | undefined,
     adminEmails: Set<string>,
@@ -68,108 +65,42 @@ const resolveRole = (
 const resolveStatus = (emailVerified: boolean | null | undefined) =>
     emailVerified ? "active" : "inactive";
 
-export async function listUsers(
-    options: ListUsersOptions = {},
-): Promise<ListUsersResult> {
-    const { page, perPage } = normalizePagination(options);
-    const emailFilter = options.email?.trim() || undefined;
-    const nameFilter = options.name?.trim() || undefined;
-    const cacheKey = [
-        "admin-users",
-        `page:${page}`,
-        `perPage:${perPage}`,
-        `email:${emailFilter ?? ""}`,
-        `name:${nameFilter ?? ""}`,
-    ].join("|");
+type DbClient = Awaited<ReturnType<typeof getDb>>;
 
-    const compute = async (): Promise<ListUsersResult> => {
-        const db = await getDb();
-        const adminEmails = await getAdminEmailSet();
-        const offset = (page - 1) * perPage;
+type CustomerRecord = Pick<
+    typeof customers.$inferSelect,
+    "id" | "credits" | "createdAt" | "updatedAt"
+>;
 
-        const filters = [];
+type CreditHistoryRecord = Pick<
+    typeof creditsHistory.$inferSelect,
+    "id" | "amount" | "type" | "description" | "createdAt"
+>;
 
-        if (emailFilter) {
-            filters.push(like(user.email, `%${emailFilter}%`));
-        }
+type SubscriptionRecord = Pick<
+    typeof subscriptionTable.$inferSelect,
+    | "id"
+    | "status"
+    | "currentPeriodStart"
+    | "currentPeriodEnd"
+    | "canceledAt"
+    | "createdAt"
+    | "updatedAt"
+>;
 
-        if (nameFilter) {
-            filters.push(like(user.name, `%${nameFilter}%`));
-        }
-
-        const whereClause =
-            filters.length === 0
-                ? undefined
-                : filters.length === 1
-                  ? filters[0]
-                  : or(...filters);
-
-        const listQuery = db
-            .select({
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                emailVerified: user.emailVerified,
-                createdAt: user.createdAt,
-                currentCredits: user.currentCredits,
-            })
-            .from(user)
-            .orderBy(desc(user.createdAt))
-            .limit(perPage)
-            .offset(offset);
-
-        const userRows = whereClause
-            ? await listQuery.where(whereClause)
-            : await listQuery;
-
-        const totalQuery = db
-            .select({ count: sql<number>`count(*)` })
-            .from(user)
-            .limit(1);
-        const totalRows = whereClause
-            ? await totalQuery.where(whereClause)
-            : await totalQuery;
-        const total = totalRows[0]?.count ?? 0;
-
-        return {
-            data: userRows.map((row) => ({
-                id: row.id,
-                email: row.email,
-                name: row.name,
-                role: resolveRole(row.email, adminEmails),
-                status: resolveStatus(row.emailVerified),
-                createdAt: toNullableString(row.createdAt),
-                credits: row.currentCredits ?? 0,
-            })),
-            total,
-            page,
-            perPage,
-        };
-    };
-
-    const ttlSeconds = config.cache.defaultTtlSeconds;
-    if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
-        return compute();
-    }
-
-    const { value } = await withApiCache(
-        { key: cacheKey, ttlSeconds },
-        compute,
-    );
-    return value;
+interface CustomerBundle {
+    customer: CustomerRecord | null;
+    credits: CreditHistoryRecord[];
+    subscriptions: SubscriptionRecord[];
 }
 
-export async function getUserDetail(
-    userId: string,
-): Promise<AdminUserDetail | null> {
-    if (!userId) {
-        return null;
-    }
+const resolveAdminEmailSet = async () => {
+    const { allowedEmails } = await getAdminAccessConfig();
+    return new Set(allowedEmails.map((email) => email.toLowerCase()));
+};
 
-    const db = await getDb();
-    const adminEmails = await getAdminEmailSet();
-
-    const [userRow] = await db
+async function fetchUserRow(db: DbClient, userId: string) {
+    const [row] = await db
         .select({
             id: user.id,
             email: user.email,
@@ -185,10 +116,13 @@ export async function getUserDetail(
         .where(eq(user.id, userId))
         .limit(1);
 
-    if (!userRow) {
-        return null;
-    }
+    return row ?? null;
+}
 
+async function fetchCustomerBundle(
+    db: DbClient,
+    userId: string,
+): Promise<CustomerBundle> {
     const [customerRow] = await db
         .select({
             id: customers.id,
@@ -200,39 +134,52 @@ export async function getUserDetail(
         .where(eq(customers.userId, userId))
         .limit(1);
 
-    const credits = customerRow
-        ? await db
-              .select({
-                  id: creditsHistory.id,
-                  amount: creditsHistory.amount,
-                  type: creditsHistory.type,
-                  description: creditsHistory.description,
-                  createdAt: creditsHistory.createdAt,
-              })
-              .from(creditsHistory)
-              .where(eq(creditsHistory.customerId, customerRow.id))
-              .orderBy(desc(creditsHistory.createdAt))
-              .limit(20)
-        : [];
+    if (!customerRow) {
+        return {
+            customer: null,
+            credits: [],
+            subscriptions: [],
+        };
+    }
 
-    const subscriptionsRows = customerRow
-        ? await db
-              .select({
-                  id: subscriptions.id,
-                  status: subscriptions.status,
-                  currentPeriodStart: subscriptions.currentPeriodStart,
-                  currentPeriodEnd: subscriptions.currentPeriodEnd,
-                  canceledAt: subscriptions.canceledAt,
-                  createdAt: subscriptions.createdAt,
-                  updatedAt: subscriptions.updatedAt,
-              })
-              .from(subscriptions)
-              .where(eq(subscriptions.customerId, customerRow.id))
-              .orderBy(desc(subscriptions.createdAt))
-              .limit(10)
-        : [];
+    const [creditRows, subscriptionRows] = await Promise.all([
+        db
+            .select({
+                id: creditsHistory.id,
+                amount: creditsHistory.amount,
+                type: creditsHistory.type,
+                description: creditsHistory.description,
+                createdAt: creditsHistory.createdAt,
+            })
+            .from(creditsHistory)
+            .where(eq(creditsHistory.customerId, customerRow.id))
+            .orderBy(desc(creditsHistory.createdAt))
+            .limit(20),
+        db
+            .select({
+                id: subscriptionTable.id,
+                status: subscriptionTable.status,
+                currentPeriodStart: subscriptionTable.currentPeriodStart,
+                currentPeriodEnd: subscriptionTable.currentPeriodEnd,
+                canceledAt: subscriptionTable.canceledAt,
+                createdAt: subscriptionTable.createdAt,
+                updatedAt: subscriptionTable.updatedAt,
+            })
+            .from(subscriptionTable)
+            .where(eq(subscriptionTable.customerId, customerRow.id))
+            .orderBy(desc(subscriptionTable.createdAt))
+            .limit(10),
+    ]);
 
-    const usageRows = await db
+    return {
+        customer: customerRow,
+        credits: creditRows,
+        subscriptions: subscriptionRows,
+    };
+}
+
+function fetchUsageRows(db: DbClient, userId: string) {
+    return db
         .select({
             id: usageDaily.id,
             date: usageDaily.date,
@@ -244,8 +191,10 @@ export async function getUserDetail(
         .where(eq(usageDaily.userId, userId))
         .orderBy(desc(usageDaily.date))
         .limit(30);
+}
 
-    const transactionRows = await db
+function fetchTransactionRows(db: DbClient, userId: string) {
+    return db
         .select({
             id: creditTransactions.id,
             amount: creditTransactions.amount,
@@ -260,65 +209,226 @@ export async function getUserDetail(
         .where(eq(creditTransactions.userId, userId))
         .orderBy(desc(creditTransactions.createdAt))
         .limit(20);
+}
 
-    return {
-        user: {
-            id: userRow.id,
-            email: userRow.email,
-            name: userRow.name,
-            emailVerified: Boolean(userRow.emailVerified),
-            role: resolveRole(userRow.email, adminEmails),
-            status: resolveStatus(userRow.emailVerified),
-            createdAt: toNullableString(userRow.createdAt),
-            updatedAt: toNullableString(userRow.updatedAt),
-            image: userRow.image ?? null,
-            currentCredits: userRow.currentCredits ?? 0,
-            lastCreditRefreshAt: toNullableString(userRow.lastCreditRefreshAt),
-        },
-        customer: customerRow
-            ? {
-                  id: customerRow.id,
-                  credits: customerRow.credits,
-                  createdAt: toNullableString(customerRow.createdAt),
-                  updatedAt: toNullableString(customerRow.updatedAt),
-              }
-            : null,
-        subscriptions: subscriptionsRows.map((subscription) => ({
-            id: subscription.id,
-            status: subscription.status,
-            currentPeriodStart: toNullableString(
-                subscription.currentPeriodStart,
-            ),
-            currentPeriodEnd: toNullableString(subscription.currentPeriodEnd),
-            canceledAt: toNullableString(subscription.canceledAt),
-            createdAt: toNullableString(subscription.createdAt),
-            updatedAt: toNullableString(subscription.updatedAt),
-        })),
-        creditsHistory: credits.map((credit) => ({
-            id: credit.id,
-            amount: credit.amount,
-            type: credit.type,
-            description: credit.description,
-            createdAt: toNullableString(credit.createdAt),
-        })),
-        usage: usageRows.map((usage) => ({
-            id: usage.id,
-            date: usage.date,
-            feature: usage.feature,
-            totalAmount: usage.totalAmount,
-            unit: usage.unit,
-        })),
-        transactions: transactionRows.map(
-            (transaction): AdminUserTransaction => ({
-                id: transaction.id,
-                amount: transaction.amount,
-                remainingAmount: transaction.remainingAmount,
-                type: transaction.type,
-                description: transaction.description,
-                expirationDate: toNullableString(transaction.expirationDate),
-                paymentIntentId: transaction.paymentIntentId ?? null,
-                createdAt: toNullableString(transaction.createdAt),
-            }),
-        ),
+interface AdminUserServiceDependencies {
+    getDb: typeof getDb;
+    resolveAdminEmails: () => Promise<Set<string>>;
+    getCacheTtlSeconds: () => number;
+}
+
+const defaultDependencies: AdminUserServiceDependencies = {
+    getDb,
+    resolveAdminEmails: resolveAdminEmailSet,
+    getCacheTtlSeconds: () => config.cache.defaultTtlSeconds ?? 0,
+};
+
+export function createAdminUserService(
+    dependencies: AdminUserServiceDependencies = defaultDependencies,
+) {
+    const listUsers = async (
+        options: ListUsersOptions = {},
+    ): Promise<ListUsersResult> => {
+        const { page, perPage } = normalizePagination(options);
+        const emailFilter = options.email?.trim() || undefined;
+        const nameFilter = options.name?.trim() || undefined;
+
+        const compute = async (): Promise<ListUsersResult> => {
+            const db = await dependencies.getDb();
+            const adminEmails = await dependencies.resolveAdminEmails();
+
+            const {
+                rows,
+                total,
+                page: resolvedPage,
+                perPage: resolvedPerPage,
+            } = await executePaginatedQuery({
+                page,
+                perPage,
+                filters: [
+                    emailFilter
+                        ? like(user.email, `%${emailFilter}%`)
+                        : undefined,
+                    nameFilter ? like(user.name, `%${nameFilter}%`) : undefined,
+                ],
+                operator: "or",
+                fetchRows: async ({ limit, offset, where }) => {
+                    const baseQuery = db
+                        .select({
+                            id: user.id,
+                            email: user.email,
+                            name: user.name,
+                            emailVerified: user.emailVerified,
+                            createdAt: user.createdAt,
+                            currentCredits: user.currentCredits,
+                        })
+                        .from(user)
+                        .orderBy(desc(user.createdAt))
+                        .limit(limit)
+                        .offset(offset);
+                    return where
+                        ? await baseQuery.where(where)
+                        : await baseQuery;
+                },
+                fetchTotal: async (where) => {
+                    const totalQuery = db
+                        .select({ count: sql<number>`count(*)` })
+                        .from(user)
+                        .limit(1);
+                    const result = where
+                        ? await totalQuery.where(where)
+                        : await totalQuery;
+                    return result[0]?.count ?? 0;
+                },
+            });
+
+            return {
+                data: rows.map((row) => ({
+                    id: row.id,
+                    email: row.email,
+                    name: row.name,
+                    role: resolveRole(row.email, adminEmails),
+                    status: resolveStatus(row.emailVerified),
+                    createdAt: toNullableString(row.createdAt),
+                    credits: row.currentCredits ?? 0,
+                })),
+                total,
+                page: resolvedPage,
+                perPage: resolvedPerPage,
+            } satisfies ListUsersResult;
+        };
+
+        const ttlSeconds = dependencies.getCacheTtlSeconds();
+        if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
+            return compute();
+        }
+
+        const { value } = await computeWithAdminCache(
+            {
+                resource: "users",
+                scope: "list",
+                params: {
+                    page,
+                    perPage,
+                    email: emailFilter ?? null,
+                    name: nameFilter ?? null,
+                },
+            },
+            { ttlSeconds },
+            compute,
+        );
+
+        return value;
     };
+
+    const getUserDetail = async (
+        userId: string,
+    ): Promise<AdminUserDetail | null> => {
+        if (!userId) {
+            return null;
+        }
+
+        const db = await dependencies.getDb();
+        const userRow = await fetchUserRow(db, userId);
+        if (!userRow) {
+            return null;
+        }
+
+        const adminEmailsPromise = dependencies.resolveAdminEmails();
+
+        const [customerBundle, usageRows, transactionRows, adminEmails] =
+            await Promise.all([
+                fetchCustomerBundle(db, userId),
+                fetchUsageRows(db, userId),
+                fetchTransactionRows(db, userId),
+                adminEmailsPromise,
+            ]);
+
+        return {
+            user: {
+                id: userRow.id,
+                email: userRow.email,
+                name: userRow.name,
+                emailVerified: Boolean(userRow.emailVerified),
+                role: resolveRole(userRow.email, adminEmails),
+                status: resolveStatus(userRow.emailVerified),
+                createdAt: toNullableString(userRow.createdAt),
+                updatedAt: toNullableString(userRow.updatedAt),
+                image: userRow.image ?? null,
+                currentCredits: userRow.currentCredits ?? 0,
+                lastCreditRefreshAt: toNullableString(
+                    userRow.lastCreditRefreshAt,
+                ),
+            },
+            customer: customerBundle.customer
+                ? {
+                      id: customerBundle.customer.id,
+                      credits: customerBundle.customer.credits,
+                      createdAt: toNullableString(
+                          customerBundle.customer.createdAt,
+                      ),
+                      updatedAt: toNullableString(
+                          customerBundle.customer.updatedAt,
+                      ),
+                  }
+                : null,
+            subscriptions: customerBundle.subscriptions.map((subscription) => ({
+                id: subscription.id,
+                status: subscription.status,
+                currentPeriodStart: toNullableString(
+                    subscription.currentPeriodStart,
+                ),
+                currentPeriodEnd: toNullableString(
+                    subscription.currentPeriodEnd,
+                ),
+                canceledAt: toNullableString(subscription.canceledAt),
+                createdAt: toNullableString(subscription.createdAt),
+                updatedAt: toNullableString(subscription.updatedAt),
+            })),
+            creditsHistory: customerBundle.credits.map((credit) => ({
+                id: credit.id,
+                amount: credit.amount,
+                type: credit.type,
+                description: credit.description,
+                createdAt: toNullableString(credit.createdAt),
+            })),
+            usage: usageRows.map((usage) => ({
+                id: usage.id,
+                date: usage.date,
+                feature: usage.feature,
+                totalAmount: usage.totalAmount,
+                unit: usage.unit,
+            })),
+            transactions: transactionRows.map(
+                (transaction): AdminUserTransaction => ({
+                    id: transaction.id,
+                    amount: transaction.amount,
+                    remainingAmount: transaction.remainingAmount,
+                    type: transaction.type,
+                    description: transaction.description,
+                    expirationDate: toNullableString(
+                        transaction.expirationDate,
+                    ),
+                    paymentIntentId: transaction.paymentIntentId ?? null,
+                    createdAt: toNullableString(transaction.createdAt),
+                }),
+            ),
+        } satisfies AdminUserDetail;
+    };
+
+    return { listUsers, getUserDetail } as const;
+}
+
+const defaultService = createAdminUserService();
+
+export async function listUsers(
+    options: ListUsersOptions = {},
+): Promise<ListUsersResult> {
+    return defaultService.listUsers(options);
+}
+
+export async function getUserDetail(
+    userId: string,
+): Promise<AdminUserDetail | null> {
+    return defaultService.getUserDetail(userId);
 }

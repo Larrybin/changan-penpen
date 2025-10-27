@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+
+import { ApiError } from "@/lib/http-error";
 import { getUserDetail } from "@/modules/admin/services/user.service";
+import { adminUserIdParamsSchema } from "@/modules/admin/users/schemas";
 import { withAdminRoute } from "@/modules/admin/utils/api-guard";
 
 interface Params {
@@ -7,17 +10,12 @@ interface Params {
 }
 
 export const GET = withAdminRoute<Params>(async ({ params }) => {
-    if (!params.id) {
-        return NextResponse.json(
-            { message: "User ID is required" },
-            { status: 400 },
-        );
-    }
+    const parsed = adminUserIdParamsSchema.parse(params);
 
-    const detail = await getUserDetail(params.id);
+    const detail = await getUserDetail(parsed.id);
 
     if (!detail) {
-        return NextResponse.json({ message: "Not found" }, { status: 404 });
+        throw new ApiError("Not found", { status: 404, code: "NOT_FOUND" });
     }
 
     return NextResponse.json({ data: detail });

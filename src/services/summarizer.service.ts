@@ -1,6 +1,9 @@
 import { z } from "zod/v4";
 
 import "@/lib/openapi/extend";
+import { isFaultEnabled as isGlobalFaultEnabled } from "@/lib/observability/fault-injection";
+import { recordMetric } from "@/lib/observability/metrics";
+import { retry } from "@/lib/utils/retry";
 
 export const summarizerConfigSchema = z
     .object({
@@ -99,8 +102,33 @@ export type AiBinding = {
     run: (model: string, options: unknown) => Promise<AiRunResult>;
 };
 
+export interface SummarizerServiceOptions {
+    retry?: {
+        attempts?: number;
+        initialDelayMs?: number;
+        backoffFactor?: number;
+    };
+    faultInjection?: {
+        flags: readonly string[];
+    };
+}
+
 export class SummarizerService {
-    constructor(private readonly ai: AiBinding) {}
+    private readonly faultFlags?: Set<string>;
+
+    constructor(
+        private readonly ai: AiBinding,
+        private readonly options: SummarizerServiceOptions = {},
+    ) {
+        const flags = this.options.faultInjection?.flags ?? [];
+        if (flags.length > 0) {
+            this.faultFlags = new Set(
+                flags
+                    .map((flag) => flag.trim())
+                    .filter((flag) => flag.length > 0),
+            );
+        }
+    }
 
     async summarize(
         text: string,
@@ -117,28 +145,81 @@ export class SummarizerService {
         // Estimate tokens (rough calculation: 1 token ≈ 4 characters)
         const inputTokens = Math.ceil((systemPrompt.length + text.length) / 4);
 
-        const response = await this.ai.run("@cf/meta/llama-3.2-1b-instruct", {
-            messages: [
-                { role: "system", content: systemPrompt },
-                {
-                    role: "user",
-                    content: `Please summarize the following text: ${text}`,
-                },
-            ],
-        });
-
-        const summary = response.response?.trim() ?? "";
-        const outputTokens = Math.ceil(summary.length / 4);
-
-        return {
-            summary,
-            originalLength: text.length,
-            summaryLength: summary.length,
-            tokensUsed: {
-                input: inputTokens,
-                output: outputTokens,
+        const requestMessages = [
+            { role: "system" as const, content: systemPrompt },
+            {
+                role: "user" as const,
+                content: `Please summarize the following text: ${text}`,
             },
-        };
+        ];
+
+        this.maybeInjectFault("summarizer.before-run");
+
+        try {
+            const summary = await retry(
+                async () => {
+                    this.maybeInjectFault("summarizer.retry-attempt");
+                    const result = await this.ai.run(
+                        "@cf/meta/llama-3.2-1b-instruct",
+                        { messages: requestMessages },
+                    );
+                    const output = result.response?.trim();
+                    if (!output) {
+                        throw new Error(
+                            "Empty response received from AI binding",
+                        );
+                    }
+                    return output;
+                },
+                {
+                    attempts: Math.max(1, this.options.retry?.attempts ?? 3),
+                    initialDelayMs: this.options.retry?.initialDelayMs ?? 250,
+                    backoffFactor: this.options.retry?.backoffFactor ?? 2,
+                    shouldRetry: (error) => this.isTransientError(error),
+                    onRetry: ({ error, attempt }) => {
+                        console.warn("[SummarizerService] retrying summarize", {
+                            attempt,
+                            error,
+                        });
+                    },
+                },
+            );
+
+            const outputTokens = Math.ceil(summary.length / 4);
+            recordMetric("summarizer.success", 1, {
+                style,
+                language,
+            });
+            this.maybeInjectFault("summarizer.after-run");
+
+            return {
+                summary,
+                originalLength: text.length,
+                summaryLength: summary.length,
+                tokensUsed: {
+                    input: inputTokens,
+                    output: outputTokens,
+                },
+            } satisfies SummaryResult;
+        } catch (error) {
+            console.error("[SummarizerService] summarize failed", { error });
+            const fallback = this.buildFallbackSummary(text, maxLength);
+            const outputTokens = Math.ceil(fallback.length / 4);
+            recordMetric("summarizer.fallback", 1, {
+                status: this.extractStatus(error) ?? "unknown",
+            });
+            this.maybeInjectFault("summarizer.fallback");
+
+            return {
+                summary: fallback,
+                originalLength: text.length,
+                summaryLength: fallback.length,
+                tokensUsed: {
+                    input: inputTokens,
+                    output: outputTokens,
+                },
+            } satisfies SummaryResult;
+        }
     }
 
     private buildSystemPrompt(
@@ -156,7 +237,7 @@ export class SummarizerService {
         };
 
         return `You are a professional text summarizer. ${styleInstructions[style]}
-        
+
                 Instructions:
                     - Summarize in ${language}
                     - Keep the summary under ${maxLength} words
@@ -174,5 +255,66 @@ export class SummarizerService {
                         - "Here is the summary in ${language} in bullet points:"
 
                 Output only the summary, nothing else.`;
+    }
+
+    private isTransientError(error: unknown): boolean {
+        const status = this.extractStatus(error);
+        if (status === null) {
+            return true;
+        }
+
+        return status >= 500 || status === 429;
+    }
+
+    private extractStatus(error: unknown): number | null {
+        if (!error || typeof error !== "object") {
+            return null;
+        }
+
+        if (typeof (error as { status?: unknown }).status === "number") {
+            return (error as { status: number }).status;
+        }
+
+        const response = (error as { response?: { status?: number } }).response;
+        if (response && typeof response.status === "number") {
+            return response.status;
+        }
+
+        return null;
+    }
+
+    private buildFallbackSummary(text: string, maxLength: number): string {
+        const trimmed = text.trim();
+        if (!trimmed) {
+            return "Summary is temporarily unavailable.";
+        }
+
+        const sentences = trimmed.split(/(?<=[.!?。！？])\s+/u).filter(Boolean);
+        const candidate = sentences.slice(0, 3).join(" ") || trimmed;
+        const maxChars = Math.max(100, maxLength * 6);
+        const truncated =
+            candidate.length > maxChars
+                ? `${candidate.slice(0, maxChars - 1).trimEnd()}…`
+                : candidate;
+
+        return truncated;
+    }
+
+    private maybeInjectFault(identifier: string, error?: () => Error): void {
+        if (!this.isFaultEnabled(identifier)) {
+            return;
+        }
+
+        throw error ? error() : new Error(`[fault-injection] ${identifier}`);
+    }
+
+    private isFaultEnabled(identifier: string): boolean {
+        if (this.faultFlags && this.faultFlags.size > 0) {
+            if (this.faultFlags.has("*") || this.faultFlags.has(identifier)) {
+                return true;
+            }
+        }
+
+        return isGlobalFaultEnabled(identifier);
     }
 }

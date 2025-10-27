@@ -1,5 +1,7 @@
 import type { AppRouteHandlerFn } from "next/dist/server/route-modules/app-route/module";
 import { NextResponse } from "next/server";
+
+import handleApiError from "@/lib/api-error";
 import { checkAdminAccessFromHeaders } from "@/modules/admin/utils/admin-access";
 import type { AuthUser } from "@/modules/auth/models/user.model";
 import { getCurrentUser } from "@/modules/auth/utils/auth-utils";
@@ -72,7 +74,7 @@ export function withAdminRoute<
     const wrapped = async (
         request: NextRouteRequest,
         context: GuardedRouteContext,
-    ): Promise<TResult | NextResponse> => {
+    ): Promise<TResult | NextResponse | Response> => {
         const guardResult = await requireAdminRequest(request);
         if (!guardResult.user) {
             if (options?.onUnauthorized) {
@@ -87,11 +89,15 @@ export function withAdminRoute<
 
         const params = (await context.params) as RouteParamRecord as TParams;
 
-        return handler({
-            request: request as Request,
-            params,
-            user: guardResult.user,
-        });
+        try {
+            return await handler({
+                request: request as Request,
+                params,
+                user: guardResult.user,
+            });
+        } catch (error) {
+            return handleApiError(error);
+        }
     };
 
     return wrapped;
