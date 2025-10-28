@@ -139,9 +139,3 @@ export async function getAuth({
 
     return instance;
 }
-
-export function __resetAuthInstanceForTests() {
-    const cache = getGlobalAuthCache();
-    cache.instances.clear();
-    cache.promises.clear();
-}

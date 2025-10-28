@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
     getDb,
     marketingContentAudit,
@@ -540,18 +540,4 @@ export async function publishMarketingContent(
         metadataVersion,
         publishedAt,
     };
-}
-
-export async function cleanupExpiredPreviewTokens() {
-    const db = await getDb();
-    const now = new Date().toISOString();
-    await db
-        .update(marketingContentDrafts)
-        .set({ previewToken: null, previewTokenExpiresAt: null })
-        .where(
-            and(
-                isNotNull(marketingContentDrafts.previewToken),
-                lt(marketingContentDrafts.previewTokenExpiresAt, now),
-            ),
-        );
 }
