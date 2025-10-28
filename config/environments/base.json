@@ -155,6 +155,18 @@
       "sampling_rate": 0.1
     }
   },
+  "admin": {
+    "users": {
+      "detailQuery": {
+        "concurrency": 3,
+        "timeoutMs": 5000,
+        "retry": {
+          "attempts": 1,
+          "delayMs": 200
+        }
+      }
+    }
+  },
   "logging": {
     "level": "info",
     "format": "json",

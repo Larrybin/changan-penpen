@@ -185,6 +185,18 @@
       "flush_interval": "60s"
     }
   },
+  "admin": {
+    "users": {
+      "detailQuery": {
+        "concurrency": 5,
+        "timeoutMs": 4000,
+        "retry": {
+          "attempts": 2,
+          "delayMs": 250
+        }
+      }
+    }
+  },
   "logging": {
     "level": "warn",
     "format": "json",

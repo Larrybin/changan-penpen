@@ -166,6 +166,19 @@ function DataComponent() {
 }
 ```
 
+### 7. 数据访问保护
+
+- `src/modules/users-admin/services/user.service.ts` 现使用自定义信号量对并发查询做限流，并通过 `Promise.race` 风格的定时器实现超时与重试保护，避免交易明细、用量历史等重查询拖垮 D1 实例。
+- 限制项统一收敛至配置：`config/environments/*.json` → `admin.users.detailQuery`。可按环境调整以下参数，无需修改代码：
+
+| 环境 | 并发上限 (`concurrency`) | 超时阈值 (`timeoutMs`) | 重试次数 (`retry.attempts`) | 重试延迟 (`retry.delayMs`) |
+|------|-----------------------|-----------------------|-----------------------------|-----------------------------|
+| development | 1 | 8000 | 0 | — |
+| staging | 3 | 4500 | 1 | 150 |
+| production | 5 | 4000 | 2 | 250 |
+
+- 任何未显式覆盖的环境将继承基础配置：并发 3、超时 5000ms、重试 1 次且延迟 200ms。若需在运行时调整，可结合 `CACHE_DEFAULT_TTL_SECONDS` 等现有机制扩展对应的环境变量解析逻辑。
+
 #### 乐观更新（待按需实现）
 
 > ⚠️ `src/modules/admin/utils/optimistic-updates.ts` 的通用实现已清理。若需要统一的乐观更新工具，可基于 TanStack Query 的 `useMutation` 在具体业务场景中重建，并结合缓存键约定补充测试。

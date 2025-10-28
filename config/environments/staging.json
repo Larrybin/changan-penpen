@@ -177,6 +177,18 @@
       "flush_interval": "30s"
     }
   },
+  "admin": {
+    "users": {
+      "detailQuery": {
+        "concurrency": 3,
+        "timeoutMs": 4500,
+        "retry": {
+          "attempts": 1,
+          "delayMs": 150
+        }
+      }
+    }
+  },
   "logging": {
     "level": "info",
     "format": "json",
