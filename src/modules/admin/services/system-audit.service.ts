@@ -1,7 +1,7 @@
 import { desc, sql } from "drizzle-orm";
 
 import { adminAuditLogs, getDb } from "@/db";
-import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
+import { createSimplePaginatedList } from "@/modules/admin/utils/query-factory";
 
 export interface RecordAdminAuditLogInput {
     adminEmail: string;
@@ -28,28 +28,20 @@ export interface ListAuditLogsOptions {
     perPage?: number;
 }
 
-export async function listAuditLogs(options: ListAuditLogsOptions = {}) {
-    const db = await getDb();
-    const { rows, total } = await runPaginatedQuery({
-        page: options.page,
-        perPage: options.perPage,
-        fetchRows: async ({ limit, offset }) =>
-            db
-                .select()
-                .from(adminAuditLogs)
-                .orderBy(desc(adminAuditLogs.createdAt))
-                .limit(limit)
-                .offset(offset),
-        fetchTotal: async () => {
-            const result = await db
-                .select({ count: sql<number>`count(*)` })
-                .from(adminAuditLogs);
-            return result[0]?.count ?? 0;
-        },
-    });
+const runAuditLogQuery = createSimplePaginatedList({
+    buildBaseQuery: async (db, { limit, offset }) =>
+        db
+            .select()
+            .from(adminAuditLogs)
+            .orderBy(desc(adminAuditLogs.createdAt))
+            .limit(limit)
+            .offset(offset),
+    buildTotalQuery: async (db) =>
+        db
+            .select({ count: sql<number>`count(*)` })
+            .from(adminAuditLogs),
+});
 
-    return {
-        data: rows,
-        total,
-    };
+export async function listAuditLogs(options: ListAuditLogsOptions = {}) {
+    return await runAuditLogQuery(options);
 }

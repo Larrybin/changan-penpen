@@ -9,37 +9,32 @@ import {
     usageDaily,
 } from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
-import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
+import {
+    createSimplePaginatedList,
+    type FilterableBuilder,
+} from "@/modules/admin/utils/query-factory";
 
 export interface ListReportsOptions {
     page?: number;
     perPage?: number;
 }
 
-export async function listReports(options: ListReportsOptions = {}) {
-    const db = await getDb();
-    const { rows, total } = await runPaginatedQuery({
-        page: options.page,
-        perPage: options.perPage,
-        fetchRows: async ({ limit, offset }) =>
-            db
-                .select()
-                .from(reports)
-                .orderBy(desc(reports.createdAt))
-                .limit(limit)
-                .offset(offset),
-        fetchTotal: async () => {
-            const result = await db
-                .select({ count: sql<number>`count(*)` })
-                .from(reports);
-            return result[0]?.count ?? 0;
-        },
-    });
+const runReportListQuery = createSimplePaginatedList({
+    buildBaseQuery: async (db, { limit, offset }) =>
+        db
+            .select()
+            .from(reports)
+            .orderBy(desc(reports.createdAt))
+            .limit(limit)
+            .offset(offset),
+    buildTotalQuery: async (db) =>
+        db
+            .select({ count: sql<number>`count(*)` })
+            .from(reports),
+});
 
-    return {
-        data: rows,
-        total,
-    };
+export async function listReports(options: ListReportsOptions = {}) {
+    return await runReportListQuery(options);
 }
 
 export interface CreateReportInput {
@@ -56,7 +51,7 @@ export async function createReport(
     const db = await getDb();
     const timestamp = new Date().toISOString();
 
-    const data = await generateReportData(input);
+    const data = await generateReportData(db, input);
     const csv = toCsv(data.headers, data.rows);
     const downloadUrl = `data:text/csv;base64,${toBase64(csv)}`;
 
@@ -83,104 +78,138 @@ export async function createReport(
     return created;
 }
 
-async function generateReportData(input: CreateReportInput) {
+type DbClient = Awaited<ReturnType<typeof getDb>>;
+
+interface TabularReportConfig<TRow> {
+    headers: string[];
+    buildBaseQuery: (db: DbClient) => FilterableBuilder<TRow[]>;
+    applyTenantFilter?: (
+        query: FilterableBuilder<TRow[]>,
+        tenantId: string,
+    ) => FilterableBuilder<TRow[]>;
+    mapRow: (row: TRow) => Array<string | number | null>;
+}
+
+function withWhere<TRow>(
+    query: FilterableBuilder<TRow[]>,
+    apply: (query: {
+        where: (...args: unknown[]) => FilterableBuilder<TRow[]>;
+    }) => FilterableBuilder<TRow[]>,
+) {
+    return apply(
+        query as unknown as {
+            where: (...args: unknown[]) => FilterableBuilder<TRow[]>;
+        },
+    );
+}
+
+async function generateTabularReport<TRow>(
+    db: DbClient,
+    input: CreateReportInput,
+    config: TabularReportConfig<TRow>,
+) {
+    const baseQuery = config.buildBaseQuery(db);
+    const query =
+        input.tenantId && config.applyTenantFilter
+            ? config.applyTenantFilter(baseQuery, input.tenantId)
+            : baseQuery;
+    const rows = await query;
+
+    return {
+        headers: config.headers,
+        rows: rows.map(config.mapRow),
+    };
+}
+
+async function generateReportData(db: DbClient, input: CreateReportInput) {
     switch (input.type) {
         case "orders":
-            return generateOrdersReport(input);
+            return generateOrdersReport(db, input);
         case "usage":
-            return generateUsageReport(input);
+            return generateUsageReport(db, input);
         default:
-            return generateCreditsReport(input);
+            return generateCreditsReport(db, input);
     }
 }
 
-async function generateOrdersReport(input: CreateReportInput) {
-    const db = await getDb();
-    const query = db
-        .select({
-            id: orders.id,
-            amountCents: orders.amountCents,
-            currency: orders.currency,
-            createdAt: orders.createdAt,
-            customerEmail: customers.email,
-            status: orders.status,
-        })
-        .from(orders)
-        .innerJoin(customers, eq(customers.id, orders.customerId))
-        .orderBy(desc(orders.createdAt));
-
-    const rows = input.tenantId
-        ? await query.where(eq(customers.userId, input.tenantId))
-        : await query;
-
-    return {
+async function generateOrdersReport(db: DbClient, input: CreateReportInput) {
+    return await generateTabularReport(db, input, {
         headers: ["ID", "Email", "Amount", "Currency", "Status", "Created At"],
-        rows: rows.map((row) => [
+        buildBaseQuery: (client) =>
+            client
+                .select({
+                    id: orders.id,
+                    amountCents: orders.amountCents,
+                    currency: orders.currency,
+                    createdAt: orders.createdAt,
+                    customerEmail: customers.email,
+                    status: orders.status,
+                })
+                .from(orders)
+                .innerJoin(customers, eq(customers.id, orders.customerId))
+                .orderBy(desc(orders.createdAt)),
+        applyTenantFilter: (query, tenantId) =>
+            withWhere(query, (builder) => builder.where(eq(customers.userId, tenantId))),
+        mapRow: (row) => [
             row.id,
             row.customerEmail ?? "",
             (row.amountCents ?? 0) / 100,
             row.currency ?? "USD",
             row.status ?? "",
             row.createdAt ?? "",
-        ]),
-    };
+        ],
+    });
 }
 
-async function generateUsageReport(input: CreateReportInput) {
-    const db = await getDb();
-    const query = db
-        .select({
-            userId: usageDaily.userId,
-            date: usageDaily.date,
-            totalAmount: usageDaily.totalAmount,
-            unit: usageDaily.unit,
-        })
-        .from(usageDaily)
-        .orderBy(desc(usageDaily.date));
-
-    const rows = input.tenantId
-        ? await query.where(eq(usageDaily.userId, input.tenantId))
-        : await query;
-
-    return {
+async function generateUsageReport(db: DbClient, input: CreateReportInput) {
+    return await generateTabularReport(db, input, {
         headers: ["User ID", "Date", "Amount", "Unit"],
-        rows: rows.map((row) => [
+        buildBaseQuery: (client) =>
+            client
+                .select({
+                    userId: usageDaily.userId,
+                    date: usageDaily.date,
+                    totalAmount: usageDaily.totalAmount,
+                    unit: usageDaily.unit,
+                })
+                .from(usageDaily)
+                .orderBy(desc(usageDaily.date)),
+        applyTenantFilter: (query, tenantId) =>
+            withWhere(query, (builder) => builder.where(eq(usageDaily.userId, tenantId))),
+        mapRow: (row) => [
             row.userId,
             row.date,
             row.totalAmount,
             row.unit ?? "",
-        ]),
-    };
+        ],
+    });
 }
 
-async function generateCreditsReport(input: CreateReportInput) {
-    const db = await getDb();
-    const query = db
-        .select({
-            id: creditsHistory.id,
-            amount: creditsHistory.amount,
-            type: creditsHistory.type,
-            createdAt: creditsHistory.createdAt,
-            customerEmail: customers.email,
-        })
-        .from(creditsHistory)
-        .innerJoin(customers, eq(customers.id, creditsHistory.customerId))
-        .orderBy(desc(creditsHistory.createdAt));
-
-    const rows = input.tenantId
-        ? await query.where(eq(customers.userId, input.tenantId))
-        : await query;
-
-    return {
+async function generateCreditsReport(db: DbClient, input: CreateReportInput) {
+    return await generateTabularReport(db, input, {
         headers: ["ID", "Email", "Amount", "Type", "Created At"],
-        rows: rows.map((row) => [
+        buildBaseQuery: (client) =>
+            client
+                .select({
+                    id: creditsHistory.id,
+                    amount: creditsHistory.amount,
+                    type: creditsHistory.type,
+                    createdAt: creditsHistory.createdAt,
+                    customerEmail: customers.email,
+                })
+                .from(creditsHistory)
+                .innerJoin(customers, eq(customers.id, creditsHistory.customerId))
+                .orderBy(desc(creditsHistory.createdAt)),
+        applyTenantFilter: (query, tenantId) =>
+            withWhere(query, (builder) => builder.where(eq(customers.userId, tenantId))),
+        mapRow: (row) => [
             row.id,
             row.customerEmail ?? "",
             row.amount ?? 0,
             row.type ?? "",
             row.createdAt ?? "",
-        ]),
-    };
+        ],
+    });
 }
 
 function toCsv(headers: string[], rows: Array<Array<string | number | null>>) {

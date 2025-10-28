@@ -1,20 +1,22 @@
-import { desc, eq, like, sql } from "drizzle-orm";
+import { desc, eq, like } from "drizzle-orm";
 
 import { config } from "@/config";
 import {
-    creditsHistory,
     creditTransactions,
-    customers,
     getDb,
-    subscriptions as subscriptionTable,
-    usageDaily,
     user,
 } from "@/db";
 import { toNullableIsoString } from "@/lib/formatters";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
 import { computeWithAdminCache } from "@/modules/admin/utils/cache";
-import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
-import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
+import { runUserDirectoryQuery } from "@/modules/admin/utils/query-factory";
+import {
+    fetchCustomerWithHistory,
+    fetchUsageHistory,
+    fetchUserCore,
+    normalizePagination,
+    type QueryRunner,
+} from "@/modules/admin-shared";
 import type {
     AdminUserService,
     ListUsersOptions,
@@ -42,34 +44,7 @@ const resolveStatus = (emailVerified: boolean | null | undefined) =>
 
 type DbClient = Awaited<ReturnType<typeof getDb>>;
 
-type CustomerRecord = Pick<
-    typeof customers.$inferSelect,
-    "id" | "credits" | "createdAt" | "updatedAt"
->;
-
-type CreditHistoryRecord = Pick<
-    typeof creditsHistory.$inferSelect,
-    "id" | "amount" | "type" | "description" | "createdAt"
->;
-
-type SubscriptionRecord = Pick<
-    typeof subscriptionTable.$inferSelect,
-    | "id"
-    | "status"
-    | "currentPeriodStart"
-    | "currentPeriodEnd"
-    | "canceledAt"
-    | "createdAt"
-    | "updatedAt"
->;
-
-interface CustomerBundle {
-    customer: CustomerRecord | null;
-    credits: CreditHistoryRecord[];
-    subscriptions: SubscriptionRecord[];
-}
-
-type QueryExecutor = <T>(operation: () => Promise<T>) => Promise<T>;
+type QueryExecutor = QueryRunner;
 
 const directQueryExecutor: QueryExecutor = (operation) =>
     Promise.resolve().then(operation);
@@ -275,107 +250,6 @@ const sharedDetailQueryExecutor = createDetailQueryExecutorFromConfig(
     config.admin?.users?.detailQuery,
 );
 
-async function fetchUserRow(db: DbClient, userId: string) {
-    const [row] = await db
-        .select({
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            emailVerified: user.emailVerified,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            image: user.image,
-            currentCredits: user.currentCredits,
-            lastCreditRefreshAt: user.lastCreditRefreshAt,
-        })
-        .from(user)
-        .where(eq(user.id, userId))
-        .limit(1);
-
-    return row ?? null;
-}
-
-async function fetchCustomerBundle(
-    db: DbClient,
-    userId: string,
-    runQuery: QueryExecutor = directQueryExecutor,
-): Promise<CustomerBundle> {
-    const [customerRow] = await runQuery(() =>
-        db
-            .select({
-                id: customers.id,
-                credits: customers.credits,
-                createdAt: customers.createdAt,
-                updatedAt: customers.updatedAt,
-            })
-            .from(customers)
-            .where(eq(customers.userId, userId))
-            .limit(1),
-    );
-
-    if (!customerRow) {
-        return {
-            customer: null,
-            credits: [],
-            subscriptions: [],
-        };
-    }
-
-    const [creditRows, subscriptionRows] = await Promise.all([
-        runQuery(() =>
-            db
-                .select({
-                    id: creditsHistory.id,
-                    amount: creditsHistory.amount,
-                    type: creditsHistory.type,
-                    description: creditsHistory.description,
-                    createdAt: creditsHistory.createdAt,
-                })
-                .from(creditsHistory)
-                .where(eq(creditsHistory.customerId, customerRow.id))
-                .orderBy(desc(creditsHistory.createdAt))
-                .limit(20),
-        ),
-        runQuery(() =>
-            db
-                .select({
-                    id: subscriptionTable.id,
-                    status: subscriptionTable.status,
-                    currentPeriodStart: subscriptionTable.currentPeriodStart,
-                    currentPeriodEnd: subscriptionTable.currentPeriodEnd,
-                    canceledAt: subscriptionTable.canceledAt,
-                    createdAt: subscriptionTable.createdAt,
-                    updatedAt: subscriptionTable.updatedAt,
-                })
-                .from(subscriptionTable)
-                .where(eq(subscriptionTable.customerId, customerRow.id))
-                .orderBy(desc(subscriptionTable.createdAt))
-                .limit(10),
-        ),
-    ]);
-
-    return {
-        customer: customerRow,
-        credits: creditRows,
-        subscriptions: subscriptionRows,
-    };
-}
-
-function fetchUsageRows(db: DbClient, userId: string) {
-    return db
-        .select({
-            id: usageDaily.id,
-            date: usageDaily.date,
-            feature: usageDaily.feature,
-            totalAmount: usageDaily.totalAmount,
-            unit: usageDaily.unit,
-        })
-        .from(usageDaily)
-        .where(eq(usageDaily.userId, userId))
-        .orderBy(desc(usageDaily.date))
-        .limit(30);
-}
-
 function fetchTransactionRows(db: DbClient, userId: string) {
     return db
         .select({
@@ -427,7 +301,8 @@ export function createAdminUserService(
                 total,
                 page: resolvedPage,
                 perPage: resolvedPerPage,
-            } = await runPaginatedQuery({
+            } = await runUserDirectoryQuery({
+                db,
                 page,
                 perPage,
                 filters: [
@@ -437,8 +312,8 @@ export function createAdminUserService(
                     nameFilter ? like(user.name, `%${nameFilter}%`) : undefined,
                 ],
                 operator: "or",
-                fetchRows: async ({ limit, offset, where }) => {
-                    const baseQuery = db
+                buildBaseQuery: async (client, { limit, offset, where }) => {
+                    const query = client
                         .select({
                             id: user.id,
                             email: user.email,
@@ -451,19 +326,7 @@ export function createAdminUserService(
                         .orderBy(desc(user.createdAt))
                         .limit(limit)
                         .offset(offset);
-                    return where
-                        ? await baseQuery.where(where)
-                        : await baseQuery;
-                },
-                fetchTotal: async (where) => {
-                    const totalQuery = db
-                        .select({ count: sql<number>`count(*)` })
-                        .from(user)
-                        .limit(1);
-                    const result = where
-                        ? await totalQuery.where(where)
-                        : await totalQuery;
-                    return result[0]?.count ?? 0;
+                    return where ? await query.where(where) : await query;
                 },
             });
 
@@ -517,19 +380,21 @@ export function createAdminUserService(
         const runControlledQuery =
             dependencies.detailQueryExecutor ?? sharedDetailQueryExecutor;
 
-        const userRow = await runControlledQuery(() =>
-            fetchUserRow(db, userId),
-        );
+        const userRow = await fetchUserCore(db, userId, runControlledQuery);
         if (!userRow) {
             return null;
         }
 
         const adminEmailsPromise = dependencies.resolveAdminEmails();
 
-        const [customerBundle, usageRows, transactionRows, adminEmails] =
+        const [customerHistory, usageRows, transactionRows, adminEmails] =
             await Promise.all([
-                fetchCustomerBundle(db, userId, runControlledQuery),
-                runControlledQuery(() => fetchUsageRows(db, userId)),
+                fetchCustomerWithHistory(db, userId, {
+                    runQuery: runControlledQuery,
+                }),
+                fetchUsageHistory(db, userId, {
+                    runQuery: runControlledQuery,
+                }),
                 runControlledQuery(() => fetchTransactionRows(db, userId)),
                 adminEmailsPromise,
             ]);
@@ -541,7 +406,7 @@ export function createAdminUserService(
                 name: userRow.name,
                 emailVerified: Boolean(userRow.emailVerified),
                 role: resolveRole(userRow.email, adminEmails),
-                status: resolveStatus(userRow.emailVerified),
+                status: resolveStatus(Boolean(userRow.emailVerified)),
                 createdAt: toNullableIsoString(userRow.createdAt),
                 updatedAt: toNullableIsoString(userRow.updatedAt),
                 image: userRow.image ?? null,
@@ -550,19 +415,19 @@ export function createAdminUserService(
                     userRow.lastCreditRefreshAt,
                 ),
             },
-            customer: customerBundle.customer
+            customer: customerHistory.customer
                 ? {
-                      id: customerBundle.customer.id,
-                      credits: customerBundle.customer.credits,
+                      id: customerHistory.customer.id,
+                      credits: customerHistory.customer.credits,
                       createdAt: toNullableIsoString(
-                          customerBundle.customer.createdAt,
+                          customerHistory.customer.createdAt,
                       ),
                       updatedAt: toNullableIsoString(
-                          customerBundle.customer.updatedAt,
+                          customerHistory.customer.updatedAt,
                       ),
                   }
                 : null,
-            subscriptions: customerBundle.subscriptions.map((subscription) => ({
+            subscriptions: customerHistory.subscriptions.map((subscription) => ({
                 id: subscription.id,
                 status: subscription.status,
                 currentPeriodStart: toNullableIsoString(
@@ -575,7 +440,7 @@ export function createAdminUserService(
                 createdAt: toNullableIsoString(subscription.createdAt),
                 updatedAt: toNullableIsoString(subscription.updatedAt),
             })),
-            creditsHistory: customerBundle.credits.map((credit) => ({
+            creditsHistory: customerHistory.credits.map((credit) => ({
                 id: credit.id,
                 amount: credit.amount,
                 type: credit.type,

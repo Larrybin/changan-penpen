@@ -6,8 +6,9 @@ import {
     QueryCache,
     QueryClient,
     QueryClientProvider,
+    focusManager,
 } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ApiErrorDetails as ApiClientErrorDetails } from "@/lib/api-client";
 import { ApiError } from "@/lib/http-error";
 import { secureRandomNumber } from "@/lib/random";
@@ -87,6 +88,101 @@ function notifyError(error: unknown) {
     toast.error("请求失败，请稍后再试。", {
         id: `admin-query-error-unknown`,
     });
+}
+
+type InvalidationDescriptor = { refetch: boolean };
+
+const pendingInvalidations = new Map<string, InvalidationDescriptor>();
+const pendingRefetchKeys = new Set<string>();
+let flushTimeout: ReturnType<typeof setTimeout> | null = null;
+let documentVisible =
+    typeof document === "undefined" ? true : document.visibilityState === "visible";
+
+function flushPendingRefetches(queryClient: QueryClient) {
+    if (pendingRefetchKeys.size === 0) {
+        return;
+    }
+
+    const keys = Array.from(pendingRefetchKeys);
+    pendingRefetchKeys.clear();
+    keys.forEach((key) => {
+        void queryClient.refetchQueries({ queryKey: [key], type: "active" });
+    });
+}
+
+function flushInvalidations(queryClient: QueryClient) {
+    if (pendingInvalidations.size === 0) {
+        return;
+    }
+
+    const entries = Array.from(pendingInvalidations.entries());
+    pendingInvalidations.clear();
+
+    entries.forEach(([key, descriptor]) => {
+        queryClient.invalidateQueries({ queryKey: [key] });
+        if (descriptor.refetch) {
+            if (documentVisible) {
+                void queryClient.refetchQueries({
+                    queryKey: [key],
+                    type: "active",
+                });
+            } else {
+                pendingRefetchKeys.add(key);
+            }
+        }
+    });
+
+    if (documentVisible) {
+        flushPendingRefetches(queryClient);
+    }
+}
+
+function scheduleInvalidationFlush(queryClient: QueryClient) {
+    if (flushTimeout !== null) {
+        return;
+    }
+
+    flushTimeout = setTimeout(() => {
+        flushTimeout = null;
+        const client = getQueryClientInstance();
+        if (client) {
+            flushInvalidations(client);
+        }
+    }, 50);
+}
+
+function enqueueInvalidations(
+    items: Array<{ key: string; refetch?: boolean }>,
+): void {
+    if (items.length === 0) {
+        return;
+    }
+
+    const queryClient = getQueryClientInstance();
+    if (!queryClient) {
+        return;
+    }
+
+    let didAdd = false;
+    items.forEach(({ key, refetch }) => {
+        const trimmedKey = key.trim();
+        if (!trimmedKey) {
+            return;
+        }
+        const existing = pendingInvalidations.get(trimmedKey);
+        if (existing) {
+            existing.refetch = existing.refetch || Boolean(refetch);
+            return;
+        }
+        pendingInvalidations.set(trimmedKey, {
+            refetch: Boolean(refetch),
+        });
+        didAdd = true;
+    });
+
+    if (didAdd || pendingInvalidations.size > 0) {
+        scheduleInvalidationFlush(queryClient);
+    }
 }
 
 /**
@@ -190,9 +286,11 @@ function handleMutationCacheInvalidation(
     const mutationKey = mutation.options?.mutationKey?.[0] as
         | string
         | undefined;
-    const queryClient = getQueryClientInstance();
 
-    if (!mutationKey || !queryClient) return;
+    if (!mutationKey) return;
+    if (!getQueryClientInstance()) {
+        return;
+    }
 
     // 根据不同的变更类型失效相应的查询缓存
     const invalidationMap: Record<string, string[]> = {
@@ -213,18 +311,13 @@ function handleMutationCacheInvalidation(
 
     const keysToInvalidate = invalidationMap[mutationKey] || [];
 
-    keysToInvalidate.forEach((key) => {
-        // 失效相关查询缓存
-        queryClient.invalidateQueries({ queryKey: [key] });
-    });
+    enqueueInvalidations(keysToInvalidate.map((key) => ({ key })));
 
-    // 特殊处理：如果是仪表盘相关变更，强制刷新
     if (
         mutationKey.includes("dashboard") ||
         keysToInvalidate.includes("dashboard")
     ) {
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-        queryClient.refetchQueries({ queryKey: ["dashboard"], type: "active" });
+        enqueueInvalidations([{ key: "dashboard", refetch: true }]);
     }
 }
 
@@ -246,19 +339,15 @@ export function invalidateAdminQueries(
     queryKeys: string[] | string,
     options?: { refetch?: boolean },
 ): void {
-    const client = getQueryClientInstance();
-    if (!client) return;
+    if (!getQueryClientInstance()) {
+        return;
+    }
 
     const keys = Array.isArray(queryKeys) ? queryKeys : [queryKeys];
 
-    keys.forEach((key) => {
-        if (options?.refetch) {
-            client.invalidateQueries({ queryKey: [key] });
-            client.refetchQueries({ queryKey: [key], type: "active" });
-        } else {
-            client.invalidateQueries({ queryKey: [key] });
-        }
-    });
+    enqueueInvalidations(
+        keys.map((key) => ({ key, refetch: Boolean(options?.refetch) })),
+    );
 }
 
 /**
@@ -289,6 +378,32 @@ export function AdminQueryProvider({
         setQueryClientInstance(queryClient); // 设置全局实例
         return queryClient;
     });
+
+    useEffect(() => {
+        if (typeof document === "undefined") {
+            return;
+        }
+
+        const handleVisibilityChange = () => {
+            const visible = document.visibilityState === "visible";
+            documentVisible = visible;
+            focusManager.setFocused(visible);
+            if (visible) {
+                flushInvalidations(client);
+                flushPendingRefetches(client);
+            }
+        };
+
+        handleVisibilityChange();
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange,
+            );
+        };
+    }, [client]);
 
     return (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>

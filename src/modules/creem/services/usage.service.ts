@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { consumeCredits } from "@/modules/billing/services/credits.service";
 import { customers } from "@/modules/creem/schemas/billing.schema";
@@ -14,6 +14,26 @@ export type UsageRecordInput = {
 };
 
 type Database = Awaited<ReturnType<typeof getDb>>;
+
+export type UsageGranularity = "daily" | "weekly" | "monthly";
+
+export interface UsageStatsRow {
+    bucket: string;
+    feature: string;
+    totalAmount: number;
+    unit: string;
+}
+
+export interface UsageStatsResult {
+    granularity: UsageGranularity;
+    rows: UsageStatsRow[];
+}
+
+export interface UsageStatsOptions {
+    features?: string[];
+    granularity?: UsageGranularity;
+    dbOverride?: Database;
+}
 
 export async function recordUsage(
     input: UsageRecordInput,
@@ -89,30 +109,95 @@ export async function recordUsage(
     return { ok: true as const, date, newCredits };
 }
 
+export async function getUsageStats(
+    userId: string,
+    fromDateInclusive: string,
+    toDateInclusive: string,
+    options?: UsageStatsOptions,
+): Promise<UsageStatsResult> {
+    const granularity = options?.granularity ?? "daily";
+    const db = options?.dbOverride ?? (await getDb());
+    const featureFilter = (options?.features ?? [])
+        .map((feature) => feature.trim())
+        .filter((feature) => feature.length > 0);
+
+    let predicate = and(
+        eq(usageDaily.userId, userId),
+        gte(usageDaily.date, fromDateInclusive),
+        lte(usageDaily.date, toDateInclusive),
+    );
+
+    if (featureFilter.length > 0) {
+        predicate = and(predicate, inArray(usageDaily.feature, featureFilter));
+    }
+
+    if (granularity === "daily") {
+        const rows = await db
+            .select({
+                bucket: usageDaily.date,
+                feature: usageDaily.feature,
+                totalAmount: usageDaily.totalAmount,
+                unit: usageDaily.unit,
+            })
+            .from(usageDaily)
+            .where(predicate)
+            .orderBy(usageDaily.date, usageDaily.feature);
+
+        return {
+            granularity,
+            rows: rows.map((row) => ({
+                bucket: row.bucket,
+                feature: row.feature,
+                totalAmount: Number(row.totalAmount ?? 0),
+                unit: row.unit,
+            })),
+        } satisfies UsageStatsResult;
+    }
+
+    const periodExpression =
+        granularity === "weekly"
+            ? sql<string>`strftime('%Y-W%W', ${usageDaily.date})`
+            : sql<string>`strftime('%Y-%m', ${usageDaily.date})`;
+    const aggregatedAmount = sql<number>`sum(${usageDaily.totalAmount})`;
+
+    const aggregatedRows = await db
+        .select({
+            bucket: periodExpression,
+            feature: usageDaily.feature,
+            totalAmount: aggregatedAmount,
+            unit: usageDaily.unit,
+        })
+        .from(usageDaily)
+        .where(predicate)
+        .groupBy(periodExpression, usageDaily.feature, usageDaily.unit)
+        .orderBy(periodExpression, usageDaily.feature);
+
+    return {
+        granularity,
+        rows: aggregatedRows.map((row) => ({
+            bucket: row.bucket,
+            feature: row.feature,
+            totalAmount: Number(row.totalAmount ?? 0),
+            unit: row.unit,
+        })),
+    } satisfies UsageStatsResult;
+}
+
 export async function getUsageDaily(
     userId: string,
     fromDateInclusive: string,
     toDateInclusive: string,
     dbOverride?: Database,
 ) {
-    const db = dbOverride ?? (await getDb());
-    // 简化处理：直接查询区间的聚合表
-    const rows = await db
-        .select({
-            date: usageDaily.date,
-            feature: usageDaily.feature,
-            totalAmount: usageDaily.totalAmount,
-            unit: usageDaily.unit,
-        })
-        .from(usageDaily)
-        .where(
-            and(
-                eq(usageDaily.userId, userId),
-                gte(usageDaily.date, fromDateInclusive),
-                lte(usageDaily.date, toDateInclusive),
-            ),
-        )
-        .orderBy(usageDaily.date);
+    const result = await getUsageStats(userId, fromDateInclusive, toDateInclusive, {
+        granularity: "daily",
+        dbOverride,
+    });
 
-    return rows;
+    return result.rows.map((row) => ({
+        date: row.bucket,
+        feature: row.feature,
+        totalAmount: row.totalAmount,
+        unit: row.unit,
+    }));
 }

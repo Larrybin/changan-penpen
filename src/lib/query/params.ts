@@ -2,13 +2,19 @@ import type {
     CrudFilter,
     CrudFilters,
     CrudSorting,
-    GetListParams,
+    Pagination,
 } from "@/lib/crud/types";
 
+export interface CursorAwarePagination extends Pagination {
+    cursor?: string | null;
+}
+
 export interface BuildListSearchParamsOptions {
-    pagination?: GetListParams["pagination"];
+    pagination?: CursorAwarePagination;
     filters?: CrudFilters;
     sorters?: CrudSorting;
+    view?: string | null;
+    fields?: readonly string[] | null;
 }
 
 function appendFilter(entries: Array<[string, string]>, filter: CrudFilter) {
@@ -82,7 +88,7 @@ export function buildListSearchParams(
     const entries: Array<[string, string]> = [];
 
     if (options.pagination) {
-        const { current, page, pageSize } = options.pagination;
+        const { current, page, pageSize, cursor } = options.pagination;
         const resolvedPage = current ?? page;
         if (resolvedPage) {
             entries.push(["page", String(resolvedPage)]);
@@ -90,10 +96,32 @@ export function buildListSearchParams(
         if (pageSize) {
             entries.push(["perPage", String(pageSize)]);
         }
+        if (cursor) {
+            entries.push(["cursor", String(cursor)]);
+        }
     }
 
     appendFilters(entries, options.filters);
     appendSorters(entries, options.sorters);
+
+    if (options.view) {
+        const trimmedView = options.view.trim();
+        if (trimmedView.length > 0) {
+            entries.push(["view", trimmedView]);
+        }
+    }
+
+    if (options.fields && options.fields.length > 0) {
+        const seen = new Set<string>();
+        options.fields.forEach((field) => {
+            const trimmed = field.trim();
+            if (trimmed.length === 0 || seen.has(trimmed)) {
+                return;
+            }
+            seen.add(trimmed);
+            entries.push(["fields", trimmed]);
+        });
+    }
 
     const searchParams = new URLSearchParams();
     entries.forEach(([key, value]) => {

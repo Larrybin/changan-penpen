@@ -37,15 +37,19 @@ export interface FetchAdminListOptions {
     pagination?: {
         pageIndex?: number;
         pageSize?: number;
+        cursor?: string | null;
     };
     filters?: CrudFilters;
     sorters?: CrudSorting;
+    fields?: readonly string[];
+    view?: string | null;
     signal?: AbortSignal;
 }
 
 export interface FetchAdminListResult<TData> {
     items: TData[];
     total: number;
+    nextCursor?: string | null;
 }
 
 export function normalizeAdminResourcePath(resource: string) {
@@ -107,23 +111,29 @@ export async function fetchAdminList<TData = Record<string, unknown>>({
     pagination,
     filters,
     sorters,
+    fields,
+    view,
     signal,
 }: FetchAdminListOptions): Promise<FetchAdminListResult<TData>> {
     const resourcePath = normalizeAdminResourcePath(resource);
     const searchParams = buildListSearchParams({
         pagination:
             pagination?.pageIndex !== undefined ||
-            pagination?.pageSize !== undefined
+            pagination?.pageSize !== undefined ||
+            pagination?.cursor !== undefined
                 ? {
                       current:
                           typeof pagination?.pageIndex === "number"
                               ? pagination.pageIndex + 1
                               : undefined,
                       pageSize: pagination?.pageSize,
+                      cursor: pagination?.cursor ?? undefined,
                   }
                 : undefined,
         filters,
         sorters,
+        fields,
+        view: view ?? null,
     });
 
     const response = await adminApiClient.get<AdminListPayload<TData>>(
