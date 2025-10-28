@@ -417,7 +417,8 @@ export async function invalidateDashboardMetricsCache(
     if (conditions.length > 0) {
         const predicate =
             conditions.length === 1 ? conditions[0] : and(...conditions);
-        query = query.where(predicate);
+        await query.where(predicate).run();
+        return;
     }
 
     await query.run();
