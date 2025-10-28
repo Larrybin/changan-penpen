@@ -92,6 +92,13 @@ EXTERNAL_API_RECOVERY_TIMEOUT_SECONDS=30
 
 > 这些覆盖会在应用启动时由 `src/config/index.ts` 注入配置，并对所有外部 API 调用生效。
 
+#### 与重试策略的配合
+
+- 摘要服务会在进入重试循环前查询熔断状态，并对每次下游调用应用断路器。熔断状态在同一 Worker 实例内共享，可通过指标 `ai.summarizer.circuit_breaker.transition`（状态切换）与 `ai.summarizer.circuit_breaker.blocked`（被熔断拒绝的请求）监控。
+- `failure_threshold` 建议大于单次请求的最大重试次数（`retry_attempts`），避免因为预期内的瞬时错误造成提前熔断。示例：`retry_attempts=3` 时，可将 `failure_threshold` 设为 4–5。
+- `recovery_timeout` 控制熔断后多久允许探测性请求；`half_open_max_calls` 可调节半开阶段的并发探测数量，结合现有重试策略可减少雪崩式回落。若设置 `half_open_max_calls=1`，则每次仅允许单个探测，其他请求会直接返回熔断错误并走回退逻辑。
+- 如需暂时绕过熔断器（例如本地调试），可在环境配置中将 `circuit_breaker.enabled` 设为 `false`；此时仍会遵循重试策略，但不会共享失败计数或阻断请求。
+
 ## Rotation Policy
 - Use `wrangler secret put <NAME>` for production secrets
 - Rotate on schedule and after incident

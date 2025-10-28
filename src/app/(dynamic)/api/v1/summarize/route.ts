@@ -154,8 +154,8 @@ export async function POST(request: Request) {
         const faultHeader = request.headers.get("x-fault-injection");
         const faultTargets = parseFaultInjectionTargets(faultHeader);
 
-        const externalApiConfig = config.services?.external_apis;
-        const circuitBreakerConfig = externalApiConfig?.circuit_breaker;
+        const retryConfig = config.services?.external_apis;
+        const circuitBreakerConfig = retryConfig?.circuit_breaker;
         const summarizerService = new SummarizerService(env.AI, {
             retry: {
                 attempts: externalApiConfig?.retry_attempts ?? 3,
@@ -175,6 +175,18 @@ export async function POST(request: Request) {
                 : undefined,
             faultInjection:
                 faultTargets.length > 0 ? { flags: faultTargets } : undefined,
+            circuitBreaker: circuitBreakerConfig
+                ? {
+                      key: "summarizer:workers-ai",
+                      enabled: circuitBreakerConfig.enabled ?? true,
+                      failureThreshold:
+                          circuitBreakerConfig.failure_threshold ?? undefined,
+                      recoveryTimeout:
+                          circuitBreakerConfig.recovery_timeout ?? undefined,
+                      halfOpenMaxCalls:
+                          circuitBreakerConfig.half_open_max_calls ?? undefined,
+                  }
+                : undefined,
         });
         const result = await summarizerService.summarize(
             normalizedText,
