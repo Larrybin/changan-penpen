@@ -50,7 +50,8 @@ export function UsageListPage() {
                 resource: "usage",
                 pagination: {
                     pageSize: 20,
-                    cursor: typeof pageParam === "string" ? pageParam : undefined,
+                    cursor:
+                        typeof pageParam === "string" ? pageParam : undefined,
                 },
                 filters,
                 signal,
@@ -173,7 +174,7 @@ export function UsageListPage() {
                             {isFetchingNext ? "加载中…" : "加载更多"}
                         </Button>
                     ) : (
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-muted-foreground text-sm">
                             已加载全部数据
                         </span>
                     )}

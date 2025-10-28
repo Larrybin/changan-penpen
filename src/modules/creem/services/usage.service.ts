@@ -189,10 +189,15 @@ export async function getUsageDaily(
     toDateInclusive: string,
     dbOverride?: Database,
 ) {
-    const result = await getUsageStats(userId, fromDateInclusive, toDateInclusive, {
-        granularity: "daily",
-        dbOverride,
-    });
+    const result = await getUsageStats(
+        userId,
+        fromDateInclusive,
+        toDateInclusive,
+        {
+            granularity: "daily",
+            dbOverride,
+        },
+    );
 
     return result.rows.map((row) => ({
         date: row.bucket,

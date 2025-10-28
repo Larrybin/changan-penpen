@@ -39,9 +39,11 @@ export async function listUsage(options: ListUsageOptions = {}) {
                 : undefined,
         ],
         decodeCursor: (cursor) =>
-            decodeCursorPayload<{ date: string; userId: string; feature: string }>(
-                cursor,
-            ),
+            decodeCursorPayload<{
+                date: string;
+                userId: string;
+                feature: string;
+            }>(cursor),
         encodeCursor: encodeCursorPayload,
         getCursorValue: (row) => {
             if (!row.date || !row.userId || !row.feature) {
@@ -81,9 +83,10 @@ export async function listUsage(options: ListUsageOptions = {}) {
                   )
                 : undefined;
 
-            const combinedWhere = where && cursorFilter
-                ? and(where, cursorFilter)
-                : cursorFilter ?? where;
+            const combinedWhere =
+                where && cursorFilter
+                    ? and(where, cursorFilter)
+                    : (cursorFilter ?? where);
 
             return combinedWhere
                 ? await baseQuery.where(combinedWhere)
@@ -116,7 +119,7 @@ export async function listUsage(options: ListUsageOptions = {}) {
     return {
         data: rows.map((row) => ({
             ...row,
-            email: row.userId ? userMap.get(row.userId) ?? null : null,
+            email: row.userId ? (userMap.get(row.userId) ?? null) : null,
         })),
         total,
         nextCursor: nextCursor ?? null,

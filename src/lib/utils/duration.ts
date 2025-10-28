@@ -23,7 +23,9 @@ export function parseDurationToMs(
         return Math.max(0, Math.floor(numeric));
     }
 
-    const match = trimmed.toLowerCase().match(/^([0-9]+(?:\.[0-9]+)?)(ms|s|m|h)$/u);
+    const match = trimmed
+        .toLowerCase()
+        .match(/^([0-9]+(?:\.[0-9]+)?)(ms|s|m|h)$/u);
     if (!match) {
         return undefined;
     }

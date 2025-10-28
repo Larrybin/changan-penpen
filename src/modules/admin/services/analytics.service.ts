@@ -59,9 +59,7 @@ interface CacheScope {
     fromDate: string | null;
 }
 
-function resolveCacheScope(
-    options: DashboardMetricsOptions,
-): CacheScope {
+function resolveCacheScope(options: DashboardMetricsOptions): CacheScope {
     return {
         tenantId: options.tenantId ?? null,
         fromDate: options.from ?? null,
@@ -124,7 +122,9 @@ async function writeDashboardCacheEntry(
 ) {
     const now = new Date();
     const nowIso = now.toISOString();
-    const expiresAt = new Date(now.getTime() + Math.max(ttlMs, 0)).toISOString();
+    const expiresAt = new Date(
+        now.getTime() + Math.max(ttlMs, 0),
+    ).toISOString();
     const serialized = JSON.stringify(payload);
 
     await db
@@ -385,11 +385,12 @@ export async function refreshDashboardMetricsCache(
     return metrics;
 }
 
-export async function invalidateDashboardMetricsCache(
-    scope?: { tenantId?: string | null; from?: string | null },
-) {
+export async function invalidateDashboardMetricsCache(scope?: {
+    tenantId?: string | null;
+    from?: string | null;
+}) {
     const db = await getDb();
-    let query = db.delete(adminDashboardCache);
+    const query = db.delete(adminDashboardCache);
 
     if (!scope || (scope.tenantId === undefined && scope.from === undefined)) {
         await query.run();

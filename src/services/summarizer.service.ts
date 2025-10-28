@@ -124,11 +124,16 @@ class CircuitBreaker {
             const retryAfterMs = this.state.openedAt
                 ? Math.max(
                       0,
-                      this.config.recoveryTimeoutMs - (now - this.state.openedAt),
+                      this.config.recoveryTimeoutMs -
+                          (now - this.state.openedAt),
                   )
                 : undefined;
             this.onBlocked("open", retryAfterMs);
-            throw new CircuitBreakerOpenError(this.config.key, "open", retryAfterMs);
+            throw new CircuitBreakerOpenError(
+                this.config.key,
+                "open",
+                retryAfterMs,
+            );
         }
 
         if (this.state.state === "half-open") {
@@ -456,7 +461,6 @@ export class SummarizerService {
                     .filter((flag) => flag.length > 0),
             );
         }
-
     }
 
     async summarize(

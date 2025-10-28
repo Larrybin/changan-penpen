@@ -16,7 +16,11 @@ function parseGranularity(value: string | null): UsageGranularity | null {
     }
 
     const normalized = value.trim().toLowerCase();
-    if (normalized === "daily" || normalized === "weekly" || normalized === "monthly") {
+    if (
+        normalized === "daily" ||
+        normalized === "weekly" ||
+        normalized === "monthly"
+    ) {
         return normalized;
     }
 
@@ -29,11 +33,12 @@ async function maybeCompressResponse(body: string, request: Request) {
         return { body, headers };
     }
 
-    const acceptEncoding = request.headers
-        .get("accept-encoding")
-        ?.toLowerCase()
-        .split(",")
-        .map((encoding) => encoding.trim()) ?? [];
+    const acceptEncoding =
+        request.headers
+            .get("accept-encoding")
+            ?.toLowerCase()
+            .split(",")
+            .map((encoding) => encoding.trim()) ?? [];
 
     let encoding: CompressionFormat | null = null;
     if (acceptEncoding.includes("gzip")) {
@@ -136,7 +141,8 @@ export async function GET(request: Request) {
                 toDate,
                 granularity,
                 rows,
-                filters: features.length > 0 ? { feature: features } : undefined,
+                filters:
+                    features.length > 0 ? { feature: features } : undefined,
             },
         });
 

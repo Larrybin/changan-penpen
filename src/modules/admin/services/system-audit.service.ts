@@ -37,9 +37,7 @@ const runAuditLogQuery = createSimplePaginatedList({
             .limit(limit)
             .offset(offset),
     buildTotalQuery: async (db) =>
-        db
-            .select({ count: sql<number>`count(*)` })
-            .from(adminAuditLogs),
+        db.select({ count: sql<number>`count(*)` }).from(adminAuditLogs),
 });
 
 export async function listAuditLogs(options: ListAuditLogsOptions = {}) {
