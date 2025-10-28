@@ -1,4 +1,5 @@
 import path from "node:path";
+import { createRequire } from "node:module";
 import createBundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 import type { RemotePattern } from "next/dist/shared/lib/image-config";
@@ -55,6 +56,10 @@ const remoteImagePatterns: RemotePattern[] = collectRemoteImageHosts().map(
     }),
 );
 
+const require = createRequire(import.meta.url);
+const nextVersion = (require("next/package.json") as { version: string }).version;
+const enableCacheComponents = /canary/i.test(nextVersion);
+
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withBundleAnalyzer = createBundleAnalyzer({
     enabled: process.env.ANALYZE === "true",
@@ -97,7 +102,7 @@ const nextConfig: NextConfig = {
         webVitalsAttribution: ["CLS", "LCP", "INP"],
         // Webpack内存优化（Next.js 15.0.0+）
         webpackMemoryOptimizations: true,
-        cacheComponents: true,
+        ...(enableCacheComponents ? { cacheComponents: true } : {}),
         useCache: true,
     },
     webpack: (config) => {
