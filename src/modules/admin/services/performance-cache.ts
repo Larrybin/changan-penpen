@@ -15,4 +15,3 @@ export function isValidPerformanceTimeframe(
         (PERFORMANCE_TIMEFRAMES as readonly string[]).includes(value)
     );
 }
-

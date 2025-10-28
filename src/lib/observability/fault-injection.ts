@@ -52,4 +52,3 @@ export function maybeInjectFault(
 
     throw error ? error() : new Error(`[fault-injection] ${identifier}`);
 }
-

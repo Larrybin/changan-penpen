@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
     getDb,
     marketingContentAudit,
@@ -541,4 +541,3 @@ export async function publishMarketingContent(
         publishedAt,
     };
 }
-

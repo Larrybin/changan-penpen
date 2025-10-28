@@ -63,7 +63,9 @@ export function SkipLink({ className, customLinks = [] }: SkipLinkProps) {
                     className="skip-link rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     onClick={(event) => {
                         event.preventDefault();
-                        const target = document.querySelector(link.href) as HTMLElement;
+                        const target = document.querySelector(
+                            link.href,
+                        ) as HTMLElement;
                         if (target) {
                             target.focus();
                             target.scrollIntoView({ behavior: "smooth" });

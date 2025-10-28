@@ -139,4 +139,3 @@ export async function getAuth({
 
     return instance;
 }
-

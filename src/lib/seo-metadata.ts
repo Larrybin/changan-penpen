@@ -695,4 +695,3 @@ export function createMetadata(
 
     return metadata;
 }
-
