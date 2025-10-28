@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
+import { getSafeInternalRedirectOrDefault } from "@/lib/security/redirect";
 import { toast } from "@/lib/toast";
 import {
     buildAdminMenuGroups,
@@ -35,7 +36,12 @@ export function AdminShell({ children, user }: AdminShellProps) {
         try {
             const result = await adminAuthProvider.logout?.();
             if (result && typeof result.redirectTo === "string") {
-                router.push(result.redirectTo);
+                router.push(
+                    getSafeInternalRedirectOrDefault(
+                        result.redirectTo,
+                        "/login",
+                    ),
+                );
             }
         } catch (_error) {
             toast.error("退出登录失败，请稍后再试");

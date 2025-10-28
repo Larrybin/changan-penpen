@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 import handleApiError from "@/lib/api-error";
+import { getSafeInternalRedirectOrDefault } from "@/lib/security/redirect";
 import {
     createAdminEntryCookieInit,
     getAdminAccessConfig,
@@ -23,6 +24,10 @@ export async function POST(request: Request) {
         const password = normalizeString(body.password);
         const entryToken = normalizeString(body.entryToken);
         const redirectTo = normalizeString(body.redirectTo);
+        const safeRedirect = getSafeInternalRedirectOrDefault(
+            redirectTo,
+            "/admin",
+        );
 
         if (!email || !password) {
             return NextResponse.json(
@@ -46,7 +51,7 @@ export async function POST(request: Request) {
 
         const response = NextResponse.json({
             success: true,
-            redirectTo: redirectTo || "/admin",
+            redirectTo: safeRedirect,
         });
 
         if (config.entryToken) {
