@@ -4,6 +4,7 @@ import { type AppLocale, supportedLocales } from "@/i18n/config";
 import handleApiError from "@/lib/api-error";
 import { ApiError } from "@/lib/http-error";
 import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
+import { toNullableIsoString } from "@/lib/formatters";
 import {
     createStaticConfigBundleFromMessages,
     type MarketingSection,
@@ -92,8 +93,11 @@ function resolveExportVersion(): string {
 function resolveExportUpdatedAt(): string {
     const candidate = process.env.STATIC_EXPORT_UPDATED_AT ?? "";
     const normalized = candidate.trim();
-    if (normalized.length && !Number.isNaN(Date.parse(normalized))) {
-        return new Date(normalized).toISOString();
+    if (normalized.length) {
+        const resolved = toNullableIsoString(new Date(normalized));
+        if (resolved) {
+            return resolved;
+        }
     }
     return new Date().toISOString();
 }

@@ -1,6 +1,7 @@
 import { desc, eq, like, sql } from "drizzle-orm";
 
 import { config } from "@/config";
+import { toNullableIsoString } from "@/lib/formatters";
 import {
     creditsHistory,
     creditTransactions,
@@ -24,22 +25,6 @@ import type {
     AdminUserRole,
     AdminUserTransaction,
 } from "@/modules/users-admin/models";
-
-const toNullableString = (value: unknown): string | null => {
-    if (value instanceof Date) {
-        return value.toISOString();
-    }
-
-    if (typeof value === "number") {
-        return Number.isFinite(value) ? new Date(value).toISOString() : null;
-    }
-
-    if (typeof value === "string") {
-        return value;
-    }
-
-    return null;
-};
 
 const resolveRole = (
     email: string | null | undefined,
@@ -279,7 +264,7 @@ export function createAdminUserService(
                     name: row.name,
                     role: resolveRole(row.email, adminEmails),
                     status: resolveStatus(row.emailVerified),
-                    createdAt: toNullableString(row.createdAt),
+                    createdAt: toNullableIsoString(row.createdAt),
                     credits: row.currentCredits ?? 0,
                 })),
                 total,
@@ -342,11 +327,11 @@ export function createAdminUserService(
                 emailVerified: Boolean(userRow.emailVerified),
                 role: resolveRole(userRow.email, adminEmails),
                 status: resolveStatus(userRow.emailVerified),
-                createdAt: toNullableString(userRow.createdAt),
-                updatedAt: toNullableString(userRow.updatedAt),
+                createdAt: toNullableIsoString(userRow.createdAt),
+                updatedAt: toNullableIsoString(userRow.updatedAt),
                 image: userRow.image ?? null,
                 currentCredits: userRow.currentCredits ?? 0,
-                lastCreditRefreshAt: toNullableString(
+                lastCreditRefreshAt: toNullableIsoString(
                     userRow.lastCreditRefreshAt,
                 ),
             },
@@ -354,10 +339,10 @@ export function createAdminUserService(
                 ? {
                       id: customerBundle.customer.id,
                       credits: customerBundle.customer.credits,
-                      createdAt: toNullableString(
+                      createdAt: toNullableIsoString(
                           customerBundle.customer.createdAt,
                       ),
-                      updatedAt: toNullableString(
+                      updatedAt: toNullableIsoString(
                           customerBundle.customer.updatedAt,
                       ),
                   }
@@ -365,22 +350,22 @@ export function createAdminUserService(
             subscriptions: customerBundle.subscriptions.map((subscription) => ({
                 id: subscription.id,
                 status: subscription.status,
-                currentPeriodStart: toNullableString(
+                currentPeriodStart: toNullableIsoString(
                     subscription.currentPeriodStart,
                 ),
-                currentPeriodEnd: toNullableString(
+                currentPeriodEnd: toNullableIsoString(
                     subscription.currentPeriodEnd,
                 ),
-                canceledAt: toNullableString(subscription.canceledAt),
-                createdAt: toNullableString(subscription.createdAt),
-                updatedAt: toNullableString(subscription.updatedAt),
+                canceledAt: toNullableIsoString(subscription.canceledAt),
+                createdAt: toNullableIsoString(subscription.createdAt),
+                updatedAt: toNullableIsoString(subscription.updatedAt),
             })),
             creditsHistory: customerBundle.credits.map((credit) => ({
                 id: credit.id,
                 amount: credit.amount,
                 type: credit.type,
                 description: credit.description,
-                createdAt: toNullableString(credit.createdAt),
+                createdAt: toNullableIsoString(credit.createdAt),
             })),
             usage: usageRows.map((usage) => ({
                 id: usage.id,
@@ -396,11 +381,11 @@ export function createAdminUserService(
                     remainingAmount: transaction.remainingAmount,
                     type: transaction.type,
                     description: transaction.description,
-                    expirationDate: toNullableString(
+                    expirationDate: toNullableIsoString(
                         transaction.expirationDate,
                     ),
                     paymentIntentId: transaction.paymentIntentId ?? null,
-                    createdAt: toNullableString(transaction.createdAt),
+                    createdAt: toNullableIsoString(transaction.createdAt),
                 }),
             ),
         } satisfies AdminUserDetail;
