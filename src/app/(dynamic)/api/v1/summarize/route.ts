@@ -4,8 +4,8 @@ import { getMultiLevelCache } from "@/lib/cache/multi-level-cache";
 import { createApiErrorResponse } from "@/lib/http-error";
 import { parseFaultInjectionTargets } from "@/lib/observability/fault-injection";
 import { getPlatformContext } from "@/lib/platform/context";
-import { applyRateLimit } from "@/lib/rate-limit";
 import type { RateLimitMetadata } from "@/lib/rate-limit";
+import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import type {
     AiBinding,
