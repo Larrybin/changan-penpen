@@ -36,6 +36,8 @@
 | `external_api.request.count` | 外部 API 调用次数（包括 Workers AI） | `service`, `route`, `method`, `status`, `outcome` (`success`/`client_error`/`server_error`), `traceId`, `userId` |
 | `external_api.request.duration_ms` | 外部 API 调用耗时（毫秒） | 同上 |
 | `ai.summarizer.outcome` | 摘要服务成功或回退次数 | `result` (`success`/`fallback`), `status`, `style`, `language` |
+| `ai.summarizer.circuit_breaker.transition` | 摘要断路器状态变化 | `breaker`, `state` (`open`/`half-open`/`closed`) |
+| `ai.summarizer.circuit_breaker.blocked` | 因断路器拒绝的请求次数 | `breaker`, `state` |
 
 ### Metrics Runbook（Workers Analytics Engine 示范）
 
@@ -74,6 +76,18 @@
   - `summarizer.retry-attempt` — 每次重试前抛错，可验证熔断/降级逻辑。
   - `summarizer.fallback` — 在降级阶段再次抛错，确保调用方具备兜底。
 - 使用 `enableFaultInjection()` 可以在脚本或测试中动态启用标识，便于编写混沌测试脚本。
+
+### Summarizer Circuit Breaker
+
+- **配置入口**：`config/environments/*.json` 中的 `services.external_apis.circuit_breaker` 字段，或通过环境变量 `SERVICES_EXTERNAL_APIS_FAILURE_THRESHOLD`、`SERVICES_EXTERNAL_APIS_RECOVERY_TIMEOUT_SECONDS`、`EXTERNAL_API_RETRY_ATTEMPTS` 等覆盖。
+- **关键参数**：
+  - `failure_threshold` — 连续失败达到该次数后熔断（默认 5 次）。
+  - `recovery_timeout` — 熔断后等待多长时间进入半开状态，支持 `30s`、`1m` 等写法。
+  - `half_open_max_calls` — 半开状态下允许的并发探测请求数（默认 1）。
+- **与重试的协同**：熔断器在进入打开或半开状态前会在每次请求前检查；一旦进入打开状态，重试逻辑不会继续尝试，直接快速失败并返回 503，响应中会附带 `Retry-After`（秒）提示可恢复时间。调整 `retry_attempts` 时需要考虑 `failure_threshold`，以避免单次请求的内部重试就耗尽失败预算。推荐：
+  - 将 `failure_threshold` 设置为大于单次请求内的最大重试次数，例如重试 3 次时设为 ≥5。
+  - 当需要快速恢复时，缩短 `recovery_timeout` 并结合 `half_open_max_calls` 在半开状态允许并发探测，以验证下游是否恢复。
+- **可观测性**：`ai.summarizer.circuit_breaker.transition` 记录打开/半开/关闭事件；`ai.summarizer.circuit_breaker.blocked` 统计被熔断拒绝的请求数，可配合日志或告警追踪下游异常窗口。
 
 ## Playbooks
 - Health fails on DB: re‑run migrations, check D1 binding, confirm region
