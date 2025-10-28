@@ -1,8 +1,8 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 import { getDb, siteSettings } from "@/db";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { resolveAppUrl } from "@/lib/seo";
+import { getPlatformContext } from "@/lib/platform/context";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
 // 在 Cloudflare Workers 上运行；该路由不依赖 edge 特性，使用 nodejs 运行时以简化打包
@@ -10,9 +10,7 @@ export const runtime = "nodejs";
 
 type CheckResult = { ok: true } | { ok: false; error: string };
 
-type CloudflareBindings = Awaited<
-    ReturnType<typeof getCloudflareContext>
->["env"];
+type CloudflareBindings = CloudflareEnv;
 
 function extractAccessToken(headers: Headers): string {
     const tokenHeader = headers.get("x-health-token");
@@ -212,12 +210,9 @@ export async function GET(request: Request) {
     const fast = computeFast(urlObj);
     const reqOrigin = getRequestOriginSafe(request);
 
-    const cfContext = await getCloudflareContext({ async: true });
-    const env = cfContext.env;
-    const waitUntil =
-        typeof cfContext?.ctx?.waitUntil === "function"
-            ? cfContext.ctx.waitUntil.bind(cfContext.ctx)
-            : undefined;
+    const platformContext = await getPlatformContext({ async: true });
+    const env = ((platformContext.env ?? {}) as unknown) as CloudflareEnv;
+    const waitUntil = platformContext.waitUntil;
     const rateLimitResult = await applyRateLimit({
         request,
         identifier: "healthcheck",

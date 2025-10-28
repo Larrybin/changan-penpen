@@ -122,9 +122,8 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
         const persist = redis.set(key, serialized, { ex: ttlSeconds });
         const asyncWaiter =
             waitUntil ??
-            (context?.ctx
-                ? context.ctx.waitUntil.bind(context.ctx)
-                : await getPlatformWaitUntil({ async: true }));
+            context?.waitUntil ??
+            (await getPlatformWaitUntil({ async: true }));
         if (asyncWaiter) {
             asyncWaiter(persist);
         } else {

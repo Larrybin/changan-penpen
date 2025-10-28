@@ -1,6 +1,6 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
+import { getPlatformEnv } from "@/lib/platform/context";
 
 function extractDatabaseBinding(env: unknown): D1Database {
     if (!env || typeof env !== "object") {
@@ -22,7 +22,7 @@ function extractDatabaseBinding(env: unknown): D1Database {
 }
 
 export async function getDb() {
-    const { env } = await getCloudflareContext({ async: true });
+    const env = (await getPlatformEnv({ async: true })) as unknown as CloudflareEnv;
     const binding = extractDatabaseBinding(env);
     return drizzle(binding, { schema });
 }

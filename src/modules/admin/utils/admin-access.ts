@@ -1,16 +1,14 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AuthUser } from "@/modules/auth/models/user.model";
+import { getPlatformEnv } from "@/lib/platform/context";
 
 export interface AdminAccessConfig {
     allowedEmails: string[];
     entryToken: string | null;
 }
 
-type CloudflareBindings = Awaited<
-    ReturnType<typeof getCloudflareContext>
->["env"];
+type CloudflareBindings = CloudflareEnv;
 
 type CookieInit = {
     name: string;
@@ -89,7 +87,7 @@ export function createAdminEntryCookieInit({
 }
 
 export async function getAdminAccessConfig(): Promise<AdminAccessConfig> {
-    const { env } = await getCloudflareContext({ async: true });
+    const env = (await getPlatformEnv({ async: true })) as unknown as CloudflareEnv;
     const allowedEmails = env.ADMIN_ALLOWED_EMAILS?.split(",")
         .map((value) => value.trim().toLowerCase())
         .filter(Boolean);

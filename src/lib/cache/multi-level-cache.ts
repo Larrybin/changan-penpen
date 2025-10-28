@@ -283,7 +283,7 @@ class MultiLevelCache {
         const context = await getPlatformContext({ async: true });
         return {
             env: context.env,
-            waitUntil: context.ctx?.waitUntil?.bind(context.ctx),
+            waitUntil: context.waitUntil,
         };
     }
 

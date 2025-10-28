@@ -13,6 +13,25 @@ Note
 - Request replay: `wrangler dev --persist` to keep D1 state under `.wrangler/state`
 - AI/R2: ensure `CLOUDFLARE_R2_URL`, `GEMINI_API_KEY`, etc., are set or features will degrade
 
+## 3. Platform Runtime Abstraction
+
+- `src/lib/platform/runtime.ts` introduces the `PlatformRuntime` interface (exposes `env` and `waitUntil`) and a registry managed through `setPlatformRuntime`/`getActivePlatformRuntime`.
+- Cloudflare Workers remain the default via `createCloudflareRuntime()`, but you can swap in other environments before bootstrapping code:
+
+    ```ts
+    import {
+        createNodePlatformRuntime,
+        setPlatformRuntime,
+    } from "@/lib/platform/context";
+
+    setPlatformRuntime(
+        createNodePlatformRuntime({ env: { CACHE_REVALIDATE_TOKEN: "dev" } }),
+    );
+    ```
+
+- For unit tests or scripts that run outside Wrangler, use `createNodePlatformRuntime` to mirror `process.env` and provide custom `waitUntil` handlers.
+- Adding a new provider requires implementing `PlatformRuntime#getContext` and calling `setPlatformRuntime(yourRuntime)` during startup. Keep reusable factories under `src/lib/platform/` so other runtimes can reuse them.
+
 ## 4. Cloudflare Bindings
 
 - After editing `wrangler.toml`, run `pnpm cf-typegen` to refresh `cloudflare-env.d.ts`

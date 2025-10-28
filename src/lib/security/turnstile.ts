@@ -1,7 +1,7 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { headers } from "next/headers";
 
 import { createLogger } from "@/lib/observability/logger";
+import { getPlatformEnv } from "@/lib/platform/context";
 
 type TurnstileEnv = {
     TURNSTILE_SECRET?: string;
@@ -50,11 +50,10 @@ export async function verifyTurnstileToken(
 
     let env: TurnstileEnv | undefined;
     try {
-        const context = getCloudflareContext();
-        env = context.env as TurnstileEnv | undefined;
+        env = await getPlatformEnv<TurnstileEnv>({ async: false });
     } catch (error) {
         logger.error(
-            "Failed to access Cloudflare context for Turnstile verification",
+            "Failed to access platform context for Turnstile verification",
             {
                 error: error instanceof Error ? error.message : "unknown-error",
             },

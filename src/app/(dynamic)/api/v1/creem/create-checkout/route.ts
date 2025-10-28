@@ -1,4 +1,3 @@
-﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
 import { ApiError } from "@/lib/http-error";
 import { createRandomId, secureRandomInt } from "@/lib/random";
@@ -8,6 +7,7 @@ import {
     CREDITS_TIERS,
     SUBSCRIPTION_TIERS,
 } from "@/modules/creem/config/subscriptions";
+import { getPlatformContext } from "@/lib/platform/context";
 
 type Body = {
     productId?: string;
@@ -244,17 +244,9 @@ async function resolveCheckoutContext(request: Request): Promise<{
     waitUntil?: (promise: Promise<unknown>) => void;
     origin: string | null;
 }> {
-    const cfContext = await getCloudflareContext({ async: true });
-    const env = cfContext.env as unknown as CheckoutEnv;
-    const maybeCtx = (
-        cfContext as {
-            ctx?: { waitUntil?: (promise: Promise<unknown>) => void };
-        }
-    ).ctx;
-    const waitUntil =
-        typeof maybeCtx?.waitUntil === "function"
-            ? maybeCtx.waitUntil.bind(maybeCtx)
-            : undefined;
+    const platformContext = await getPlatformContext({ async: true });
+    const env = platformContext.env as unknown as CheckoutEnv;
+    const waitUntil = platformContext.waitUntil;
 
     return {
         env,

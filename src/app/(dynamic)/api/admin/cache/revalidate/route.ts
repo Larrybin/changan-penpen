@@ -1,18 +1,20 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import { clearStaticConfigCache } from "@/lib/static-config";
+import { getPlatformEnv } from "@/lib/platform/context";
 
-function resolveRevalidateToken(): string | null {
+async function resolveRevalidateToken(): Promise<string | null> {
     const runtimeToken = process.env.CACHE_REVALIDATE_TOKEN;
     if (runtimeToken?.trim()) {
         return runtimeToken.trim();
     }
     try {
-        const context = getCloudflareContext();
-        const envToken = context.env?.CACHE_REVALIDATE_TOKEN;
+        const env = await getPlatformEnv<
+            { CACHE_REVALIDATE_TOKEN?: string }
+        >({ async: false });
+        const envToken = env?.CACHE_REVALIDATE_TOKEN;
         if (typeof envToken === "string" && envToken.trim().length > 0) {
             return envToken.trim();
         }
@@ -23,7 +25,7 @@ function resolveRevalidateToken(): string | null {
 }
 
 export async function POST(request: Request) {
-    const token = resolveRevalidateToken();
+    const token = await resolveRevalidateToken();
     if (!token) {
         return NextResponse.json(
             { error: "Cache revalidation token is not configured" },
