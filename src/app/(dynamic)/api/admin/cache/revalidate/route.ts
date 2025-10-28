@@ -2,8 +2,8 @@ import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
-import { clearStaticConfigCache } from "@/lib/static-config";
 import { getPlatformEnv } from "@/lib/platform/context";
+import { clearStaticConfigCache } from "@/lib/static-config";
 
 async function resolveRevalidateToken(): Promise<string | null> {
     const runtimeToken = process.env.CACHE_REVALIDATE_TOKEN;
@@ -11,9 +11,9 @@ async function resolveRevalidateToken(): Promise<string | null> {
         return runtimeToken.trim();
     }
     try {
-        const env = await getPlatformEnv<
-            { CACHE_REVALIDATE_TOKEN?: string }
-        >({ async: false });
+        const env = await getPlatformEnv<{ CACHE_REVALIDATE_TOKEN?: string }>({
+            async: false,
+        });
         const envToken = env?.CACHE_REVALIDATE_TOKEN;
         if (typeof envToken === "string" && envToken.trim().length > 0) {
             return envToken.trim();

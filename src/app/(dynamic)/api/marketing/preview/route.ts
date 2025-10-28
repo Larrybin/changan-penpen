@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-
+import { getPlatformContext } from "@/lib/platform/context";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getMarketingPreviewPayload } from "@/modules/marketing/services/preview.service";
-import { getPlatformContext } from "@/lib/platform/context";
 
 export async function GET(request: Request) {
     const platformContext = await getPlatformContext({ async: true });

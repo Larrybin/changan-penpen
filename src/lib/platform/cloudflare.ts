@@ -37,9 +37,8 @@ class CloudflarePlatformRuntime implements PlatformRuntime {
             const executionContext = isExecutionContext(context.ctx)
                 ? context.ctx
                 : undefined;
-            const waitUntil = executionContext?.waitUntil?.bind(
-                executionContext,
-            );
+            const waitUntil =
+                executionContext?.waitUntil?.bind(executionContext);
 
             return { env, waitUntil } satisfies PlatformContext;
         } catch (error) {

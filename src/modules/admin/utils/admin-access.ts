@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { AuthUser } from "@/modules/auth/models/user.model";
 import { getPlatformEnv } from "@/lib/platform/context";
+import type { AuthUser } from "@/modules/auth/models/user.model";
 
 export interface AdminAccessConfig {
     allowedEmails: string[];
@@ -87,7 +87,9 @@ export function createAdminEntryCookieInit({
 }
 
 export async function getAdminAccessConfig(): Promise<AdminAccessConfig> {
-    const env = (await getPlatformEnv({ async: true })) as unknown as CloudflareEnv;
+    const env = (await getPlatformEnv({
+        async: true,
+    })) as unknown as CloudflareEnv;
     const allowedEmails = env.ADMIN_ALLOWED_EMAILS?.split(",")
         .map((value) => value.trim().toLowerCase())
         .filter(Boolean);

@@ -9,7 +9,9 @@ export interface PlatformContext {
 
 export interface PlatformRuntime {
     readonly name: string;
-    getContext(options?: ResolvePlatformContextOptions): Promise<PlatformContext>;
+    getContext(
+        options?: ResolvePlatformContextOptions,
+    ): Promise<PlatformContext>;
 }
 
 let activeRuntime: PlatformRuntime | null = null;

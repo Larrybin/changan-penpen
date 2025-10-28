@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb, siteSettings } from "@/db";
+import { getPlatformContext } from "@/lib/platform/context";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { resolveAppUrl } from "@/lib/seo";
-import { getPlatformContext } from "@/lib/platform/context";
 import type { SiteSettingsPayload } from "@/modules/admin/services/site-settings.service";
 
 // 在 Cloudflare Workers 上运行；该路由不依赖 edge 特性，使用 nodejs 运行时以简化打包
@@ -211,7 +211,7 @@ export async function GET(request: Request) {
     const reqOrigin = getRequestOriginSafe(request);
 
     const platformContext = await getPlatformContext({ async: true });
-    const env = ((platformContext.env ?? {}) as unknown) as CloudflareEnv;
+    const env = (platformContext.env ?? {}) as unknown as CloudflareEnv;
     const waitUntil = platformContext.waitUntil;
     const rateLimitResult = await applyRateLimit({
         request,

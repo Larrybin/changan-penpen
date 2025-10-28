@@ -6,6 +6,7 @@ type Duration = `${number} ${Unit}` | `${number}${Unit}`;
 
 import { Redis } from "@upstash/redis/cloudflare";
 import { createApiErrorResponse } from "@/lib/http-error";
+import { getPlatformEnv } from "@/lib/platform/context";
 
 interface RateLimitBinding {
     limit(options: { key: string }): Promise<{ success: boolean }>;
@@ -467,4 +468,3 @@ async function resolveLimiterEnv(env?: RateLimiterEnv) {
         return undefined;
     }
 }
-import { getPlatformEnv } from "@/lib/platform/context";

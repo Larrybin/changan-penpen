@@ -1,5 +1,6 @@
 import handleApiError from "@/lib/api-error";
 import { ApiError } from "@/lib/http-error";
+import { getPlatformContext } from "@/lib/platform/context";
 import { createRandomId, secureRandomInt } from "@/lib/random";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
@@ -7,7 +8,6 @@ import {
     CREDITS_TIERS,
     SUBSCRIPTION_TIERS,
 } from "@/modules/creem/config/subscriptions";
-import { getPlatformContext } from "@/lib/platform/context";
 
 type Body = {
     productId?: string;

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
+import { getPlatformEnv } from "@/lib/platform/context";
 import {
     createAdminEntryCookieInit,
     getAdminAccessConfig,
     isEntryTokenValid,
 } from "@/modules/admin/utils/admin-access";
-import { getPlatformEnv } from "@/lib/platform/context";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,9 @@ export async function GET(
         );
     }
 
-    const env = (await getPlatformEnv({ async: true })) as unknown as CloudflareEnv;
+    const env = (await getPlatformEnv({
+        async: true,
+    })) as unknown as CloudflareEnv;
     const cookieInit = createAdminEntryCookieInit({
         token: config.entryToken,
         headers: request.headers,

@@ -24,7 +24,8 @@ class NodePlatformRuntime implements PlatformRuntime {
             typeof process !== "undefined" &&
             typeof process.env === "object"
         ) {
-            this.envProvider = () => ({ ...process.env } as Record<string, unknown>);
+            this.envProvider = () =>
+                ({ ...process.env }) as Record<string, unknown>;
         }
         this.waitUntil = options.waitUntil;
     }

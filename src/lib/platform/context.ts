@@ -1,10 +1,10 @@
 import { createCloudflareRuntime } from "./cloudflare";
 import {
     getRegisteredPlatformRuntime,
-    setPlatformRuntime,
     type PlatformContext,
     type PlatformRuntime,
     type ResolvePlatformContextOptions,
+    setPlatformRuntime,
 } from "./runtime";
 
 function ensureRuntime(): PlatformRuntime {
@@ -48,5 +48,9 @@ export async function getPlatformWaitUntil(
 
 export { createCloudflareRuntime };
 export { createNodePlatformRuntime } from "./node";
+export type {
+    PlatformContext,
+    PlatformRuntime,
+    ResolvePlatformContextOptions,
+} from "./runtime";
 export { getRegisteredPlatformRuntime, setPlatformRuntime } from "./runtime";
-export type { PlatformContext, PlatformRuntime, ResolvePlatformContextOptions } from "./runtime";

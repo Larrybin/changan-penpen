@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import handleApiError from "@/lib/api-error";
+import { getPlatformEnv } from "@/lib/platform/context";
 import { getSafeInternalRedirectOrDefault } from "@/lib/security/redirect";
 import {
     createAdminEntryCookieInit,
@@ -8,7 +9,6 @@ import {
     isEntryTokenValid,
 } from "@/modules/admin/utils/admin-access";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
-import { getPlatformEnv } from "@/lib/platform/context";
 
 function normalizeString(value: unknown): string {
     return typeof value === "string" ? value.trim() : "";
@@ -62,7 +62,9 @@ export async function POST(request: Request) {
                 );
             }
 
-            const env = (await getPlatformEnv({ async: true })) as unknown as CloudflareEnv;
+            const env = (await getPlatformEnv({
+                async: true,
+            })) as unknown as CloudflareEnv;
             const cookie = createAdminEntryCookieInit({
                 token: entryToken,
                 headers: request.headers,
