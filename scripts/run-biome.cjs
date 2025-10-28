@@ -24,6 +24,10 @@ function resolveBinaryPath() {
 function getBinaryCandidates() {
     return [
         {
+            pkg: "@biomejs/biome",
+            bin: "bin/biome",
+        },
+        {
             pkg: "@biomejs/cli-win32-x64",
             bin: "biome.exe",
             platform: "win32",

@@ -144,11 +144,8 @@ async function resolveCacheRuntime<Env extends CacheEnv>(
         return { redis, waitUntil };
     }
 
-    const contextWaitUntil = platformContext?.ctx?.waitUntil?.bind(
-        platformContext.ctx,
-    );
-    if (contextWaitUntil) {
-        return { redis, waitUntil: contextWaitUntil };
+    if (platformContext?.waitUntil) {
+        return { redis, waitUntil: platformContext.waitUntil };
     }
 
     const fallbackWaitUntil = await getPlatformWaitUntil({ async: true });

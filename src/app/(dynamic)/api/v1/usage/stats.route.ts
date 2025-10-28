@@ -35,11 +35,11 @@ async function maybeCompressResponse(body: string, request: Request) {
         .split(",")
         .map((encoding) => encoding.trim()) ?? [];
 
-    let encoding: "br" | "gzip" | null = null;
-    if (acceptEncoding.includes("br")) {
-        encoding = "br";
-    } else if (acceptEncoding.includes("gzip")) {
+    let encoding: CompressionFormat | null = null;
+    if (acceptEncoding.includes("gzip")) {
         encoding = "gzip";
+    } else if (acceptEncoding.includes("deflate")) {
+        encoding = "deflate";
     }
 
     if (!encoding) {
