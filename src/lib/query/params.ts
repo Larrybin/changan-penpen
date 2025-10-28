@@ -13,6 +13,8 @@ export interface BuildListSearchParamsOptions {
     pagination?: CursorAwarePagination;
     filters?: CrudFilters;
     sorters?: CrudSorting;
+    view?: string | null;
+    fields?: readonly string[] | null;
 }
 
 function appendFilter(entries: Array<[string, string]>, filter: CrudFilter) {
@@ -101,6 +103,25 @@ export function buildListSearchParams(
 
     appendFilters(entries, options.filters);
     appendSorters(entries, options.sorters);
+
+    if (options.view) {
+        const trimmedView = options.view.trim();
+        if (trimmedView.length > 0) {
+            entries.push(["view", trimmedView]);
+        }
+    }
+
+    if (options.fields && options.fields.length > 0) {
+        const seen = new Set<string>();
+        options.fields.forEach((field) => {
+            const trimmed = field.trim();
+            if (trimmed.length === 0 || seen.has(trimmed)) {
+                return;
+            }
+            seen.add(trimmed);
+            entries.push(["fields", trimmed]);
+        });
+    }
 
     const searchParams = new URLSearchParams();
     entries.forEach(([key, value]) => {

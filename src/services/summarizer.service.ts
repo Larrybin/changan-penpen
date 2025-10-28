@@ -558,6 +558,13 @@ export class SummarizerService {
                             attempt,
                             error,
                         });
+                        recordMetric("ai.summarizer.retry", 1, {
+                            attempt,
+                            status: this.extractStatus(error) ?? "unknown",
+                            style,
+                            language,
+                            originalLength: text.length,
+                        });
                     },
                 },
             );

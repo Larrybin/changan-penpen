@@ -25,15 +25,18 @@ interface DiagnosticsResponse {
 
 const PERFORMANCE_DIAGNOSTICS_ENDPOINT =
     "/api/v1/admin/performance/diagnostics";
-const REFRESH_INTERVAL_MS = 30_000;
+const REFRESH_INTERVAL_MS = 60_000;
 
-async function requestPerformanceDiagnostics(): Promise<PerformanceDiagnostics> {
+async function requestPerformanceDiagnostics(
+    signal?: AbortSignal,
+): Promise<PerformanceDiagnostics> {
     const response = await fetch(PERFORMANCE_DIAGNOSTICS_ENDPOINT, {
         method: "GET",
         cache: "no-store",
         headers: {
             Accept: "application/json",
         },
+        signal,
     });
 
     if (!response.ok) {
@@ -57,49 +60,132 @@ export function PerformanceMonitor() {
     const [isLoading, setIsLoading] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isDocumentVisible, setIsDocumentVisible] = useState(() => {
+        if (typeof document === "undefined") {
+            return true;
+        }
+        return document.visibilityState === "visible";
+    });
+    const [isIntersecting, setIsIntersecting] = useState(true);
+    const monitorRef = useRef<HTMLDivElement | null>(null);
     const lastFetchAtRef = useRef<number>(0);
     const isFetchingRef = useRef(false);
 
-    const fetchMetrics = useCallback(async (options?: { silent?: boolean }) => {
-        if (isFetchingRef.current) {
-            return;
-        }
+    const autoRefreshAbortControllerRef = useRef<AbortController | null>(null);
+    const autoRefreshEnabledRef = useRef(false);
 
-        isFetchingRef.current = true;
+    const fetchMetrics = useCallback(
+        async (options?: { silent?: boolean; origin?: "auto" | "manual" }) => {
+            if (isFetchingRef.current) {
+                return;
+            }
 
-        if (!options?.silent) {
-            setIsLoading(true);
-        }
+            const controller = new AbortController();
+            if (options?.origin === "auto") {
+                autoRefreshAbortControllerRef.current?.abort();
+                autoRefreshAbortControllerRef.current = controller;
+            }
 
-        setError(null);
+            isFetchingRef.current = true;
 
-        try {
-            const diagnostics = await requestPerformanceDiagnostics();
-            lastFetchAtRef.current = Date.now();
-            setMetrics(diagnostics);
-        } catch (fetchError) {
-            console.error(
-                "Failed to fetch performance diagnostics",
-                fetchError,
-            );
+            if (!options?.silent) {
+                setIsLoading(true);
+            }
 
-            const message =
-                fetchError instanceof Error
-                    ? fetchError.message
-                    : "Unknown error";
-            setError(message);
-        } finally {
-            isFetchingRef.current = false;
-            setIsLoading(false);
-        }
-    }, []);
+            setError(null);
+
+            try {
+                const diagnostics = await requestPerformanceDiagnostics(
+                    controller.signal,
+                );
+                lastFetchAtRef.current = Date.now();
+                setMetrics(diagnostics);
+            } catch (fetchError) {
+                if (
+                    fetchError instanceof DOMException &&
+                    fetchError.name === "AbortError"
+                ) {
+                    return;
+                }
+
+                console.error(
+                    "Failed to fetch performance diagnostics",
+                    fetchError,
+                );
+
+                const message =
+                    fetchError instanceof Error
+                        ? fetchError.message
+                        : "Unknown error";
+                setError(message);
+            } finally {
+                if (
+                    options?.origin === "auto" &&
+                    autoRefreshAbortControllerRef.current === controller
+                ) {
+                    autoRefreshAbortControllerRef.current = null;
+                }
+                isFetchingRef.current = false;
+                setIsLoading(false);
+            }
+        },
+        [],
+    );
 
     useEffect(() => {
         void fetchMetrics();
     }, [fetchMetrics]);
 
     useEffect(() => {
-        if (!autoRefresh) {
+        autoRefreshEnabledRef.current = autoRefresh;
+    }, [autoRefresh]);
+
+    useEffect(() => {
+        if (typeof document === "undefined") {
+            return;
+        }
+
+        const handleVisibilityChange = () => {
+            const visible = document.visibilityState === "visible";
+            setIsDocumentVisible(visible);
+            if (visible && autoRefreshEnabledRef.current) {
+                void fetchMetrics({ silent: true });
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => {
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange,
+            );
+        };
+    }, [fetchMetrics]);
+
+    useEffect(() => {
+        if (typeof IntersectionObserver === "undefined") {
+            return;
+        }
+
+        const node = monitorRef.current;
+        if (!node) {
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            const [entry] = entries;
+            setIsIntersecting(entry?.isIntersecting ?? false);
+        });
+
+        observer.observe(node);
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!autoRefresh || !isDocumentVisible || !isIntersecting) {
+            autoRefreshAbortControllerRef.current?.abort();
             return;
         }
 
@@ -108,11 +194,11 @@ export function PerformanceMonitor() {
             !isFetchingRef.current &&
             now - lastFetchAtRef.current >= REFRESH_INTERVAL_MS
         ) {
-            void fetchMetrics({ silent: true });
+            void fetchMetrics({ silent: true, origin: "auto" });
         }
 
         const interval = setInterval(() => {
-            if (isFetchingRef.current) {
+            if (!isDocumentVisible || !isIntersecting || isFetchingRef.current) {
                 return;
             }
 
@@ -121,11 +207,14 @@ export function PerformanceMonitor() {
                 return;
             }
 
-            void fetchMetrics({ silent: true });
+            void fetchMetrics({ silent: true, origin: "auto" });
         }, REFRESH_INTERVAL_MS);
 
-        return () => clearInterval(interval);
-    }, [autoRefresh, fetchMetrics]);
+        return () => {
+            clearInterval(interval);
+            autoRefreshAbortControllerRef.current?.abort();
+        };
+    }, [autoRefresh, fetchMetrics, isDocumentVisible, isIntersecting]);
 
     const getHitRateColor = (hitRate: number) => {
         if (hitRate >= 80) return "text-green-600";
@@ -177,7 +266,7 @@ export function PerformanceMonitor() {
     }
 
     return (
-        <div className="space-y-6">
+        <div ref={monitorRef} className="space-y-6">
             {error && (
                 <Alert variant="warning">
                     <AlertTitle>无法更新最新性能数据</AlertTitle>

@@ -35,7 +35,18 @@ export function ProductsListPage() {
     const queryClient = useQueryClient();
     const listQuery = useQuery({
         queryKey: adminQueryKeys.list("products"),
-        queryFn: () => fetchAdminList<ProductRecord>({ resource: "products" }),
+        queryFn: () =>
+            fetchAdminList<ProductRecord>({
+                resource: "products",
+                fields: [
+                    "id",
+                    "name",
+                    "slug",
+                    "priceCents",
+                    "currency",
+                    "status",
+                ],
+            }),
     });
     const deleteMutation = useMutation({
         mutationFn: (productId: number | string) =>
