@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import type { SQL } from "drizzle-orm";
 import { and, or } from "drizzle-orm";
 
@@ -71,6 +73,105 @@ export async function runPaginatedQuery<TRow>(
     ]);
 
     return { page, perPage, rows, total, where: whereClause };
+}
+
+export interface CursorPaginatedQueryContext<TCursorValue> {
+    limit: number;
+    cursor?: TCursorValue | null;
+    where?: SQL;
+}
+
+export interface RunCursorPaginatedQueryOptions<TRow, TCursorValue>
+    extends Pick<PaginationOptions, "perPage"> {
+    cursor?: string | null;
+    defaults?: PaginationDefaults;
+    filters?: WhereExpression[];
+    operator?: BooleanOperator;
+    decodeCursor?: (cursor: string) => TCursorValue | null;
+    encodeCursor?: (value: TCursorValue) => string;
+    getCursorValue: (row: TRow) => TCursorValue | null | undefined;
+    fetchRows: (
+        context: CursorPaginatedQueryContext<TCursorValue>,
+    ) => Promise<TRow[]>;
+    fetchTotal: (where?: SQL) => Promise<number>;
+}
+
+export interface CursorPaginatedQueryResult<TRow> {
+    perPage: number;
+    rows: TRow[];
+    total: number;
+    nextCursor?: string;
+    where?: SQL;
+}
+
+function base64UrlEncode(value: string): string {
+    return Buffer.from(value, "utf8")
+        .toString("base64")
+        .replace(/=/g, "")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_");
+}
+
+function base64UrlDecode(value: string): string {
+    const padded = value.padEnd(value.length + ((4 - (value.length % 4)) % 4), "=");
+    const normalized = padded.replace(/-/g, "+").replace(/_/g, "/");
+    return Buffer.from(normalized, "base64").toString("utf8");
+}
+
+export function encodeCursorPayload(payload: unknown): string {
+    return base64UrlEncode(JSON.stringify(payload ?? null));
+}
+
+export function decodeCursorPayload<T>(cursor: string): T | null {
+    try {
+        const decoded = base64UrlDecode(cursor);
+        return JSON.parse(decoded) as T;
+    } catch (error) {
+        console.error("Failed to decode cursor payload", error);
+        return null;
+    }
+}
+
+export async function runCursorPaginatedQuery<TRow, TCursorValue>(
+    options: RunCursorPaginatedQueryOptions<TRow, TCursorValue>,
+): Promise<CursorPaginatedQueryResult<TRow>> {
+    const { perPage } = normalizePagination(
+        { page: 1, perPage: options.perPage },
+        options.defaults,
+    );
+    const whereClause = composeWhereClause(
+        options.filters,
+        options.operator ?? "and",
+    );
+
+    const decodeCursor = options.decodeCursor ?? decodeCursorPayload<TCursorValue>;
+    const encodeCursor = options.encodeCursor ?? encodeCursorPayload;
+    const cursorValue = options.cursor
+        ? decodeCursor(options.cursor) ?? null
+        : null;
+
+    const [rowsWithExtra, total] = await Promise.all([
+        options.fetchRows({
+            limit: perPage + 1,
+            cursor: cursorValue,
+            where: whereClause,
+        }),
+        options.fetchTotal(whereClause),
+    ]);
+
+    const hasExtra = rowsWithExtra.length > perPage;
+    const rows = hasExtra ? rowsWithExtra.slice(0, perPage) : rowsWithExtra;
+
+    const lastRow = rows.at(-1);
+    const nextCursorValue = hasExtra && lastRow
+        ? options.getCursorValue(lastRow)
+        : null;
+    const nextCursor =
+        nextCursorValue !== null && nextCursorValue !== undefined
+            ? encodeCursor(nextCursorValue)
+            : undefined;
+
+    return { perPage, rows, total, nextCursor, where: whereClause };
 }
 
 export type TenantPaginationOptions = PaginationOptions & {

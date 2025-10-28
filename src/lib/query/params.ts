@@ -2,11 +2,15 @@ import type {
     CrudFilter,
     CrudFilters,
     CrudSorting,
-    GetListParams,
+    Pagination,
 } from "@/lib/crud/types";
 
+export interface CursorAwarePagination extends Pagination {
+    cursor?: string | null;
+}
+
 export interface BuildListSearchParamsOptions {
-    pagination?: GetListParams["pagination"];
+    pagination?: CursorAwarePagination;
     filters?: CrudFilters;
     sorters?: CrudSorting;
 }
@@ -82,13 +86,16 @@ export function buildListSearchParams(
     const entries: Array<[string, string]> = [];
 
     if (options.pagination) {
-        const { current, page, pageSize } = options.pagination;
+        const { current, page, pageSize, cursor } = options.pagination;
         const resolvedPage = current ?? page;
         if (resolvedPage) {
             entries.push(["page", String(resolvedPage)]);
         }
         if (pageSize) {
             entries.push(["perPage", String(pageSize)]);
+        }
+        if (cursor) {
+            entries.push(["cursor", String(cursor)]);
         }
     }
 

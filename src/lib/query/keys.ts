@@ -8,6 +8,7 @@ export interface ListKeyOptions {
     pagination?: {
         pageIndex?: number;
         pageSize?: number;
+        cursor?: string | null;
     };
     filters?: CrudFilters;
     sorters?: CrudSorting;
@@ -23,18 +24,25 @@ function serializeListOptions(options?: ListKeyOptions) {
         ? {
               page: options.pagination.pageIndex,
               pageSize: options.pagination.pageSize,
+              cursor: options.pagination.cursor,
           }
         : {};
 
     const params = buildListSearchParams({
         pagination:
-            paginationParams.page || paginationParams.pageSize
+            paginationParams.page !== undefined ||
+            paginationParams.pageSize !== undefined ||
+            paginationParams.cursor !== undefined
                 ? {
                       current:
                           typeof paginationParams.page === "number"
                               ? paginationParams.page + 1
                               : undefined,
                       pageSize: paginationParams.pageSize,
+                      cursor:
+                          paginationParams.cursor === undefined
+                              ? undefined
+                              : paginationParams.cursor ?? undefined,
                   }
                 : undefined,
         filters: options.filters,

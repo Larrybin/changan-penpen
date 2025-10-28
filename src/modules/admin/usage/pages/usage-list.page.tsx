@@ -1,6 +1,6 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -37,22 +37,34 @@ export function UsageListPage() {
         return list;
     }, [tenantId, feature]);
 
-    const listQuery = useQuery<FetchAdminListResult<UsageAggregateRecord>>({
+    const listQuery = useInfiniteQuery<
+        FetchAdminListResult<UsageAggregateRecord>
+    >({
         queryKey: adminQueryKeys.list("usage", {
             pagination: { pageSize: 20 },
             filters,
         }),
-        queryFn: ({ signal }) =>
+        initialPageParam: undefined,
+        queryFn: ({ signal, pageParam }) =>
             fetchAdminList<UsageAggregateRecord>({
                 resource: "usage",
-                pagination: { pageSize: 20 },
+                pagination: {
+                    pageSize: 20,
+                    cursor: typeof pageParam === "string" ? pageParam : undefined,
+                },
                 filters,
                 signal,
             }),
-        placeholderData: keepPreviousData,
+        getNextPageParam: (lastPage) =>
+            lastPage.nextCursor && lastPage.nextCursor.length > 0
+                ? lastPage.nextCursor
+                : undefined,
     });
-    const isLoading = listQuery.isLoading || listQuery.isFetching;
-    const usage = listQuery.data?.items ?? [];
+    const isLoading = listQuery.isLoading;
+    const pages: FetchAdminListResult<UsageAggregateRecord>[] =
+        listQuery.data?.pages ?? [];
+    const usage: UsageAggregateRecord[] = pages.flatMap((page) => page.items);
+    const isFetchingNext = listQuery.isFetchingNextPage;
 
     return (
         <div className="flex flex-col gap-[var(--grid-gap-section)]">
@@ -150,6 +162,23 @@ export function UsageListPage() {
                     </tbody>
                 </table>
             </div>
+            {usage.length > 0 && (
+                <div className="flex justify-center py-4">
+                    {listQuery.hasNextPage ? (
+                        <Button
+                            variant="outline"
+                            onClick={() => listQuery.fetchNextPage()}
+                            disabled={isFetchingNext}
+                        >
+                            {isFetchingNext ? "加载中…" : "加载更多"}
+                        </Button>
+                    ) : (
+                        <span className="text-sm text-muted-foreground">
+                            已加载全部数据
+                        </span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

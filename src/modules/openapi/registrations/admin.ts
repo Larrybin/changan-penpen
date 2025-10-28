@@ -42,6 +42,11 @@ const adminUsageResponseSchema = z
     .object({
         data: z.array(adminUsageRowSchema),
         total: z.number().int().openapi({ example: 120 }),
+        nextCursor: z
+            .string()
+            .nullable()
+            .optional()
+            .openapi({ example: "eyJkYXRlIjoiMjAyNS0wMy0wNSJ9" }),
     })
     .openapi("AdminUsageResponse", {
         description: "Admin 用量列表 API 返回的聚合结果。",
@@ -115,8 +120,11 @@ export function registerAdminPaths(registry: OpenAPIRegistry) {
         request: {
             query: z
                 .object({
-                    page: z.string().optional().openapi({ example: "1" }),
                     perPage: z.string().optional().openapi({ example: "20" }),
+                    cursor: z
+                        .string()
+                        .optional()
+                        .openapi({ example: "eyJkYXRlIjoiMjAyNS0wMy0wNSJ9" }),
                     tenantId: z
                         .string()
                         .optional()

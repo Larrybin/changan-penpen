@@ -9,7 +9,8 @@ import { parsePaginationParams } from "@/modules/admin-shared/utils/pagination";
 
 export const GET = withAdminRoute(async ({ request }) => {
     const url = new URL(request.url);
-    const { page, perPage } = parsePaginationParams(url.searchParams);
+    const { perPage } = parsePaginationParams(url.searchParams);
+    const cursor = url.searchParams.get("cursor");
     const tenantId = url.searchParams.get("tenantId") ?? undefined;
     const feature = url.searchParams.get("feature") ?? undefined;
 
@@ -22,17 +23,17 @@ export const GET = withAdminRoute(async ({ request }) => {
             params: {
                 tenantId: tenantId ?? null,
                 feature: feature ?? null,
-                page,
+                cursor: cursor ?? null,
                 perPage,
             },
         },
         { ttlSeconds },
         () =>
             listUsage({
-                page,
                 perPage,
                 tenantId: tenantId || undefined,
                 feature: feature || undefined,
+                cursor: cursor || null,
             }),
     );
 

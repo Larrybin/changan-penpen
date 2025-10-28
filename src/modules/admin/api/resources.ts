@@ -37,6 +37,7 @@ export interface FetchAdminListOptions {
     pagination?: {
         pageIndex?: number;
         pageSize?: number;
+        cursor?: string | null;
     };
     filters?: CrudFilters;
     sorters?: CrudSorting;
@@ -46,6 +47,7 @@ export interface FetchAdminListOptions {
 export interface FetchAdminListResult<TData> {
     items: TData[];
     total: number;
+    nextCursor?: string | null;
 }
 
 export function normalizeAdminResourcePath(resource: string) {
@@ -113,13 +115,15 @@ export async function fetchAdminList<TData = Record<string, unknown>>({
     const searchParams = buildListSearchParams({
         pagination:
             pagination?.pageIndex !== undefined ||
-            pagination?.pageSize !== undefined
+            pagination?.pageSize !== undefined ||
+            pagination?.cursor !== undefined
                 ? {
                       current:
                           typeof pagination?.pageIndex === "number"
                               ? pagination.pageIndex + 1
                               : undefined,
                       pageSize: pagination?.pageSize,
+                      cursor: pagination?.cursor ?? undefined,
                   }
                 : undefined,
         filters,
