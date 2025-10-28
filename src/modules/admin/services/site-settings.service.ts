@@ -187,6 +187,20 @@ function hasCloudflareBindings(env: NodeJS.ProcessEnv | undefined) {
     return Boolean(accountId && hasApiToken);
 }
 
+function isEdgeRuntime() {
+    if (typeof globalThis !== "undefined") {
+        if ("EdgeRuntime" in globalThis) {
+            return true;
+        }
+    }
+
+    if (typeof globalThis.process !== "undefined") {
+        return globalThis.process.env?.NEXT_RUNTIME === "edge";
+    }
+
+    return false;
+}
+
 function shouldBypassDatabaseForStaticBuild() {
     if (typeof globalThis.process === "undefined") {
         return false;
@@ -287,11 +301,7 @@ function mapRowToPayload(
     };
 }
 
-export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
-    "use cache";
-    unstable_cacheTag(CACHE_TAGS.siteSettings);
-    unstable_cacheLife("hours");
-
+async function loadSiteSettingsPayload(): Promise<SiteSettingsPayload> {
     if (shouldBypassDatabaseForStaticBuild()) {
         const fallbackSettings = getStaticBuildFallbackSettings();
         syncRuntimeLocales(fallbackSettings);
@@ -315,6 +325,22 @@ export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
         syncRuntimeLocales(EMPTY_SETTINGS);
         return EMPTY_SETTINGS;
     }
+}
+
+async function getSiteSettingsPayloadWithCache(): Promise<SiteSettingsPayload> {
+    "use cache";
+    unstable_cacheTag(CACHE_TAGS.siteSettings);
+    unstable_cacheLife("hours");
+
+    return loadSiteSettingsPayload();
+}
+
+export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
+    if (isEdgeRuntime()) {
+        return loadSiteSettingsPayload();
+    }
+
+    return getSiteSettingsPayloadWithCache();
 }
 
 export interface UpdateSiteSettingsInput {
