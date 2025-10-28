@@ -168,9 +168,16 @@ export async function POST(request: Request) {
             validated.config,
         );
 
-        await cache.setValue(cacheKey, JSON.stringify(result), {
-            ttlSeconds: SUMMARY_CACHE_TTL_SECONDS,
-        });
+        try {
+            await cache.setValue(cacheKey, JSON.stringify(result), {
+                ttlSeconds: SUMMARY_CACHE_TTL_SECONDS,
+            });
+        } catch (cacheError) {
+            console.warn("[summarize] failed to write summary to cache", {
+                cacheKey,
+                error: cacheError,
+            });
+        }
 
         const headers = new Headers({
             "Content-Type": "application/json",
