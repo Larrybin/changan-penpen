@@ -88,7 +88,6 @@ export type StaticConfigFallbackOptions = {
 };
 
 const configCache = new Map<AppLocale, StaticSiteConfig>();
-const marketingCache = new Map<string, MarketingSectionFile>();
 const bundleCache = new Map<AppLocale, StaticConfigBundle>();
 const bundlePromises = new Map<AppLocale, Promise<StaticConfigBundle>>();
 const fallbackCache = new Map<AppLocale, StaticConfigBundle>();
@@ -118,10 +117,6 @@ function toMarketingSection(value: string): MarketingSection {
         return value as MarketingSection;
     }
     throw new Error(`Unsupported marketing section: ${value}`);
-}
-
-function getSectionCacheKey(locale: AppLocale, section: MarketingSection) {
-    return `${locale}:${section}`;
 }
 
 function buildPageUrl(appUrl: string, locale: AppLocale, pathValue: string) {
@@ -668,10 +663,6 @@ function cacheBundle(locale: AppLocale, bundle: StaticConfigBundle) {
     const snapshot = cloneBundle(bundle);
     bundleCache.set(locale, snapshot);
     configCache.set(locale, snapshot.config);
-    for (const [section, file] of Object.entries(snapshot.sections)) {
-        const key = getSectionCacheKey(locale, toMarketingSection(section));
-        marketingCache.set(key, file);
-    }
 }
 
 export function createFallbackConfig(
@@ -919,18 +910,11 @@ export async function loadMarketingSection(
         CACHE_TAGS.marketingSection(normalizedLocale, normalizedSection),
     );
     unstable_cacheLife("hours");
-    const key = getSectionCacheKey(normalizedLocale, normalizedSection);
-    const cached = marketingCache.get(key);
-    if (cached) {
-        return cloneJson(cached);
-    }
     const bundle = await ensureBundleLoaded(normalizedLocale);
     const payload =
         bundle.sections[normalizedSection] ??
         createFallbackSection(normalizedLocale, normalizedSection);
-    const snapshot = cloneJson(payload);
-    marketingCache.set(key, snapshot);
-    return cloneJson(snapshot);
+    return cloneJson(payload);
 }
 
 export function loadMarketingSectionSync(
@@ -939,19 +923,12 @@ export function loadMarketingSectionSync(
 ) {
     const normalizedLocale = assertLocale(locale);
     const normalizedSection = toMarketingSection(section);
-    const key = getSectionCacheKey(normalizedLocale, normalizedSection);
-    const cached = marketingCache.get(key);
-    if (cached) {
-        return cloneJson(cached);
-    }
     const snapshot = bundleCache.get(normalizedLocale);
     if (snapshot) {
         const payload =
             snapshot.sections[normalizedSection] ??
             createFallbackSection(normalizedLocale, normalizedSection);
-        const snapshotPayload = cloneJson(payload);
-        marketingCache.set(key, snapshotPayload);
-        return cloneJson(snapshotPayload);
+        return cloneJson(payload);
     }
     const fallback = buildFallbackBundle(normalizedLocale);
     cacheBundle(normalizedLocale, fallback);
@@ -960,14 +937,11 @@ export function loadMarketingSectionSync(
         stored?.sections[normalizedSection] ??
         fallback.sections[normalizedSection] ??
         createFallbackSection(normalizedLocale, normalizedSection);
-    const snapshotPayload = cloneJson(payload);
-    marketingCache.set(key, snapshotPayload);
-    return cloneJson(snapshotPayload);
+    return cloneJson(payload);
 }
 
 export function clearStaticConfigCache() {
     configCache.clear();
-    marketingCache.clear();
     bundleCache.clear();
     bundlePromises.clear();
     fallbackCache.clear();

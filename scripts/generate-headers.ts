@@ -46,7 +46,7 @@ function buildRules(): HeaderRule[] {
         "Permissions-Policy":
             "camera=(), geolocation=(), microphone=(), payment=()",
         "Content-Security-Policy":
-            "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://api.cloudflare.com https://*.upstash.io; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+            "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://api.cloudflare.com https://*.upstash.io https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
     };
 
     return [
