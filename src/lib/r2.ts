@@ -65,7 +65,6 @@ function getR2Bucket(env: unknown): R2BucketLike {
     return bucket as unknown as R2BucketLike;
 }
 
-
 function normalizeFolder(folder: string | undefined) {
     const val = (folder ?? "uploads").trim();
     let start = 0;
