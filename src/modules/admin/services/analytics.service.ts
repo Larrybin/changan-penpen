@@ -51,59 +51,60 @@ export interface DashboardMetricsResponse {
 type DatabaseClient = Awaited<ReturnType<typeof getDb>>;
 type TenantCondition = SQL<unknown> | undefined;
 
-async function fetchOrdersSummary(
+async function fetchDashboardTotals(
     db: DatabaseClient,
-    tenantCondition: TenantCondition,
+    options: DashboardMetricsOptions,
 ) {
-    const baseQuery = db
+    const tenantOrderWhere = options.tenantId
+        ? sql`WHERE ${customers.userId} = ${options.tenantId}`
+        : sql``;
+    const tenantActiveWhere = options.tenantId
+        ? sql`AND ${customers.userId} = ${options.tenantId}`
+        : sql``;
+    const tenantCreditsWhere = options.tenantId
+        ? sql`WHERE ${customers.userId} = ${options.tenantId}`
+        : sql``;
+
+    const [row] = await db
         .select({
-            revenueCents: sql<number>`coalesce(sum(${orders.amountCents}), 0)`,
-            orderCount: sql<number>`count(*)`,
+            revenueCents: sql<number>`(
+                SELECT coalesce(sum(${orders.amountCents}), 0)
+                FROM ${orders}
+                INNER JOIN ${customers} ON ${customers.id} = ${orders.customerId}
+                ${tenantOrderWhere}
+            )`,
+            orderCount: sql<number>`(
+                SELECT coalesce(count(*), 0)
+                FROM ${orders}
+                INNER JOIN ${customers} ON ${customers.id} = ${orders.customerId}
+                ${tenantOrderWhere}
+            )`,
+            activeSubscriptions: sql<number>`(
+                SELECT coalesce(count(*), 0)
+                FROM ${subscriptions}
+                INNER JOIN ${customers} ON ${customers.id} = ${subscriptions.customerId}
+                WHERE ${subscriptions.status} = 'active'
+                ${tenantActiveWhere}
+            )`,
+            totalCredits: sql<number>`(
+                SELECT coalesce(sum(${customers.credits}), 0)
+                FROM ${customers}
+                ${tenantCreditsWhere}
+            )`,
+            tenantCount: sql<number>`(
+                SELECT coalesce(count(*), 0)
+                FROM ${user}
+            )`,
         })
-        .from(orders)
-        .innerJoin(customers, eq(customers.id, orders.customerId));
+        .from(sql`(SELECT 1) AS dashboard_totals`);
 
-    const builder = tenantCondition
-        ? baseQuery.where(tenantCondition)
-        : baseQuery;
-
-    const [summary] = await builder;
-    return summary;
-}
-
-async function fetchActiveSubscriptionSummary(
-    db: DatabaseClient,
-    tenantCondition: TenantCondition,
-) {
-    const condition = tenantCondition
-        ? and(eq(subscriptions.status, "active"), tenantCondition)
-        : eq(subscriptions.status, "active");
-
-    const [summary] = await db
-        .select({ active: sql<number>`count(*)` })
-        .from(subscriptions)
-        .innerJoin(customers, eq(customers.id, subscriptions.customerId))
-        .where(condition);
-
-    return summary;
-}
-
-async function fetchTotalCredits(
-    db: DatabaseClient,
-    tenantCondition: TenantCondition,
-) {
-    const baseQuery = db
-        .select({
-            totalCredits: sql<number>`coalesce(sum(${customers.credits}), 0)`,
-        })
-        .from(customers);
-
-    const builder = tenantCondition
-        ? baseQuery.where(tenantCondition)
-        : baseQuery;
-
-    const [summary] = await builder;
-    return summary;
+    return {
+        revenueCents: Number(row?.revenueCents ?? 0),
+        orderCount: Number(row?.orderCount ?? 0),
+        activeSubscriptions: Number(row?.activeSubscriptions ?? 0),
+        totalCredits: Number(row?.totalCredits ?? 0),
+        tenantCount: Number(row?.tenantCount ?? 0),
+    } as const;
 }
 
 async function fetchUsageTrend(
@@ -128,7 +129,7 @@ async function fetchUsageTrend(
         .limit(30);
 
     const builder = condition ? baseQuery.where(condition) : baseQuery;
-    return builder;
+    return builder.all();
 }
 
 async function fetchLatestOrders(
@@ -152,7 +153,7 @@ async function fetchLatestOrders(
     const builder = tenantCondition
         ? baseQuery.where(tenantCondition)
         : baseQuery;
-    return builder;
+    return builder.all();
 }
 
 async function fetchRecentCredits(
@@ -175,28 +176,23 @@ async function fetchRecentCredits(
     const builder = tenantCondition
         ? baseQuery.where(tenantCondition)
         : baseQuery;
-    return builder;
+    return builder.all();
 }
 
 async function fetchCatalogSummary(db: DatabaseClient) {
-    const [productCount, couponCount, contentCount] = await Promise.all([
-        db.select({ total: sql<number>`count(*)` }).from(products),
-        db.select({ total: sql<number>`count(*)` }).from(coupons),
-        db.select({ total: sql<number>`count(*)` }).from(contentPages),
-    ]);
+    const [row] = await db
+        .select({
+            products: sql<number>`(SELECT count(*) FROM ${products})`,
+            coupons: sql<number>`(SELECT count(*) FROM ${coupons})`,
+            contentPages: sql<number>`(SELECT count(*) FROM ${contentPages})`,
+        })
+        .from(sql`(SELECT 1) AS catalog_totals`);
 
     return {
-        products: productCount[0]?.total ?? 0,
-        coupons: couponCount[0]?.total ?? 0,
-        contentPages: contentCount[0]?.total ?? 0,
+        products: Number(row?.products ?? 0),
+        coupons: Number(row?.coupons ?? 0),
+        contentPages: Number(row?.contentPages ?? 0),
     };
-}
-
-async function fetchTenantTotal(db: DatabaseClient) {
-    const [summary] = await db
-        .select({ total: sql<number>`count(*)` })
-        .from(user);
-    return summary?.total ?? 0;
 }
 
 export async function getDashboardMetrics(
@@ -208,32 +204,26 @@ export async function getDashboardMetrics(
         : undefined;
 
     const [
-        ordersSummary,
-        subscriptionSummary,
-        totalCredits,
+        totals,
         usageRows,
         latestOrdersRows,
         recentCreditsRows,
         catalogSummary,
-        tenantTotal,
     ] = await Promise.all([
-        fetchOrdersSummary(db, tenantCondition),
-        fetchActiveSubscriptionSummary(db, tenantCondition),
-        fetchTotalCredits(db, tenantCondition),
+        fetchDashboardTotals(db, options),
         fetchUsageTrend(db, options),
         fetchLatestOrders(db, tenantCondition),
         fetchRecentCredits(db, tenantCondition),
         fetchCatalogSummary(db),
-        fetchTenantTotal(db),
     ]);
 
     return {
         totals: {
-            revenueCents: ordersSummary?.revenueCents ?? 0,
-            orderCount: ordersSummary?.orderCount ?? 0,
-            activeSubscriptions: subscriptionSummary?.active ?? 0,
-            tenantCount: tenantTotal,
-            totalCredits: totalCredits?.totalCredits ?? 0,
+            revenueCents: totals.revenueCents,
+            orderCount: totals.orderCount,
+            activeSubscriptions: totals.activeSubscriptions,
+            tenantCount: totals.tenantCount,
+            totalCredits: totals.totalCredits,
         },
         usageTrend: usageRows.map((row) => ({
             date: row.date,

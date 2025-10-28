@@ -30,10 +30,10 @@
         "db:inspect:prod": "wrangler d1 execute next-cf-app --remote --command=\"SELECT name FROM sqlite_master WHERE type='table';\"",
         "db:reset:local": "wrangler d1 execute next-cf-app --local --command=\"DROP TABLE IF EXISTS todos;\" && pnpm run db:migrate:local",
         "cf:secret": "npx wrangler secret put",
-        "cf-typegen": "pnpm exec wrangler types && pnpm exec wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
-        "lint": "pnpm exec biome check . --write --unsafe",
-        "biome:check": "pnpm exec biome check .",
-        "biome:apply": "pnpm exec biome check . --write --unsafe",
+        "cf-typegen": "node node_modules/wrangler/bin/wrangler.js types && node node_modules/wrangler/bin/wrangler.js types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+        "lint": "node scripts/run-biome.cjs check . --write --unsafe",
+        "biome:check": "node scripts/run-biome.cjs check .",
+        "biome:apply": "node scripts/run-biome.cjs check . --write --unsafe",
         "typecheck": "pnpm run cf-typegen && pnpm exec tsc --noEmit",
         "deps:lint": "pnpm exec depcruise --config dependency-cruiser.config.cjs --cache --include-only '^src' src",
         "check:all": "node scripts/check-all.mjs",
@@ -61,7 +61,7 @@
         "optimize:docs:fix": "node scripts/optimize-docs.mjs fix",
         "optimize:docs:report": "node scripts/optimize-docs.mjs report",
         "quality:check": "pnpm exec tsx scripts/code-quality-check.ts",
-        "quality:fix": "pnpm exec biome check . --write --unsafe && pnpm exec biome format . --write",
+        "quality:fix": "node scripts/run-biome.cjs check . --write --unsafe && node scripts/run-biome.cjs format . --write",
         "quality:strict": "pnpm exec tsc --project tsconfig.strict.json --noEmit",
         "pre-commit:quality": "pnpm run quality:check && pnpm run quality:strict",
         "performance:validate": "pnpm exec tsx scripts/performance-validation.ts",
@@ -140,7 +140,7 @@
         "wrangler": "^4.45.0"
     },
     "lint-staged": {
-        "*.{ts,tsx,js,jsx,json,css,md}": "pnpm exec biome check --write --unsafe",
+        "*.{ts,tsx,js,jsx,json,css,md}": "node scripts/run-biome.cjs check --write --unsafe",
         "config/static/**/*.json": "pnpm run validate:static-config -- --print",
         "config/static/marketing/**/*.json": "pnpm run validate:static-config -- --print"
     },

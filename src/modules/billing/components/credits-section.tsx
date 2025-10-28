@@ -25,14 +25,6 @@ interface ApiErrorResponse {
     traceId: string;
 }
 
-interface BalanceSuccessResponse {
-    success: true;
-    data: {
-        credits: number;
-    };
-    error?: null;
-}
-
 interface CreditTransaction {
     id: string;
     amount: number;
@@ -44,9 +36,10 @@ interface CreditTransaction {
     createdAt: string | null;
 }
 
-interface HistorySuccessResponse {
+interface CreditsSnapshotResponse {
     success: true;
     data: {
+        credits: number;
         transactions: CreditTransaction[];
         pagination: {
             total: number;
@@ -78,19 +71,13 @@ async function requestJson<TSuccess extends { success: true }>(
 
 const defaultHeaders = { "Content-Type": "application/json" } as const;
 
-function fetchBalanceData() {
-    return requestJson<BalanceSuccessResponse>(
-        "/api/v1/credits/balance",
-        { method: "GET", headers: defaultHeaders },
-        "获取余额失败",
-    );
-}
+function fetchSnapshotData(limit = 10) {
+    const searchParams = new URLSearchParams({ limit: String(limit) });
 
-function fetchHistoryData() {
-    return requestJson<HistorySuccessResponse>(
-        "/api/v1/credits/history?limit=10",
+    return requestJson<CreditsSnapshotResponse>(
+        `/api/v1/credits/snapshot?${searchParams.toString()}`,
         { method: "GET", headers: defaultHeaders },
-        "获取交易历史失败",
+        "获取积分快照失败",
     );
 }
 
@@ -110,12 +97,10 @@ function formatDateTime(value: string | null | undefined) {
 }
 
 function loadCreditsSnapshot() {
-    return Promise.all([fetchBalanceData(), fetchHistoryData()]).then(
-        ([balanceJson, historyJson]) => ({
-            balance: balanceJson.data?.credits ?? 0,
-            transactions: historyJson.data?.transactions ?? [],
-        }),
-    );
+    return fetchSnapshotData().then((snapshot) => ({
+        balance: snapshot.data?.credits ?? 0,
+        transactions: snapshot.data?.transactions ?? [],
+    }));
 }
 
 function resolveLoadErrorMessage(error: unknown) {
