@@ -11,6 +11,7 @@
 
 import type { MetadataRoute } from "next";
 import type { AppLocale } from "@/i18n/config";
+import { toNullableIsoString } from "@/lib/formatters";
 
 interface SitemapEntry {
     url: string;
@@ -375,13 +376,19 @@ export function generateSitemapIndex(
     }>,
 ): string {
     const xmlEntries = sitemaps
-        .map(
-            (sitemap) => `
+        .map((sitemap) => {
+            const lastModified = toNullableIsoString(
+                sitemap.lastModified ?? null,
+            );
+            const lastModTag = lastModified
+                ? `<lastmod>${lastModified}</lastmod>`
+                : "";
+            return `
     <sitemap>
       <loc>${baseUrl}${sitemap.path}</loc>
-      ${sitemap.lastModified ? `<lastmod>${new Date(sitemap.lastModified).toISOString()}</lastmod>` : ""}
-    </sitemap>`,
-        )
+      ${lastModTag}
+    </sitemap>`;
+        })
         .join("");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
