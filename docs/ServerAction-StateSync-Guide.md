@@ -79,38 +79,6 @@ const { execute, isPending, isExecuting, error, data } = useServerAction({
 | `reset` | `() => void` | 重置状态 |
 | `clearError` | `() => void` | 清除错误 |
 
-## 预设 Hooks
-
-### useCrudServerAction
-
-针对创建、更新、删除等常见操作的统一 Hook，通过传入 `kind` 指定场景并提供默认文案。
-
-```tsx
-import { useCrudServerAction } from "@/hooks/use-server-action";
-
-const createTodo = useCrudServerAction("create", createTodoAction, {
-    onSuccess: (data) => {
-        // 自定义成功处理
-    }
-});
-
-const updateTodo = useCrudServerAction("update", updateTodoAction);
-
-const deleteTodo = useCrudServerAction("delete", deleteTodoAction);
-```
-
-### useSimpleServerAction
-
-简化版本的 Hook，适用于基本场景。
-
-```tsx
-import { useSimpleServerAction } from "@/hooks/use-server-action";
-
-const simpleAction = useSimpleServerAction(myAction, {
-    onSuccess: (data) => console.log("成功:", data)
-});
-```
-
 ## 使用示例
 
 ### 基本用法

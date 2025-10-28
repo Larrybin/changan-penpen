@@ -259,4 +259,3 @@ export function buildAdminMenuGroups(
     });
 }
 
-export const adminResources = adminResourceDefinitions;

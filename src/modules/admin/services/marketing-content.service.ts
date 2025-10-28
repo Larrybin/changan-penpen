@@ -542,16 +542,3 @@ export async function publishMarketingContent(
     };
 }
 
-export async function cleanupExpiredPreviewTokens() {
-    const db = await getDb();
-    const now = new Date().toISOString();
-    await db
-        .update(marketingContentDrafts)
-        .set({ previewToken: null, previewTokenExpiresAt: null })
-        .where(
-            and(
-                isNotNull(marketingContentDrafts.previewToken),
-                lt(marketingContentDrafts.previewTokenExpiresAt, now),
-            ),
-        );
-}

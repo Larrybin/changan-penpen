@@ -53,16 +53,3 @@ export function maybeInjectFault(
     throw error ? error() : new Error(`[fault-injection] ${identifier}`);
 }
 
-export function enableFaultInjection(identifier: string): void {
-    if (typeof globalThis === "undefined") {
-        return;
-    }
-
-    const flag = getGlobalFlag();
-    const entries = flag ? flag.split(",").map((item) => item.trim()) : [];
-    if (!entries.includes(identifier)) {
-        entries.push(identifier);
-    }
-    (globalThis as Record<string, unknown>)[GLOBAL_FLAG_KEY] =
-        entries.join(",");
-}
