@@ -2,6 +2,17 @@
 const { spawnSync } = require("node:child_process");
 const process = require("node:process");
 
+function resolveCandidate(candidate) {
+    try {
+        return require.resolve(candidate);
+    } catch (error) {
+        if (error && error.code !== "MODULE_NOT_FOUND") {
+            throw error;
+        }
+        return null;
+    }
+}
+
 function resolveBinaryPath() {
     if (process.env.BIOME_BINARY) {
         return process.env.BIOME_BINARY;
@@ -16,18 +27,13 @@ function resolveBinaryPath() {
         "@biomejs/cli-darwin-x64/biome",
         "@biomejs/cli-win32-x64/biome.exe",
         "@biomejs/cli-win32-arm64/biome.exe",
+        "@biomejs/biome/bin/biome",
     ];
 
     for (const candidate of candidates) {
-        try {
-            const resolved = require.resolve(candidate);
-            if (resolved) {
-                return resolved;
-            }
-        } catch (error) {
-            if (error && error.code !== "MODULE_NOT_FOUND") {
-                throw error;
-            }
+        const resolved = resolveCandidate(candidate);
+        if (resolved) {
+            return resolved;
         }
     }
 

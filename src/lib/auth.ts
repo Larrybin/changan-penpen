@@ -1,9 +1,10 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: <we will make sure it's not null> */
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { getDb } from "@/db";
+import { getPlatformEnv } from "@/lib/platform/context";
 
 type BetterAuthInstance = ReturnType<typeof betterAuth>;
 
@@ -101,8 +102,10 @@ async function buildAuthInstance(
 export async function getAuth({
     fresh = false,
 } = {}): Promise<BetterAuthInstance> {
-    const { env } = await getCloudflareContext({ async: true });
-    const snapshot = snapshotAuthEnv(env as CloudflareEnv);
+    const env = (await getPlatformEnv({
+        async: true,
+    })) as unknown as CloudflareEnv;
+    const snapshot = snapshotAuthEnv(env);
     const cacheKey = buildCacheKey(snapshot);
     const cache = getGlobalAuthCache();
 

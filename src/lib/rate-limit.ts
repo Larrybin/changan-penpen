@@ -1,4 +1,3 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Ratelimit } from "@upstash/ratelimit";
 
 // Local re-definition to align with @upstash/ratelimit template literal type
@@ -7,6 +6,7 @@ type Duration = `${number} ${Unit}` | `${number}${Unit}`;
 
 import { Redis } from "@upstash/redis/cloudflare";
 import { createApiErrorResponse } from "@/lib/http-error";
+import { getPlatformEnv } from "@/lib/platform/context";
 
 interface RateLimitBinding {
     limit(options: { key: string }): Promise<{ success: boolean }>;
@@ -463,8 +463,7 @@ async function resolveLimiterEnv(env?: RateLimiterEnv) {
     }
 
     try {
-        const context = await getCloudflareContext({ async: true });
-        return (context?.env as RateLimiterEnv | undefined) ?? undefined;
+        return await getPlatformEnv<RateLimiterEnv>({ async: true });
     } catch {
         return undefined;
     }

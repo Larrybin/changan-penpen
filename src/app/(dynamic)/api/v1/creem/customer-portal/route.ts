@@ -1,7 +1,7 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
 import { json } from "@/lib/http";
 import { createApiErrorResponse } from "@/lib/http-error";
+import { getPlatformEnv } from "@/lib/platform/context";
 import { secureRandomInt } from "@/lib/random";
 import { requireSessionUser } from "@/modules/auth/utils/guards";
 import { requireCreemCustomerId } from "@/modules/creem/utils/guards";
@@ -81,8 +81,10 @@ export async function GET(request: Request) {
         if (customerIdOrResp instanceof Response) return customerIdOrResp;
         const creemCustomerId = customerIdOrResp;
 
-        const { env } = await getCloudflareContext({ async: true });
-        const envPick = env as unknown as Pick<
+        const env = (await getPlatformEnv({
+            async: true,
+        })) as unknown as CloudflareEnv;
+        const envPick = env as Pick<
             CloudflareEnv,
             "CREEM_API_URL" | "CREEM_API_KEY"
         >;

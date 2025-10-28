@@ -95,11 +95,13 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     }
 
     const providedEnv = options.env;
-    const context = providedEnv
+    const platformContext = providedEnv
         ? undefined
         : await getPlatformContext({ async: true });
     const env =
-        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
+        providedEnv ??
+        (platformContext?.env as CacheEnv | undefined) ??
+        undefined;
     const redis = getRedisClient(env);
     if (!redis) {
         const value = await compute();
@@ -120,11 +122,10 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     const serialized = safeStringify(value);
     if (serialized !== null) {
         const persist = redis.set(key, serialized, { ex: ttlSeconds });
-        const asyncWaiter =
-            waitUntil ??
-            (context?.ctx
-                ? context.ctx.waitUntil.bind(context.ctx)
-                : await getPlatformWaitUntil({ async: true }));
+        let asyncWaiter = waitUntil ?? platformContext?.waitUntil;
+        if (!asyncWaiter) {
+            asyncWaiter = await getPlatformWaitUntil({ async: true });
+        }
         if (asyncWaiter) {
             asyncWaiter(persist);
         } else {

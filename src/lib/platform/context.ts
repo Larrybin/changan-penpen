@@ -1,62 +1,56 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createCloudflareRuntime } from "./cloudflare";
+import {
+    getRegisteredPlatformRuntime,
+    type PlatformContext,
+    type PlatformRuntime,
+    type ResolvePlatformContextOptions,
+    setPlatformRuntime,
+} from "./runtime";
 
-type PlatformExecutionContext = ExecutionContext;
-
-interface PlatformContextResult {
-    env?: Record<string, unknown>;
-    ctx?: PlatformExecutionContext;
+function ensureRuntime(): PlatformRuntime {
+    let runtime = getRegisteredPlatformRuntime();
+    if (!runtime) {
+        runtime = createCloudflareRuntime();
+        setPlatformRuntime(runtime);
+    }
+    return runtime;
 }
 
-interface ResolveOptions {
-    async?: boolean;
-}
-
-function isExecutionContext(value: unknown): value is PlatformExecutionContext {
-    return (
-        typeof value === "object" &&
-        value !== null &&
-        "waitUntil" in value &&
-        typeof (value as PlatformExecutionContext).waitUntil === "function"
-    );
+export function getActivePlatformRuntime(): PlatformRuntime {
+    return ensureRuntime();
 }
 
 export async function getPlatformContext(
-    options: ResolveOptions = { async: true },
-): Promise<PlatformContextResult> {
+    options?: ResolvePlatformContextOptions,
+): Promise<PlatformContext> {
+    const runtime = ensureRuntime();
     try {
-        const context =
-            options?.async === false
-                ? getCloudflareContext({ async: false })
-                : await getCloudflareContext({ async: true });
-        if (!context) {
-            return {};
-        }
-
-        const env =
-            context.env && typeof context.env === "object"
-                ? (context.env as unknown as Record<string, unknown>)
-                : undefined;
-        const ctx = isExecutionContext(context.ctx) ? context.ctx : undefined;
-
-        return { env, ctx } satisfies PlatformContextResult;
+        return await runtime.getContext(options);
     } catch (error) {
-        console.warn("[platform] failed to resolve Cloudflare context", {
-            error,
-        });
+        console.warn("[platform] failed to resolve context", { error });
         return {};
     }
 }
 
 export async function getPlatformEnv<
-    TEnv extends Record<string, unknown> = Record<string, unknown>,
->(options?: ResolveOptions): Promise<TEnv> {
+    TEnv extends object = Record<string, unknown>,
+>(options?: ResolvePlatformContextOptions): Promise<TEnv> {
     const context = await getPlatformContext(options);
     return (context.env ?? {}) as TEnv;
 }
 
 export async function getPlatformWaitUntil(
-    options?: ResolveOptions,
-): Promise<PlatformExecutionContext["waitUntil"] | undefined> {
+    options?: ResolvePlatformContextOptions,
+): Promise<((promise: Promise<unknown>) => void) | undefined> {
     const context = await getPlatformContext(options);
-    return context.ctx?.waitUntil?.bind(context.ctx);
+    return context.waitUntil;
 }
+
+export { createCloudflareRuntime };
+export { createNodePlatformRuntime } from "./node";
+export type {
+    PlatformContext,
+    PlatformRuntime,
+    ResolvePlatformContextOptions,
+} from "./runtime";
+export { getRegisteredPlatformRuntime, setPlatformRuntime } from "./runtime";
