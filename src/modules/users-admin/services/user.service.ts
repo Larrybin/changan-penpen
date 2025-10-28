@@ -84,10 +84,165 @@ interface CustomerBundle {
     subscriptions: SubscriptionRecord[];
 }
 
+type QueryExecutor = <T>(operation: () => Promise<T>) => Promise<T>;
+
+const directQueryExecutor: QueryExecutor = (operation) =>
+    Promise.resolve().then(operation);
+
 const resolveAdminEmailSet = async () => {
     const { allowedEmails } = await getAdminAccessConfig();
     return new Set(allowedEmails.map((email) => email.toLowerCase()));
 };
+
+const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+        setTimeout(resolve, ms);
+    });
+
+function runWithTimeout<T>(
+    operation: () => Promise<T>,
+    timeoutMs: number | undefined,
+): Promise<T> {
+    if (!Number.isFinite(timeoutMs) || !timeoutMs || timeoutMs <= 0) {
+        return Promise.resolve().then(operation);
+    }
+
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(
+                new Error(
+                    `AdminUserService query timed out after ${timeoutMs}ms`,
+                ),
+            );
+        }, timeoutMs);
+
+        const finalize = <U>(callback: () => U): U => {
+            clearTimeout(timer);
+            return callback();
+        };
+
+        Promise.resolve()
+            .then(operation)
+            .then((value) => finalize(() => resolve(value)))
+            .catch((error) => finalize(() => reject(error)));
+    });
+}
+
+interface QueryRetryPolicy {
+    timeoutMs?: number;
+    retryAttempts: number;
+    retryDelayMs?: number;
+}
+
+async function executeWithPolicies<T>(
+    operation: () => Promise<T>,
+    policy: QueryRetryPolicy,
+): Promise<T> {
+    const attempts = Math.max(1, Math.floor(policy.retryAttempts ?? 0) + 1);
+    const delayMs =
+        policy.retryDelayMs !== undefined && policy.retryDelayMs > 0
+            ? Math.floor(policy.retryDelayMs)
+            : 0;
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        try {
+            return await runWithTimeout(operation, policy.timeoutMs);
+        } catch (error) {
+            lastError = error;
+            const isLastAttempt = attempt === attempts - 1;
+            if (isLastAttempt) {
+                throw error;
+            }
+
+            if (delayMs > 0) {
+                await sleep(delayMs);
+            }
+        }
+    }
+
+    throw lastError instanceof Error
+        ? lastError
+        : new Error("AdminUserService query failed");
+}
+
+function createConcurrencyLimiter(
+    limit: number | undefined,
+): QueryExecutor {
+    if (!Number.isFinite(limit) || limit === undefined || limit <= 0) {
+        return directQueryExecutor;
+    }
+
+    let activeCount = 0;
+    const queue: Array<() => void> = [];
+
+    const scheduleNext = () => {
+        if (activeCount >= limit) {
+            return;
+        }
+
+        const nextTask = queue.shift();
+        if (!nextTask) {
+            return;
+        }
+
+        nextTask();
+    };
+
+    return async function runLimited<T>(
+        operation: () => Promise<T>,
+    ): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
+            const execute = () => {
+                let taskPromise: Promise<T>;
+                try {
+                    taskPromise = Promise.resolve(operation());
+                } catch (error) {
+                    activeCount--;
+                    scheduleNext();
+                    reject(error);
+                    return;
+                }
+
+                taskPromise
+                    .then(resolve, reject)
+                    .finally(() => {
+                        activeCount--;
+                        scheduleNext();
+                    });
+            };
+
+            if (activeCount < limit) {
+                activeCount++;
+                execute();
+            } else {
+                queue.push(() => {
+                    activeCount++;
+                    execute();
+                });
+            }
+        });
+    };
+}
+
+interface QueryExecutorConfig extends QueryRetryPolicy {
+    concurrency?: number;
+}
+
+function createQueryExecutor(config: QueryExecutorConfig): QueryExecutor {
+    const limiter = createConcurrencyLimiter(config.concurrency);
+    const policy: QueryRetryPolicy = {
+        timeoutMs: config.timeoutMs,
+        retryAttempts: Math.max(0, Math.floor(config.retryAttempts ?? 0)),
+        retryDelayMs:
+            config.retryDelayMs !== undefined && config.retryDelayMs >= 0
+                ? Math.floor(config.retryDelayMs)
+                : undefined,
+    };
+
+    return <T>(operation: () => Promise<T>) =>
+        limiter(() => executeWithPolicies(operation, policy));
+}
 
 async function fetchUserRow(db: DbClient, userId: string) {
     const [row] = await db
@@ -112,17 +267,20 @@ async function fetchUserRow(db: DbClient, userId: string) {
 async function fetchCustomerBundle(
     db: DbClient,
     userId: string,
+    runQuery: QueryExecutor = directQueryExecutor,
 ): Promise<CustomerBundle> {
-    const [customerRow] = await db
-        .select({
-            id: customers.id,
-            credits: customers.credits,
-            createdAt: customers.createdAt,
-            updatedAt: customers.updatedAt,
-        })
-        .from(customers)
-        .where(eq(customers.userId, userId))
-        .limit(1);
+    const [customerRow] = await runQuery(() =>
+        db
+            .select({
+                id: customers.id,
+                credits: customers.credits,
+                createdAt: customers.createdAt,
+                updatedAt: customers.updatedAt,
+            })
+            .from(customers)
+            .where(eq(customers.userId, userId))
+            .limit(1),
+    );
 
     if (!customerRow) {
         return {
@@ -133,32 +291,36 @@ async function fetchCustomerBundle(
     }
 
     const [creditRows, subscriptionRows] = await Promise.all([
-        db
-            .select({
-                id: creditsHistory.id,
-                amount: creditsHistory.amount,
-                type: creditsHistory.type,
-                description: creditsHistory.description,
-                createdAt: creditsHistory.createdAt,
-            })
-            .from(creditsHistory)
-            .where(eq(creditsHistory.customerId, customerRow.id))
-            .orderBy(desc(creditsHistory.createdAt))
-            .limit(20),
-        db
-            .select({
-                id: subscriptionTable.id,
-                status: subscriptionTable.status,
-                currentPeriodStart: subscriptionTable.currentPeriodStart,
-                currentPeriodEnd: subscriptionTable.currentPeriodEnd,
-                canceledAt: subscriptionTable.canceledAt,
-                createdAt: subscriptionTable.createdAt,
-                updatedAt: subscriptionTable.updatedAt,
-            })
-            .from(subscriptionTable)
-            .where(eq(subscriptionTable.customerId, customerRow.id))
-            .orderBy(desc(subscriptionTable.createdAt))
-            .limit(10),
+        runQuery(() =>
+            db
+                .select({
+                    id: creditsHistory.id,
+                    amount: creditsHistory.amount,
+                    type: creditsHistory.type,
+                    description: creditsHistory.description,
+                    createdAt: creditsHistory.createdAt,
+                })
+                .from(creditsHistory)
+                .where(eq(creditsHistory.customerId, customerRow.id))
+                .orderBy(desc(creditsHistory.createdAt))
+                .limit(20),
+        ),
+        runQuery(() =>
+            db
+                .select({
+                    id: subscriptionTable.id,
+                    status: subscriptionTable.status,
+                    currentPeriodStart: subscriptionTable.currentPeriodStart,
+                    currentPeriodEnd: subscriptionTable.currentPeriodEnd,
+                    canceledAt: subscriptionTable.canceledAt,
+                    createdAt: subscriptionTable.createdAt,
+                    updatedAt: subscriptionTable.updatedAt,
+                })
+                .from(subscriptionTable)
+                .where(eq(subscriptionTable.customerId, customerRow.id))
+                .orderBy(desc(subscriptionTable.createdAt))
+                .limit(10),
+        ),
     ]);
 
     return {
@@ -319,7 +481,41 @@ export function createAdminUserService(
         }
 
         const db = await dependencies.getDb();
-        const userRow = await fetchUserRow(db, userId);
+        const detailQueryConfig = config.admin?.users?.detailQuery;
+
+        const concurrencyLimit =
+            detailQueryConfig?.concurrency !== undefined &&
+            Number.isFinite(detailQueryConfig.concurrency) &&
+            detailQueryConfig.concurrency > 0
+                ? Math.floor(detailQueryConfig.concurrency)
+                : undefined;
+        const timeoutMs =
+            detailQueryConfig?.timeoutMs !== undefined &&
+            Number.isFinite(detailQueryConfig.timeoutMs) &&
+            detailQueryConfig.timeoutMs > 0
+                ? Math.floor(detailQueryConfig.timeoutMs)
+                : undefined;
+        const retryAttempts =
+            detailQueryConfig?.retry?.attempts !== undefined &&
+            Number.isFinite(detailQueryConfig.retry.attempts)
+                ? Math.max(0, Math.floor(detailQueryConfig.retry.attempts))
+                : 0;
+        const retryDelayMs =
+            detailQueryConfig?.retry?.delayMs !== undefined &&
+            Number.isFinite(detailQueryConfig.retry.delayMs)
+                ? Math.max(0, Math.floor(detailQueryConfig.retry.delayMs))
+                : 0;
+
+        const runControlledQuery = createQueryExecutor({
+            concurrency: concurrencyLimit,
+            timeoutMs,
+            retryAttempts,
+            retryDelayMs,
+        });
+
+        const userRow = await runControlledQuery(() =>
+            fetchUserRow(db, userId),
+        );
         if (!userRow) {
             return null;
         }
@@ -328,9 +524,9 @@ export function createAdminUserService(
 
         const [customerBundle, usageRows, transactionRows, adminEmails] =
             await Promise.all([
-                fetchCustomerBundle(db, userId),
-                fetchUsageRows(db, userId),
-                fetchTransactionRows(db, userId),
+                fetchCustomerBundle(db, userId, runControlledQuery),
+                runControlledQuery(() => fetchUsageRows(db, userId)),
+                runControlledQuery(() => fetchTransactionRows(db, userId)),
                 adminEmailsPromise,
             ]);
 

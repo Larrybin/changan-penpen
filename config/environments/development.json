@@ -171,6 +171,17 @@
       "flush_interval": "10s"
     }
   },
+  "admin": {
+    "users": {
+      "detailQuery": {
+        "concurrency": 1,
+        "timeoutMs": 8000,
+        "retry": {
+          "attempts": 0
+        }
+      }
+    }
+  },
   "logging": {
     "level": "debug",
     "format": "pretty",
