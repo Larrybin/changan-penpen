@@ -40,6 +40,8 @@ export interface FetchAdminListOptions {
     };
     filters?: CrudFilters;
     sorters?: CrudSorting;
+    fields?: readonly string[];
+    view?: string | null;
     signal?: AbortSignal;
 }
 
@@ -107,6 +109,8 @@ export async function fetchAdminList<TData = Record<string, unknown>>({
     pagination,
     filters,
     sorters,
+    fields,
+    view,
     signal,
 }: FetchAdminListOptions): Promise<FetchAdminListResult<TData>> {
     const resourcePath = normalizeAdminResourcePath(resource);
@@ -124,6 +128,8 @@ export async function fetchAdminList<TData = Record<string, unknown>>({
                 : undefined,
         filters,
         sorters,
+        fields,
+        view: view ?? null,
     });
 
     const response = await adminApiClient.get<AdminListPayload<TData>>(
