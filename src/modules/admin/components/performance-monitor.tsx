@@ -5,7 +5,7 @@
  */
 
 import { Activity, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PerformanceDiagnostics } from "@/app/(dynamic)/api/v1/admin/performance/diagnostics/route";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ interface DiagnosticsResponse {
 
 const PERFORMANCE_DIAGNOSTICS_ENDPOINT =
     "/api/v1/admin/performance/diagnostics";
+const REFRESH_INTERVAL_MS = 30_000;
 
 async function requestPerformanceDiagnostics(): Promise<PerformanceDiagnostics> {
     const response = await fetch(PERFORMANCE_DIAGNOSTICS_ENDPOINT, {
@@ -56,13 +57,25 @@ export function PerformanceMonitor() {
     const [isLoading, setIsLoading] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const lastFetchAtRef = useRef<number>(0);
+    const isFetchingRef = useRef(false);
 
-    const fetchMetrics = useCallback(async () => {
-        setIsLoading(true);
+    const fetchMetrics = useCallback(async (options?: { silent?: boolean }) => {
+        if (isFetchingRef.current) {
+            return;
+        }
+
+        isFetchingRef.current = true;
+
+        if (!options?.silent) {
+            setIsLoading(true);
+        }
+
         setError(null);
 
         try {
             const diagnostics = await requestPerformanceDiagnostics();
+            lastFetchAtRef.current = Date.now();
             setMetrics(diagnostics);
         } catch (fetchError) {
             console.error(
@@ -76,19 +89,42 @@ export function PerformanceMonitor() {
                     : "Unknown error";
             setError(message);
         } finally {
+            isFetchingRef.current = false;
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
         void fetchMetrics();
+    }, [fetchMetrics]);
 
-        if (autoRefresh) {
-            const interval = setInterval(() => {
-                void fetchMetrics();
-            }, 30000); // 30秒刷新
-            return () => clearInterval(interval);
+    useEffect(() => {
+        if (!autoRefresh) {
+            return;
         }
+
+        const now = Date.now();
+        if (
+            !isFetchingRef.current &&
+            now - lastFetchAtRef.current >= REFRESH_INTERVAL_MS
+        ) {
+            void fetchMetrics({ silent: true });
+        }
+
+        const interval = setInterval(() => {
+            if (isFetchingRef.current) {
+                return;
+            }
+
+            const next = Date.now();
+            if (next - lastFetchAtRef.current < REFRESH_INTERVAL_MS) {
+                return;
+            }
+
+            void fetchMetrics({ silent: true });
+        }, REFRESH_INTERVAL_MS);
+
+        return () => clearInterval(interval);
     }, [autoRefresh, fetchMetrics]);
 
     const getHitRateColor = (hitRate: number) => {

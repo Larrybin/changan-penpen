@@ -325,7 +325,7 @@ function mapRowToPayload(
     };
 }
 
-export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
+async function loadSiteSettingsPayload(): Promise<SiteSettingsPayload> {
     "use cache";
     unstable_cacheTag(CACHE_TAGS.siteSettings);
     unstable_cacheLife("hours");
@@ -355,20 +355,12 @@ export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
     }
 }
 
-async function getSiteSettingsPayloadWithCache(): Promise<SiteSettingsPayload> {
-    "use cache";
-    unstable_cacheTag(CACHE_TAGS.siteSettings);
-    unstable_cacheLife("hours");
-
-    return loadSiteSettingsPayload();
-}
-
 export async function getSiteSettingsPayload(): Promise<SiteSettingsPayload> {
     if (isEdgeRuntime()) {
         return loadSiteSettingsPayload();
     }
 
-    return getSiteSettingsPayloadWithCache();
+    return loadSiteSettingsPayload();
 }
 
 export interface UpdateSiteSettingsInput {
