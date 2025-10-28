@@ -27,6 +27,10 @@ export const createSignUpSchema = (t: TranslateFn) =>
             .trim()
             .min(1, { message: t("username.required") })
             .min(3, { message: t("username.min", { count: 3 }) }),
+        turnstileToken: z
+            .string()
+            .trim()
+            .min(1, { message: t("captcha.required") }),
     });
 
 export const signInSchema = createSignInSchema(defaultTranslate);

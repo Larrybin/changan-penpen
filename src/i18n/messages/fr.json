@@ -30,7 +30,9 @@
             "signUpSuccess": "Inscription réussie",
             "signOutSuccess": "Déconnexion réussie",
             "unknownError": "Une erreur inconnue s'est produite.",
-            "socialSignInError": "La connexion Google a échoué. Veuillez réessayer."
+            "socialSignInError": "La connexion Google a échoué. Veuillez réessayer.",
+            "captchaUnavailable": "Le captcha est temporairement indisponible. Veuillez réessayer plus tard.",
+            "captchaFailed": "La vérification du captcha a échoué. Veuillez actualiser et réessayer."
         },
         "Shared": {
             "continueWith": "Ou continuer avec",
@@ -86,6 +88,10 @@
             "username": {
                 "required": "Le nom d'utilisateur est obligatoire",
                 "min": "Le nom d'utilisateur doit contenir au moins {count} caractères"
+            },
+            "captcha": {
+                "required": "Veuillez compléter le captcha",
+                "error": "La vérification du captcha a échoué. Veuillez réessayer."
             }
         }
     },

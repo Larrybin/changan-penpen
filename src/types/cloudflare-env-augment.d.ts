@@ -14,5 +14,8 @@ declare namespace Cloudflare {
         GOOGLE_CLIENT_SECRET?: string;
         // Optional public URL for R2 files
         CLOUDFLARE_R2_URL?: string;
+        TURNSTILE_SECRET?: string;
+        CACHE_REVALIDATE_TOKEN?: string;
+        TURNSTILE_SITE_KEY?: string;
     }
 }

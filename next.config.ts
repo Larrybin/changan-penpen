@@ -1,9 +1,65 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 import createBundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
+import type { RemotePattern } from "next/dist/shared/lib/image-config";
 import createNextIntlPlugin from "next-intl/plugin";
 
 import { buildRedirects } from "./config/redirects";
+
+function parseHost(value: string | undefined) {
+    if (!value) {
+        return null;
+    }
+    try {
+        const url = value.startsWith("http")
+            ? new URL(value)
+            : new URL(`https://${value}`);
+        return url.hostname;
+    } catch {
+        return null;
+    }
+}
+
+function collectRemoteImageHosts() {
+    const hosts = new Set<string>();
+    const envList = process.env.NEXT_PUBLIC_IMAGE_HOSTS;
+    if (envList) {
+        for (const raw of envList.split(",")) {
+            const candidate = raw.trim();
+            if (candidate) {
+                hosts.add(candidate);
+            }
+        }
+    }
+
+    const appHost = parseHost(process.env.NEXT_PUBLIC_APP_URL);
+    if (appHost) {
+        hosts.add(appHost);
+    }
+
+    const r2Host = parseHost(process.env.CLOUDFLARE_R2_URL);
+    if (r2Host) {
+        hosts.add(r2Host);
+    }
+
+    hosts.add("imagedelivery.net");
+
+    return Array.from(hosts);
+}
+
+const remoteImagePatterns: RemotePattern[] = collectRemoteImageHosts().map(
+    (hostname) => ({
+        protocol: "https",
+        hostname,
+        pathname: "/**",
+    }),
+);
+
+const require = createRequire(import.meta.url);
+const nextVersion = (require("next/package.json") as { version: string })
+    .version;
+const enableCacheComponents = /canary/i.test(nextVersion);
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withBundleAnalyzer = createBundleAnalyzer({
@@ -26,15 +82,7 @@ const nextConfig: NextConfig = {
         // 最小缓存时间（4小时）
         minimumCacheTTL: 14400,
         // 允许的外部图片源配置
-        remotePatterns: [
-            {
-                protocol: "https",
-                hostname: "**",
-                port: "",
-                pathname: "/**",
-                search: "",
-            },
-        ],
+        remotePatterns: remoteImagePatterns,
         // 本地图片模式
         localPatterns: [
             {
@@ -55,6 +103,8 @@ const nextConfig: NextConfig = {
         webVitalsAttribution: ["CLS", "LCP", "INP"],
         // Webpack内存优化（Next.js 15.0.0+）
         webpackMemoryOptimizations: true,
+        ...(enableCacheComponents ? { cacheComponents: true } : {}),
+        useCache: true,
     },
     webpack: (config) => {
         config.resolve = config.resolve || {};
