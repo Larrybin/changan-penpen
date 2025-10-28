@@ -1,8 +1,8 @@
 import { z } from "zod/v4";
 
 import "@/lib/openapi/extend";
-import { isFaultEnabled as isGlobalFaultEnabled } from "@/lib/observability/fault-injection";
 import { recordApiRequestMetric } from "@/lib/observability/api-metrics";
+import { isFaultEnabled as isGlobalFaultEnabled } from "@/lib/observability/fault-injection";
 import { recordMetric } from "@/lib/observability/metrics";
 import { retry } from "@/lib/utils/retry";
 

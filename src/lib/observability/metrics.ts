@@ -79,9 +79,7 @@ async function dispatchBatch(batch: MetricRecord[]): Promise<void> {
     await reporter(batch);
 }
 
-export function configureMetricsReporter(
-    config: MetricsReporterConfig,
-): void {
+export function configureMetricsReporter(config: MetricsReporterConfig): void {
     if (!config || !config.endpoint) {
         throw new Error("Metrics reporter requires an endpoint");
     }

@@ -106,7 +106,10 @@ function safeStringify(value: unknown): string | null {
     }
 }
 
-function safeParse<T>(value: string | null): { result: T | null; error?: unknown } {
+function safeParse<T>(value: string | null): {
+    result: T | null;
+    error?: unknown;
+} {
     if (value === null) {
         return { result: null };
     }
@@ -118,89 +121,147 @@ function safeParse<T>(value: string | null): { result: T | null; error?: unknown
     }
 }
 
-export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
+interface CacheRuntime {
+    redis: Redis | null;
+    waitUntil?: (promise: Promise<unknown>) => void;
+}
+
+async function resolveCacheRuntime<Env extends CacheEnv>(
     options: WithCacheOptions<Env>,
-    compute: () => Promise<T>,
-): Promise<{ value: T; hit: boolean }> {
-    const { key, ttlSeconds, waitUntil } = options;
-    if (!key) {
-        recordCacheLookup("bypass", { reason: "empty-key" });
-        const value = await compute();
-        return { value, hit: false };
+): Promise<CacheRuntime> {
+    const { env: providedEnv, waitUntil } = options;
+    if (providedEnv) {
+        return { redis: getRedisClient(providedEnv), waitUntil };
     }
 
-    const providedEnv = options.env;
-    const context = providedEnv
-        ? undefined
-        : await getPlatformContext({ async: true });
-    const env =
-        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
+    const platformContext = await getPlatformContext({ async: true });
+    const env = platformContext?.env
+        ? (platformContext.env as CacheEnv | undefined)
+        : undefined;
     const redis = getRedisClient(env);
-    if (!redis) {
-        recordCacheLookup("bypass", { reason: "missing-binding" });
-        const value = await compute();
-        return { value, hit: false };
+
+    if (waitUntil) {
+        return { redis, waitUntil };
     }
 
+    const contextWaitUntil = platformContext?.ctx?.waitUntil?.bind(
+        platformContext.ctx,
+    );
+    if (contextWaitUntil) {
+        return { redis, waitUntil: contextWaitUntil };
+    }
+
+    const fallbackWaitUntil = await getPlatformWaitUntil({ async: true });
+    return { redis, waitUntil: fallbackWaitUntil };
+}
+
+type CacheReadOutcome<T> =
+    | { status: "hit"; value: T }
+    | { status: "miss" | "error"; value: null };
+
+async function readFromCache<T>(
+    redis: Redis,
+    key: string,
+): Promise<CacheReadOutcome<T>> {
     try {
         const cached = await redis.get<string>(key);
-        const { result: parsed, error: parseError } = safeParse<T>(cached ?? null);
+        const { result: parsed, error: parseError } = safeParse<T>(
+            cached ?? null,
+        );
+
         if (parsed !== null) {
             recordCacheLookup("hit");
-            return { value: parsed, hit: true };
+            return { status: "hit", value: parsed };
         }
 
         if (cached === null) {
             recordCacheLookup("miss");
-        } else if (parseError) {
+            return { status: "miss", value: null };
+        }
+
+        if (parseError) {
             recordCacheLookup("error", {
                 error_type: "parse",
                 error_name:
                     parseError instanceof Error ? parseError.name : "unknown",
             });
-        } else {
-            recordCacheLookup("miss");
+            return { status: "error", value: null };
         }
+
+        recordCacheLookup("miss");
+        return { status: "miss", value: null };
     } catch (error) {
         console.warn("[cache] failed to read", { key, error });
         recordCacheLookup("error", {
             error_type: "read",
             error_name: error instanceof Error ? error.name : "unknown",
         });
+        return { status: "error", value: null };
+    }
+}
+
+function scheduleCacheWrite(
+    redis: Redis,
+    key: string,
+    serialized: string,
+    ttlSeconds: number,
+    waitUntil?: (promise: Promise<unknown>) => void,
+): void {
+    const persist = redis
+        .set(key, serialized, { ex: ttlSeconds })
+        .then(() => {
+            recordCacheWrite("success", { ttl_seconds: ttlSeconds });
+        })
+        .catch((error) => {
+            recordCacheWrite("error", {
+                error_type: "write",
+                error_name: error instanceof Error ? error.name : "unknown",
+            });
+            throw error;
+        });
+
+    if (waitUntil) {
+        waitUntil(
+            persist.catch((error) => {
+                console.warn("[cache] failed to persist", { key, error });
+                throw error;
+            }),
+        );
+        return;
+    }
+
+    void persist.catch((error) => {
+        console.warn("[cache] failed to persist", { key, error });
+    });
+}
+
+export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
+    options: WithCacheOptions<Env>,
+    compute: () => Promise<T>,
+): Promise<{ value: T; hit: boolean }> {
+    const { key, ttlSeconds } = options;
+    if (!key) {
+        recordCacheLookup("bypass", { reason: "empty-key" });
+        const value = await compute();
+        return { value, hit: false };
+    }
+
+    const { redis, waitUntil } = await resolveCacheRuntime(options);
+    if (!redis) {
+        recordCacheLookup("bypass", { reason: "missing-binding" });
+        const value = await compute();
+        return { value, hit: false };
+    }
+
+    const cached = await readFromCache<T>(redis, key);
+    if (cached.status === "hit") {
+        return { value: cached.value, hit: true };
     }
 
     const value = await compute();
     const serialized = safeStringify(value);
     if (serialized !== null) {
-        const persist = redis
-            .set(key, serialized, { ex: ttlSeconds })
-            .then(() => {
-                recordCacheWrite("success", { ttl_seconds: ttlSeconds });
-            })
-            .catch((error) => {
-                recordCacheWrite("error", {
-                    error_type: "write",
-                    error_name: error instanceof Error ? error.name : "unknown",
-                });
-                throw error;
-            });
-        const asyncWaiter =
-            waitUntil ??
-            (context?.ctx
-                ? context.ctx.waitUntil.bind(context.ctx)
-                : await getPlatformWaitUntil({ async: true }));
-        if (asyncWaiter) {
-            asyncWaiter(
-                persist.catch((error) => {
-                    console.warn("[cache] failed to persist", { key, error });
-                    throw error;
-                }),
-            );
-        } else {
-            persist.catch((error) =>
-                console.warn("[cache] failed to persist", { key, error }),
-            );
-        }
+        scheduleCacheWrite(redis, key, serialized, ttlSeconds, waitUntil);
     }
 
     return { value, hit: false };
