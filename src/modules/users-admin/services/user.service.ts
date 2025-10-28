@@ -166,9 +166,7 @@ async function executeWithPolicies<T>(
         : new Error("AdminUserService query failed");
 }
 
-function createConcurrencyLimiter(
-    limit: number | undefined,
-): QueryExecutor {
+function createConcurrencyLimiter(limit: number | undefined): QueryExecutor {
     if (!Number.isFinite(limit) || limit === undefined || limit <= 0) {
         return directQueryExecutor;
     }
@@ -204,12 +202,10 @@ function createConcurrencyLimiter(
                     return;
                 }
 
-                taskPromise
-                    .then(resolve, reject)
-                    .finally(() => {
-                        activeCount--;
-                        scheduleNext();
-                    });
+                taskPromise.then(resolve, reject).finally(() => {
+                    activeCount--;
+                    scheduleNext();
+                });
             };
 
             if (activeCount < limit) {
@@ -253,13 +249,18 @@ function normalizePositiveInteger(value: number | undefined) {
 }
 
 function createDetailQueryExecutorFromConfig(
-    detailQueryConfig: {
-        concurrency?: number;
-        timeoutMs?: number;
-        retry?: { attempts?: number; delayMs?: number };
-    } | null | undefined,
+    detailQueryConfig:
+        | {
+              concurrency?: number;
+              timeoutMs?: number;
+              retry?: { attempts?: number; delayMs?: number };
+          }
+        | null
+        | undefined,
 ): QueryExecutor {
-    const concurrency = normalizePositiveInteger(detailQueryConfig?.concurrency);
+    const concurrency = normalizePositiveInteger(
+        detailQueryConfig?.concurrency,
+    );
     const timeoutMs = normalizePositiveInteger(detailQueryConfig?.timeoutMs);
     const retryAttempts = normalizePositiveInteger(
         detailQueryConfig?.retry?.attempts,
