@@ -276,11 +276,22 @@ function buildRateLimitDetails(
     metadata: RateLimitMetadata,
     retryAfterSeconds: number | null,
 ) {
+    const isoReset =
+        metadata.reset instanceof Date
+            ? toNullableIsoString(metadata.reset)
+            : typeof metadata.reset === "number"
+              ? toNullableIsoString(
+                    metadata.reset > 1_000_000_000_000
+                        ? metadata.reset
+                        : metadata.reset * 1000,
+                )
+              : toNullableIsoString(metadata.reset);
+
     return {
         limit: metadata.limit ?? null,
         remaining: metadata.remaining ?? null,
         reset:
-            toNullableIsoString(metadata.reset) ??
+            isoReset ??
             (typeof metadata.reset === "number" ||
             typeof metadata.reset === "string"
                 ? metadata.reset
