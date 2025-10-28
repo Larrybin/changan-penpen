@@ -1,16 +1,3 @@
-export const VALIDATION_LIMITS = {
-    TODO: {
-        TITLE_MIN: 3,
-        TITLE_MAX: 255,
-        DESCRIPTION_MAX: 1000,
-        IMAGE_ALT_MAX: 255,
-    },
-    UPLOAD: {
-        MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-        ALLOWED_IMAGE_TYPES: ["image/jpeg", "image/png"],
-    },
-} as const;
-
 export const VALIDATION_MESSAGES = {
     REQUIRED: "This field is required",
     EMAIL_INVALID: "Please enter a valid email address",

@@ -1,5 +1,3 @@
-import { getPlatformContext } from "@/lib/platform/context";
-
 import baseConfigJson from "../../config/environments/base.json";
 import developmentConfigJson from "../../config/environments/development.json";
 import productionConfigJson from "../../config/environments/production.json";
@@ -273,19 +271,6 @@ export function resolveConfigSync(envName?: string): Config {
         envName ?? process.env.NEXTJS_ENV ?? process.env.NODE_ENV,
     );
     const runtimeEnv = gatherRuntimeEnv();
-    return buildConfig(environment, runtimeEnv);
-}
-
-export async function resolveConfig(envName?: string): Promise<Config> {
-    const context = await getPlatformContext({ async: true });
-    const cloudflareEnv = context.env;
-    const runtimeEnv = gatherRuntimeEnv(cloudflareEnv);
-    const inferredEnvName =
-        envName ??
-        (cloudflareEnv?.NEXTJS_ENV as string | undefined) ??
-        process.env.NEXTJS_ENV ??
-        process.env.NODE_ENV;
-    const environment = parseEnvironmentName(inferredEnvName);
     return buildConfig(environment, runtimeEnv);
 }
 

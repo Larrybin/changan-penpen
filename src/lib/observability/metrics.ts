@@ -23,10 +23,6 @@ export function recordMetric(
     }
 }
 
-export function getBufferedMetrics(): MetricRecord[] {
-    return [...bufferedMetrics];
-}
-
 export function drainMetrics(): MetricRecord[] {
     const snapshot = [...bufferedMetrics];
     bufferedMetrics.length = 0;

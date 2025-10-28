@@ -20,7 +20,6 @@ interface WithCacheOptions<Env extends CacheEnv> {
 const redisClients = new Map<string, { client: Redis; lastUsed: number }>();
 const CLIENT_TTL_MS = 15 * 60 * 1000;
 const MAX_CLIENTS = 4;
-const CACHE_INDEX_KEY = "@cache:index";
 
 function cleanupRedisClients(now: number) {
     for (const [key, record] of redisClients) {
@@ -85,92 +84,6 @@ function safeParse<T>(value: string | null): T | null {
     }
 }
 
-async function indexCacheKey(redis: Redis, key: string) {
-    try {
-        await redis.sadd(CACHE_INDEX_KEY, key);
-    } catch (error) {
-        console.warn("[cache] failed to index key", { key, error });
-    }
-}
-
-async function removeIndexedKey(redis: Redis, key: string) {
-    try {
-        await redis.srem(CACHE_INDEX_KEY, key);
-    } catch (error) {
-        console.warn("[cache] failed to clean index", { key, error });
-    }
-}
-
-async function resolveRedisForEnv<Env extends CacheEnv>(env?: Env) {
-    const providedEnv = env;
-    if (providedEnv) {
-        return getRedisClient(providedEnv);
-    }
-
-    const context = await getPlatformContext({ async: true });
-    return getRedisClient(context.env as CacheEnv | undefined);
-}
-
-async function invalidateUsingIndexedSet(redis: Redis, prefix: string) {
-    const members = await redis.smembers<string[]>(CACHE_INDEX_KEY);
-    const keys = Array.isArray(members) ? members : [];
-    const targets = keys.filter((key) => key.startsWith(prefix));
-    if (targets.length === 0) {
-        return;
-    }
-
-    await Promise.allSettled(
-        targets.map(async (key) => {
-            await redis.del(key);
-            await removeIndexedKey(redis, key);
-        }),
-    );
-}
-
-async function invalidateUsingScan(redis: Redis, prefix: string) {
-    const deletions: Promise<unknown>[] = [];
-    let cursor = "0";
-    const pattern = `${prefix}*`;
-
-    do {
-        const [nextCursor, rawKeys]: [string, string[]] = await redis.scan(
-            cursor,
-            { match: pattern, count: 100 },
-        );
-        const keys = Array.isArray(rawKeys) ? rawKeys : [];
-        for (const key of keys) {
-            if (typeof key !== "string" || !key) {
-                continue;
-            }
-            deletions.push(
-                redis
-                    .del(key)
-                    .then(() => removeIndexedKey(redis, key))
-                    .catch((error) =>
-                        console.warn("[cache] failed to delete key", {
-                            key,
-                            error,
-                        }),
-                    ),
-            );
-        }
-        cursor = nextCursor;
-    } while (cursor !== "0");
-
-    if (deletions.length > 0) {
-        await Promise.allSettled(deletions);
-    }
-}
-
-async function invalidateByPrefix(redis: Redis, prefix: string) {
-    if (typeof redis.scan === "function") {
-        await invalidateUsingScan(redis, prefix);
-        return;
-    }
-
-    await invalidateUsingIndexedSet(redis, prefix);
-}
-
 export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     options: WithCacheOptions<Env>,
     compute: () => Promise<T>,
@@ -206,13 +119,7 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     const value = await compute();
     const serialized = safeStringify(value);
     if (serialized !== null) {
-        const persist = redis
-            .set(key, serialized, { ex: ttlSeconds })
-            .then(async (result) => {
-                if (result === "OK") {
-                    await indexCacheKey(redis, key);
-                }
-            });
+        const persist = redis.set(key, serialized, { ex: ttlSeconds });
         const asyncWaiter =
             waitUntil ??
             (context?.ctx
@@ -228,24 +135,4 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     }
 
     return { value, hit: false };
-}
-
-export async function invalidateApiCache<Env extends CacheEnv = CacheEnv>(
-    prefix: string,
-    env?: Env,
-): Promise<void> {
-    if (!prefix) {
-        return;
-    }
-
-    const redis = await resolveRedisForEnv(env);
-    if (!redis) {
-        return;
-    }
-
-    try {
-        await invalidateByPrefix(redis, prefix);
-    } catch (error) {
-        console.warn("[cache] failed to invalidate keys", { prefix, error });
-    }
 }
