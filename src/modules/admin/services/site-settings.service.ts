@@ -196,16 +196,20 @@ function isEdgeRuntime() {
         return true;
     }
 
-    const processCandidate = (globalThis as typeof globalThis & {
-        process?: NodeJS.Process;
-    }).process;
+    const processCandidate = (
+        globalThis as typeof globalThis & {
+            process?: NodeJS.Process;
+        }
+    ).process;
     if (processCandidate?.env?.NEXT_RUNTIME === "edge") {
         return true;
     }
 
-    const navigatorUserAgent = (globalThis as typeof globalThis & {
-        navigator?: { userAgent?: string };
-    }).navigator?.userAgent;
+    const navigatorUserAgent = (
+        globalThis as typeof globalThis & {
+            navigator?: { userAgent?: string };
+        }
+    ).navigator?.userAgent;
     if (navigatorUserAgent?.includes("Cloudflare-Workers")) {
         return true;
     }
