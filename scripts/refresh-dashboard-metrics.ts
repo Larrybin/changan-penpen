@@ -4,8 +4,8 @@ import process from "node:process";
 
 import { customers, getDb } from "@/db";
 import {
-    refreshDashboardMetricsCache,
     type DashboardMetricsOptions,
+    refreshDashboardMetricsCache,
 } from "@/modules/admin/services/analytics.service";
 
 interface CliOptions {

@@ -3,7 +3,6 @@ import { getMultiLevelCache } from "@/lib/cache/multi-level-cache";
 import handleApiError from "@/lib/api-error";
 import { createApiErrorResponse } from "@/lib/http-error";
 import { parseFaultInjectionTargets } from "@/lib/observability/fault-injection";
-import { parseDurationToMs } from "@/lib/utils/duration";
 import { getPlatformContext } from "@/lib/platform/context";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
@@ -73,6 +72,7 @@ export async function POST(request: Request) {
         }
 
         const { env, waitUntil } = await getPlatformContext({ async: true });
+        const rateLimiterEnv = env as Parameters<typeof applyRateLimit>[0]["env"];
 
         function hasAI(e: unknown): e is { AI: AiBinding } {
             try {
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
             request,
             identifier: "api:summarize",
             keyParts: [session.user.id, session.user.email ?? null],
-            env,
+            env: rateLimiterEnv,
             waitUntil,
             upstash: {
                 strategy: { type: "sliding", requests: 10, window: "1 m" },
@@ -154,39 +154,29 @@ export async function POST(request: Request) {
         const faultHeader = request.headers.get("x-fault-injection");
         const faultTargets = parseFaultInjectionTargets(faultHeader);
 
-        const retryConfig = config.services?.external_apis;
-        const circuitBreakerConfig = retryConfig?.circuit_breaker;
+        const externalApiConfig = config.services?.external_apis;
+        const circuitBreakerConfig = externalApiConfig?.circuit_breaker;
+        const circuitBreakerOptions = circuitBreakerConfig
+            ? {
+                  key: "summarizer:workers-ai",
+                  enabled: circuitBreakerConfig.enabled ?? true,
+                  failureThreshold:
+                      circuitBreakerConfig.failure_threshold ?? undefined,
+                  recoveryTimeout:
+                      circuitBreakerConfig.recovery_timeout ?? undefined,
+                  halfOpenMaxCalls:
+                      circuitBreakerConfig.half_open_max_calls ?? undefined,
+              }
+            : undefined;
         const summarizerService = new SummarizerService(env.AI, {
             retry: {
                 attempts: externalApiConfig?.retry_attempts ?? 3,
                 backoffFactor: 2,
                 initialDelayMs: 250,
             },
-            circuitBreaker: circuitBreakerConfig
-                ? {
-                      key: "summarizer.workers-ai",
-                      enabled: circuitBreakerConfig.enabled,
-                      failureThreshold: circuitBreakerConfig.failure_threshold,
-                      recoveryTimeoutMs: parseDurationToMs(
-                          circuitBreakerConfig.recovery_timeout,
-                      ),
-                      halfOpenMaxCalls: circuitBreakerConfig.half_open_max_calls,
-                  }
-                : undefined,
             faultInjection:
                 faultTargets.length > 0 ? { flags: faultTargets } : undefined,
-            circuitBreaker: circuitBreakerConfig
-                ? {
-                      key: "summarizer:workers-ai",
-                      enabled: circuitBreakerConfig.enabled ?? true,
-                      failureThreshold:
-                          circuitBreakerConfig.failure_threshold ?? undefined,
-                      recoveryTimeout:
-                          circuitBreakerConfig.recovery_timeout ?? undefined,
-                      halfOpenMaxCalls:
-                          circuitBreakerConfig.half_open_max_calls ?? undefined,
-                  }
-                : undefined,
+            circuitBreaker: circuitBreakerOptions,
         });
         const result = await summarizerService.summarize(
             normalizedText,

@@ -7,41 +7,39 @@ import { isFaultEnabled as isGlobalFaultEnabled } from "@/lib/observability/faul
 import { recordMetric } from "@/lib/observability/metrics";
 import { retry } from "@/lib/utils/retry";
 
-const CIRCUIT_BREAKER_STORE_KEY = "__summarizerCircuitBreakerStore__" as const;
+type CircuitBreakerState = "closed" | "open" | "half-open";
 
-type CircuitBreakerStateName = "closed" | "open" | "half-open";
-
-type CircuitBreakerState = {
-    state: CircuitBreakerStateName;
+interface CircuitBreakerInternalState {
+    state: CircuitBreakerState;
     failureCount: number;
-    nextAttemptAt: number;
-    halfOpenActiveCalls: number;
-};
+    openedAt: number | null;
+    halfOpenInFlight: number;
+}
 
-type CircuitBreakerStore = Map<string, CircuitBreakerState>;
+interface CircuitBreakerResolvedConfig {
+    key: string;
+    enabled: boolean;
+    failureThreshold: number;
+    recoveryTimeoutMs: number;
+    halfOpenMaxCalls: number;
+}
 
-type CircuitBreakerConfig = {
+export interface SummarizerCircuitBreakerOptions {
+    key?: string;
     enabled?: boolean;
     failureThreshold?: number;
+    recoveryTimeout?: string | number;
     recoveryTimeoutMs?: number;
     halfOpenMaxCalls?: number;
-};
-
-type CircuitBreakerLease = {
-    allowed: boolean;
-    error?: Error;
-    onSuccess: () => void;
-    onFailure: () => void;
-    release: () => void;
-};
+}
 
 class CircuitBreakerOpenError extends ApiError {
-    public readonly state: CircuitBreakerStateName;
+    public readonly state: CircuitBreakerState;
     public readonly retryAfterMs?: number;
 
     constructor(
         public readonly breakerKey: string,
-        state: CircuitBreakerStateName,
+        state: CircuitBreakerState,
         retryAfterMs?: number,
     ) {
         super(
@@ -81,249 +79,166 @@ class CircuitBreakerOpenError extends ApiError {
     }
 }
 
-function getCircuitBreakerStore(): CircuitBreakerStore {
-    const globalWithStore = globalThis as typeof globalThis & {
-        [CIRCUIT_BREAKER_STORE_KEY]?: CircuitBreakerStore;
-    };
+const noop = (): void => undefined;
 
-    if (!globalWithStore[CIRCUIT_BREAKER_STORE_KEY]) {
-        globalWithStore[CIRCUIT_BREAKER_STORE_KEY] = new Map();
-    }
-
-    return globalWithStore[CIRCUIT_BREAKER_STORE_KEY]!;
-}
+const CIRCUIT_BREAKER_STATES = new Map<string, CircuitBreakerInternalState>();
+const CIRCUIT_BREAKER_REGISTRY = new Map<string, CircuitBreaker>();
 
 class CircuitBreaker {
-    private readonly enabled: boolean;
-    private readonly failureThreshold: number;
-    private readonly recoveryTimeoutMs: number;
-    private readonly halfOpenMaxCalls: number;
-    private readonly store: CircuitBreakerStore;
+    private config: CircuitBreakerResolvedConfig;
+    private readonly state: CircuitBreakerInternalState;
 
-    constructor(
-        private readonly key: string,
-        config: CircuitBreakerConfig,
-    ) {
-        this.enabled = config.enabled !== false;
-        this.failureThreshold = Math.max(1, config.failureThreshold ?? 5);
-        this.recoveryTimeoutMs = Math.max(1, config.recoveryTimeoutMs ?? 60_000);
-        this.halfOpenMaxCalls = Math.max(1, config.halfOpenMaxCalls ?? 1);
-        this.store = getCircuitBreakerStore();
-    }
-
-    acquire(): CircuitBreakerLease {
-        if (!this.enabled) {
-            return {
-                allowed: true,
-                onSuccess: () => {},
-                onFailure: () => {},
-                release: () => {},
-            } satisfies CircuitBreakerLease;
-        }
-
-        const now = Date.now();
-        let state = this.getState();
-
-        if (state.state === "open") {
-            if (now >= state.nextAttemptAt) {
-                state = this.transitionToHalfOpen(state);
-            } else {
-                const retryAfterMs = Math.max(0, state.nextAttemptAt - now);
-                const error = new CircuitBreakerOpenError(
-                    this.key,
-                    state.state,
-                    retryAfterMs,
-                );
-                this.recordBlock(state.state, retryAfterMs);
-                return {
-                    allowed: false,
-                    error,
-                    onSuccess: () => {},
-                    onFailure: () => {},
-                    release: () => {},
-                } satisfies CircuitBreakerLease;
-            }
-        }
-
-        if (state.state === "half-open") {
-            if (state.halfOpenActiveCalls >= this.halfOpenMaxCalls) {
-                const error = new CircuitBreakerOpenError(this.key, state.state);
-                this.recordBlock(state.state);
-                return {
-                    allowed: false,
-                    error,
-                    onSuccess: () => {},
-                    onFailure: () => {},
-                    release: () => {},
-                } satisfies CircuitBreakerLease;
-            }
-
-            state.halfOpenActiveCalls += 1;
-            this.setState(state);
-            return {
-                allowed: true,
-                onSuccess: () => this.recordSuccess(true),
-                onFailure: () => this.recordFailure(true),
-                release: () => this.releaseHalfOpenSlot(),
-            } satisfies CircuitBreakerLease;
-        }
-
-        this.setState(state);
-        return {
-            allowed: true,
-            onSuccess: () => this.recordSuccess(false),
-            onFailure: () => this.recordFailure(false),
-            release: () => {},
-        } satisfies CircuitBreakerLease;
-    }
-
-    private getState(): CircuitBreakerState {
-        const state = this.store.get(this.key);
-        if (state) {
-            return { ...state };
-        }
-
-        const initial: CircuitBreakerState = {
-            state: "closed",
-            failureCount: 0,
-            nextAttemptAt: 0,
-            halfOpenActiveCalls: 0,
-        };
-        this.store.set(this.key, initial);
-        return { ...initial };
-    }
-
-    private setState(state: CircuitBreakerState): void {
-        this.store.set(this.key, { ...state });
-    }
-
-    private transitionToHalfOpen(previous: CircuitBreakerState): CircuitBreakerState {
-        if (previous.state !== "half-open") {
-            this.logStateChange("half-open");
-        }
-
-        const nextState: CircuitBreakerState = {
-            state: "half-open",
-            failureCount: 0,
-            nextAttemptAt: 0,
-            halfOpenActiveCalls: 0,
-        };
-        this.setState(nextState);
-        return nextState;
-    }
-
-    private transitionToOpen(): void {
-        const nextAttemptAt = Date.now() + this.recoveryTimeoutMs;
-        this.logStateChange("open", { nextAttemptAt });
-        this.setState({
-            state: "open",
-            failureCount: 0,
-            nextAttemptAt,
-            halfOpenActiveCalls: 0,
-        });
-    }
-
-    private transitionToClosed(previous: CircuitBreakerState): void {
-        if (previous.state !== "closed" || previous.failureCount > 0) {
-            this.logStateChange("closed");
-        }
-
-        this.setState({
-            state: "closed",
-            failureCount: 0,
-            nextAttemptAt: 0,
-            halfOpenActiveCalls: 0,
-        });
-    }
-
-    private recordSuccess(fromHalfOpen: boolean): void {
-        if (!this.enabled) {
-            return;
-        }
-
-        const state = this.getState();
-
-        if (fromHalfOpen) {
-            if (state.state === "half-open") {
-                this.transitionToClosed(state);
-            }
-            return;
-        }
-
-        if (state.state !== "closed") {
-            return;
-        }
-
-        if (state.failureCount !== 0) {
-            this.transitionToClosed(state);
-        }
-    }
-
-    private recordFailure(fromHalfOpen: boolean): void {
-        if (!this.enabled) {
-            return;
-        }
-
-        const state = this.getState();
-
-        if (fromHalfOpen) {
-            this.transitionToOpen();
-            return;
-        }
-
-        const failures = state.failureCount + 1;
-        if (failures >= this.failureThreshold) {
-            this.transitionToOpen();
-            return;
-        }
-
-        state.failureCount = failures;
-        this.setState(state);
-    }
-
-    private releaseHalfOpenSlot(): void {
-        const state = this.getState();
-        if (state.state !== "half-open") {
-            return;
-        }
-
-        const active = Math.max(0, state.halfOpenActiveCalls - 1);
-        if (active === state.halfOpenActiveCalls) {
-            return;
-        }
-
-        state.halfOpenActiveCalls = active;
-        this.setState(state);
-    }
-
-    private logStateChange(
-        state: CircuitBreakerStateName,
-        extra: Record<string, unknown> = {},
-    ): void {
-        const payload = { breaker: this.key, state, ...extra };
-        if (state === "open") {
-            console.warn("[SummarizerCircuitBreaker] state change", payload);
+    constructor(config: CircuitBreakerResolvedConfig) {
+        this.config = config;
+        const existingState = CIRCUIT_BREAKER_STATES.get(config.key);
+        if (existingState) {
+            this.state = existingState;
         } else {
-            console.info("[SummarizerCircuitBreaker] state change", payload);
+            this.state = {
+                state: "closed",
+                failureCount: 0,
+                openedAt: null,
+                halfOpenInFlight: 0,
+            };
+            CIRCUIT_BREAKER_STATES.set(config.key, this.state);
         }
-        recordMetric("ai.summarizer.circuit_breaker.transition", 1, {
-            breaker: this.key,
-            state,
-        });
     }
 
-    private recordBlock(
-        state: CircuitBreakerStateName,
-        retryAfterMs?: number,
-    ): void {
-        console.warn("[SummarizerCircuitBreaker] request blocked", {
-            breaker: this.key,
+    updateConfig(config: CircuitBreakerResolvedConfig): void {
+        this.config = config;
+    }
+
+    ensureCanAttempt(): void {
+        if (!this.config.enabled) {
+            return;
+        }
+
+        if (this.state.state === "open") {
+            const now = Date.now();
+            if (
+                this.state.openedAt !== null &&
+                now - this.state.openedAt >= this.config.recoveryTimeoutMs
+            ) {
+                return;
+            }
+            const retryAfterMs = this.state.openedAt
+                ? Math.max(
+                      0,
+                      this.config.recoveryTimeoutMs - (now - this.state.openedAt),
+                  )
+                : undefined;
+            this.onBlocked("open", retryAfterMs);
+            throw new CircuitBreakerOpenError(this.config.key, "open", retryAfterMs);
+        }
+
+        if (this.state.state === "half-open") {
+            const limit = Math.max(1, this.config.halfOpenMaxCalls);
+            if (this.state.halfOpenInFlight >= limit) {
+                this.onBlocked("half-open");
+                throw new CircuitBreakerOpenError(this.config.key, "half-open");
+            }
+        }
+    }
+
+    beforeRequest(): () => void {
+        if (!this.config.enabled) {
+            return noop;
+        }
+
+        this.ensureCanAttempt();
+
+        if (this.state.state === "open") {
+            this.transitionTo("half-open");
+        }
+
+        if (this.state.state === "half-open") {
+            this.state.halfOpenInFlight += 1;
+            return () => {
+                this.state.halfOpenInFlight = Math.max(
+                    0,
+                    this.state.halfOpenInFlight - 1,
+                );
+            };
+        }
+
+        return noop;
+    }
+
+    recordSuccess(): void {
+        if (!this.config.enabled) {
+            return;
+        }
+
+        if (this.state.state === "half-open") {
+            this.transitionTo("closed");
+            return;
+        }
+
+        if (this.state.state === "closed") {
+            this.state.failureCount = 0;
+        }
+    }
+
+    recordFailure(): void {
+        if (!this.config.enabled) {
+            return;
+        }
+
+        if (this.state.state === "half-open") {
+            this.transitionTo("open");
+            return;
+        }
+
+        this.state.failureCount += 1;
+        if (this.state.failureCount >= this.config.failureThreshold) {
+            this.transitionTo("open");
+        }
+    }
+
+    private onBlocked(state: CircuitBreakerState, retryAfterMs?: number): void {
+        recordMetric("ai.summarizer.circuit_breaker.blocked", 1, {
             state,
+            key: this.config.key,
+        });
+        console.warn("[SummarizerCircuitBreaker] request blocked", {
+            state,
+            key: this.config.key,
             retryAfterMs,
         });
-        recordMetric("ai.summarizer.circuit_breaker.blocked", 1, {
-            breaker: this.key,
-            state,
+    }
+
+    private transitionTo(next: CircuitBreakerState): void {
+        if (this.state.state === next) {
+            return;
+        }
+
+        this.state.state = next;
+        switch (next) {
+            case "open":
+                this.state.failureCount = 0;
+                this.state.openedAt = Date.now();
+                this.state.halfOpenInFlight = 0;
+                break;
+            case "half-open":
+                this.state.failureCount = 0;
+                this.state.openedAt = null;
+                this.state.halfOpenInFlight = 0;
+                break;
+            case "closed":
+                this.state.failureCount = 0;
+                this.state.openedAt = null;
+                this.state.halfOpenInFlight = 0;
+                break;
+        }
+
+        recordMetric("ai.summarizer.circuit_breaker.transition", 1, {
+            state: next,
+            key: this.config.key,
+        });
+        const logMethod = next === "open" ? console.error : console.info;
+        logMethod("[SummarizerCircuitBreaker] state transition", {
+            state: next,
+            key: this.config.key,
         });
     }
 }
@@ -431,202 +346,10 @@ export interface SummarizerServiceOptions {
         initialDelayMs?: number;
         backoffFactor?: number;
     };
-    circuitBreaker?: CircuitBreakerConfig & { key?: string };
+    circuitBreaker?: SummarizerCircuitBreakerOptions;
     faultInjection?: {
         flags: readonly string[];
     };
-    circuitBreaker?: SummarizerCircuitBreakerOptions;
-}
-
-type CircuitBreakerState = "closed" | "open" | "half_open";
-
-interface CircuitBreakerInternalState {
-    state: CircuitBreakerState;
-    failureCount: number;
-    openedAt: number | null;
-    halfOpenInFlight: number;
-}
-
-interface CircuitBreakerResolvedConfig {
-    key: string;
-    enabled: boolean;
-    failureThreshold: number;
-    recoveryTimeoutMs: number;
-    halfOpenMaxCalls: number;
-}
-
-export interface SummarizerCircuitBreakerOptions {
-    key?: string;
-    enabled?: boolean;
-    failureThreshold?: number;
-    recoveryTimeout?: string | number;
-    recoveryTimeoutMs?: number;
-    halfOpenMaxCalls?: number;
-}
-
-class CircuitBreakerOpenError extends Error {
-    status = 503;
-    code = "CIRCUIT_BREAKER_OPEN";
-
-    constructor(message = "Circuit breaker is open") {
-        super(message);
-        this.name = "CircuitBreakerOpenError";
-    }
-}
-
-const CIRCUIT_BREAKER_STATES = new Map<string, CircuitBreakerInternalState>();
-const CIRCUIT_BREAKER_REGISTRY = new Map<string, CircuitBreaker>();
-
-class CircuitBreaker {
-    private config: CircuitBreakerResolvedConfig;
-    private readonly state: CircuitBreakerInternalState;
-
-    constructor(config: CircuitBreakerResolvedConfig) {
-        this.config = config;
-        const existingState = CIRCUIT_BREAKER_STATES.get(config.key);
-        if (existingState) {
-            this.state = existingState;
-        } else {
-            this.state = {
-                state: "closed",
-                failureCount: 0,
-                openedAt: null,
-                halfOpenInFlight: 0,
-            };
-            CIRCUIT_BREAKER_STATES.set(config.key, this.state);
-        }
-    }
-
-    updateConfig(config: CircuitBreakerResolvedConfig): void {
-        this.config = config;
-    }
-
-    ensureCanAttempt(): void {
-        if (!this.config.enabled) {
-            return;
-        }
-
-        if (this.state.state === "open") {
-            const now = Date.now();
-            if (
-                this.state.openedAt !== null &&
-                now - this.state.openedAt >= this.config.recoveryTimeoutMs
-            ) {
-                return;
-            }
-            this.onBlocked(this.state.state);
-            throw new CircuitBreakerOpenError();
-        }
-
-        if (this.state.state === "half_open") {
-            const limit = Math.max(1, this.config.halfOpenMaxCalls);
-            if (this.state.halfOpenInFlight >= limit) {
-                this.onBlocked(this.state.state);
-                throw new CircuitBreakerOpenError();
-            }
-        }
-    }
-
-    beforeRequest(): () => void {
-        if (!this.config.enabled) {
-            return () => {};
-        }
-
-        this.ensureCanAttempt();
-
-        if (this.state.state === "open") {
-            this.transitionTo("half_open");
-        }
-
-        if (this.state.state === "half_open") {
-            this.state.halfOpenInFlight += 1;
-            return () => {
-                this.state.halfOpenInFlight = Math.max(
-                    0,
-                    this.state.halfOpenInFlight - 1,
-                );
-            };
-        }
-
-        return () => {};
-    }
-
-    recordSuccess(): void {
-        if (!this.config.enabled) {
-            return;
-        }
-
-        if (this.state.state === "half_open") {
-            this.transitionTo("closed");
-            return;
-        }
-
-        if (this.state.state === "closed") {
-            this.state.failureCount = 0;
-        }
-    }
-
-    recordFailure(): void {
-        if (!this.config.enabled) {
-            return;
-        }
-
-        if (this.state.state === "half_open") {
-            this.transitionTo("open");
-            return;
-        }
-
-        this.state.failureCount += 1;
-        if (this.state.failureCount >= this.config.failureThreshold) {
-            this.transitionTo("open");
-        }
-    }
-
-    private onBlocked(state: CircuitBreakerState): void {
-        recordMetric("ai.summarizer.circuit_breaker.blocked", 1, {
-            state,
-            key: this.config.key,
-        });
-        console.warn("[CircuitBreaker] request blocked", {
-            state,
-            key: this.config.key,
-        });
-    }
-
-    private transitionTo(next: CircuitBreakerState): void {
-        if (this.state.state === next) {
-            return;
-        }
-
-        this.state.state = next;
-        switch (next) {
-            case "open":
-                this.state.failureCount = 0;
-                this.state.openedAt = Date.now();
-                this.state.halfOpenInFlight = 0;
-                break;
-            case "half_open":
-                this.state.failureCount = 0;
-                this.state.openedAt = null;
-                this.state.halfOpenInFlight = 0;
-                break;
-            case "closed":
-                this.state.failureCount = 0;
-                this.state.openedAt = null;
-                this.state.halfOpenInFlight = 0;
-                break;
-        }
-
-        recordMetric("ai.summarizer.circuit_breaker.transition", 1, {
-            state: next,
-            key: this.config.key,
-        });
-        const logMethod = next === "open" ? console.error : console.info;
-        logMethod("[CircuitBreaker] state transition", {
-            state: next,
-            key: this.config.key,
-        });
-    }
 }
 
 function parseDurationToMs(input?: string | number): number | undefined {
@@ -655,7 +378,6 @@ function parseDurationToMs(input?: string | number): number | undefined {
             return value;
         case "m":
             return value * 60_000;
-        case "s":
         default:
             return value * 1000;
     }
@@ -735,11 +457,6 @@ export class SummarizerService {
             );
         }
 
-        if (this.options.circuitBreaker && this.options.circuitBreaker.enabled !== false) {
-            const { key, ...config } = this.options.circuitBreaker;
-            const breakerKey = key ?? "summarizer.workers-ai";
-            this.circuitBreaker = new CircuitBreaker(breakerKey, config);
-        }
     }
 
     async summarize(
