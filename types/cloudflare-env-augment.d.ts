@@ -25,6 +25,10 @@ declare namespace Cloudflare {
         UPSTASH_REDIS_REST_TOKEN?: string;
         // for rate limiter binding used in applyRateLimit
         RATE_LIMITER?: RateLimitBinding;
+        OBSERVABILITY_METRICS_ENDPOINT?: string;
+        OBSERVABILITY_METRICS_TOKEN?: string;
+        OBSERVABILITY_METRICS_FLUSH_INTERVAL_MS?: string;
+        OBSERVABILITY_METRICS_MAX_BUFFER?: string;
     }
 }
 
