@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { type AppLocale, supportedLocales } from "@/i18n/config";
 import handleApiError from "@/lib/api-error";
+import { toNullableIsoString } from "@/lib/formatters";
 import { ApiError } from "@/lib/http-error";
 import { ensureAbsoluteUrl, resolveAppUrl } from "@/lib/seo";
-import { toNullableIsoString } from "@/lib/formatters";
 import {
     createStaticConfigBundleFromMessages,
     type MarketingSection,

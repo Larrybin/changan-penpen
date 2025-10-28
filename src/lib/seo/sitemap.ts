@@ -377,8 +377,12 @@ export function generateSitemapIndex(
 ): string {
     const xmlEntries = sitemaps
         .map((sitemap) => {
-            const lastModified = toNullableIsoString(sitemap.lastModified ?? null);
-            const lastModTag = lastModified ? `<lastmod>${lastModified}</lastmod>` : "";
+            const lastModified = toNullableIsoString(
+                sitemap.lastModified ?? null,
+            );
+            const lastModTag = lastModified
+                ? `<lastmod>${lastModified}</lastmod>`
+                : "";
             return `
     <sitemap>
       <loc>${baseUrl}${sitemap.path}</loc>
