@@ -326,6 +326,10 @@ function mapRowToPayload(
 }
 
 async function loadSiteSettingsPayload(): Promise<SiteSettingsPayload> {
+    "use cache";
+    unstable_cacheTag(CACHE_TAGS.siteSettings);
+    unstable_cacheLife("hours");
+
     if (shouldBypassDatabaseForStaticBuild()) {
         const fallbackSettings = getStaticBuildFallbackSettings();
         syncRuntimeLocales(fallbackSettings);

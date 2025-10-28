@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
 import { categories, getDb, user } from "@/db";
+import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
 import {
     TodoPriority,
     type TodoPriorityType,
@@ -125,37 +126,38 @@ export async function listTodosForUser(
     userId: string,
     pagination: PaginationParams = defaultPagination,
 ): Promise<{ data: TodoWithCategory[]; total: number }> {
-    const { page, perPage } = {
-        ...defaultPagination,
-        ...pagination,
-    };
-
     const db = await getDb();
-
-    const [data, totalResult] = await Promise.all([
-        db
-            .select(todoSelection)
-            .from(todos)
-            .leftJoin(
-                categories,
-                and(
-                    eq(todos.categoryId, categories.id),
-                    eq(categories.userId, userId),
-                ),
-            )
-            .where(eq(todos.userId, userId))
-            .orderBy(desc(todos.createdAt))
-            .limit(perPage)
-            .offset((page - 1) * perPage),
-        db
-            .select({ value: sql<number>`count(*)` })
-            .from(todos)
-            .where(eq(todos.userId, userId)),
-    ]);
+    const { rows, total } = await runPaginatedQuery({
+        page: pagination.page,
+        perPage: pagination.perPage,
+        defaults: defaultPagination,
+        fetchRows: async ({ limit, offset }) =>
+            db
+                .select(todoSelection)
+                .from(todos)
+                .leftJoin(
+                    categories,
+                    and(
+                        eq(todos.categoryId, categories.id),
+                        eq(categories.userId, userId),
+                    ),
+                )
+                .where(eq(todos.userId, userId))
+                .orderBy(desc(todos.createdAt))
+                .limit(limit)
+                .offset(offset),
+        fetchTotal: async () => {
+            const result = await db
+                .select({ value: sql<number>`count(*)` })
+                .from(todos)
+                .where(eq(todos.userId, userId));
+            return result[0]?.value ?? 0;
+        },
+    });
 
     return {
-        data,
-        total: totalResult[0]?.value ?? 0,
+        data: rows,
+        total,
     };
 }
 

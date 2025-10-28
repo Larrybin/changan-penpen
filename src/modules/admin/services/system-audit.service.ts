@@ -1,6 +1,7 @@
 import { desc, sql } from "drizzle-orm";
+
 import { adminAuditLogs, getDb } from "@/db";
-import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
+import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
 
 export interface RecordAdminAuditLogInput {
     adminEmail: string;
@@ -29,23 +30,23 @@ export interface ListAuditLogsOptions {
 
 export async function listAuditLogs(options: ListAuditLogsOptions = {}) {
     const db = await getDb();
-    const { page: normalizedPage, perPage: normalizedPerPage } =
-        normalizePagination(options);
-    const page = Math.max(normalizedPage, 1);
-    const perPage = Math.min(Math.max(normalizedPerPage, 1), 100);
-    const offset = (page - 1) * perPage;
-
-    const [rows, totalResult] = await Promise.all([
-        db
-            .select()
-            .from(adminAuditLogs)
-            .orderBy(desc(adminAuditLogs.createdAt))
-            .limit(perPage)
-            .offset(offset),
-        db.select({ count: sql<number>`count(*)` }).from(adminAuditLogs),
-    ]);
-
-    const total = totalResult[0]?.count ?? 0;
+    const { rows, total } = await runPaginatedQuery({
+        page: options.page,
+        perPage: options.perPage,
+        fetchRows: async ({ limit, offset }) =>
+            db
+                .select()
+                .from(adminAuditLogs)
+                .orderBy(desc(adminAuditLogs.createdAt))
+                .limit(limit)
+                .offset(offset),
+        fetchTotal: async () => {
+            const result = await db
+                .select({ count: sql<number>`count(*)` })
+                .from(adminAuditLogs);
+            return result[0]?.count ?? 0;
+        },
+    });
 
     return {
         data: rows,
