@@ -222,6 +222,21 @@ export async function fetch(
     ctx: ExecutionContext,
 ) {
     ensureMetricsReporter(env);
+    const originalWaitUntil =
+        typeof ctx?.waitUntil === "function"
+            ? ctx.waitUntil.bind(ctx)
+            : undefined;
+    const waitUntilPromises: Promise<unknown>[] = [];
+    const waitUntil = originalWaitUntil
+        ? (promise: Promise<unknown>) => {
+              const trackedPromise = Promise.resolve(promise);
+              waitUntilPromises.push(trackedPromise);
+              originalWaitUntil(trackedPromise);
+          }
+        : undefined;
+    if (originalWaitUntil && waitUntil) {
+        ctx.waitUntil = waitUntil as ExecutionContext["waitUntil"];
+    }
     const shouldUseCache = shouldHandleMarketingCache(request);
     const cacheKey = shouldUseCache ? new Request(request.url, request) : null;
     if (shouldUseCache && cacheKey) {
@@ -245,10 +260,6 @@ export async function fetch(
         });
     }
 
-    const waitUntil =
-        typeof ctx?.waitUntil === "function"
-            ? ctx.waitUntil.bind(ctx)
-            : undefined;
     if (
         shouldUseCache &&
         cacheHint === "default" &&
@@ -268,17 +279,26 @@ export async function fetch(
         appendLinkHeaders(finalResponse.headers, collectLinkHints(env));
     }
 
-    const flushPromise = flushMetrics();
-    if (typeof waitUntil === "function") {
-        waitUntil(
-            flushPromise.catch((error) => {
+    const flushAfterDeferredTasks = async () => {
+        while (waitUntilPromises.length > 0) {
+            const pendingPromises = waitUntilPromises.splice(
+                0,
+                waitUntilPromises.length,
+            );
+            await Promise.allSettled(pendingPromises);
+        }
+        await flushMetrics();
+    };
+    if (originalWaitUntil) {
+        originalWaitUntil(
+            flushAfterDeferredTasks().catch((error) => {
                 console.error("[metrics] failed to flush after request", {
                     error,
                 });
             }),
         );
     } else {
-        await flushPromise.catch((error) => {
+        await flushAfterDeferredTasks().catch((error) => {
             console.error("[metrics] failed to flush after request", { error });
         });
     }
