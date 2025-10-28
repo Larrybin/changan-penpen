@@ -1,19 +1,15 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
-
+import { getPlatformContext } from "@/lib/platform/context";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getMarketingPreviewPayload } from "@/modules/marketing/services/preview.service";
 
 export async function GET(request: Request) {
-    const cfContext = await getCloudflareContext({ async: true });
-    const waitUntil =
-        typeof cfContext?.ctx?.waitUntil === "function"
-            ? cfContext.ctx.waitUntil.bind(cfContext.ctx)
-            : undefined;
+    const platformContext = await getPlatformContext({ async: true });
+    const waitUntil = platformContext.waitUntil;
     const rateLimitResult = await applyRateLimit({
         request,
         identifier: "marketing:preview",
-        env: cfContext?.env,
+        env: platformContext.env,
         waitUntil,
         message: "Too many preview requests",
         upstash: {

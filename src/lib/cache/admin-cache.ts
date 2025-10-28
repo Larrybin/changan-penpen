@@ -107,8 +107,8 @@ export class AdminCacheManager {
             if (context.env) {
                 this.env = context.env as CacheEnv;
             }
-            if (context.ctx?.waitUntil) {
-                this.waitUntil = context.ctx.waitUntil.bind(context.ctx);
+            if (context.waitUntil) {
+                this.waitUntil = context.waitUntil;
             }
         }
         return {

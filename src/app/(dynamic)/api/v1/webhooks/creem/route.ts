@@ -1,7 +1,7 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import handleApiError from "@/lib/api-error";
 import { getRedisClient } from "@/lib/cache";
 import { ApiError } from "@/lib/http-error";
+import { getPlatformContext } from "@/lib/platform/context";
 import { applyRateLimit } from "@/lib/rate-limit";
 import type {
     CreemCheckout,
@@ -63,13 +63,9 @@ async function getWebhookRequestContext(
 ): Promise<WebhookRequestContext> {
     const rawBody = await request.text();
     const signature = request.headers.get("creem-signature") ?? "";
-    const cfContext = await getCloudflareContext({ async: true });
-    const env = cfContext.env as unknown as CloudflareEnv;
-    const ctx = (cfContext as { ctx?: { waitUntil?: WaitUntil } }).ctx;
-    const waitUntil =
-        typeof ctx?.waitUntil === "function"
-            ? ctx.waitUntil.bind(ctx)
-            : undefined;
+    const platformContext = await getPlatformContext({ async: true });
+    const env = platformContext.env as unknown as CloudflareEnv;
+    const waitUntil = platformContext.waitUntil;
     return { rawBody, signature, env, waitUntil };
 }
 

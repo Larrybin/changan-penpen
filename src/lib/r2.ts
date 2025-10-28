@@ -1,4 +1,4 @@
-﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getPlatformEnv } from "@/lib/platform/context";
 import { createRandomId } from "@/lib/random";
 import { applyRateLimit } from "@/lib/rate-limit";
 
@@ -258,7 +258,9 @@ export async function uploadToR2(
             return { success: false, error: scanOutcome.error };
         const { scanStatus, auditId } = scanOutcome;
 
-        const { env } = await getCloudflareContext({ async: true });
+        const env = await getPlatformEnv<
+            Record<string, unknown> & { CLOUDFLARE_R2_URL?: string }
+        >({ async: true });
 
         const key = buildR2ObjectKey(file.name, folder);
 

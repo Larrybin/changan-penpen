@@ -1,5 +1,5 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
+import { getPlatformEnv } from "@/lib/platform/context";
 import {
     createAdminEntryCookieInit,
     getAdminAccessConfig,
@@ -30,7 +30,9 @@ export async function GET(
         );
     }
 
-    const { env } = await getCloudflareContext({ async: true });
+    const env = (await getPlatformEnv({
+        async: true,
+    })) as unknown as CloudflareEnv;
     const cookieInit = createAdminEntryCookieInit({
         token: config.entryToken,
         headers: request.headers,

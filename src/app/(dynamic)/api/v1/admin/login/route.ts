@@ -1,6 +1,6 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 import handleApiError from "@/lib/api-error";
+import { getPlatformEnv } from "@/lib/platform/context";
 import { getSafeInternalRedirectOrDefault } from "@/lib/security/redirect";
 import {
     createAdminEntryCookieInit,
@@ -62,7 +62,9 @@ export async function POST(request: Request) {
                 );
             }
 
-            const { env } = await getCloudflareContext({ async: true });
+            const env = (await getPlatformEnv({
+                async: true,
+            })) as unknown as CloudflareEnv;
             const cookie = createAdminEntryCookieInit({
                 token: entryToken,
                 headers: request.headers,

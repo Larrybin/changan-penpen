@@ -261,7 +261,18 @@ export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     const value = await compute();
     const serialized = safeStringify(value);
     if (serialized !== null) {
-        scheduleCacheWrite(redis, key, serialized, ttlSeconds, waitUntil);
+        const persist = redis.set(key, serialized, { ex: ttlSeconds });
+        const asyncWaiter =
+            waitUntil ??
+            context?.waitUntil ??
+            (await getPlatformWaitUntil({ async: true }));
+        if (asyncWaiter) {
+            asyncWaiter(persist);
+        } else {
+            persist.catch((error) =>
+                console.warn("[cache] failed to persist", { key, error }),
+            );
+        }
     }
 
     return { value, hit: false };
