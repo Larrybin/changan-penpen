@@ -85,11 +85,14 @@ async function installTrimmedDependencies() {
         npm_config_fund: "false",
     };
 
-    await run(
-        "pnpm",
-        ["install", "--prod", "--prefer-offline"],
-        { cwd: outputDir, env },
-    );
+    const installArgs = ["install", "--prod", "--prefer-offline"];
+
+    // Lifecycle scripts must run so native binaries (e.g. SWC, sharp) are built
+    // before archiving the trimmed install bundle. Explicitly disable any
+    // inherited ignore-scripts settings to guarantee postinstall hooks execute.
+    env.npm_config_ignore_scripts = "false";
+
+    await run("pnpm", installArgs, { cwd: outputDir, env });
 }
 
 async function main() {
