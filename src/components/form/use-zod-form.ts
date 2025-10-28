@@ -182,23 +182,4 @@ export function useZodForm<
     };
 }
 
-// 简化版本的 Hook，用于只需要基本功能的场景
-export function useSimpleForm<
-    TSchema extends ZodFormCompatibleSchema,
-    TInput extends FieldValues = SchemaInput<TSchema>,
-    TOutput extends FieldValues = SchemaOutput<TSchema>,
->(options: UseZodFormOptions<TSchema, TInput, TOutput>) {
-    const { form, handleSubmit, isSubmitting, error, success, clearMessages } =
-        useZodForm<TSchema, TInput, TOutput>(options);
-
-    return {
-        form,
-        handleSubmit,
-        isSubmitting,
-        error,
-        success,
-        clearMessages,
-    };
-}
-
 export default useZodForm;

@@ -258,5 +258,3 @@ export function buildAdminMenuGroups(
         return { name: groupName, items: sorted };
     });
 }
-
-export const adminResources = adminResourceDefinitions;
