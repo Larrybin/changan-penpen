@@ -23,8 +23,7 @@
             "@standard-schema/utils": ["./stubs/standard-schema-utils"],
             "@tanstack/react-table": ["./types/tanstack-react-table"],
             "sonner": ["./types/sonner"],
-            "nuqs": ["./types/nuqs"],
-            "date-fns": ["./types/date-fns"]
+            "nuqs": ["./types/nuqs"]
         }
     },
     "include": [
