@@ -6,20 +6,16 @@ declare namespace Cloudflare {
 		mainModule: typeof import("./worker");
 		durableNamespaces: "DOQueueHandler" | "DOShardedTagCache";
 	}
-        interface Env {
-                NEXT_CACHE_DO_QUEUE: DurableObjectNamespace /* DOQueueHandler */;
-                NEXT_TAG_CACHE_DO_SHARDED: DurableObjectNamespace /* DOShardedTagCache */;
-                next_cf_app_bucket: R2Bucket;
-                NEXT_INC_CACHE_R2_BUCKET: R2Bucket;
-                next_cf_app: D1Database;
-                AI: Ai;
-                CF_VERSION_METADATA: WorkerVersionMetadata;
-                ASSETS: Fetcher;
-                OBSERVABILITY_METRICS_ENDPOINT?: string;
-                OBSERVABILITY_METRICS_TOKEN?: string;
-                OBSERVABILITY_METRICS_FLUSH_INTERVAL_MS?: string;
-                OBSERVABILITY_METRICS_MAX_BUFFER?: string;
-        }
+	interface Env {
+		NEXT_CACHE_DO_QUEUE: DurableObjectNamespace /* DOQueueHandler */;
+		NEXT_TAG_CACHE_DO_SHARDED: DurableObjectNamespace /* DOShardedTagCache */;
+		next_cf_app_bucket: R2Bucket;
+		NEXT_INC_CACHE_R2_BUCKET: R2Bucket;
+		next_cf_app: D1Database;
+		AI: Ai;
+		CF_VERSION_METADATA: WorkerVersionMetadata;
+		ASSETS: Fetcher;
+	}
 }
 interface Env extends Cloudflare.Env {}
 

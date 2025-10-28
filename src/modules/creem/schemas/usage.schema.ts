@@ -1,4 +1,5 @@
 import {
+    index,
     integer,
     sqliteTable,
     text,
@@ -36,5 +37,9 @@ export const usageDaily = sqliteTable(
         usageDailyUserFeatureDateUnique: uniqueIndex(
             "usage_daily_user_feature_date_unique",
         ).on(table.userId, table.feature, table.date),
+        usageDailyDateIdx: index("usage_daily_date_idx").on(table.date),
+        usageDailyUserCreatedAtIdx: index(
+            "usage_daily_user_created_at_idx",
+        ).on(table.userId, table.createdAt),
     }),
 );
