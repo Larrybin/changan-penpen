@@ -1,4 +1,5 @@
 import {
+    index,
     integer,
     sqliteTable,
     text,
@@ -72,5 +73,11 @@ export const creditsHistory = sqliteTable(
         creditsHistoryOrderUnique: uniqueIndex(
             "credits_history_creem_order_id_unique",
         ).on(table.creemOrderId),
+        creditsHistoryCreatedAtIdx: index(
+            "credits_history_created_at_idx",
+        ).on(table.createdAt),
+        creditsHistoryCustomerCreatedAtIdx: index(
+            "credits_history_customer_created_at_idx",
+        ).on(table.customerId, table.createdAt),
     }),
 );
