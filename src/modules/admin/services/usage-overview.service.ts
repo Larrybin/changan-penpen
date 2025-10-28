@@ -1,19 +1,34 @@
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 
 import { getDb, usageDaily, user } from "@/db";
-import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
+import {
+    decodeCursorPayload,
+    encodeCursorPayload,
+    runCursorPaginatedQuery,
+} from "@/modules/admin/utils/query-factory";
 
 export interface ListUsageOptions {
-    page?: number;
     perPage?: number;
     tenantId?: string;
     feature?: string;
+    cursor?: string | null;
 }
+
+type UsageRow = {
+    userId: string | null;
+    date: string | null;
+    feature: string | null;
+    totalAmount: number | null;
+    unit: string | null;
+};
 
 export async function listUsage(options: ListUsageOptions = {}) {
     const db = await getDb();
-    const { rows, total } = await runPaginatedQuery({
-        page: options.page,
+    const { rows, total, nextCursor } = await runCursorPaginatedQuery<
+        UsageRow,
+        { date: string; userId: string; feature: string }
+    >({
+        cursor: options.cursor,
         perPage: options.perPage,
         filters: [
             options.tenantId
@@ -23,7 +38,18 @@ export async function listUsage(options: ListUsageOptions = {}) {
                 ? eq(usageDaily.feature, options.feature)
                 : undefined,
         ],
-        fetchRows: async ({ limit, offset, where }) => {
+        decodeCursor: (cursor) =>
+            decodeCursorPayload<{ date: string; userId: string; feature: string }>(
+                cursor,
+            ),
+        encodeCursor: encodeCursorPayload,
+        getCursorValue: (row) => {
+            if (!row.date || !row.userId || !row.feature) {
+                return null;
+            }
+            return { date: row.date, userId: row.userId, feature: row.feature };
+        },
+        fetchRows: async ({ limit, cursor, where }) => {
             const baseQuery = db
                 .select({
                     userId: usageDaily.userId,
@@ -33,11 +59,35 @@ export async function listUsage(options: ListUsageOptions = {}) {
                     unit: usageDaily.unit,
                 })
                 .from(usageDaily)
-                .orderBy(desc(usageDaily.date))
-                .limit(limit)
-                .offset(offset);
+                .orderBy(
+                    desc(usageDaily.date),
+                    desc(usageDaily.userId),
+                    desc(usageDaily.feature),
+                )
+                .limit(limit);
 
-            return where ? await baseQuery.where(where) : await baseQuery;
+            const cursorFilter = cursor
+                ? or(
+                      lt(usageDaily.date, cursor.date),
+                      and(
+                          eq(usageDaily.date, cursor.date),
+                          lt(usageDaily.userId, cursor.userId),
+                      ),
+                      and(
+                          eq(usageDaily.date, cursor.date),
+                          eq(usageDaily.userId, cursor.userId),
+                          lt(usageDaily.feature, cursor.feature),
+                      ),
+                  )
+                : undefined;
+
+            const combinedWhere = where && cursorFilter
+                ? and(where, cursorFilter)
+                : cursorFilter ?? where;
+
+            return combinedWhere
+                ? await baseQuery.where(combinedWhere)
+                : await baseQuery;
         },
         fetchTotal: async (where) => {
             const totalQuery = db
@@ -66,8 +116,9 @@ export async function listUsage(options: ListUsageOptions = {}) {
     return {
         data: rows.map((row) => ({
             ...row,
-            email: userMap.get(row.userId) ?? null,
+            email: row.userId ? userMap.get(row.userId) ?? null : null,
         })),
         total,
+        nextCursor: nextCursor ?? null,
     };
 }
