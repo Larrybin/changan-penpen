@@ -26,7 +26,7 @@ export async function listUsage(options: ListUsageOptions = {}) {
     const db = await getDb();
     const { rows, total, nextCursor } = await runCursorPaginatedQuery<
         UsageRow,
-        { date: string; userId: string }
+        { date: string; userId: string; feature: string }
     >({
         cursor: options.cursor,
         perPage: options.perPage,
@@ -39,13 +39,15 @@ export async function listUsage(options: ListUsageOptions = {}) {
                 : undefined,
         ],
         decodeCursor: (cursor) =>
-            decodeCursorPayload<{ date: string; userId: string }>(cursor),
+            decodeCursorPayload<{ date: string; userId: string; feature: string }>(
+                cursor,
+            ),
         encodeCursor: encodeCursorPayload,
         getCursorValue: (row) => {
-            if (!row.date || !row.userId) {
+            if (!row.date || !row.userId || !row.feature) {
                 return null;
             }
-            return { date: row.date, userId: row.userId };
+            return { date: row.date, userId: row.userId, feature: row.feature };
         },
         fetchRows: async ({ limit, cursor, where }) => {
             const baseQuery = db
@@ -57,7 +59,11 @@ export async function listUsage(options: ListUsageOptions = {}) {
                     unit: usageDaily.unit,
                 })
                 .from(usageDaily)
-                .orderBy(desc(usageDaily.date), desc(usageDaily.userId))
+                .orderBy(
+                    desc(usageDaily.date),
+                    desc(usageDaily.userId),
+                    desc(usageDaily.feature),
+                )
                 .limit(limit);
 
             const cursorFilter = cursor
@@ -66,6 +72,11 @@ export async function listUsage(options: ListUsageOptions = {}) {
                       and(
                           eq(usageDaily.date, cursor.date),
                           lt(usageDaily.userId, cursor.userId),
+                      ),
+                      and(
+                          eq(usageDaily.date, cursor.date),
+                          eq(usageDaily.userId, cursor.userId),
+                          lt(usageDaily.feature, cursor.feature),
                       ),
                   )
                 : undefined;
