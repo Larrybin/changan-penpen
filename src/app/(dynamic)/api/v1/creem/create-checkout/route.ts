@@ -394,7 +394,7 @@ function createCheckoutRequestPayload(options: {
 async function sendCheckoutRequest(
     env: CheckoutEnv,
     requestBody: CheckoutRequestBody,
-): Promise<{ checkoutUrl: string; raw: unknown }> {
+): Promise<{ checkoutUrl: string }> {
     const { ok, status, data, text, attempts, contentType } =
         await fetchWithRetry(`${env.CREEM_API_URL}/checkouts`, {
             method: "POST",
@@ -441,12 +441,11 @@ async function sendCheckoutRequest(
         );
     }
 
-    return { checkoutUrl, raw: data };
+    return { checkoutUrl };
 }
 
 function buildCheckoutSuccessResponse(options: {
     checkoutUrl: string;
-    raw: unknown;
     requestId: string;
 }): Response {
     return new Response(
@@ -454,7 +453,7 @@ function buildCheckoutSuccessResponse(options: {
             success: true,
             data: { checkoutUrl: options.checkoutUrl },
             error: null,
-            meta: { raw: options.raw, requestId: options.requestId },
+            meta: { requestId: options.requestId },
         }),
         {
             status: 200,
@@ -494,14 +493,13 @@ export async function POST(request: Request) {
         });
 
         // 涓婃父璇锋眰锛氬鍔犺秴鏃躲€侀噸璇曪紙鎸囨暟閫€閬?+ 鎶栧姩锛変笌閿欒褰掑洜
-        const { checkoutUrl, raw } = await sendCheckoutRequest(
+        const { checkoutUrl } = await sendCheckoutRequest(
             context.env,
             requestBody,
         );
 
         return buildCheckoutSuccessResponse({
             checkoutUrl,
-            raw,
             requestId,
         });
     } catch (error) {

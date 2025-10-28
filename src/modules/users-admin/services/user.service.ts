@@ -12,7 +12,7 @@ import {
 } from "@/db";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
 import { computeWithAdminCache } from "@/modules/admin/utils/cache";
-import { executePaginatedQuery } from "@/modules/admin/utils/query-factory";
+import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
 import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
 import type {
     AdminUserService,
@@ -232,7 +232,7 @@ export function createAdminUserService(
                 total,
                 page: resolvedPage,
                 perPage: resolvedPerPage,
-            } = await executePaginatedQuery({
+            } = await runPaginatedQuery({
                 page,
                 perPage,
                 filters: [

@@ -126,17 +126,11 @@ export async function GET(request: Request) {
                 severity: "high",
             });
         }
-        // 标准化字段：data.portalUrl；附带 meta.raw 便于调试
-        const jsonBody = data as {
-            url?: string;
-            portal_url?: string;
-            billing_url?: string;
-        };
+        // 标准化字段：data.portalUrl
         const payload = {
             success: true,
             data: { portalUrl: url },
             error: null as string | null,
-            meta: { raw: jsonBody },
         };
         return json(200, payload);
     } catch (error) {

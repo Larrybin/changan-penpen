@@ -1,4 +1,5 @@
 // Refine v5 不再需要显式的 AuthBindings 类型导入，按结构提供实现即可。
+import { getSafeInternalRedirectOrDefault } from "@/lib/security/redirect";
 
 const sessionCache = {
     promise: null as Promise<unknown | null> | null,
@@ -94,7 +95,10 @@ export const adminAuthProvider = {
 
             return {
                 success: true,
-                redirectTo: payload.redirectTo,
+                redirectTo: getSafeInternalRedirectOrDefault(
+                    payload.redirectTo,
+                    "/admin",
+                ),
             } as const;
         } catch (error) {
             const message =

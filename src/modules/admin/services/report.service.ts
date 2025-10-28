@@ -1,4 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
+
 import {
     creditsHistory,
     customers,
@@ -8,7 +9,7 @@ import {
     usageDaily,
 } from "@/db";
 import { recordAdminAuditLog } from "@/modules/admin/services/system-audit.service";
-import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
+import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
 
 export interface ListReportsOptions {
     page?: number;
@@ -17,25 +18,27 @@ export interface ListReportsOptions {
 
 export async function listReports(options: ListReportsOptions = {}) {
     const db = await getDb();
-    const { page: normalizedPage, perPage: normalizedPerPage } =
-        normalizePagination(options);
-    const page = Math.max(normalizedPage, 1);
-    const perPage = Math.min(Math.max(normalizedPerPage, 1), 100);
-    const offset = (page - 1) * perPage;
-
-    const [rows, totalRows] = await Promise.all([
-        db
-            .select()
-            .from(reports)
-            .orderBy(desc(reports.createdAt))
-            .limit(perPage)
-            .offset(offset),
-        db.select({ count: sql<number>`count(*)` }).from(reports),
-    ]);
+    const { rows, total } = await runPaginatedQuery({
+        page: options.page,
+        perPage: options.perPage,
+        fetchRows: async ({ limit, offset }) =>
+            db
+                .select()
+                .from(reports)
+                .orderBy(desc(reports.createdAt))
+                .limit(limit)
+                .offset(offset),
+        fetchTotal: async () => {
+            const result = await db
+                .select({ count: sql<number>`count(*)` })
+                .from(reports);
+            return result[0]?.count ?? 0;
+        },
+    });
 
     return {
         data: rows,
-        total: totalRows[0]?.count ?? 0,
+        total,
     };
 }
 
