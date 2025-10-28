@@ -17,6 +17,7 @@ const SHARED_NAMESPACES = [
     "Nav",
     "Auth",
     "AuthForms",
+    "Forms",
     "Accessibility",
 ] as const;
 
