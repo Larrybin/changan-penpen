@@ -1,5 +1,9 @@
-import { revalidateTag, unstable_cacheLife, unstable_cacheTag } from "next/cache";
 import { eq } from "drizzle-orm";
+import {
+    revalidateTag,
+    unstable_cacheLife,
+    unstable_cacheTag,
+} from "next/cache";
 import { getDb, siteSettings } from "@/db";
 import {
     type AppLocale,
@@ -7,6 +11,7 @@ import {
     setRuntimeI18nConfig,
 } from "@/i18n/config";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { clearStaticConfigCache } from "@/lib/static-config";
 
 export type LocalizedSeoFieldMap = Partial<Record<AppLocale, string>>;
 
@@ -448,6 +453,7 @@ export async function updateSiteSettings(
     for (const locale of getSupportedAppLocales()) {
         revalidateTag(CACHE_TAGS.staticConfig(locale));
     }
+    clearStaticConfigCache();
     const fresh = await getSiteSettingsPayload();
 
     await recordSettingsAudit(adminEmail, input);

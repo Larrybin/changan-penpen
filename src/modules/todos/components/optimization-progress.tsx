@@ -39,15 +39,18 @@ export async function OptimizationProgressList() {
     }
 
     return (
-        <Card className="border-dashed border-border/70 bg-muted/30">
+        <Card className="border-border/70 border-dashed bg-muted/30">
             <CardHeader>
-                <CardTitle className="text-base font-semibold">
+                <CardTitle className="font-semibold text-base">
                     Optimization rollout tracker
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {todos.map((item) => (
-                    <div key={item.id} className="space-y-1 rounded-lg border border-border/60 bg-background/60 p-4">
+                    <div
+                        key={item.id}
+                        className="space-y-1 rounded-lg border border-border/60 bg-background/60 p-4"
+                    >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="font-medium text-foreground text-sm md:text-base">
                                 {item.title}

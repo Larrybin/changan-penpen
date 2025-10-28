@@ -4,6 +4,9 @@ NEXTJS_ENV=development
 # Base URL used for canonical tags and structured data
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
+# Comma-separated allowlist for remote image hosts (optional)
+NEXT_PUBLIC_IMAGE_HOSTS=cdn.example.com,images.example.com
+
 # Health endpoint access token (set to enforce detailed output auth; send via X-Health-Token or Authorization: Bearer)
 HEALTH_ACCESS_TOKEN=
 
@@ -57,6 +60,9 @@ TURNSTILE_SECRET=your-turnstile-secret
 ADMIN_ALLOWED_EMAILS=admin@example.com
 ADMIN_ENTRY_TOKEN=local-admin-token
 ADMIN_FORCE_SECURE_COOKIES=false
+
+# Cache revalidation webhook token (used by /api/admin/cache/revalidate)
+CACHE_REVALIDATE_TOKEN=local-cache-token
 
 # GitHub Actions 配置指引（请到仓库 Settings → Secrets and variables → Actions）
 # Secrets（敏感，CI 会通过 wrangler-action 下发到 Cloudflare Secrets）：

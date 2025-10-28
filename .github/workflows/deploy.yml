@@ -222,6 +222,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
 
+      - name: Enforce worker bundle size budget
+        run: pnpm run check:worker-bundle
+        env:
+          WORKER_BUNDLE_BUDGET_KB: ${{ vars.WORKER_BUNDLE_BUDGET_KB || '2500' }}
+
       - name: Generate backup filename
         id: backup
         run: |

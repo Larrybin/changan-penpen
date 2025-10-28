@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { headers } from "next/headers";
 
 import { createLogger } from "@/lib/observability/logger";
 
@@ -23,6 +24,23 @@ export interface TurnstileVerificationResult {
 
 const logger = createLogger({ source: "security.turnstile" });
 
+async function resolveForwardedIp(): Promise<string | null> {
+    try {
+        const requestHeaders = await headers();
+        const forwarded =
+            requestHeaders.get("cf-connecting-ip") ??
+            requestHeaders.get("x-forwarded-for");
+        if (!forwarded) {
+            return null;
+        }
+        const [first] = forwarded.split(",");
+        const ip = first?.trim();
+        return ip && ip.length > 0 ? ip : null;
+    } catch {
+        return null;
+    }
+}
+
 export async function verifyTurnstileToken(
     token: string | null | undefined,
 ): Promise<TurnstileVerificationResult> {
@@ -31,21 +49,24 @@ export async function verifyTurnstileToken(
     }
 
     let env: TurnstileEnv | undefined;
-    let request: Request | undefined;
     try {
         const context = getCloudflareContext();
         env = context.env as TurnstileEnv | undefined;
-        request = context.request;
     } catch (error) {
-        logger.error("Failed to access Cloudflare context for Turnstile verification", {
-            error: error instanceof Error ? error.message : "unknown-error",
-        });
+        logger.error(
+            "Failed to access Cloudflare context for Turnstile verification",
+            {
+                error: error instanceof Error ? error.message : "unknown-error",
+            },
+        );
         return { success: false, error: "request-failed" };
     }
 
     const secret = env?.TURNSTILE_SECRET;
     if (!secret) {
-        logger.error("TURNSTILE_SECRET is not configured; cannot verify Turnstile token");
+        logger.error(
+            "TURNSTILE_SECRET is not configured; cannot verify Turnstile token",
+        );
         return { success: false, error: "missing-secret" };
     }
 
@@ -53,13 +74,9 @@ export async function verifyTurnstileToken(
     body.set("secret", secret);
     body.set("response", token);
 
-    const forwarded = request?.headers.get("cf-connecting-ip")
-        ?? request?.headers.get("x-forwarded-for");
-    if (forwarded) {
-        const ip = forwarded.split(",")[0]?.trim();
-        if (ip) {
-            body.set("remoteip", ip);
-        }
+    const forwardedIp = await resolveForwardedIp();
+    if (forwardedIp) {
+        body.set("remoteip", forwardedIp);
     }
 
     try {

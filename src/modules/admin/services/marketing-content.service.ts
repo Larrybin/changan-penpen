@@ -1,5 +1,5 @@
-import { revalidateTag } from "next/cache";
 import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import {
     getDb,
     marketingContentAudit,
@@ -13,6 +13,7 @@ import {
 } from "@/i18n/config";
 import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
+    clearStaticConfigCache,
     computeMarketingMetadataVersion,
     createFallbackMarketingSection,
     loadMarketingSection,
@@ -534,6 +535,7 @@ export async function publishMarketingContent(
 
     revalidateTag(CACHE_TAGS.staticConfig(locale));
     revalidateTag(CACHE_TAGS.marketingSection(locale, section));
+    clearStaticConfigCache();
 
     return {
         locale,

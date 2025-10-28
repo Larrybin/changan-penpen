@@ -12,8 +12,8 @@ import {
     FormSubmit,
     useZodForm,
 } from "@/components/form";
-import { Button } from "@/components/ui/button";
 import { TurnstileWidget } from "@/components/security/turnstile-widget";
+import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -209,14 +209,18 @@ export function SignupForm({
                                         <FormMessage field="turnstileToken" />
                                         {turnstileUnavailable ? (
                                             <p className="text-destructive text-sm">
-                                                {tMessages("captchaUnavailable")}
+                                                {tMessages(
+                                                    "captchaUnavailable",
+                                                )}
                                             </p>
                                         ) : null}
                                     </div>
 
                                     <FormSubmit
                                         isSubmitting={isSubmitting}
-                                        disabled={isSubmitting || turnstileUnavailable}
+                                        disabled={
+                                            isSubmitting || turnstileUnavailable
+                                        }
                                         className="w-full"
                                     >
                                         {isSubmitting ? (

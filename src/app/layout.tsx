@@ -19,7 +19,8 @@ const jetBrainsMono = JetBrains_Mono({
     variable: "--font-geist-mono",
 });
 
-const fallbackAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://banana-generator.com";
+const fallbackAppUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://banana-generator.com";
 
 let metadataBase: URL | undefined;
 try {

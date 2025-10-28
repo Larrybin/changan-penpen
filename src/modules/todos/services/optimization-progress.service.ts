@@ -4,7 +4,11 @@ import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 
 import rawData from "../../../../config/optimization-progress.json";
 
-export type OptimizationTodoStatus = "done" | "in-progress" | "todo" | "blocked";
+export type OptimizationTodoStatus =
+    | "done"
+    | "in-progress"
+    | "todo"
+    | "blocked";
 
 export interface OptimizationTodoItem {
     id: string;

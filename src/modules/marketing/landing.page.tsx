@@ -3,8 +3,8 @@ import { Suspense } from "react";
 
 import { SkipLink } from "@/components/accessibility/skip-link";
 import { Card, CardContent } from "@/components/ui/card";
-import { serializeJsonLd } from "@/lib/seo/jsonld";
 import { createLogger } from "@/lib/observability/logger";
+import { serializeJsonLd } from "@/lib/seo/jsonld";
 import type { MarketingSection } from "@/lib/static-config";
 
 import type { PlaygroundMessages } from "./components/playground";
@@ -58,7 +58,7 @@ type MarketingLandingPageProps = {
 
 function PlaygroundFallback() {
     return (
-        <div className="flex h-48 w-full items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
+        <div className="flex h-48 w-full items-center justify-center rounded-lg border border-border border-dashed text-muted-foreground">
             Loading playground…
         </div>
     );

@@ -2,8 +2,8 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import getAllTodos from "@/modules/todos/actions/get-todos.action";
-import { TodoCard } from "@/modules/todos/components/todo-card";
 import { OptimizationProgressList } from "@/modules/todos/components/optimization-progress";
+import { TodoCard } from "@/modules/todos/components/todo-card";
 import todosRoutes from "./todos.route";
 
 export default async function TodoListPage() {

@@ -1,13 +1,13 @@
 "use server";
 
+import { createLogger } from "@/lib/observability/logger";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 import type {
     AuthResponse,
     SignInSchema,
     SignUpSchema,
 } from "@/modules/auth/models/auth.model";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
-import { createLogger } from "@/lib/observability/logger";
-import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 const logger = createLogger({ source: "auth.signUp" });
 

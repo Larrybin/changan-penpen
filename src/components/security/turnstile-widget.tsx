@@ -40,7 +40,9 @@ function loadTurnstileScript(): Promise<void> {
                 existing.dataset.loaded = "true";
                 resolve();
             });
-            existing.addEventListener("error", () => reject(new Error("Failed to load Turnstile script")));
+            existing.addEventListener("error", () =>
+                reject(new Error("Failed to load Turnstile script")),
+            );
             return;
         }
 
@@ -55,7 +57,7 @@ function loadTurnstileScript(): Promise<void> {
         script.addEventListener("error", () => {
             reject(new Error("Failed to load Turnstile script"));
         });
-        document.head.append(script);
+        document.head.appendChild(script);
     });
     return loadPromise;
 }
@@ -90,22 +92,25 @@ export function TurnstileWidget({
             if (widgetIdRef.current) {
                 window.turnstile.reset(widgetIdRef.current);
             }
-            widgetIdRef.current = window.turnstile.render(containerRef.current, {
-                sitekey: siteKey,
-                callback: (token: string) => {
-                    onVerify(token);
+            widgetIdRef.current = window.turnstile.render(
+                containerRef.current,
+                {
+                    sitekey: siteKey,
+                    callback: (token: string) => {
+                        onVerify(token);
+                    },
+                    "expired-callback": () => {
+                        onExpire?.();
+                        if (widgetIdRef.current) {
+                            window.turnstile?.reset(widgetIdRef.current);
+                        }
+                    },
+                    "error-callback": (error: unknown) => {
+                        onError?.(error);
+                    },
+                    appearance: "interaction-only",
                 },
-                "expired-callback": () => {
-                    onExpire?.();
-                    if (widgetIdRef.current) {
-                        window.turnstile?.reset(widgetIdRef.current);
-                    }
-                },
-                "error-callback": (error: unknown) => {
-                    onError?.(error);
-                },
-                appearance: "interaction-only",
-            });
+            );
         } catch (error) {
             onError?.(error);
         }

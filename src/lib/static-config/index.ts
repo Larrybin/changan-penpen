@@ -1,5 +1,5 @@
-import { unstable_cacheLife, unstable_cacheTag } from "next/cache";
 import { desc, eq } from "drizzle-orm";
+import { unstable_cacheLife, unstable_cacheTag } from "next/cache";
 
 import { getDb, marketingContentVersions } from "@/db";
 import { type AppLocale, supportedLocales } from "@/i18n/config";

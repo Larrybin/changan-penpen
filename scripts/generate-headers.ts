@@ -51,7 +51,8 @@ function buildRules(): HeaderRule[] {
 
     return [
         {
-            comment: "# Next.js static assets - long cache for immutable content",
+            comment:
+                "# Next.js static assets - long cache for immutable content",
             paths: ["/_next/static/*"],
             headers: { "Cache-Control": staticCache },
         },
@@ -126,7 +127,7 @@ function serializeRules(rules: HeaderRule[]): string {
         lines.push("");
     }
 
-    return lines.join("\n").trimEnd() + "\n";
+    return `${lines.join("\n").trimEnd()}\n`;
 }
 
 function main() {

@@ -1,6 +1,9 @@
-import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { revalidateTag } from "next/cache";
+import { NextResponse } from "next/server";
+
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
+import { clearStaticConfigCache } from "@/lib/static-config";
 
 function resolveRevalidateToken(): string | null {
     const runtimeToken = process.env.CACHE_REVALIDATE_TOKEN;
@@ -31,10 +34,7 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get("authorization");
     const expectedHeader = `Bearer ${token}`;
     if (!authHeader || authHeader.trim() !== expectedHeader) {
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 403 },
-        );
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     let body: unknown;
@@ -63,6 +63,18 @@ export async function POST(request: Request) {
     const uniqueTags = Array.from(new Set(tags));
     for (const tag of uniqueTags) {
         revalidateTag(tag);
+    }
+
+    if (
+        uniqueTags.some(
+            (tag) =>
+                tag === CACHE_TAGS.siteSettings ||
+                tag === CACHE_TAGS.optimizationProgress ||
+                tag.startsWith("static-config:") ||
+                tag.startsWith("marketing-section:"),
+        )
+    ) {
+        clearStaticConfigCache();
     }
 
     return NextResponse.json({ revalidated: uniqueTags });

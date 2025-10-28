@@ -1,6 +1,7 @@
 import path from "node:path";
 import createBundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
+import type { RemotePattern } from "next/dist/shared/lib/image-config";
 import createNextIntlPlugin from "next-intl/plugin";
 
 import { buildRedirects } from "./config/redirects";
@@ -10,7 +11,9 @@ function parseHost(value: string | undefined) {
         return null;
     }
     try {
-        const url = value.startsWith("http") ? new URL(value) : new URL(`https://${value}`);
+        const url = value.startsWith("http")
+            ? new URL(value)
+            : new URL(`https://${value}`);
         return url.hostname;
     } catch {
         return null;
@@ -44,13 +47,13 @@ function collectRemoteImageHosts() {
     return Array.from(hosts);
 }
 
-const remoteImagePatterns = collectRemoteImageHosts().map((hostname) => ({
-    protocol: "https",
-    hostname,
-    port: "",
-    pathname: "/**",
-    search: "",
-}));
+const remoteImagePatterns: RemotePattern[] = collectRemoteImageHosts().map(
+    (hostname) => ({
+        protocol: "https",
+        hostname,
+        pathname: "/**",
+    }),
+);
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withBundleAnalyzer = createBundleAnalyzer({
