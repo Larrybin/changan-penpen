@@ -244,6 +244,51 @@ function createQueryExecutor(config: QueryExecutorConfig): QueryExecutor {
         limiter(() => executeWithPolicies(operation, policy));
 }
 
+function normalizePositiveInteger(value: number | undefined) {
+    if (value === undefined || !Number.isFinite(value) || value <= 0) {
+        return undefined;
+    }
+
+    return Math.floor(value);
+}
+
+function createDetailQueryExecutorFromConfig(
+    detailQueryConfig: {
+        concurrency?: number;
+        timeoutMs?: number;
+        retry?: { attempts?: number; delayMs?: number };
+    } | null | undefined,
+): QueryExecutor {
+    const concurrency = normalizePositiveInteger(detailQueryConfig?.concurrency);
+    const timeoutMs = normalizePositiveInteger(detailQueryConfig?.timeoutMs);
+    const retryAttempts = normalizePositiveInteger(
+        detailQueryConfig?.retry?.attempts,
+    );
+    const retryDelayMs = normalizePositiveInteger(
+        detailQueryConfig?.retry?.delayMs,
+    );
+
+    if (
+        concurrency === undefined &&
+        timeoutMs === undefined &&
+        (retryAttempts === undefined || retryAttempts === 0) &&
+        retryDelayMs === undefined
+    ) {
+        return directQueryExecutor;
+    }
+
+    return createQueryExecutor({
+        concurrency,
+        timeoutMs,
+        retryAttempts: retryAttempts ?? 0,
+        retryDelayMs,
+    });
+}
+
+const sharedDetailQueryExecutor = createDetailQueryExecutorFromConfig(
+    config.admin?.users?.detailQuery,
+);
+
 async function fetchUserRow(db: DbClient, userId: string) {
     const [row] = await db
         .select({
@@ -367,12 +412,14 @@ interface AdminUserServiceDependencies {
     getDb: typeof getDb;
     resolveAdminEmails: () => Promise<Set<string>>;
     getCacheTtlSeconds: () => number;
+    detailQueryExecutor?: QueryExecutor;
 }
 
 const defaultDependencies: AdminUserServiceDependencies = {
     getDb,
     resolveAdminEmails: resolveAdminEmailSet,
     getCacheTtlSeconds: () => config.cache.defaultTtlSeconds ?? 0,
+    detailQueryExecutor: sharedDetailQueryExecutor,
 };
 
 export function createAdminUserService(
@@ -481,37 +528,8 @@ export function createAdminUserService(
         }
 
         const db = await dependencies.getDb();
-        const detailQueryConfig = config.admin?.users?.detailQuery;
-
-        const concurrencyLimit =
-            detailQueryConfig?.concurrency !== undefined &&
-            Number.isFinite(detailQueryConfig.concurrency) &&
-            detailQueryConfig.concurrency > 0
-                ? Math.floor(detailQueryConfig.concurrency)
-                : undefined;
-        const timeoutMs =
-            detailQueryConfig?.timeoutMs !== undefined &&
-            Number.isFinite(detailQueryConfig.timeoutMs) &&
-            detailQueryConfig.timeoutMs > 0
-                ? Math.floor(detailQueryConfig.timeoutMs)
-                : undefined;
-        const retryAttempts =
-            detailQueryConfig?.retry?.attempts !== undefined &&
-            Number.isFinite(detailQueryConfig.retry.attempts)
-                ? Math.max(0, Math.floor(detailQueryConfig.retry.attempts))
-                : 0;
-        const retryDelayMs =
-            detailQueryConfig?.retry?.delayMs !== undefined &&
-            Number.isFinite(detailQueryConfig.retry.delayMs)
-                ? Math.max(0, Math.floor(detailQueryConfig.retry.delayMs))
-                : 0;
-
-        const runControlledQuery = createQueryExecutor({
-            concurrency: concurrencyLimit,
-            timeoutMs,
-            retryAttempts,
-            retryDelayMs,
-        });
+        const runControlledQuery =
+            dependencies.detailQueryExecutor ?? sharedDetailQueryExecutor;
 
         const userRow = await runControlledQuery(() =>
             fetchUserRow(db, userId),
