@@ -16,7 +16,8 @@ interface CliOptions {
 }
 
 function printUsage() {
-    console.info(`
+    console.info(
+        `
 Usage: pnpm exec tsx scripts/refresh-dashboard-metrics.ts [options]
 
 Options:
@@ -25,51 +26,80 @@ Options:
   --ttl <seconds>   Override cache TTL in seconds (default matches service constant)
   --ttl-ms <ms>     Override cache TTL in milliseconds
   --help            Show this message
-    `.trim());
+    `.trim(),
+    );
 }
 
 function parseArgs(argv: string[]): CliOptions {
     const options: CliOptions = {};
 
+    const withValue = (index: number, flag: string, description: string) => {
+        const value = argv[index + 1];
+        if (!value) {
+            throw new Error(`${flag} requires ${description}`);
+        }
+        return { value, nextIndex: index + 1 };
+    };
+
+    const parseNonNegativeNumber = (
+        value: string,
+        flag: string,
+        unit?: string,
+    ) => {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric) || numeric < 0) {
+            const suffix = unit ? ` of ${unit}` : "";
+            throw new Error(`${flag} expects a non-negative number${suffix}`);
+        }
+        return numeric;
+    };
+
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index];
         switch (arg) {
             case "--tenant": {
-                const value = argv[index + 1];
-                if (!value) {
-                    throw new Error("--tenant requires a tenant identifier");
-                }
+                const { value, nextIndex } = withValue(
+                    index,
+                    "--tenant",
+                    "a tenant identifier",
+                );
                 options.tenantId = value;
-                index += 1;
+                index = nextIndex;
                 break;
             }
             case "--from": {
-                const value = argv[index + 1];
-                if (!value) {
-                    throw new Error("--from requires an ISO date value");
-                }
+                const { value, nextIndex } = withValue(
+                    index,
+                    "--from",
+                    "an ISO date value",
+                );
                 options.from = value;
-                index += 1;
+                index = nextIndex;
                 break;
             }
             case "--ttl": {
-                const value = Number(argv[index + 1]);
-                if (!Number.isFinite(value) || value < 0) {
-                    throw new Error("--ttl expects a non-negative number of seconds");
-                }
-                options.ttlMs = value * 1000;
-                index += 1;
+                const { value, nextIndex } = withValue(
+                    index,
+                    "--ttl",
+                    "a number of seconds",
+                );
+                options.ttlMs =
+                    parseNonNegativeNumber(value, "--ttl", "seconds") * 1000;
+                index = nextIndex;
                 break;
             }
             case "--ttl-ms": {
-                const value = Number(argv[index + 1]);
-                if (!Number.isFinite(value) || value < 0) {
-                    throw new Error(
-                        "--ttl-ms expects a non-negative number of milliseconds",
-                    );
-                }
-                options.ttlMs = value;
-                index += 1;
+                const { value, nextIndex } = withValue(
+                    index,
+                    "--ttl-ms",
+                    "a number of milliseconds",
+                );
+                options.ttlMs = parseNonNegativeNumber(
+                    value,
+                    "--ttl-ms",
+                    "milliseconds",
+                );
+                index = nextIndex;
                 break;
             }
             case "--help": {
@@ -168,7 +198,9 @@ async function main() {
         );
     }
 
-    console.info(`[analytics] completed refresh for ${contexts.length} context(s).`);
+    console.info(
+        `[analytics] completed refresh for ${contexts.length} context(s).`,
+    );
 }
 
 main().catch((error) => {

@@ -52,6 +52,21 @@ async function requestPerformanceDiagnostics(
     return payload.data;
 }
 
+function isAbortError(error: unknown) {
+    return (
+        typeof DOMException !== "undefined" &&
+        error instanceof DOMException &&
+        error.name === "AbortError"
+    );
+}
+
+function extractErrorMessage(error: unknown) {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return "Unknown error";
+}
+
 /**
  * 性能监控仪表盘组件
  */
@@ -74,24 +89,45 @@ export function PerformanceMonitor() {
     const autoRefreshAbortControllerRef = useRef<AbortController | null>(null);
     const autoRefreshEnabledRef = useRef(false);
 
+    const prepareAutoRefreshController = useCallback(
+        (origin: "auto" | "manual", controller: AbortController) => {
+            if (origin !== "auto") {
+                return;
+            }
+            autoRefreshAbortControllerRef.current?.abort();
+            autoRefreshAbortControllerRef.current = controller;
+        },
+        [],
+    );
+
+    const finalizeAutoRefreshController = useCallback(
+        (origin: "auto" | "manual", controller: AbortController) => {
+            if (
+                origin === "auto" &&
+                autoRefreshAbortControllerRef.current === controller
+            ) {
+                autoRefreshAbortControllerRef.current = null;
+            }
+        },
+        [],
+    );
+
     const fetchMetrics = useCallback(
         async (options?: { silent?: boolean; origin?: "auto" | "manual" }) => {
             if (isFetchingRef.current) {
                 return;
             }
 
+            const origin = options?.origin ?? "manual";
+            const silent = options?.silent ?? false;
             const controller = new AbortController();
-            if (options?.origin === "auto") {
-                autoRefreshAbortControllerRef.current?.abort();
-                autoRefreshAbortControllerRef.current = controller;
-            }
+
+            prepareAutoRefreshController(origin, controller);
 
             isFetchingRef.current = true;
-
-            if (!options?.silent) {
+            if (!silent) {
                 setIsLoading(true);
             }
-
             setError(null);
 
             try {
@@ -101,10 +137,7 @@ export function PerformanceMonitor() {
                 lastFetchAtRef.current = Date.now();
                 setMetrics(diagnostics);
             } catch (fetchError) {
-                if (
-                    fetchError instanceof DOMException &&
-                    fetchError.name === "AbortError"
-                ) {
+                if (isAbortError(fetchError)) {
                     return;
                 }
 
@@ -112,24 +145,14 @@ export function PerformanceMonitor() {
                     "Failed to fetch performance diagnostics",
                     fetchError,
                 );
-
-                const message =
-                    fetchError instanceof Error
-                        ? fetchError.message
-                        : "Unknown error";
-                setError(message);
+                setError(extractErrorMessage(fetchError));
             } finally {
-                if (
-                    options?.origin === "auto" &&
-                    autoRefreshAbortControllerRef.current === controller
-                ) {
-                    autoRefreshAbortControllerRef.current = null;
-                }
+                finalizeAutoRefreshController(origin, controller);
                 isFetchingRef.current = false;
                 setIsLoading(false);
             }
         },
-        [],
+        [finalizeAutoRefreshController, prepareAutoRefreshController],
     );
 
     useEffect(() => {
@@ -198,7 +221,11 @@ export function PerformanceMonitor() {
         }
 
         const interval = setInterval(() => {
-            if (!isDocumentVisible || !isIntersecting || isFetchingRef.current) {
+            if (
+                !isDocumentVisible ||
+                !isIntersecting ||
+                isFetchingRef.current
+            ) {
                 return;
             }
 

@@ -42,7 +42,7 @@ function serializeListOptions(options?: ListKeyOptions) {
                       cursor:
                           paginationParams.cursor === undefined
                               ? undefined
-                              : paginationParams.cursor ?? undefined,
+                              : (paginationParams.cursor ?? undefined),
                   }
                 : undefined,
         filters: options.filters,

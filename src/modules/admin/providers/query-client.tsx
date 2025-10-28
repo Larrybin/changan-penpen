@@ -1,12 +1,12 @@
 "use client";
 
 import {
+    focusManager,
     type Mutation,
     MutationCache,
     QueryCache,
     QueryClient,
     QueryClientProvider,
-    focusManager,
 } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { ApiErrorDetails as ApiClientErrorDetails } from "@/lib/api-client";
@@ -96,7 +96,9 @@ const pendingInvalidations = new Map<string, InvalidationDescriptor>();
 const pendingRefetchKeys = new Set<string>();
 let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 let documentVisible =
-    typeof document === "undefined" ? true : document.visibilityState === "visible";
+    typeof document === "undefined"
+        ? true
+        : document.visibilityState === "visible";
 
 function flushPendingRefetches(queryClient: QueryClient) {
     if (pendingRefetchKeys.size === 0) {
@@ -137,7 +139,7 @@ function flushInvalidations(queryClient: QueryClient) {
     }
 }
 
-function scheduleInvalidationFlush(queryClient: QueryClient) {
+function scheduleInvalidationFlush(_queryClient: QueryClient) {
     if (flushTimeout !== null) {
         return;
     }

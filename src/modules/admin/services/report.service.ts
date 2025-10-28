@@ -28,9 +28,7 @@ const runReportListQuery = createSimplePaginatedList({
             .limit(limit)
             .offset(offset),
     buildTotalQuery: async (db) =>
-        db
-            .select({ count: sql<number>`count(*)` })
-            .from(reports),
+        db.select({ count: sql<number>`count(*)` }).from(reports),
 });
 
 export async function listReports(options: ListReportsOptions = {}) {
@@ -149,7 +147,9 @@ async function generateOrdersReport(db: DbClient, input: CreateReportInput) {
                 .innerJoin(customers, eq(customers.id, orders.customerId))
                 .orderBy(desc(orders.createdAt)),
         applyTenantFilter: (query, tenantId) =>
-            withWhere(query, (builder) => builder.where(eq(customers.userId, tenantId))),
+            withWhere(query, (builder) =>
+                builder.where(eq(customers.userId, tenantId)),
+            ),
         mapRow: (row) => [
             row.id,
             row.customerEmail ?? "",
@@ -175,7 +175,9 @@ async function generateUsageReport(db: DbClient, input: CreateReportInput) {
                 .from(usageDaily)
                 .orderBy(desc(usageDaily.date)),
         applyTenantFilter: (query, tenantId) =>
-            withWhere(query, (builder) => builder.where(eq(usageDaily.userId, tenantId))),
+            withWhere(query, (builder) =>
+                builder.where(eq(usageDaily.userId, tenantId)),
+            ),
         mapRow: (row) => [
             row.userId,
             row.date,
@@ -198,10 +200,15 @@ async function generateCreditsReport(db: DbClient, input: CreateReportInput) {
                     customerEmail: customers.email,
                 })
                 .from(creditsHistory)
-                .innerJoin(customers, eq(customers.id, creditsHistory.customerId))
+                .innerJoin(
+                    customers,
+                    eq(customers.id, creditsHistory.customerId),
+                )
                 .orderBy(desc(creditsHistory.createdAt)),
         applyTenantFilter: (query, tenantId) =>
-            withWhere(query, (builder) => builder.where(eq(customers.userId, tenantId))),
+            withWhere(query, (builder) =>
+                builder.where(eq(customers.userId, tenantId)),
+            ),
         mapRow: (row) => [
             row.id,
             row.customerEmail ?? "",

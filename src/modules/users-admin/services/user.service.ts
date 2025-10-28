@@ -1,11 +1,7 @@
 import { desc, eq, like } from "drizzle-orm";
 
 import { config } from "@/config";
-import {
-    creditTransactions,
-    getDb,
-    user,
-} from "@/db";
+import { creditTransactions, getDb, user } from "@/db";
 import { toNullableIsoString } from "@/lib/formatters";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
 import { computeWithAdminCache } from "@/modules/admin/utils/cache";
@@ -427,19 +423,21 @@ export function createAdminUserService(
                       ),
                   }
                 : null,
-            subscriptions: customerHistory.subscriptions.map((subscription) => ({
-                id: subscription.id,
-                status: subscription.status,
-                currentPeriodStart: toNullableIsoString(
-                    subscription.currentPeriodStart,
-                ),
-                currentPeriodEnd: toNullableIsoString(
-                    subscription.currentPeriodEnd,
-                ),
-                canceledAt: toNullableIsoString(subscription.canceledAt),
-                createdAt: toNullableIsoString(subscription.createdAt),
-                updatedAt: toNullableIsoString(subscription.updatedAt),
-            })),
+            subscriptions: customerHistory.subscriptions.map(
+                (subscription) => ({
+                    id: subscription.id,
+                    status: subscription.status,
+                    currentPeriodStart: toNullableIsoString(
+                        subscription.currentPeriodStart,
+                    ),
+                    currentPeriodEnd: toNullableIsoString(
+                        subscription.currentPeriodEnd,
+                    ),
+                    canceledAt: toNullableIsoString(subscription.canceledAt),
+                    createdAt: toNullableIsoString(subscription.createdAt),
+                    updatedAt: toNullableIsoString(subscription.updatedAt),
+                }),
+            ),
             creditsHistory: customerHistory.credits.map((credit) => ({
                 id: credit.id,
                 amount: credit.amount,

@@ -1,18 +1,25 @@
 import { desc, eq, inArray, like, sql } from "drizzle-orm";
 
-import { customers, getDb, orders, subscriptions, usageDaily, user } from "@/db";
+import {
+    customers,
+    getDb,
+    orders,
+    subscriptions,
+    usageDaily,
+    user,
+} from "@/db";
 import {
     getMultiLevelCache,
     readThroughMultiLevelCache,
 } from "@/lib/cache/multi-level-cache";
 import { runUserDirectoryQuery } from "@/modules/admin/utils/query-factory";
 import {
+    type CustomerHistoryRecord,
     fetchCustomerWithHistory,
     fetchOrderSummary,
     fetchUsageSummary,
     fetchUserCore,
     normalizePagination,
-    type CustomerHistoryRecord,
     type OrderSummary,
     type UserCoreRecord,
 } from "@/modules/admin-shared";
@@ -161,34 +168,41 @@ export function createTenantAdminService(
             cacheKey,
             async () => {
                 const db = await dependencies.getDb();
-                const { rows: tenantRows, total } = await runUserDirectoryQuery({
-                    db,
-                    page,
-                    perPage,
-                    filters: options.search
-                        ? [
-                              like(user.email, `%${options.search}%`),
-                              like(user.name, `%${options.search}%`),
-                          ]
-                        : undefined,
-                    operator: "or",
-                    buildBaseQuery: async (client, { limit, offset, where }) => {
-                        const query = client
-                            .select({
-                                id: user.id,
-                                email: user.email,
-                                name: user.name,
-                                createdAt: user.createdAt,
-                                lastSignIn: user.updatedAt,
-                            })
-                            .from(user)
-                            .orderBy(desc(user.createdAt))
-                            .limit(limit)
-                            .offset(offset);
+                const { rows: tenantRows, total } = await runUserDirectoryQuery(
+                    {
+                        db,
+                        page,
+                        perPage,
+                        filters: options.search
+                            ? [
+                                  like(user.email, `%${options.search}%`),
+                                  like(user.name, `%${options.search}%`),
+                              ]
+                            : undefined,
+                        operator: "or",
+                        buildBaseQuery: async (
+                            client,
+                            { limit, offset, where },
+                        ) => {
+                            const query = client
+                                .select({
+                                    id: user.id,
+                                    email: user.email,
+                                    name: user.name,
+                                    createdAt: user.createdAt,
+                                    lastSignIn: user.updatedAt,
+                                })
+                                .from(user)
+                                .orderBy(desc(user.createdAt))
+                                .limit(limit)
+                                .offset(offset);
 
-                        return where ? await query.where(where) : await query;
+                            return where
+                                ? await query.where(where)
+                                : await query;
+                        },
                     },
-                });
+                );
 
                 const tenantIds = tenantRows.map((row) => row.id);
 

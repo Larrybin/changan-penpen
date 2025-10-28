@@ -1,15 +1,14 @@
 import { desc, eq, sql } from "drizzle-orm";
 
+import type { getDb } from "@/db";
 import {
-    customers,
     creditsHistory,
+    customers,
     orders,
     subscriptions,
     usageDaily,
     user,
 } from "@/db";
-
-import type { getDb } from "@/db";
 
 type DbClient = Awaited<ReturnType<typeof getDb>>;
 

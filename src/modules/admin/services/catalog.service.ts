@@ -112,14 +112,18 @@ function buildCrudService<TInput, TTable extends CatalogTable>({
             const normalizedView = options?.view?.trim().toLowerCase();
             const viewFields =
                 normalizedView && list?.views
-                    ? list.views[normalizedView] ?? null
+                    ? (list.views[normalizedView] ?? null)
                     : null;
 
             const mandatory = list?.requiredFields ?? [
                 "id" as keyof InferSelect<TTable>,
             ];
-            mandatory.forEach((field) => requestedFields.add(String(field)));
-            viewFields?.forEach((field) => requestedFields.add(String(field)));
+            mandatory.forEach((field) => {
+                requestedFields.add(String(field));
+            });
+            viewFields?.forEach((field) => {
+                requestedFields.add(String(field));
+            });
             options?.fields?.forEach((field) => {
                 if (field) {
                     requestedFields.add(String(field));
@@ -130,16 +134,20 @@ function buildCrudService<TInput, TTable extends CatalogTable>({
             requestedFields.forEach((field) => {
                 const candidate = table[field as keyof typeof table];
                 if (isSelectableColumn(candidate)) {
-                    selectionEntries.push([field, candidate as AnySQLiteColumn]);
+                    selectionEntries.push([
+                        field,
+                        candidate as AnySQLiteColumn,
+                    ]);
                 }
             });
 
-            const selection = selectionEntries.length > 0
-                ? (Object.fromEntries(selectionEntries) as Record<
-                      string,
-                      AnySQLiteColumn
-                  >)
-                : null;
+            const selection =
+                selectionEntries.length > 0
+                    ? (Object.fromEntries(selectionEntries) as Record<
+                          string,
+                          AnySQLiteColumn
+                      >)
+                    : null;
 
             const baseQuery = selection
                 ? db.select(selection).from(table)
@@ -189,14 +197,7 @@ const productListViews: Record<
     string,
     readonly (keyof typeof products.$inferSelect)[]
 > = {
-    summary: [
-        "id",
-        "name",
-        "slug",
-        "priceCents",
-        "currency",
-        "status",
-    ],
+    summary: ["id", "name", "slug", "priceCents", "currency", "status"],
 };
 
 const productCrud = buildCrudService<ProductInput, typeof products>({
@@ -228,9 +229,7 @@ const productCrud = buildCrudService<ProductInput, typeof products>({
 export const createProduct = productCrud.create;
 export const updateProduct = productCrud.update;
 export const deleteProduct = productCrud.delete;
-export function listProducts(
-    options?: ListAllOptions<typeof products>,
-) {
+export function listProducts(options?: ListAllOptions<typeof products>) {
     return productCrud.listAll(options);
 }
 export const getProductById = productCrud.getById;

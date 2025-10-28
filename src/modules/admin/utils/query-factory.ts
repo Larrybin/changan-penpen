@@ -113,7 +113,10 @@ function base64UrlEncode(value: string): string {
 }
 
 function base64UrlDecode(value: string): string {
-    const padded = value.padEnd(value.length + ((4 - (value.length % 4)) % 4), "=");
+    const padded = value.padEnd(
+        value.length + ((4 - (value.length % 4)) % 4),
+        "=",
+    );
     const normalized = padded.replace(/-/g, "+").replace(/_/g, "/");
     return Buffer.from(normalized, "base64").toString("utf8");
 }
@@ -144,10 +147,11 @@ export async function runCursorPaginatedQuery<TRow, TCursorValue>(
         options.operator ?? "and",
     );
 
-    const decodeCursor = options.decodeCursor ?? decodeCursorPayload<TCursorValue>;
+    const decodeCursor =
+        options.decodeCursor ?? decodeCursorPayload<TCursorValue>;
     const encodeCursor = options.encodeCursor ?? encodeCursorPayload;
     const cursorValue = options.cursor
-        ? decodeCursor(options.cursor) ?? null
+        ? (decodeCursor(options.cursor) ?? null)
         : null;
 
     const [rowsWithExtra, total] = await Promise.all([
@@ -163,9 +167,8 @@ export async function runCursorPaginatedQuery<TRow, TCursorValue>(
     const rows = hasExtra ? rowsWithExtra.slice(0, perPage) : rowsWithExtra;
 
     const lastRow = rows.at(-1);
-    const nextCursorValue = hasExtra && lastRow
-        ? options.getCursorValue(lastRow)
-        : null;
+    const nextCursorValue =
+        hasExtra && lastRow ? options.getCursorValue(lastRow) : null;
     const nextCursor =
         nextCursorValue !== null && nextCursorValue !== undefined
             ? encodeCursor(nextCursorValue)
@@ -279,9 +282,7 @@ interface SimplePaginatedListConfig<TRow> {
         db: DbClient,
         pagination: { limit: number; offset: number },
     ) => Promise<TRow[]>;
-    buildTotalQuery: (
-        db: DbClient,
-    ) => Promise<Array<{ count: number }>>;
+    buildTotalQuery: (db: DbClient) => Promise<Array<{ count: number }>>;
     defaults?: PaginationDefaults;
 }
 
