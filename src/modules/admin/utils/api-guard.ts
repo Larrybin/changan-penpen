@@ -142,6 +142,7 @@ export function withAdminRoute<
             durationMs,
             traceId: trace.traceId,
             userId,
+            service: "admin-api",
         });
         logger[level](message, {
             status,

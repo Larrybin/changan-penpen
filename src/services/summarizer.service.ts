@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 
 import "@/lib/openapi/extend";
 import { isFaultEnabled as isGlobalFaultEnabled } from "@/lib/observability/fault-injection";
+import { recordApiRequestMetric } from "@/lib/observability/api-metrics";
 import { recordMetric } from "@/lib/observability/metrics";
 import { retry } from "@/lib/utils/retry";
 
@@ -159,17 +160,51 @@ export class SummarizerService {
             const summary = await retry(
                 async () => {
                     this.maybeInjectFault("summarizer.retry-attempt");
-                    const result = await this.ai.run(
-                        "@cf/meta/llama-3.2-1b-instruct",
-                        { messages: requestMessages },
-                    );
-                    const output = result.response?.trim();
-                    if (!output) {
-                        throw new Error(
-                            "Empty response received from AI binding",
+                    const usesHighResTimer =
+                        typeof performance !== "undefined" &&
+                        typeof performance.now === "function";
+                    const startedAt = usesHighResTimer
+                        ? performance.now()
+                        : Date.now();
+                    try {
+                        const result = await this.ai.run(
+                            "@cf/meta/llama-3.2-1b-instruct",
+                            { messages: requestMessages },
                         );
+                        const output = result.response?.trim();
+                        if (!output) {
+                            const emptyError = new Error(
+                                "Empty response received from AI binding",
+                            );
+                            (emptyError as { status?: number }).status = 502;
+                            throw emptyError;
+                        }
+
+                        const durationMs = usesHighResTimer
+                            ? performance.now() - startedAt
+                            : Date.now() - startedAt;
+                        recordApiRequestMetric({
+                            route: "@cf/meta/llama-3.2-1b-instruct",
+                            method: "POST",
+                            status: 200,
+                            durationMs,
+                            service: "workers-ai",
+                        });
+                        return output;
+                    } catch (error) {
+                        const durationMs = usesHighResTimer
+                            ? performance.now() - startedAt
+                            : Date.now() - startedAt;
+                        const status = this.extractStatus(error) ?? 500;
+                        recordApiRequestMetric({
+                            route: "@cf/meta/llama-3.2-1b-instruct",
+                            method: "POST",
+                            status,
+                            durationMs,
+                            service: "workers-ai",
+                        });
+                        throw error;
                     }
-                    return output;
                 },
                 {
                     attempts: Math.max(1, this.options.retry?.attempts ?? 3),
@@ -186,7 +221,9 @@ export class SummarizerService {
             );
 
             const outputTokens = Math.ceil(summary.length / 4);
-            recordMetric("summarizer.success", 1, {
+            recordMetric("ai.summarizer.outcome", 1, {
+                result: "success",
+                status: 200,
                 style,
                 language,
             });
@@ -205,8 +242,12 @@ export class SummarizerService {
             console.error("[SummarizerService] summarize failed", { error });
             const fallback = this.buildFallbackSummary(text, maxLength);
             const outputTokens = Math.ceil(fallback.length / 4);
-            recordMetric("summarizer.fallback", 1, {
-                status: this.extractStatus(error) ?? "unknown",
+            const status = this.extractStatus(error) ?? "unknown";
+            recordMetric("ai.summarizer.outcome", 1, {
+                result: "fallback",
+                status,
+                style,
+                language,
             });
             this.maybeInjectFault("summarizer.fallback");
 
