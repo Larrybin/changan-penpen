@@ -198,6 +198,45 @@ const analyticsConfigSchema = z
     })
     .passthrough();
 
+const adminUsersDetailQueryRetrySchema = z
+    .object({
+        attempts: z.number().int().min(0),
+        delayMs: z.number().int().min(0).optional(),
+    })
+    .passthrough();
+
+export type AdminUsersDetailQueryRetryConfig = z.infer<
+    typeof adminUsersDetailQueryRetrySchema
+>;
+
+const adminUsersDetailQueryConfigSchema = z
+    .object({
+        concurrency: z.number().int().min(1).optional(),
+        timeoutMs: z.number().int().min(0).optional(),
+        retry: adminUsersDetailQueryRetrySchema.optional(),
+    })
+    .passthrough();
+
+export type AdminUsersDetailQueryConfig = z.infer<
+    typeof adminUsersDetailQueryConfigSchema
+>;
+
+const adminUsersConfigSchema = z
+    .object({
+        detailQuery: adminUsersDetailQueryConfigSchema.optional(),
+    })
+    .passthrough();
+
+export type AdminUsersConfig = z.infer<typeof adminUsersConfigSchema>;
+
+const adminConfigSchema = z
+    .object({
+        users: adminUsersConfigSchema.optional(),
+    })
+    .passthrough();
+
+export type AdminConfig = z.infer<typeof adminConfigSchema>;
+
 export const servicesConfigSchema = z
     .object({
         external_apis: externalApisConfigSchema.optional(),
@@ -218,6 +257,7 @@ export const configSchema = z
         performance: performanceConfigSchema.optional(),
         features: featuresConfigSchema.optional(),
         services: servicesConfigSchema.optional(),
+        admin: adminConfigSchema.optional(),
         logging: unknownRecordSchema.optional(),
         backup: unknownRecordSchema.optional(),
         monitoring: unknownRecordSchema.optional(),

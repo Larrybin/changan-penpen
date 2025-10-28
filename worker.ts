@@ -1,5 +1,10 @@
 // @ts-ignore - generated at build time by OpenNext
 import appModule from "./.open-next/worker";
+import {
+    configureMetricsReporter,
+    flushMetrics,
+    isMetricsReporterConfigured,
+} from "./src/lib/observability/metrics";
 
 type FetchHandler<Env> = {
     fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response>;
@@ -50,6 +55,59 @@ function toFetchHandler<Env>(handler: MaybeFetchHandler<Env>): FetchHandler<Env>
 }
 
 const handler = toFetchHandler(appModule as MaybeFetchHandler<CloudflareEnv>);
+
+let lastMetricsConfigKey: string | null = null;
+
+function parsePositiveInteger(value: string | undefined): number | undefined {
+    if (!value) {
+        return undefined;
+    }
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return undefined;
+    }
+    return parsed;
+}
+
+function ensureMetricsReporter(env: CloudflareEnv): void {
+    const endpoint =
+        env.OBSERVABILITY_METRICS_ENDPOINT ??
+        process.env.OBSERVABILITY_METRICS_ENDPOINT;
+    if (!endpoint) {
+        return;
+    }
+
+    const token =
+        env.OBSERVABILITY_METRICS_TOKEN ??
+        process.env.OBSERVABILITY_METRICS_TOKEN;
+    const flushInterval = parsePositiveInteger(
+        env.OBSERVABILITY_METRICS_FLUSH_INTERVAL_MS ??
+            process.env.OBSERVABILITY_METRICS_FLUSH_INTERVAL_MS,
+    );
+    const maxBufferSize = parsePositiveInteger(
+        env.OBSERVABILITY_METRICS_MAX_BUFFER ??
+            process.env.OBSERVABILITY_METRICS_MAX_BUFFER,
+    );
+
+    const configKey = [
+        endpoint,
+        token ?? "",
+        flushInterval?.toString() ?? "",
+        maxBufferSize?.toString() ?? "",
+    ].join("::");
+
+    if (configKey === lastMetricsConfigKey && isMetricsReporterConfigured()) {
+        return;
+    }
+
+    configureMetricsReporter({
+        endpoint,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        flushIntervalMs: flushInterval,
+        maxBufferSize,
+    });
+    lastMetricsConfigKey = configKey;
+}
 
 const MARKETING_CACHE_HEADER = "X-Marketing-Cache";
 const MARKETING_VARIANT_COOKIE_PREFIX = "marketing-variant-";
@@ -163,6 +221,7 @@ export async function fetch(
     env: CloudflareEnv,
     ctx: ExecutionContext,
 ) {
+    ensureMetricsReporter(env);
     const shouldUseCache = shouldHandleMarketingCache(request);
     const cacheKey = shouldUseCache ? new Request(request.url, request) : null;
     if (shouldUseCache && cacheKey) {
@@ -174,17 +233,17 @@ export async function fetch(
 
     const response = await handler.fetch(request, env, ctx);
     const cacheHint = response.headers.get(MARKETING_CACHE_HEADER);
-    if (!cacheHint) {
-        return response;
-    }
+    let finalResponse = response;
 
-    const headers = new Headers(response.headers);
-    headers.delete(MARKETING_CACHE_HEADER);
-    const finalResponse = new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-    });
+    if (cacheHint) {
+        const headers = new Headers(response.headers);
+        headers.delete(MARKETING_CACHE_HEADER);
+        finalResponse = new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+        });
+    }
 
     const waitUntil =
         typeof ctx?.waitUntil === "function"
@@ -207,6 +266,21 @@ export async function fetch(
     const contentType = finalResponse.headers.get("content-type") ?? "";
     if (contentType.includes("text/html")) {
         appendLinkHeaders(finalResponse.headers, collectLinkHints(env));
+    }
+
+    const flushPromise = flushMetrics();
+    if (typeof waitUntil === "function") {
+        waitUntil(
+            flushPromise.catch((error) => {
+                console.error("[metrics] failed to flush after request", {
+                    error,
+                });
+            }),
+        );
+    } else {
+        await flushPromise.catch((error) => {
+            console.error("[metrics] failed to flush after request", { error });
+        });
     }
 
     return finalResponse;

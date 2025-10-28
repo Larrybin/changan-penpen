@@ -182,6 +182,9 @@ devDependencies:
   '@types/swagger-ui-react':
     specifier: ^5.18.0
     version: 5.18.0
+  biome-shim:
+    specifier: link:stubs/biome-shim
+    version: link:stubs/biome-shim
   cross-env:
     specifier: ^10.1.0
     version: 10.1.0

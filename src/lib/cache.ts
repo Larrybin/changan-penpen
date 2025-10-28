@@ -1,5 +1,7 @@
 import { Redis } from "@upstash/redis/cloudflare";
 
+import type { MetricTags } from "@/lib/observability/metrics";
+import { recordMetric } from "@/lib/observability/metrics";
 import {
     getPlatformContext,
     getPlatformWaitUntil,
@@ -20,6 +22,34 @@ interface WithCacheOptions<Env extends CacheEnv> {
 const redisClients = new Map<string, { client: Redis; lastUsed: number }>();
 const CLIENT_TTL_MS = 15 * 60 * 1000;
 const MAX_CLIENTS = 4;
+
+const CACHE_METRIC_BASE: MetricTags = {
+    cache_name: "api-response",
+    layer: "upstash-redis",
+};
+
+type CacheLookupResult = "hit" | "miss" | "error" | "bypass";
+
+function recordCacheLookup(result: CacheLookupResult, extra?: MetricTags) {
+    recordMetric("cache.lookup", 1, {
+        ...CACHE_METRIC_BASE,
+        operation: "get",
+        result,
+        ...extra,
+    });
+}
+
+function recordCacheWrite(
+    result: "success" | "error",
+    extra?: MetricTags,
+): void {
+    recordMetric("cache.write", 1, {
+        ...CACHE_METRIC_BASE,
+        operation: "set",
+        result,
+        ...extra,
+    });
+}
 
 function cleanupRedisClients(now: number) {
     for (const [key, record] of redisClients) {
@@ -68,52 +98,164 @@ function safeStringify(value: unknown): string | null {
         return JSON.stringify(value);
     } catch (error) {
         console.warn("[cache] failed to stringify value", { error });
+        recordCacheWrite("error", {
+            error_type: "serialize",
+            error_name: error instanceof Error ? error.name : "unknown",
+        });
         return null;
     }
 }
 
-function safeParse<T>(value: string | null): T | null {
+function safeParse<T>(value: string | null): {
+    result: T | null;
+    error?: unknown;
+} {
     if (value === null) {
-        return null;
+        return { result: null };
     }
     try {
-        return JSON.parse(value) as T;
+        return { result: JSON.parse(value) as T };
     } catch (error) {
         console.warn("[cache] failed to parse value", { error });
-        return null;
+        return { result: null, error };
     }
+}
+
+interface CacheRuntime {
+    redis: Redis | null;
+    waitUntil?: (promise: Promise<unknown>) => void;
+}
+
+async function resolveCacheRuntime<Env extends CacheEnv>(
+    options: WithCacheOptions<Env>,
+): Promise<CacheRuntime> {
+    const { env: providedEnv, waitUntil } = options;
+    if (providedEnv) {
+        return { redis: getRedisClient(providedEnv), waitUntil };
+    }
+
+    const platformContext = await getPlatformContext({ async: true });
+    const env = platformContext?.env
+        ? (platformContext.env as CacheEnv | undefined)
+        : undefined;
+    const redis = getRedisClient(env);
+
+    if (waitUntil) {
+        return { redis, waitUntil };
+    }
+
+    const contextWaitUntil = platformContext?.ctx?.waitUntil?.bind(
+        platformContext.ctx,
+    );
+    if (contextWaitUntil) {
+        return { redis, waitUntil: contextWaitUntil };
+    }
+
+    const fallbackWaitUntil = await getPlatformWaitUntil({ async: true });
+    return { redis, waitUntil: fallbackWaitUntil };
+}
+
+type CacheReadOutcome<T> =
+    | { status: "hit"; value: T }
+    | { status: "miss" | "error"; value: null };
+
+async function readFromCache<T>(
+    redis: Redis,
+    key: string,
+): Promise<CacheReadOutcome<T>> {
+    try {
+        const cached = await redis.get<string>(key);
+        const { result: parsed, error: parseError } = safeParse<T>(
+            cached ?? null,
+        );
+
+        if (parsed !== null) {
+            recordCacheLookup("hit");
+            return { status: "hit", value: parsed };
+        }
+
+        if (cached === null) {
+            recordCacheLookup("miss");
+            return { status: "miss", value: null };
+        }
+
+        if (parseError) {
+            recordCacheLookup("error", {
+                error_type: "parse",
+                error_name:
+                    parseError instanceof Error ? parseError.name : "unknown",
+            });
+            return { status: "error", value: null };
+        }
+
+        recordCacheLookup("miss");
+        return { status: "miss", value: null };
+    } catch (error) {
+        console.warn("[cache] failed to read", { key, error });
+        recordCacheLookup("error", {
+            error_type: "read",
+            error_name: error instanceof Error ? error.name : "unknown",
+        });
+        return { status: "error", value: null };
+    }
+}
+
+function scheduleCacheWrite(
+    redis: Redis,
+    key: string,
+    serialized: string,
+    ttlSeconds: number,
+    waitUntil?: (promise: Promise<unknown>) => void,
+): void {
+    const persist = redis
+        .set(key, serialized, { ex: ttlSeconds })
+        .then(() => {
+            recordCacheWrite("success", { ttl_seconds: ttlSeconds });
+        })
+        .catch((error) => {
+            recordCacheWrite("error", {
+                error_type: "write",
+                error_name: error instanceof Error ? error.name : "unknown",
+            });
+            throw error;
+        });
+
+    if (waitUntil) {
+        waitUntil(
+            persist.catch((error) => {
+                console.warn("[cache] failed to persist", { key, error });
+                throw error;
+            }),
+        );
+        return;
+    }
+
+    void persist.catch((error) => {
+        console.warn("[cache] failed to persist", { key, error });
+    });
 }
 
 export async function withApiCache<T, Env extends CacheEnv = CacheEnv>(
     options: WithCacheOptions<Env>,
     compute: () => Promise<T>,
 ): Promise<{ value: T; hit: boolean }> {
-    const { key, ttlSeconds, waitUntil } = options;
+    const { key, ttlSeconds } = options;
     if (!key) {
+        recordCacheLookup("bypass", { reason: "empty-key" });
         const value = await compute();
         return { value, hit: false };
     }
 
-    const providedEnv = options.env;
-    const context = providedEnv
-        ? undefined
-        : await getPlatformContext({ async: true });
-    const env =
-        providedEnv ?? (context?.env as CacheEnv | undefined) ?? undefined;
-    const redis = getRedisClient(env);
+    const { redis, waitUntil } = await resolveCacheRuntime(options);
     if (!redis) {
+        recordCacheLookup("bypass", { reason: "missing-binding" });
         const value = await compute();
         return { value, hit: false };
     }
 
-    try {
-        const cached = await redis.get<string>(key);
-        const parsed = safeParse<T>(cached ?? null);
-        if (parsed !== null) {
-            return { value: parsed, hit: true };
-        }
-    } catch (error) {
-        console.warn("[cache] failed to read", { key, error });
+    const cached = await readFromCache<T>(redis, key);
+    if (cached.status === "hit") {
+        return { value: cached.value, hit: true };
     }
 
     const value = await compute();
