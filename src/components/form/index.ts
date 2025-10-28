@@ -28,4 +28,4 @@ export type {
     UseZodFormReturn,
 } from "./use-zod-form";
 // Hooks
-export { useSimpleForm, useZodForm } from "./use-zod-form";
+export { useZodForm } from "./use-zod-form";
