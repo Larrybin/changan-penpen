@@ -245,10 +245,21 @@ export async function fetch(
         });
     }
 
-    const waitUntil =
+    const originalWaitUntil =
         typeof ctx?.waitUntil === "function"
             ? ctx.waitUntil.bind(ctx)
             : undefined;
+    const waitUntilPromises: Promise<unknown>[] = [];
+    const waitUntil = originalWaitUntil
+        ? (promise: Promise<unknown>) => {
+              const trackedPromise = Promise.resolve(promise);
+              waitUntilPromises.push(trackedPromise);
+              originalWaitUntil(trackedPromise);
+          }
+        : undefined;
+    if (originalWaitUntil && waitUntil) {
+        ctx.waitUntil = waitUntil as ExecutionContext["waitUntil"];
+    }
     if (
         shouldUseCache &&
         cacheHint === "default" &&
@@ -268,17 +279,26 @@ export async function fetch(
         appendLinkHeaders(finalResponse.headers, collectLinkHints(env));
     }
 
-    const flushPromise = flushMetrics();
+    const flushAfterDeferredTasks = async () => {
+        while (waitUntilPromises.length > 0) {
+            const pendingPromises = waitUntilPromises.splice(
+                0,
+                waitUntilPromises.length,
+            );
+            await Promise.allSettled(pendingPromises);
+        }
+        await flushMetrics();
+    };
     if (typeof waitUntil === "function") {
-        waitUntil(
-            flushPromise.catch((error) => {
+        originalWaitUntil(
+            flushAfterDeferredTasks().catch((error) => {
                 console.error("[metrics] failed to flush after request", {
                     error,
                 });
             }),
         );
     } else {
-        await flushPromise.catch((error) => {
+        await flushAfterDeferredTasks().catch((error) => {
             console.error("[metrics] failed to flush after request", { error });
         });
     }
