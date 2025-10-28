@@ -1,17 +1,29 @@
 import { and, eq } from "drizzle-orm";
-import { CREDIT_TRANSACTION_TYPE, getDb } from "@/db";
+import { CREDIT_TRANSACTION_TYPE, customers, getDb } from "@/db";
 import { addCredits } from "@/modules/billing/services/credits.service";
+import { invalidateDashboardMetricsCache } from "@/modules/admin/services/analytics.service";
 import type {
     CreemCustomer,
     CreemSubscription,
 } from "@/modules/creem/models/creem.types";
 import {
     creditsHistory,
-    customers,
     subscriptions,
 } from "@/modules/creem/schemas/billing.schema";
 
 type Database = Awaited<ReturnType<typeof getDb>>;
+
+async function invalidateDashboardCacheForTenant(tenantId: string | null) {
+    const operations: Array<Promise<void>> = [
+        invalidateDashboardMetricsCache({ tenantId: null }),
+    ];
+
+    if (tenantId) {
+        operations.push(invalidateDashboardMetricsCache({ tenantId }));
+    }
+
+    await Promise.all(operations);
+}
 
 export async function createOrUpdateCustomer(
     creemCustomer: CreemCustomer,
@@ -98,6 +110,13 @@ export async function createOrUpdateSubscription(
         .limit(1);
     const now = new Date().toISOString();
 
+    const [customerRow] = await db
+        .select({ userId: customers.userId })
+        .from(customers)
+        .where(eq(customers.id, customerId))
+        .limit(1);
+    const tenantUserId = customerRow?.userId ?? null;
+
     const productId =
         typeof creemSubscription.product === "string"
             ? creemSubscription.product
@@ -116,25 +135,33 @@ export async function createOrUpdateSubscription(
         updatedAt: now,
     } as const;
 
+    let subscriptionId: number;
+
     if (existing.length > 0) {
         await db
             .update(subscriptions)
             .set(payload)
             .where(eq(subscriptions.id, existing[0].id));
-        return existing[0].id;
+        subscriptionId = existing[0].id;
+    } else {
+        await db.insert(subscriptions).values({
+            ...payload,
+            creemSubscriptionId: creemSubscription.id,
+            createdAt: now,
+        });
+        const inserted = await db
+            .select({ id: subscriptions.id })
+            .from(subscriptions)
+            .where(eq(subscriptions.creemSubscriptionId, creemSubscription.id))
+            .limit(1);
+        if (!inserted[0]) {
+            throw new Error("Failed to persist subscription record");
+        }
+        subscriptionId = inserted[0].id;
     }
 
-    await db.insert(subscriptions).values({
-        ...payload,
-        creemSubscriptionId: creemSubscription.id,
-        createdAt: now,
-    });
-    const inserted = await db
-        .select({ id: subscriptions.id })
-        .from(subscriptions)
-        .where(eq(subscriptions.creemSubscriptionId, creemSubscription.id))
-        .limit(1);
-    return inserted[0].id;
+    await invalidateDashboardCacheForTenant(tenantUserId);
+    return subscriptionId;
 }
 
 export async function addCreditsToCustomer(
@@ -196,6 +223,8 @@ export async function addCreditsToCustomer(
         creemOrderId: creemOrderId || null,
         createdAt: now,
     });
+
+    await invalidateDashboardCacheForTenant(userRow[0].userId ?? null);
 
     return newCredits;
 }

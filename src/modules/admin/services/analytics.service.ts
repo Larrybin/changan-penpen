@@ -1,5 +1,6 @@
-import { and, desc, eq, gte, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, type SQL, sql } from "drizzle-orm";
 import {
+    adminDashboardCache,
     contentPages,
     coupons,
     creditsHistory,
@@ -50,6 +51,104 @@ export interface DashboardMetricsResponse {
 
 type DatabaseClient = Awaited<ReturnType<typeof getDb>>;
 type TenantCondition = SQL<unknown> | undefined;
+
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface CacheScope {
+    tenantId: string | null;
+    fromDate: string | null;
+}
+
+function resolveCacheScope(
+    options: DashboardMetricsOptions,
+): CacheScope {
+    return {
+        tenantId: options.tenantId ?? null,
+        fromDate: options.from ?? null,
+    };
+}
+
+function buildCacheKey(scope: CacheScope) {
+    const tenantPart = scope.tenantId ?? "global";
+    const fromPart = scope.fromDate ?? "default";
+    return `tenant:${tenantPart}|from:${fromPart}`;
+}
+
+async function loadCachedDashboardMetrics(
+    db: DatabaseClient,
+    cacheKey: string,
+): Promise<DashboardMetricsResponse | null> {
+    const [row] = await db
+        .select({
+            payload: adminDashboardCache.payload,
+            expiresAt: adminDashboardCache.expiresAt,
+        })
+        .from(adminDashboardCache)
+        .where(eq(adminDashboardCache.key, cacheKey))
+        .limit(1);
+
+    if (!row) {
+        return null;
+    }
+
+    const expiresAt = new Date(row.expiresAt).getTime();
+    if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+        await db
+            .delete(adminDashboardCache)
+            .where(eq(adminDashboardCache.key, cacheKey))
+            .run();
+        return null;
+    }
+
+    try {
+        return JSON.parse(row.payload) as DashboardMetricsResponse;
+    } catch (error) {
+        console.warn(
+            `[analytics] Failed to parse cached dashboard payload for ${cacheKey}`,
+            error,
+        );
+        await db
+            .delete(adminDashboardCache)
+            .where(eq(adminDashboardCache.key, cacheKey))
+            .run();
+        return null;
+    }
+}
+
+async function writeDashboardCacheEntry(
+    db: DatabaseClient,
+    cacheKey: string,
+    scope: CacheScope,
+    payload: DashboardMetricsResponse,
+    ttlMs: number,
+) {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const expiresAt = new Date(now.getTime() + Math.max(ttlMs, 0)).toISOString();
+    const serialized = JSON.stringify(payload);
+
+    await db
+        .insert(adminDashboardCache)
+        .values({
+            key: cacheKey,
+            tenantId: scope.tenantId,
+            fromDate: scope.fromDate,
+            payload: serialized,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            expiresAt,
+        })
+        .onConflictDoUpdate({
+            target: adminDashboardCache.key,
+            set: {
+                tenantId: scope.tenantId,
+                fromDate: scope.fromDate,
+                payload: serialized,
+                updatedAt: nowIso,
+                expiresAt,
+            },
+        });
+}
 
 async function fetchDashboardTotals(
     db: DatabaseClient,
@@ -195,10 +294,10 @@ async function fetchCatalogSummary(db: DatabaseClient) {
     };
 }
 
-export async function getDashboardMetrics(
-    options: DashboardMetricsOptions = {},
+async function computeDashboardMetrics(
+    db: DatabaseClient,
+    options: DashboardMetricsOptions,
 ): Promise<DashboardMetricsResponse> {
-    const db = await getDb();
     const tenantCondition = options.tenantId
         ? eq(customers.userId, options.tenantId)
         : undefined;
@@ -247,4 +346,79 @@ export async function getDashboardMetrics(
         })),
         catalogSummary,
     };
+}
+
+export async function getDashboardMetrics(
+    options: DashboardMetricsOptions = {},
+): Promise<DashboardMetricsResponse> {
+    const db = await getDb();
+    const scope = resolveCacheScope(options);
+    const cacheKey = buildCacheKey(scope);
+    const cached = await loadCachedDashboardMetrics(db, cacheKey);
+
+    if (cached) {
+        return cached;
+    }
+
+    const metrics = await computeDashboardMetrics(db, options);
+    await writeDashboardCacheEntry(
+        db,
+        cacheKey,
+        scope,
+        metrics,
+        DEFAULT_CACHE_TTL_MS,
+    );
+
+    return metrics;
+}
+
+export async function refreshDashboardMetricsCache(
+    options: DashboardMetricsOptions = {},
+    ttlMs: number = DEFAULT_CACHE_TTL_MS,
+): Promise<DashboardMetricsResponse> {
+    const db = await getDb();
+    const scope = resolveCacheScope(options);
+    const cacheKey = buildCacheKey(scope);
+    const metrics = await computeDashboardMetrics(db, options);
+
+    await writeDashboardCacheEntry(db, cacheKey, scope, metrics, ttlMs);
+    return metrics;
+}
+
+export async function invalidateDashboardMetricsCache(
+    scope?: { tenantId?: string | null; from?: string | null },
+) {
+    const db = await getDb();
+    let query = db.delete(adminDashboardCache);
+
+    if (!scope || (scope.tenantId === undefined && scope.from === undefined)) {
+        await query.run();
+        return;
+    }
+
+    const conditions: SQL<unknown>[] = [];
+
+    if (scope.tenantId !== undefined) {
+        conditions.push(
+            scope.tenantId === null
+                ? isNull(adminDashboardCache.tenantId)
+                : eq(adminDashboardCache.tenantId, scope.tenantId),
+        );
+    }
+
+    if (scope.from !== undefined) {
+        conditions.push(
+            scope.from === null
+                ? isNull(adminDashboardCache.fromDate)
+                : eq(adminDashboardCache.fromDate, scope.from),
+        );
+    }
+
+    if (conditions.length > 0) {
+        const predicate =
+            conditions.length === 1 ? conditions[0] : and(...conditions);
+        query = query.where(predicate);
+    }
+
+    await query.run();
 }

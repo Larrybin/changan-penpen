@@ -1,8 +1,5 @@
-export {
-    contentPages,
-    coupons,
-    products,
-} from "@/modules/admin/schemas/catalog.schema";
+export { contentPages, coupons, products } from "@/modules/admin/schemas/catalog.schema";
+export { adminDashboardCache } from "@/modules/admin/schemas/analytics-cache.schema";
 export {
     marketingContentAudit,
     marketingContentDrafts,
