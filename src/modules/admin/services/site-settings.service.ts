@@ -188,14 +188,34 @@ function hasCloudflareBindings(env: NodeJS.ProcessEnv | undefined) {
 }
 
 function isEdgeRuntime() {
-    if (typeof globalThis !== "undefined") {
-        if ("EdgeRuntime" in globalThis) {
-            return true;
-        }
+    if (typeof globalThis === "undefined") {
+        return false;
     }
 
-    if (typeof globalThis.process !== "undefined") {
-        return globalThis.process.env?.NEXT_RUNTIME === "edge";
+    if ("EdgeRuntime" in globalThis) {
+        return true;
+    }
+
+    const processCandidate = (globalThis as typeof globalThis & {
+        process?: NodeJS.Process;
+    }).process;
+    if (processCandidate?.env?.NEXT_RUNTIME === "edge") {
+        return true;
+    }
+
+    const navigatorUserAgent = (globalThis as typeof globalThis & {
+        navigator?: { userAgent?: string };
+    }).navigator?.userAgent;
+    if (navigatorUserAgent?.includes("Cloudflare-Workers")) {
+        return true;
+    }
+
+    if (
+        typeof processCandidate === "undefined" &&
+        typeof (globalThis as typeof globalThis & { WebSocketPair?: unknown })
+            .WebSocketPair === "function"
+    ) {
+        return true;
     }
 
     return false;
