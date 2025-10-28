@@ -23,7 +23,7 @@ dependencies:
     version: 5.2.2(react-hook-form@7.65.0)
   '@opennextjs/cloudflare':
     specifier: ^1.11.0
-    version: 1.11.0(wrangler@4.45.0)
+    version: 1.11.0(wrangler@4.45.1)
   '@radix-ui/react-accordion':
     specifier: ^1.2.12
     version: 1.2.12(@types/react-dom@19.2.2)(@types/react@19.2.2)(react-dom@19.2.0)(react@19.2.0)
@@ -210,8 +210,8 @@ devDependencies:
     specifier: ^5.9.3
     version: 5.9.3
   wrangler:
-    specifier: ^4.45.0
-    version: 4.45.0
+    specifier: ^4.45.1
+    version: 4.45.1
 
 packages:
 
@@ -2960,7 +2960,7 @@ packages:
       - supports-color
     dev: false
 
-  /@opennextjs/cloudflare@1.11.0(wrangler@4.45.0):
+  /@opennextjs/cloudflare@1.11.0(wrangler@4.45.1):
     resolution: {integrity: sha512-2QVZLjCr3hPwkcGEetLarTZvlNIHsGV3j2+i+KNsjFIBgvsnxhmRqJbT0u8J9cVMFKNh19hSOTOmUKs1T3DWig==}
     hasBin: true
     peerDependencies:
@@ -2974,7 +2974,7 @@ packages:
       glob: 11.0.3
       rclone.js: 0.6.6
       ts-tqdm: 0.8.6
-      wrangler: 4.45.0
+      wrangler: 4.45.1
       yargs: 18.0.0
     transitivePeerDependencies:
       - aws-crt
@@ -10937,8 +10937,8 @@ packages:
       '@cloudflare/workerd-linux-arm64': 1.20251011.0
       '@cloudflare/workerd-windows-64': 1.20251011.0
 
-  /wrangler@4.45.0:
-    resolution: {integrity: sha512-2qM6bHw8l7r89Z9Y5A7Wn4L9U+dFoLjYgEUVpqy7CcmXpppL3QIYqU6rU5lre7/SRzBuPu/H93Vwfh538gZ3iw==}
+  /wrangler@4.45.1:
+    resolution: {integrity: sha512-SmmbDl6NUkv6mHT8/Scb09lvxXy0Y2hD98oZHswCysrYbs4JW5LP1eTuroE23Z2jK75D7TEzv2MXmwcDIytxhg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     peerDependencies:
