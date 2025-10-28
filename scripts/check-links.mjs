@@ -1,83 +1,35 @@
 #!/usr/bin/env node
-import fs from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
+import {
+    collectMarkdownFiles,
+    validateMarkdownLinks,
+} from "./lib/doc-link-validator.mjs";
 
-const root = process.cwd();
+async function main() {
+    const projectRoot = process.cwd();
+    const candidates = [
+        path.join(projectRoot, "README.md"),
+        path.join(projectRoot, "docs"),
+    ].filter((entry) => existsSync(entry));
 
-function walk(dir) {
-    const out = [];
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-        const p = path.join(dir, e.name);
-        if (e.isDirectory()) out.push(...walk(p));
-        else out.push(p);
+    if (candidates.length === 0) {
+        console.info("[check-links] 未找到需要检查的文档");
+        return;
     }
-    return out;
-}
 
-function isMarkdown(p) {
-    return /\.(md|mdx)$/i.test(p);
-}
+    const files = await collectMarkdownFiles(candidates);
+    const { missing } = await validateMarkdownLinks(files, { projectRoot });
 
-function read(p) {
-    return fs.readFileSync(p, "utf8");
-}
-
-function checkLocalLink(baseFile, linkRaw) {
-    const baseDir = path.dirname(baseFile);
-    const [relPath] = linkRaw.split("#");
-    if (!relPath || relPath.startsWith("#")) return null; // in-file anchor only
-    // ignore web/mail/tel/data
-    if (/^(https?:|mailto:|tel:|data:)/i.test(relPath)) return null;
-    // ignore site routes like /about
-    if (relPath.startsWith("/")) return null;
-
-    const candidate = path.resolve(baseDir, relPath);
-    if (fs.existsSync(candidate)) return null;
-    // try with .md
-    if (fs.existsSync(`${candidate}.md`)) return null;
-    // if relPath points to a directory, try README.md
-    try {
-        const stat = fs.statSync(candidate);
-        if (
-            stat.isDirectory() &&
-            fs.existsSync(path.join(candidate, "README.md"))
-        )
-            return null;
-    } catch {
-        // ignore: candidate path does not exist
-    }
-    return `${path.relative(root, baseFile)} -> ${relPath}`;
-}
-
-function main() {
-    const targets = [
-        path.join(root, "README.md"),
-        path.join(root, "docs"),
-    ].filter((p) => fs.existsSync(p));
-    const files = targets
-        .flatMap((t) => (fs.statSync(t).isDirectory() ? walk(t) : [t]))
-        .filter(isMarkdown);
-    const errors = [];
-
-    const linkRe = /\[[^\]]*\]\(([^)]+)\)/g;
-
-    for (const f of files) {
-        const text = read(f);
-        for (const m of text.matchAll(linkRe)) {
-            const link = m[1].trim();
-            const err = checkLocalLink(f, link);
-            if (err) errors.push(err);
+    if (missing.length > 0) {
+        console.error("[check-links] Missing local links (file -> target):");
+        for (const item of missing) {
+            console.error(`- ${item.file} -> ${item.target}`);
         }
+        process.exit(1);
     }
 
-    if (errors.length) {
-        console.error(
-            `[check-links] Missing local links (file -> target):\n- ${errors.join("\n- ")}`,
-        );
-        process.exit(1);
-    } else {
-        console.info("[check-links] OK");
-    }
+    console.info("[check-links] OK");
 }
 
-main();
+await main();

@@ -9,6 +9,10 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+    collectMarkdownFiles,
+    validateMarkdownLinks,
+} from "./doc-link-validator.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -234,11 +238,30 @@ class DocConsistencyChecker {
 
         console.info("  🔗 检查链接一致性...");
 
-        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-        const localFiles = new Set(
-            docFiles.map((f) => f.relativePath.toLowerCase()),
+        const projectRoot = path.join(__dirname, "../..");
+        const filesForValidator = docFiles.map((file) => ({
+            absolute: file.path,
+            relative: file.relativePath,
+        }));
+
+        const { missing, inspected } = await validateMarkdownLinks(
+            filesForValidator,
+            { projectRoot },
         );
 
+        this.stats.linksChecked += inspected;
+
+        for (const item of missing) {
+            this.addIssue({
+                type: "broken_link",
+                severity: "error",
+                file: item.file,
+                linkTarget: item.target,
+                message: `损坏的本地链接: ${item.file} -> ${item.target}`,
+            });
+        }
+
+        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
         for (const file of docFiles) {
             try {
                 const content = await fs.readFile(file.path, "utf8");
@@ -247,51 +270,23 @@ class DocConsistencyChecker {
                 for (const match of matches) {
                     const linkText = match[1];
                     const linkTarget = match[2];
-                    this.stats.linksChecked++;
 
-                    // 检查本地文件链接
-                    if (
-                        !linkTarget.startsWith("http") &&
-                        !linkTarget.startsWith("#")
-                    ) {
-                        const targetPath = this.resolveLinkPath(
-                            file.relativePath,
+                    if (!linkTarget.startsWith("#")) continue;
+
+                    const anchor = linkTarget.slice(1);
+                    const hasAnchor =
+                        content.includes(`#${anchor}`) ||
+                        content.includes(`## ${anchor}`);
+
+                    if (!hasAnchor) {
+                        this.addIssue({
+                            type: "broken_anchor",
+                            severity: "warning",
+                            file: file.relativePath,
+                            linkText,
                             linkTarget,
-                        );
-
-                        if (
-                            !localFiles.has(targetPath.toLowerCase()) &&
-                            !localFiles.has(`${targetPath.toLowerCase()}.md`)
-                        ) {
-                            this.addIssue({
-                                type: "broken_link",
-                                severity: "error",
-                                file: file.relativePath,
-                                linkText,
-                                linkTarget,
-                                resolvedPath: targetPath,
-                                message: `损坏的本地链接: ${linkText} -> ${linkTarget}`,
-                            });
-                        }
-                    }
-
-                    // 检查锚点链接
-                    if (linkTarget.startsWith("#")) {
-                        const anchor = linkTarget.slice(1);
-                        const hasAnchor =
-                            content.includes(`#${anchor}`) ||
-                            content.includes(`## ${anchor}`);
-
-                        if (!hasAnchor) {
-                            this.addIssue({
-                                type: "broken_anchor",
-                                severity: "warning",
-                                file: file.relativePath,
-                                linkText,
-                                linkTarget,
-                                message: `损坏的锚点链接: ${linkTarget}`,
-                            });
-                        }
+                            message: `损坏的锚点链接: ${linkTarget}`,
+                        });
                     }
                 }
             } catch (error) {

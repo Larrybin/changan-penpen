@@ -6,7 +6,10 @@
  */
 
 import DocConsistencyChecker from "./lib/doc-consistency-checker.mjs";
-import WorkflowOptimizer from "./lib/workflow-optimizer.mjs";
+import {
+    collectMarkdownFiles,
+    validateMarkdownLinks,
+} from "./lib/doc-link-validator.mjs";
 
 console.info("📚 文档优化工具启动");
 
@@ -146,42 +149,59 @@ async function performDocFix() {
 async function performDocOptimize() {
     console.info("⚡ 执行文档优化...");
 
-    const optimizer = new WorkflowOptimizer({
+    const checker = new DocConsistencyChecker({
         enableMCP: process.env.ENABLE_MCP === "1",
-        autoApplyLowRisk: true,
+        strictMode: false,
+        checkLinks: true,
+        checkAPI: true,
+        checkCode: true,
+        checkReadme: true,
     });
 
-    // 模拟文档变更
-    const docFiles = await getDocFiles();
+    const result = await checker.checkAll();
+    const score = calculateDocQualityScore(result);
 
-    if (docFiles.length === 0) {
-        console.info("ℹ️ 未发现文档文件");
-        return;
+    console.info(`📈 文档质量评分: ${score}/100`);
+
+    const criticalIssues = result.issues
+        .filter((issue) => issue.severity === "error")
+        .slice(0, 5);
+    if (criticalIssues.length > 0) {
+        console.info("\n🚨 需要优先处理的文档问题:");
+        criticalIssues.forEach((issue) => {
+            console.info(`  - ${issue.file}: ${issue.message}`);
+        });
     }
 
-    // 集成文档优化建议
-    const optimizationResult =
-        await optimizer.analyzeDocumentConsistency(docFiles);
-
-    if (optimizationResult.length > 0) {
-        console.info(`💡 发现 ${optimizationResult.length} 个文档优化机会`);
-
-        // 显示优化建议
-        optimizationResult.forEach((opt, index) => {
-            console.info(`\n${index + 1}. ${opt.issue}`);
-            console.info(`   文件: ${opt.file}`);
-            console.info(`   影响: ${(opt.impact * 100).toFixed(1)}%`);
-            console.info(`   工作量: ${(opt.effort * 100).toFixed(1)}%`);
-
-            if (opt.suggestion) {
-                console.info(`   建议: ${opt.suggestion.description}`);
-                if (opt.suggestion.command) {
-                    console.info(`   命令: ${opt.suggestion.command}`);
-                }
-            }
+    const warnings = result.issues
+        .filter((issue) => issue.severity === "warning")
+        .slice(0, 5);
+    if (warnings.length > 0) {
+        console.info("\n⚠️  建议优化的项目:");
+        warnings.forEach((issue) => {
+            console.info(`  - ${issue.file}: ${issue.message}`);
         });
-    } else {
-        console.info("✅ 文档结构良好，无需优化");
+    }
+
+    const projectRoot = process.cwd();
+    const files = await collectMarkdownFiles([projectRoot], { projectRoot });
+    const { missing } = await validateMarkdownLinks(files, { projectRoot });
+
+    if (missing.length > 0) {
+        console.info("\n🔗 需要修复的本地链接:");
+        missing.slice(0, 5).forEach((link) => {
+            console.info(`  - ${link.file} -> ${link.target}`);
+        });
+        if (missing.length > 5) {
+            console.info(`  … 另外 ${missing.length - 5} 个链接待修复`);
+        }
+    }
+
+    if (result.recommendations && result.recommendations.length > 0) {
+        console.info("\n💡 检查器建议:");
+        result.recommendations.slice(0, 5).forEach((rec) => {
+            console.info(`  - ${rec.description}`);
+        });
     }
 }
 
@@ -352,49 +372,9 @@ async function autoFixDocIssue(issue) {
  * 获取所有文档文件
  */
 async function getDocFiles() {
-    const fs = await import("node:fs/promises");
-    const path = await import("node:path");
-
-    const docFiles = [];
-    const includeExtensions = new Set([".md", ".mdx"]);
-    const shouldTraverseDirectory = (name) =>
-        !name.startsWith(".") && name !== "node_modules";
-
-    const readDirectory = async (directory) => {
-        try {
-            return await fs.readdir(directory, { withFileTypes: true });
-        } catch (_error) {
-            return [];
-        }
-    };
-
-    const stack = [{ dir: process.cwd(), baseDir: "" }];
-
-    while (stack.length > 0) {
-        const { dir, baseDir } = stack.pop();
-        const entries = await readDirectory(dir);
-
-        for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
-            const relativePath = path.join(baseDir, entry.name);
-
-            if (entry.isDirectory()) {
-                if (shouldTraverseDirectory(entry.name)) {
-                    stack.push({ dir: fullPath, baseDir: relativePath });
-                }
-                continue;
-            }
-
-            if (
-                entry.isFile() &&
-                includeExtensions.has(path.extname(entry.name))
-            ) {
-                docFiles.push(relativePath);
-            }
-        }
-    }
-
-    return docFiles;
+    const projectRoot = process.cwd();
+    const files = await collectMarkdownFiles([projectRoot], { projectRoot });
+    return files.map((file) => file.relative);
 }
 
 /**

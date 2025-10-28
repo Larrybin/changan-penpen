@@ -9,6 +9,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 interface AuditResult {
     name: string;
@@ -23,6 +24,10 @@ class SEOAuditor {
 
     constructor(projectRoot: string = process.cwd()) {
         this.projectRoot = projectRoot;
+    }
+
+    private reset(): void {
+        this.results = [];
     }
 
     /**
@@ -532,6 +537,20 @@ class SEOAuditor {
         return result;
     }
 
+    async runAllChecks(): Promise<AuditResult[]> {
+        this.reset();
+        this.checkSemanticHTML();
+        this.checkStructuredData();
+        this.checkResponsiveDesign();
+        this.checkSEOFiles();
+        this.checkAccessibility();
+        return this.results;
+    }
+
+    getResults(): AuditResult[] {
+        return this.results;
+    }
+
     /**
      * 生成审计报告
      */
@@ -598,15 +617,10 @@ class SEOAuditor {
     /**
      * 运行完整的SEO审计
      */
-    runAudit(): void {
+    async runAudit(): Promise<void> {
         console.info("🚀 开始SEO审计...\n");
 
-        this.checkSemanticHTML();
-        this.checkStructuredData();
-        this.checkResponsiveDesign();
-        this.checkSEOFiles();
-        this.checkAccessibility();
-
+        await this.runAllChecks();
         this.generateReport();
 
         // 设置退出码
@@ -615,10 +629,14 @@ class SEOAuditor {
     }
 }
 
-// 如果直接运行此脚本
-if (require.main === module) {
+const isDirectRun =
+    typeof process !== "undefined" &&
+    process.argv[1] &&
+    fileURLToPath(import.meta.url) === process.argv[1];
+
+if (isDirectRun) {
     const auditor = new SEOAuditor();
-    auditor.runAudit();
+    void auditor.runAudit();
 }
 
 export { SEOAuditor };

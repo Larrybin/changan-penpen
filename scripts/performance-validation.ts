@@ -13,6 +13,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 interface PerformanceMetric {
     name: string;
@@ -39,6 +40,10 @@ class PerformanceValidator {
     private results: ValidationResult[] = [];
 
     constructor(private projectRoot: string = process.cwd()) {}
+
+    private reset(): void {
+        this.results = [];
+    }
 
     /**
      * 分析Core Web Vitals指标
@@ -522,6 +527,20 @@ class PerformanceValidator {
         return result;
     }
 
+    async collectAllResults(): Promise<ValidationResult[]> {
+        this.reset();
+        await this.analyzeWebVitals();
+        await this.checkImageOptimization();
+        await this.analyzeBundleSize();
+        await this.checkCaching();
+        await this.runLighthouseSimulation();
+        return this.results;
+    }
+
+    getResults(): ValidationResult[] {
+        return this.results;
+    }
+
     /**
      * 获取指标单位
      */
@@ -627,11 +646,7 @@ class PerformanceValidator {
     async runAllValidations(): Promise<void> {
         console.info("🚀 开始性能验证...\n");
 
-        await this.analyzeWebVitals();
-        await this.checkImageOptimization();
-        await this.analyzeBundleSize();
-        await this.checkCaching();
-        await this.runLighthouseSimulation();
+        await this.collectAllResults();
 
         this.generateReport();
 
@@ -649,8 +664,12 @@ class PerformanceValidator {
     }
 }
 
-// 如果直接运行此脚本
-if (require.main === module) {
+const isDirectRun =
+    typeof process !== "undefined" &&
+    process.argv[1] &&
+    fileURLToPath(import.meta.url) === process.argv[1];
+
+if (isDirectRun) {
     const validator = new PerformanceValidator();
     validator.runAllValidations().catch((error) => {
         console.error("性能验证失败:", error);

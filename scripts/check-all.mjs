@@ -10,6 +10,12 @@ import {
     normalizeDocs,
     QualitySession,
 } from "./lib/quality.mjs";
+import {
+    formatCommand,
+    getBiomeCheckCommand,
+    getBiomeWriteCommand,
+    getTypeCheckCommand,
+} from "./lib/quality-commands.mjs";
 
 const STRICT_MODE = process.env.CHECK_STRICT === "1";
 const SKIP_BOM = process.env.SKIP_BOM_CHECK === "1";
@@ -129,7 +135,7 @@ if (STRICT_MODE) {
     console.info("严格模式：跳过 Biome 写入修复。");
 } else {
     timeStart("biome-write");
-    BIOME_WRITE_RAN = tryRun("pnpm exec biome check . --write --unsafe");
+    BIOME_WRITE_RAN = tryRun(formatCommand(getBiomeWriteCommand()));
     timeEnd("biome-write");
     if (!BIOME_WRITE_RAN)
         console.info(
@@ -165,7 +171,7 @@ if (DO_TSC) {
     removeNextCache("tsc");
     timeStart("tsc");
     try {
-        run("pnpm exec tsc --noEmit");
+        run(formatCommand(getTypeCheckCommand()));
         TSC_OK = true;
     } catch (error) {
         timeEnd("tsc");
@@ -223,7 +229,7 @@ if (SKIP_DOCS_CHECK) {
 // --- 8) 最终 Biome --------------------------------------------------------
 timeStart("biome-final");
 try {
-    run("pnpm exec biome check .");
+        run(formatCommand(getBiomeCheckCommand()));
     BIOME_FINAL_OK = true;
 } catch (error) {
     timeEnd("biome-final");
