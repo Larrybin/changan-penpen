@@ -2,6 +2,7 @@ import { config } from "@/config";
 import handleApiError from "@/lib/api-error";
 import { createApiErrorResponse } from "@/lib/http-error";
 import { parseFaultInjectionTargets } from "@/lib/observability/fault-injection";
+import { parseDurationToMs } from "@/lib/utils/duration";
 import { getPlatformContext } from "@/lib/platform/context";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import type { AiBinding } from "@/services/summarizer.service";
@@ -58,13 +59,25 @@ export async function POST(request: Request) {
         const faultHeader = request.headers.get("x-fault-injection");
         const faultTargets = parseFaultInjectionTargets(faultHeader);
 
-        const retryConfig = config.services?.external_apis;
+        const externalApiConfig = config.services?.external_apis;
+        const circuitBreakerConfig = externalApiConfig?.circuit_breaker;
         const summarizerService = new SummarizerService(env.AI, {
             retry: {
-                attempts: retryConfig?.retry_attempts ?? 3,
+                attempts: externalApiConfig?.retry_attempts ?? 3,
                 backoffFactor: 2,
                 initialDelayMs: 250,
             },
+            circuitBreaker: circuitBreakerConfig
+                ? {
+                      key: "summarizer.workers-ai",
+                      enabled: circuitBreakerConfig.enabled,
+                      failureThreshold: circuitBreakerConfig.failure_threshold,
+                      recoveryTimeoutMs: parseDurationToMs(
+                          circuitBreakerConfig.recovery_timeout,
+                      ),
+                      halfOpenMaxCalls: circuitBreakerConfig.half_open_max_calls,
+                  }
+                : undefined,
             faultInjection:
                 faultTargets.length > 0 ? { flags: faultTargets } : undefined,
         });
