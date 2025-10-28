@@ -2,13 +2,11 @@
  * Safely converts date-like values to ISO 8601 strings.
  *
  * Accepts {@link Date} instances, finite epoch millisecond numbers, and string
- * values. String inputs are normalized when they represent valid dates while
- * preserving the original value when parsing fails. Unsupported inputs result
- * in `null` so callers can gracefully handle missing or invalid timestamps.
+ * values. String inputs are normalized when they represent valid dates and
+ * produce `null` otherwise, allowing callers to gracefully handle missing or
+ * invalid timestamps without special casing.
  */
-export function toNullableIsoString(
-    value: Date | number | string | null | undefined,
-): string | null {
+export function toNullableIsoString(value: unknown): string | null {
     if (value === null || value === undefined) {
         return null;
     }
@@ -19,7 +17,13 @@ export function toNullableIsoString(
     }
 
     if (typeof value === "number") {
-        return Number.isFinite(value) ? new Date(value).toISOString() : null;
+        if (!Number.isFinite(value)) {
+            return null;
+        }
+
+        const date = new Date(value);
+        const timestamp = date.getTime();
+        return Number.isNaN(timestamp) ? null : date.toISOString();
     }
 
     if (typeof value === "string") {
@@ -29,7 +33,7 @@ export function toNullableIsoString(
         }
 
         const parsed = new Date(trimmed);
-        return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+        return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
     }
 
     return null;
