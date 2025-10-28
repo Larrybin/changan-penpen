@@ -10,6 +10,7 @@ import {
     usageDaily,
     user,
 } from "@/db";
+import { toNullableIsoString } from "@/lib/formatters";
 import { getAdminAccessConfig } from "@/modules/admin/utils/admin-access";
 import { computeWithAdminCache } from "@/modules/admin/utils/cache";
 import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
@@ -24,22 +25,6 @@ import type {
     AdminUserRole,
     AdminUserTransaction,
 } from "@/modules/users-admin/models";
-
-const toNullableString = (value: unknown): string | null => {
-    if (value instanceof Date) {
-        return value.toISOString();
-    }
-
-    if (typeof value === "number") {
-        return Number.isFinite(value) ? new Date(value).toISOString() : null;
-    }
-
-    if (typeof value === "string") {
-        return value;
-    }
-
-    return null;
-};
 
 const resolveRole = (
     email: string | null | undefined,
@@ -84,10 +69,211 @@ interface CustomerBundle {
     subscriptions: SubscriptionRecord[];
 }
 
+type QueryExecutor = <T>(operation: () => Promise<T>) => Promise<T>;
+
+const directQueryExecutor: QueryExecutor = (operation) =>
+    Promise.resolve().then(operation);
+
 const resolveAdminEmailSet = async () => {
     const { allowedEmails } = await getAdminAccessConfig();
     return new Set(allowedEmails.map((email) => email.toLowerCase()));
 };
+
+const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+        setTimeout(resolve, ms);
+    });
+
+function runWithTimeout<T>(
+    operation: () => Promise<T>,
+    timeoutMs: number | undefined,
+): Promise<T> {
+    if (!Number.isFinite(timeoutMs) || !timeoutMs || timeoutMs <= 0) {
+        return Promise.resolve().then(operation);
+    }
+
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(
+                new Error(
+                    `AdminUserService query timed out after ${timeoutMs}ms`,
+                ),
+            );
+        }, timeoutMs);
+
+        const finalize = <U>(callback: () => U): U => {
+            clearTimeout(timer);
+            return callback();
+        };
+
+        Promise.resolve()
+            .then(operation)
+            .then((value) => finalize(() => resolve(value)))
+            .catch((error) => finalize(() => reject(error)));
+    });
+}
+
+interface QueryRetryPolicy {
+    timeoutMs?: number;
+    retryAttempts: number;
+    retryDelayMs?: number;
+}
+
+async function executeWithPolicies<T>(
+    operation: () => Promise<T>,
+    policy: QueryRetryPolicy,
+): Promise<T> {
+    const attempts = Math.max(1, Math.floor(policy.retryAttempts ?? 0) + 1);
+    const delayMs =
+        policy.retryDelayMs !== undefined && policy.retryDelayMs > 0
+            ? Math.floor(policy.retryDelayMs)
+            : 0;
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        try {
+            return await runWithTimeout(operation, policy.timeoutMs);
+        } catch (error) {
+            lastError = error;
+            const isLastAttempt = attempt === attempts - 1;
+            if (isLastAttempt) {
+                throw error;
+            }
+
+            if (delayMs > 0) {
+                await sleep(delayMs);
+            }
+        }
+    }
+
+    throw lastError instanceof Error
+        ? lastError
+        : new Error("AdminUserService query failed");
+}
+
+function createConcurrencyLimiter(limit: number | undefined): QueryExecutor {
+    if (!Number.isFinite(limit) || limit === undefined || limit <= 0) {
+        return directQueryExecutor;
+    }
+
+    let activeCount = 0;
+    const queue: Array<() => void> = [];
+
+    const scheduleNext = () => {
+        if (activeCount >= limit) {
+            return;
+        }
+
+        const nextTask = queue.shift();
+        if (!nextTask) {
+            return;
+        }
+
+        nextTask();
+    };
+
+    return async function runLimited<T>(
+        operation: () => Promise<T>,
+    ): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
+            const execute = () => {
+                let taskPromise: Promise<T>;
+                try {
+                    taskPromise = Promise.resolve(operation());
+                } catch (error) {
+                    activeCount--;
+                    scheduleNext();
+                    reject(error);
+                    return;
+                }
+
+                taskPromise.then(resolve, reject).finally(() => {
+                    activeCount--;
+                    scheduleNext();
+                });
+            };
+
+            if (activeCount < limit) {
+                activeCount++;
+                execute();
+            } else {
+                queue.push(() => {
+                    activeCount++;
+                    execute();
+                });
+            }
+        });
+    };
+}
+
+interface QueryExecutorConfig extends QueryRetryPolicy {
+    concurrency?: number;
+}
+
+function createQueryExecutor(config: QueryExecutorConfig): QueryExecutor {
+    const limiter = createConcurrencyLimiter(config.concurrency);
+    const policy: QueryRetryPolicy = {
+        timeoutMs: config.timeoutMs,
+        retryAttempts: Math.max(0, Math.floor(config.retryAttempts ?? 0)),
+        retryDelayMs:
+            config.retryDelayMs !== undefined && config.retryDelayMs >= 0
+                ? Math.floor(config.retryDelayMs)
+                : undefined,
+    };
+
+    return <T>(operation: () => Promise<T>) =>
+        limiter(() => executeWithPolicies(operation, policy));
+}
+
+function normalizePositiveInteger(value: number | undefined) {
+    if (value === undefined || !Number.isFinite(value) || value <= 0) {
+        return undefined;
+    }
+
+    return Math.floor(value);
+}
+
+function createDetailQueryExecutorFromConfig(
+    detailQueryConfig:
+        | {
+              concurrency?: number;
+              timeoutMs?: number;
+              retry?: { attempts?: number; delayMs?: number };
+          }
+        | null
+        | undefined,
+): QueryExecutor {
+    const concurrency = normalizePositiveInteger(
+        detailQueryConfig?.concurrency,
+    );
+    const timeoutMs = normalizePositiveInteger(detailQueryConfig?.timeoutMs);
+    const retryAttempts = normalizePositiveInteger(
+        detailQueryConfig?.retry?.attempts,
+    );
+    const retryDelayMs = normalizePositiveInteger(
+        detailQueryConfig?.retry?.delayMs,
+    );
+
+    if (
+        concurrency === undefined &&
+        timeoutMs === undefined &&
+        (retryAttempts === undefined || retryAttempts === 0) &&
+        retryDelayMs === undefined
+    ) {
+        return directQueryExecutor;
+    }
+
+    return createQueryExecutor({
+        concurrency,
+        timeoutMs,
+        retryAttempts: retryAttempts ?? 0,
+        retryDelayMs,
+    });
+}
+
+const sharedDetailQueryExecutor = createDetailQueryExecutorFromConfig(
+    config.admin?.users?.detailQuery,
+);
 
 async function fetchUserRow(db: DbClient, userId: string) {
     const [row] = await db
@@ -112,17 +298,20 @@ async function fetchUserRow(db: DbClient, userId: string) {
 async function fetchCustomerBundle(
     db: DbClient,
     userId: string,
+    runQuery: QueryExecutor = directQueryExecutor,
 ): Promise<CustomerBundle> {
-    const [customerRow] = await db
-        .select({
-            id: customers.id,
-            credits: customers.credits,
-            createdAt: customers.createdAt,
-            updatedAt: customers.updatedAt,
-        })
-        .from(customers)
-        .where(eq(customers.userId, userId))
-        .limit(1);
+    const [customerRow] = await runQuery(() =>
+        db
+            .select({
+                id: customers.id,
+                credits: customers.credits,
+                createdAt: customers.createdAt,
+                updatedAt: customers.updatedAt,
+            })
+            .from(customers)
+            .where(eq(customers.userId, userId))
+            .limit(1),
+    );
 
     if (!customerRow) {
         return {
@@ -133,32 +322,36 @@ async function fetchCustomerBundle(
     }
 
     const [creditRows, subscriptionRows] = await Promise.all([
-        db
-            .select({
-                id: creditsHistory.id,
-                amount: creditsHistory.amount,
-                type: creditsHistory.type,
-                description: creditsHistory.description,
-                createdAt: creditsHistory.createdAt,
-            })
-            .from(creditsHistory)
-            .where(eq(creditsHistory.customerId, customerRow.id))
-            .orderBy(desc(creditsHistory.createdAt))
-            .limit(20),
-        db
-            .select({
-                id: subscriptionTable.id,
-                status: subscriptionTable.status,
-                currentPeriodStart: subscriptionTable.currentPeriodStart,
-                currentPeriodEnd: subscriptionTable.currentPeriodEnd,
-                canceledAt: subscriptionTable.canceledAt,
-                createdAt: subscriptionTable.createdAt,
-                updatedAt: subscriptionTable.updatedAt,
-            })
-            .from(subscriptionTable)
-            .where(eq(subscriptionTable.customerId, customerRow.id))
-            .orderBy(desc(subscriptionTable.createdAt))
-            .limit(10),
+        runQuery(() =>
+            db
+                .select({
+                    id: creditsHistory.id,
+                    amount: creditsHistory.amount,
+                    type: creditsHistory.type,
+                    description: creditsHistory.description,
+                    createdAt: creditsHistory.createdAt,
+                })
+                .from(creditsHistory)
+                .where(eq(creditsHistory.customerId, customerRow.id))
+                .orderBy(desc(creditsHistory.createdAt))
+                .limit(20),
+        ),
+        runQuery(() =>
+            db
+                .select({
+                    id: subscriptionTable.id,
+                    status: subscriptionTable.status,
+                    currentPeriodStart: subscriptionTable.currentPeriodStart,
+                    currentPeriodEnd: subscriptionTable.currentPeriodEnd,
+                    canceledAt: subscriptionTable.canceledAt,
+                    createdAt: subscriptionTable.createdAt,
+                    updatedAt: subscriptionTable.updatedAt,
+                })
+                .from(subscriptionTable)
+                .where(eq(subscriptionTable.customerId, customerRow.id))
+                .orderBy(desc(subscriptionTable.createdAt))
+                .limit(10),
+        ),
     ]);
 
     return {
@@ -205,12 +398,14 @@ interface AdminUserServiceDependencies {
     getDb: typeof getDb;
     resolveAdminEmails: () => Promise<Set<string>>;
     getCacheTtlSeconds: () => number;
+    detailQueryExecutor?: QueryExecutor;
 }
 
 const defaultDependencies: AdminUserServiceDependencies = {
     getDb,
     resolveAdminEmails: resolveAdminEmailSet,
     getCacheTtlSeconds: () => config.cache.defaultTtlSeconds ?? 0,
+    detailQueryExecutor: sharedDetailQueryExecutor,
 };
 
 export function createAdminUserService(
@@ -279,7 +474,7 @@ export function createAdminUserService(
                     name: row.name,
                     role: resolveRole(row.email, adminEmails),
                     status: resolveStatus(row.emailVerified),
-                    createdAt: toNullableString(row.createdAt),
+                    createdAt: toNullableIsoString(row.createdAt),
                     credits: row.currentCredits ?? 0,
                 })),
                 total,
@@ -319,7 +514,12 @@ export function createAdminUserService(
         }
 
         const db = await dependencies.getDb();
-        const userRow = await fetchUserRow(db, userId);
+        const runControlledQuery =
+            dependencies.detailQueryExecutor ?? sharedDetailQueryExecutor;
+
+        const userRow = await runControlledQuery(() =>
+            fetchUserRow(db, userId),
+        );
         if (!userRow) {
             return null;
         }
@@ -328,9 +528,9 @@ export function createAdminUserService(
 
         const [customerBundle, usageRows, transactionRows, adminEmails] =
             await Promise.all([
-                fetchCustomerBundle(db, userId),
-                fetchUsageRows(db, userId),
-                fetchTransactionRows(db, userId),
+                fetchCustomerBundle(db, userId, runControlledQuery),
+                runControlledQuery(() => fetchUsageRows(db, userId)),
+                runControlledQuery(() => fetchTransactionRows(db, userId)),
                 adminEmailsPromise,
             ]);
 
@@ -342,11 +542,11 @@ export function createAdminUserService(
                 emailVerified: Boolean(userRow.emailVerified),
                 role: resolveRole(userRow.email, adminEmails),
                 status: resolveStatus(userRow.emailVerified),
-                createdAt: toNullableString(userRow.createdAt),
-                updatedAt: toNullableString(userRow.updatedAt),
+                createdAt: toNullableIsoString(userRow.createdAt),
+                updatedAt: toNullableIsoString(userRow.updatedAt),
                 image: userRow.image ?? null,
                 currentCredits: userRow.currentCredits ?? 0,
-                lastCreditRefreshAt: toNullableString(
+                lastCreditRefreshAt: toNullableIsoString(
                     userRow.lastCreditRefreshAt,
                 ),
             },
@@ -354,10 +554,10 @@ export function createAdminUserService(
                 ? {
                       id: customerBundle.customer.id,
                       credits: customerBundle.customer.credits,
-                      createdAt: toNullableString(
+                      createdAt: toNullableIsoString(
                           customerBundle.customer.createdAt,
                       ),
-                      updatedAt: toNullableString(
+                      updatedAt: toNullableIsoString(
                           customerBundle.customer.updatedAt,
                       ),
                   }
@@ -365,22 +565,22 @@ export function createAdminUserService(
             subscriptions: customerBundle.subscriptions.map((subscription) => ({
                 id: subscription.id,
                 status: subscription.status,
-                currentPeriodStart: toNullableString(
+                currentPeriodStart: toNullableIsoString(
                     subscription.currentPeriodStart,
                 ),
-                currentPeriodEnd: toNullableString(
+                currentPeriodEnd: toNullableIsoString(
                     subscription.currentPeriodEnd,
                 ),
-                canceledAt: toNullableString(subscription.canceledAt),
-                createdAt: toNullableString(subscription.createdAt),
-                updatedAt: toNullableString(subscription.updatedAt),
+                canceledAt: toNullableIsoString(subscription.canceledAt),
+                createdAt: toNullableIsoString(subscription.createdAt),
+                updatedAt: toNullableIsoString(subscription.updatedAt),
             })),
             creditsHistory: customerBundle.credits.map((credit) => ({
                 id: credit.id,
                 amount: credit.amount,
                 type: credit.type,
                 description: credit.description,
-                createdAt: toNullableString(credit.createdAt),
+                createdAt: toNullableIsoString(credit.createdAt),
             })),
             usage: usageRows.map((usage) => ({
                 id: usage.id,
@@ -396,11 +596,11 @@ export function createAdminUserService(
                     remainingAmount: transaction.remainingAmount,
                     type: transaction.type,
                     description: transaction.description,
-                    expirationDate: toNullableString(
+                    expirationDate: toNullableIsoString(
                         transaction.expirationDate,
                     ),
                     paymentIntentId: transaction.paymentIntentId ?? null,
-                    createdAt: toNullableString(transaction.createdAt),
+                    createdAt: toNullableIsoString(transaction.createdAt),
                 }),
             ),
         } satisfies AdminUserDetail;

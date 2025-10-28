@@ -62,6 +62,36 @@ Run `pnpm cf-typegen` after adding/updating bindings to refresh `cloudflare-env.
 - `EXTERNAL_API_RECOVERY_TIMEOUT_SECONDS`: 熔断进入半开状态前的等待时间（秒）。
 - `FAULT_INJECTION`: 以逗号分隔的故障注入标识（例如 `summarizer.before-run`），用于预生产演练。
 
+### External API service guardrails (`services.external_apis`)
+
+| 字段 | 含义 | 默认值（`config/environments/base.json`） | 示例配置 |
+| --- | --- | --- | --- |
+| `timeout` | 单次外部请求的超时时间，超时后会主动终止请求 | `"30s"` | `"15s"`（生产环境更严格以快速失败） |
+| `retry_attempts` | 针对可重试错误（5xx/超时）的最大重试次数 | `3` | `5`（生产环境提高可靠性） |
+| `circuit_breaker.enabled` | 是否启用熔断器以保护下游 | `true` | `false`（本地开发可禁用以便调试） |
+| `circuit_breaker.failure_threshold` | 在熔断前允许的连续失败次数 | `5` | `3`（生产环境快速熔断） |
+| `circuit_breaker.recovery_timeout` | 熔断后等待多长时间进入半开状态 | `"60s"` | `"30s"`（生产环境更快地恢复探测） |
+| `circuit_breaker.half_open_max_calls` | 半开状态下允许的并发探测数量 | _未设置_（默认按单个请求探测） | `5`（生产环境允许更多验证请求） |
+
+> 可在 `config/environments/<env>.json` 中根据部署环境定制上述参数；生产环境默认启用了更严格的熔断阈值，并额外设置了 `half_open_max_calls` 来分摊探测压力。
+
+运行时如需通过环境变量覆盖关键阈值，可使用：
+
+- `EXTERNAL_API_RETRY_ATTEMPTS`
+- `EXTERNAL_API_FAILURE_THRESHOLD`
+- `EXTERNAL_API_RECOVERY_TIMEOUT_SECONDS`
+
+样例（与 `.dev.vars.example` 对齐）：
+
+```bash
+# 提升重试与熔断策略（例如自托管环境）
+EXTERNAL_API_RETRY_ATTEMPTS=5
+EXTERNAL_API_FAILURE_THRESHOLD=3
+EXTERNAL_API_RECOVERY_TIMEOUT_SECONDS=30
+```
+
+> 这些覆盖会在应用启动时由 `src/config/index.ts` 注入配置，并对所有外部 API 调用生效。
+
 ## Rotation Policy
 - Use `wrangler secret put <NAME>` for production secrets
 - Rotate on schedule and after incident

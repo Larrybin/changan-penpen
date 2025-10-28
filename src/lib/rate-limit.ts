@@ -5,6 +5,7 @@ type Unit = "ms" | "s" | "m" | "h" | "d";
 type Duration = `${number} ${Unit}` | `${number}${Unit}`;
 
 import { Redis } from "@upstash/redis/cloudflare";
+import { toNullableIsoString } from "@/lib/formatters";
 import { createApiErrorResponse } from "@/lib/http-error";
 import { getPlatformEnv } from "@/lib/platform/context";
 
@@ -275,13 +276,26 @@ function buildRateLimitDetails(
     metadata: RateLimitMetadata,
     retryAfterSeconds: number | null,
 ) {
+    const isoReset =
+        metadata.reset instanceof Date
+            ? toNullableIsoString(metadata.reset)
+            : typeof metadata.reset === "number"
+              ? toNullableIsoString(
+                    metadata.reset > 1_000_000_000_000
+                        ? metadata.reset
+                        : metadata.reset * 1000,
+                )
+              : toNullableIsoString(metadata.reset);
+
     return {
         limit: metadata.limit ?? null,
         remaining: metadata.remaining ?? null,
         reset:
-            metadata.reset instanceof Date
-                ? metadata.reset.toISOString()
-                : (metadata.reset ?? null),
+            isoReset ??
+            (typeof metadata.reset === "number" ||
+            typeof metadata.reset === "string"
+                ? metadata.reset
+                : null),
         retryAfterSeconds: retryAfterSeconds ?? null,
     } as const;
 }
