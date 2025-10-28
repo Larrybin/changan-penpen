@@ -242,14 +242,20 @@ class CircuitBreaker {
         }
 
         const state = this.getState();
-        if (fromHalfOpen || state.state !== "closed" || state.failureCount > 0) {
-            this.transitionToClosed(state);
+
+        if (fromHalfOpen) {
+            if (state.state === "half-open") {
+                this.transitionToClosed(state);
+            }
+            return;
+        }
+
+        if (state.state !== "closed") {
             return;
         }
 
         if (state.failureCount !== 0) {
-            state.failureCount = 0;
-            this.setState(state);
+            this.transitionToClosed(state);
         }
     }
 
