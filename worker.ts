@@ -289,7 +289,7 @@ export async function fetch(
         }
         await flushMetrics();
     };
-    if (typeof waitUntil === "function") {
+    if (originalWaitUntil) {
         originalWaitUntil(
             flushAfterDeferredTasks().catch((error) => {
                 console.error("[metrics] failed to flush after request", {
