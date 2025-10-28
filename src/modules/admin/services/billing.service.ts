@@ -4,7 +4,7 @@ import {
     createPaginatedQuery,
     type FilterableBuilder,
     type TenantPaginationOptions,
-} from "./paginated-query";
+} from "@/modules/admin/utils/query-factory";
 
 export interface ListOrdersOptions extends TenantPaginationOptions {}
 

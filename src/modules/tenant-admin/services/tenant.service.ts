@@ -1,4 +1,4 @@
-import { desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { desc, eq, inArray, like, sql } from "drizzle-orm";
 
 import {
     creditsHistory,
@@ -13,6 +13,7 @@ import {
     getMultiLevelCache,
     readThroughMultiLevelCache,
 } from "@/lib/cache/multi-level-cache";
+import { runPaginatedQuery } from "@/modules/admin/utils/query-factory";
 import { normalizePagination } from "@/modules/admin-shared/utils/pagination";
 import type {
     ListTenantsOptions,
@@ -296,47 +297,51 @@ export function createTenantAdminService(
     const listTenants = async (
         options: ListTenantsOptions = {},
     ): Promise<TenantListResult> => {
-        const { page: normalizedPage, perPage: normalizedPerPage } =
-            normalizePagination(options);
-        const page = Math.max(normalizedPage, 1);
-        const perPage = Math.min(Math.max(normalizedPerPage, 1), 100);
-        const offset = (page - 1) * perPage;
+        const { page, perPage } = normalizePagination(options);
         const cacheKey = `list:${page}:${perPage}:${options.search ?? "-"}`;
 
         const result = await readThroughMultiLevelCache(
             cacheKey,
             async () => {
                 const db = await dependencies.getDb();
-                const whereClause = options.search
-                    ? or(
-                          like(user.email, `%${options.search}%`),
-                          like(user.name, `%${options.search}%`),
-                      )
-                    : undefined;
+                const { rows: tenantRows, total } = await runPaginatedQuery({
+                    page,
+                    perPage,
+                    filters: options.search
+                        ? [
+                              like(user.email, `%${options.search}%`),
+                              like(user.name, `%${options.search}%`),
+                          ]
+                        : undefined,
+                    operator: "or",
+                    fetchRows: async ({ limit, offset, where }) => {
+                        const baseQuery = db
+                            .select({
+                                id: user.id,
+                                email: user.email,
+                                name: user.name,
+                                createdAt: user.createdAt,
+                                lastSignIn: user.updatedAt,
+                            })
+                            .from(user)
+                            .orderBy(desc(user.createdAt))
+                            .limit(limit)
+                            .offset(offset);
 
-                const tenantQuery = db
-                    .select({
-                        id: user.id,
-                        email: user.email,
-                        name: user.name,
-                        createdAt: user.createdAt,
-                        lastSignIn: user.updatedAt,
-                    })
-                    .from(user)
-                    .orderBy(desc(user.createdAt))
-                    .limit(perPage)
-                    .offset(offset);
-
-                const tenantRows = whereClause
-                    ? await tenantQuery.where(whereClause)
-                    : await tenantQuery;
-
-                const totalQuery = db
-                    .select({ count: sql<number>`count(*)` })
-                    .from(user);
-                const totalRows = whereClause
-                    ? await totalQuery.where(whereClause)
-                    : await totalQuery;
+                        return where
+                            ? await baseQuery.where(where)
+                            : await baseQuery;
+                    },
+                    fetchTotal: async (where) => {
+                        const totalQuery = db
+                            .select({ count: sql<number>`count(*)` })
+                            .from(user);
+                        const totalRows = where
+                            ? await totalQuery.where(where)
+                            : await totalQuery;
+                        return totalRows[0]?.count ?? 0;
+                    },
+                });
 
                 const tenantIds = tenantRows.map((row) => row.id);
 
@@ -401,7 +406,7 @@ export function createTenantAdminService(
 
                 return {
                     data: summaries,
-                    total: totalRows[0]?.count ?? 0,
+                    total,
                 } satisfies TenantListResult;
             },
             {
