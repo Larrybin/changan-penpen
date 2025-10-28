@@ -48,10 +48,95 @@ jobs:
     uses: ./.github/workflows/ci.yml
     secrets: inherit
 
+  build-production-artifacts:
+    name: Build Production Artifacts
+    if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') && needs.changes.outputs.docs_only != 'true'
+    needs: [quality-gate-reusable, changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          cache-key-suffix: "-build-artifacts"
+
+      - name: Install dependencies (composite)
+        uses: ./.github/actions/install-and-heal
+
+      - name: Check required secrets (Production)
+        run: |
+          set -euo pipefail
+
+          declare -A required_secrets=(
+            ["CLOUDFLARE_API_TOKEN"]="${CLOUDFLARE_API_TOKEN:-}"
+            ["CLOUDFLARE_ACCOUNT_ID"]="${CLOUDFLARE_ACCOUNT_ID:-}"
+            ["BETTER_AUTH_SECRET"]="${BETTER_AUTH_SECRET:-}"
+            ["GOOGLE_CLIENT_ID"]="${GOOGLE_CLIENT_ID:-}"
+            ["GOOGLE_CLIENT_SECRET"]="${GOOGLE_CLIENT_SECRET:-}"
+          )
+
+          missing=()
+          for secret_name in "${!required_secrets[@]}"; do
+            secret_value="${required_secrets[$secret_name]}"
+            if [[ -z "$secret_value" ]]; then
+              missing+=("$secret_name")
+              echo "::error::Missing required secret: $secret_name"
+            else
+              echo "::add-mask::$secret_value"
+            fi
+          done
+
+          if [[ ${#missing[@]} -ne 0 ]]; then
+            echo "::error::Production artifact build aborted. Missing ${#missing[@]} required secrets: ${missing[*]}"
+            exit 1
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+
+      - name: Build Next.js application
+        run: pnpm build
+
+      - name: Build OpenNext bundle
+        run: pnpm run build:cf -- --skipNextBuild
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_APP_URL: ${{ env.NEXT_PUBLIC_APP_URL }}
+
+      - name: Upload Next.js build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: next-build
+          path: .next
+          retention-days: 2
+
+      - name: Upload OpenNext bundle artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: open-next-bundle
+          path: .open-next
+          retention-days: 2
+
   deploy-production:
     name: Deploy Production
     if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') && needs.changes.outputs.docs_only != 'true'
-    needs: [quality-gate-reusable, changes]
+    needs: [build-production-artifacts, quality-gate-reusable, changes]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -63,7 +148,6 @@ jobs:
 
       - name: Download Next.js build artifact
         id: download-next
-        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
           name: next-build
@@ -71,7 +155,6 @@ jobs:
 
       - name: Download OpenNext bundle artifact
         id: download-open-next
-        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
           name: open-next-bundle
