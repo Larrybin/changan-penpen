@@ -5,6 +5,7 @@ import { createApiErrorResponse } from "@/lib/http-error";
 import { parseFaultInjectionTargets } from "@/lib/observability/fault-injection";
 import { getPlatformContext } from "@/lib/platform/context";
 import { applyRateLimit } from "@/lib/rate-limit";
+import type { RateLimitMetadata } from "@/lib/rate-limit";
 import { getAuthInstance } from "@/modules/auth/utils/auth-utils";
 import type {
     AiBinding,
@@ -217,7 +218,7 @@ async function writeSummaryToCache(
 
 function applyRateLimitHeaders(
     headers: Headers,
-    meta: Awaited<ReturnType<typeof applyRateLimit>>["meta"],
+    meta: RateLimitMetadata | undefined,
 ) {
     if (!meta) {
         return;
