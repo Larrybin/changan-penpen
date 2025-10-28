@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         const faultTargets = parseFaultInjectionTargets(faultHeader);
 
         const retryConfig = config.services?.external_apis;
+        const circuitBreakerConfig = retryConfig?.circuit_breaker;
         const summarizerService = new SummarizerService(env.AI, {
             retry: {
                 attempts: retryConfig?.retry_attempts ?? 3,
@@ -67,6 +68,18 @@ export async function POST(request: Request) {
             },
             faultInjection:
                 faultTargets.length > 0 ? { flags: faultTargets } : undefined,
+            circuitBreaker: circuitBreakerConfig
+                ? {
+                      key: "summarizer:workers-ai",
+                      enabled: circuitBreakerConfig.enabled ?? true,
+                      failureThreshold:
+                          circuitBreakerConfig.failure_threshold ?? undefined,
+                      recoveryTimeout:
+                          circuitBreakerConfig.recovery_timeout ?? undefined,
+                      halfOpenMaxCalls:
+                          circuitBreakerConfig.half_open_max_calls ?? undefined,
+                  }
+                : undefined,
         });
         const result = await summarizerService.summarize(
             validated.text,
