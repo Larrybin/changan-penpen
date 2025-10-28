@@ -1,5 +1,5 @@
-import path from "node:path";
 import { createRequire } from "node:module";
+import path from "node:path";
 import createBundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 import type { RemotePattern } from "next/dist/shared/lib/image-config";
@@ -57,7 +57,8 @@ const remoteImagePatterns: RemotePattern[] = collectRemoteImageHosts().map(
 );
 
 const require = createRequire(import.meta.url);
-const nextVersion = (require("next/package.json") as { version: string }).version;
+const nextVersion = (require("next/package.json") as { version: string })
+    .version;
 const enableCacheComponents = /canary/i.test(nextVersion);
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
