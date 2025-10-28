@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { mkdir, cp, rm, readFile, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,7 +19,11 @@ async function run(command, args, options = {}) {
             if (code === 0) {
                 resolve();
             } else {
-                reject(new Error(`${command} ${args.join(" ")} exited with code ${code}`));
+                reject(
+                    new Error(
+                        `${command} ${args.join(" ")} exited with code ${code}`,
+                    ),
+                );
             }
         });
     });
@@ -61,7 +65,11 @@ async function copyManifests() {
     }
 
     const targetManifestPath = path.join(outputDir, "package.json");
-    await writeFile(targetManifestPath, `${JSON.stringify(manifest, null, 4)}\n`, "utf8");
+    await writeFile(
+        targetManifestPath,
+        `${JSON.stringify(manifest, null, 4)}\n`,
+        "utf8",
+    );
 
     const entries = [
         { path: "pnpm-lock.yaml", recursive: false },
@@ -85,11 +93,10 @@ async function installTrimmedDependencies() {
         npm_config_fund: "false",
     };
 
-    await run(
-        "pnpm",
-        ["install", "--prod", "--prefer-offline"],
-        { cwd: outputDir, env },
-    );
+    await run("pnpm", ["install", "--prod", "--prefer-offline"], {
+        cwd: outputDir,
+        env,
+    });
 }
 
 async function main() {
@@ -99,7 +106,9 @@ async function main() {
     console.info("[trim] Copying manifest files...");
     await copyManifests();
 
-    console.info("[trim] Installing production dependencies with platform pruning enabled...");
+    console.info(
+        "[trim] Installing production dependencies with platform pruning enabled...",
+    );
     await installTrimmedDependencies();
 
     console.info(
