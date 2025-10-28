@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 const { spawnSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
 const process = require("node:process");
 
 function resolveBinaryPath() {
@@ -8,21 +10,81 @@ function resolveBinaryPath() {
     }
 
     const candidates = [
-        "@biomejs/cli-linux-x64/biome",
-        "@biomejs/cli-linux-arm64/biome",
-        "@biomejs/cli-linux-x64-musl/biome",
-        "@biomejs/cli-linux-arm64-musl/biome",
-        "@biomejs/cli-darwin-arm64/biome",
-        "@biomejs/cli-darwin-x64/biome",
-        "@biomejs/cli-win32-x64/biome.exe",
-        "@biomejs/cli-win32-arm64/biome.exe",
+        {
+            pkg: "@biomejs/cli-win32-x64",
+            bin: "biome.exe",
+            platform: "win32",
+            arch: "x64",
+        },
+        {
+            pkg: "@biomejs/cli-win32-arm64",
+            bin: "biome.exe",
+            platform: "win32",
+            arch: "arm64",
+        },
+        {
+            pkg: "@biomejs/cli-darwin-arm64",
+            bin: "biome",
+            platform: "darwin",
+            arch: "arm64",
+        },
+        {
+            pkg: "@biomejs/cli-darwin-x64",
+            bin: "biome",
+            platform: "darwin",
+            arch: "x64",
+        },
+        {
+            pkg: "@biomejs/cli-linux-arm64",
+            bin: "biome",
+            platform: "linux",
+            arch: "arm64",
+        },
+        {
+            pkg: "@biomejs/cli-linux-arm64-musl",
+            bin: "biome",
+            platform: "linux",
+            arch: "arm64",
+        },
+        {
+            pkg: "@biomejs/cli-linux-x64",
+            bin: "biome",
+            platform: "linux",
+            arch: "x64",
+        },
+        {
+            pkg: "@biomejs/cli-linux-x64-musl",
+            bin: "biome",
+            platform: "linux",
+            arch: "x64",
+        },
     ];
 
+    const ordered = [];
     for (const candidate of candidates) {
+        if (
+            candidate.platform === process.platform &&
+            candidate.arch === process.arch
+        ) {
+            ordered.push(candidate);
+        }
+    }
+    for (const candidate of candidates) {
+        if (!ordered.includes(candidate)) {
+            ordered.push(candidate);
+        }
+    }
+
+    for (const candidate of ordered) {
         try {
-            const resolved = require.resolve(candidate);
-            if (resolved) {
-                return resolved;
+            const packageJsonPath = require.resolve(
+                `${candidate.pkg}/package.json`,
+            );
+            const packageDir = path.dirname(packageJsonPath);
+            const binaryPath = path.join(packageDir, candidate.bin);
+
+            if (fs.existsSync(binaryPath)) {
+                return binaryPath;
             }
         } catch (error) {
             if (error && error.code !== "MODULE_NOT_FOUND") {

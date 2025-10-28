@@ -140,8 +140,8 @@ MIT © 2025 Muhammad Arifin
 
 <!-- DOCSYNC:README_AUTOMATION START -->
 ### Automation & DevOps (auto)
-- Local workflow: run `pnpm check:all`（或手动执行 `pnpm biome:check && pnpm typecheck && pnpm build`）before 推送，确保质量门槛达标。
-- 详情参见 docs/local-dev.md、docs/ci-cd.md、docs/docs-maintenance.md。
+- Local workflow: run `pnpm check:all`(或手动执行 `pnpm biome:check && pnpm typecheck && pnpm build`)before 推送,确保质量门槛达标.
+- 详情参见 docs/local-dev.md,docs/ci-cd.md,docs/docs-maintenance.md.
 
 #### Common Scripts Snapshot
 | Script | Command |
