@@ -9,6 +9,10 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+    collectMarkdownFiles,
+    validateMarkdownLinks,
+} from "./doc-link-validator.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,49 +86,26 @@ class DocConsistencyChecker {
      * 收集所有文档文件
      */
     async collectDocFiles() {
-        const docFiles = [];
+        const projectRoot = path.join(__dirname, "../..");
+        const markdownFiles = await collectMarkdownFiles([projectRoot], {
+            projectRoot,
+            skip: (dirName) => this.shouldSkipDirectory(dirName),
+            extensions: [".md", ".mdx", ".txt", ".rst"],
+        });
 
-        // 定义文档文件扩展名
-        const docExtensions = [".md", ".mdx", ".txt", ".rst"];
+        const filesWithMetadata = await Promise.all(
+            markdownFiles.map(async (file) => {
+                const stats = await fs.stat(file.absolute).catch(() => null);
+                return {
+                    path: file.absolute,
+                    relativePath: file.relative,
+                    extension: path.extname(file.absolute),
+                    size: stats?.size ?? 0,
+                };
+            }),
+        );
 
-        // 递归搜索文档文件
-        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Directory traversal requires nuanced branching for skip lists and file collection
-        const searchDirectory = async (dir, baseDir = "") => {
-            try {
-                const entries = await fs.readdir(dir, { withFileTypes: true });
-
-                for (const entry of entries) {
-                    const fullPath = path.join(dir, entry.name);
-                    const relativePath = path.join(baseDir, entry.name);
-
-                    if (entry.isDirectory()) {
-                        // 跳过某些目录
-                        if (this.shouldSkipDirectory(entry.name)) {
-                            continue;
-                        }
-                        await searchDirectory(fullPath, relativePath);
-                    } else if (entry.isFile()) {
-                        const ext = path.extname(entry.name);
-                        if (docExtensions.includes(ext)) {
-                            docFiles.push({
-                                path: fullPath,
-                                relativePath,
-                                extension: ext,
-                                size: (await fs.stat(fullPath)).size,
-                            });
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn(`⚠️ 无法读取目录 ${dir}: ${error.message}`);
-            }
-        };
-
-        // 搜索项目根目录
-        await searchDirectory(path.join(__dirname, "../.."));
-
-        // 按文件大小排序，大文件优先检查
-        return docFiles.sort((a, b) => b.size - a.size);
+        return filesWithMetadata.sort((a, b) => b.size - a.size);
     }
 
     /**
@@ -225,7 +206,6 @@ class DocConsistencyChecker {
     /**
      * 检查链接一致性
      */
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Link validation coordinates multiple heuristics and failure modes
     async checkLinkConsistency(docFiles) {
         if (!this.options.checkLinks) {
             console.info("  🔗 跳过链接一致性检查");
@@ -234,11 +214,30 @@ class DocConsistencyChecker {
 
         console.info("  🔗 检查链接一致性...");
 
-        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-        const localFiles = new Set(
-            docFiles.map((f) => f.relativePath.toLowerCase()),
+        const projectRoot = path.join(__dirname, "../..");
+        const filesForValidator = docFiles.map((file) => ({
+            absolute: file.path,
+            relative: file.relativePath,
+        }));
+
+        const { missing, inspected } = await validateMarkdownLinks(
+            filesForValidator,
+            { projectRoot },
         );
 
+        this.stats.linksChecked += inspected;
+
+        for (const item of missing) {
+            this.addIssue({
+                type: "broken_link",
+                severity: "error",
+                file: item.file,
+                linkTarget: item.target,
+                message: `损坏的本地链接: ${item.file} -> ${item.target}`,
+            });
+        }
+
+        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
         for (const file of docFiles) {
             try {
                 const content = await fs.readFile(file.path, "utf8");
@@ -247,51 +246,23 @@ class DocConsistencyChecker {
                 for (const match of matches) {
                     const linkText = match[1];
                     const linkTarget = match[2];
-                    this.stats.linksChecked++;
 
-                    // 检查本地文件链接
-                    if (
-                        !linkTarget.startsWith("http") &&
-                        !linkTarget.startsWith("#")
-                    ) {
-                        const targetPath = this.resolveLinkPath(
-                            file.relativePath,
+                    if (!linkTarget.startsWith("#")) continue;
+
+                    const anchor = linkTarget.slice(1);
+                    const hasAnchor =
+                        content.includes(`#${anchor}`) ||
+                        content.includes(`## ${anchor}`);
+
+                    if (!hasAnchor) {
+                        this.addIssue({
+                            type: "broken_anchor",
+                            severity: "warning",
+                            file: file.relativePath,
+                            linkText,
                             linkTarget,
-                        );
-
-                        if (
-                            !localFiles.has(targetPath.toLowerCase()) &&
-                            !localFiles.has(`${targetPath.toLowerCase()}.md`)
-                        ) {
-                            this.addIssue({
-                                type: "broken_link",
-                                severity: "error",
-                                file: file.relativePath,
-                                linkText,
-                                linkTarget,
-                                resolvedPath: targetPath,
-                                message: `损坏的本地链接: ${linkText} -> ${linkTarget}`,
-                            });
-                        }
-                    }
-
-                    // 检查锚点链接
-                    if (linkTarget.startsWith("#")) {
-                        const anchor = linkTarget.slice(1);
-                        const hasAnchor =
-                            content.includes(`#${anchor}`) ||
-                            content.includes(`## ${anchor}`);
-
-                        if (!hasAnchor) {
-                            this.addIssue({
-                                type: "broken_anchor",
-                                severity: "warning",
-                                file: file.relativePath,
-                                linkText,
-                                linkTarget,
-                                message: `损坏的锚点链接: ${linkTarget}`,
-                            });
-                        }
+                            message: `损坏的锚点链接: ${linkTarget}`,
+                        });
                     }
                 }
             } catch (error) {

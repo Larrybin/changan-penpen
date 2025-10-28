@@ -12,8 +12,10 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { PerformanceValidator } from "./performance-validation";
+import { SEOAuditor } from "./seo-audit";
 
 interface CheckResult {
     name: string;
@@ -42,7 +44,12 @@ class CodeQualityChecker {
 
         try {
             console.info("🔍 运行 TypeScript 类型检查...");
-            execSync("pnpm typecheck", {
+            const { formatCommand, getTypeCheckCommand } = await import(
+                "./lib/quality-commands.mjs"
+            );
+            const command = getTypeCheckCommand();
+            const commandString = formatCommand(command);
+            execSync(commandString, {
                 stdio: "pipe",
                 cwd: this.projectRoot,
             });
@@ -96,7 +103,12 @@ class CodeQualityChecker {
 
         try {
             console.info("🔍 运行 Biome 代码检查...");
-            execSync("pnpm exec biome check --verbose", {
+            const { formatCommand, getBiomeCheckCommand } = await import(
+                "./lib/quality-commands.mjs"
+            );
+            const command = getBiomeCheckCommand({ verbose: true });
+            const commandString = formatCommand(command);
+            execSync(commandString, {
                 stdio: "pipe",
                 cwd: this.projectRoot,
             });
@@ -297,53 +309,42 @@ class CodeQualityChecker {
 
         try {
             console.info("🔍 检查项目性能...");
+            const validator = new PerformanceValidator(this.projectRoot);
+            const validationResults = await validator.collectAllResults();
 
-            // 检查Next.js配置
-            const nextConfigPath = join(this.projectRoot, "next.config.ts");
-            if (existsSync(nextConfigPath)) {
-                const nextConfig = readFileSync(nextConfigPath, "utf8");
+            validationResults.forEach((item) => {
+                if (item.errors.length > 0) {
+                    result.passed = false;
+                    item.errors.forEach((error) => {
+                        result.errors.push(`${item.name}: ${error}`);
+                    });
+                }
 
-                if (!nextConfig.includes("experimental:")) {
-                    result.suggestions.push(
-                        "考虑启用 Next.js 实验性功能以提升性能",
+                if (item.warnings.length > 0) {
+                    result.warnings.push(
+                        ...item.warnings.map(
+                            (warning) => `${item.name}: ${warning}`,
+                        ),
                     );
                 }
 
-                if (
-                    !nextConfig.includes("images:") ||
-                    !nextConfig.includes("formats:")
-                ) {
+                if (item.suggestions.length > 0) {
                     result.suggestions.push(
-                        "配置图片优化格式 (AVIF/WebP) 以提升加载性能",
+                        ...item.suggestions.map(
+                            (suggestion) => `${item.name}: ${suggestion}`,
+                        ),
                     );
-                }
-            }
-
-            // 检查CSS文件大小
-            const cssFiles = [
-                join(this.projectRoot, "src/app/globals.css"),
-                join(this.projectRoot, "src/styles/accessibility.css"),
-            ];
-
-            cssFiles.forEach((cssFile) => {
-                if (existsSync(cssFile)) {
-                    const stats = statSync(cssFile);
-                    const sizeKB = Math.round(stats.size / 1024);
-
-                    if (sizeKB > 50) {
-                        result.warnings.push(
-                            `${cssFile} 文件过大 (${sizeKB}KB)，考虑拆分或优化`,
-                        );
-                    }
                 }
             });
 
-            console.info("✅ 性能检查完成");
-            if (result.suggestions.length > 0) {
-                console.info("💡 性能优化建议:");
-                result.suggestions.forEach((suggestion) => {
-                    console.info(`  💡 ${suggestion}`);
-                });
+            const hasIssues =
+                validationResults.some((item) => item.errors.length > 0) ||
+                validationResults.some((item) => item.warnings.length > 0);
+
+            if (hasIssues) {
+                validator.generateReport();
+            } else {
+                console.info("✅ 性能检查完成");
             }
         } catch (error) {
             result.errors.push(`性能检查失败: ${error}`);
@@ -369,53 +370,40 @@ class CodeQualityChecker {
 
         try {
             console.info("🔍 检查 SEO 配置...");
+            const auditor = new SEOAuditor(this.projectRoot);
+            const auditResults = await auditor.runAllChecks();
 
-            // 检查robots.txt
-            const robotsPath = join(this.projectRoot, "public/robots.txt");
-            if (!existsSync(robotsPath)) {
-                result.errors.push("robots.txt 文件不存在");
+            const failures = auditResults.filter(
+                (item) => item.status === "fail",
+            );
+            const warnings = auditResults.filter(
+                (item) => item.status === "warning",
+            );
+
+            if (failures.length > 0) {
                 result.passed = false;
+                failures.forEach((item) => {
+                    result.errors.push(`${item.name}: ${item.description}`);
+                });
             }
 
-            // 检查sitemap.xml路由
-            const sitemapRoutePath = join(
-                this.projectRoot,
-                "src/app/sitemap.xml",
-            );
-            if (!existsSync(sitemapRoutePath)) {
+            if (warnings.length > 0) {
                 result.warnings.push(
-                    "sitemap.xml 路由不存在，建议添加动态站点地图",
+                    ...warnings.map(
+                        (item) => `${item.name}: ${item.description}`,
+                    ),
                 );
             }
 
-            // 检查SEO工具文件
-            const seoFiles = [
-                "src/lib/seo-metadata.ts",
-                "src/lib/seo/breadcrumbs.ts",
-                "src/lib/seo/product-schema.ts",
-                "src/lib/seo/sitemap.ts",
-                "src/lib/seo/canonical.ts",
-            ];
+            const recommendations = [...failures, ...warnings]
+                .flatMap((item) => item.recommendations ?? [])
+                .map((rec) => `SEO 建议: ${rec}`);
+            result.suggestions.push(...recommendations);
 
-            seoFiles.forEach((file) => {
-                const filePath = join(this.projectRoot, file);
-                if (!existsSync(filePath)) {
-                    result.suggestions.push(`考虑添加 SEO 工具文件: ${file}`);
-                }
-            });
-
-            console.info("✅ SEO 配置检查完成");
-            if (result.errors.length > 0) {
-                console.error("🚨 SEO 配置错误:");
-                result.errors.forEach((error) => {
-                    console.error(`  🚨 ${error}`);
-                });
-            }
-            if (result.suggestions.length > 0) {
-                console.info("💡 SEO 优化建议:");
-                result.suggestions.forEach((suggestion) => {
-                    console.info(`  💡 ${suggestion}`);
-                });
+            if (failures.length > 0 || warnings.length > 0) {
+                auditor.generateReport();
+            } else {
+                console.info("✅ SEO 配置检查完成");
             }
         } catch (error) {
             result.errors.push(`SEO 检查失败: ${error}`);
