@@ -1,7 +1,6 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
@@ -20,6 +19,61 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import adminRoutes from "@/modules/admin/routes/admin.routes";
 import type { AdminUserListItem } from "@/modules/users-admin/models";
+
+const createdAtFormatter = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+});
+
+function formatCreatedAt(value: AdminUserListItem["createdAt"]): string {
+    if (!value) {
+        return "-";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    const parts = createdAtFormatter.formatToParts(date);
+    let year: string | undefined;
+    let month: string | undefined;
+    let day: string | undefined;
+    let hour: string | undefined;
+    let minute: string | undefined;
+
+    for (const part of parts) {
+        switch (part.type) {
+            case "year":
+                year = part.value;
+                break;
+            case "month":
+                month = part.value;
+                break;
+            case "day":
+                day = part.value;
+                break;
+            case "hour":
+                hour = part.value;
+                break;
+            case "minute":
+                minute = part.value;
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (year && month && day && hour && minute) {
+        return `${year}-${month}-${day} ${hour}:${minute}`;
+    }
+
+    return createdAtFormatter.format(date);
+}
 
 interface UsersListClientProps {
     data: AdminUserListItem[];
@@ -153,13 +207,7 @@ export function UsersListClient({
                 accessorKey: "createdAt",
                 header: "创建时间",
                 meta: { label: "创建时间" },
-                cell: ({ row }) =>
-                    row.original.createdAt
-                        ? format(
-                              new Date(row.original.createdAt),
-                              "yyyy-MM-dd HH:mm",
-                          )
-                        : "-",
+                cell: ({ row }) => formatCreatedAt(row.original.createdAt),
             },
             {
                 id: "actions",
