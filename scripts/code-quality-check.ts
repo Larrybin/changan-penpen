@@ -14,8 +14,8 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { SEOAuditor } from "./seo-audit";
 import { PerformanceValidator } from "./performance-validation";
+import { SEOAuditor } from "./seo-audit";
 
 interface CheckResult {
     name: string;
@@ -44,11 +44,11 @@ class CodeQualityChecker {
 
         try {
             console.info("🔍 运行 TypeScript 类型检查...");
-            const { getTypeCheckCommand } = await import(
+            const { formatCommand, getTypeCheckCommand } = await import(
                 "./lib/quality-commands.mjs"
             );
             const command = getTypeCheckCommand();
-            const commandString = [command.executable, ...command.args].join(" ");
+            const commandString = formatCommand(command);
             execSync(commandString, {
                 stdio: "pipe",
                 cwd: this.projectRoot,
@@ -103,11 +103,11 @@ class CodeQualityChecker {
 
         try {
             console.info("🔍 运行 Biome 代码检查...");
-            const { getBiomeCheckCommand } = await import(
+            const { formatCommand, getBiomeCheckCommand } = await import(
                 "./lib/quality-commands.mjs"
             );
             const command = getBiomeCheckCommand({ verbose: true });
-            const commandString = [command.executable, ...command.args].join(" ");
+            const commandString = formatCommand(command);
             execSync(commandString, {
                 stdio: "pipe",
                 cwd: this.projectRoot,
@@ -322,7 +322,9 @@ class CodeQualityChecker {
 
                 if (item.warnings.length > 0) {
                     result.warnings.push(
-                        ...item.warnings.map((warning) => `${item.name}: ${warning}`),
+                        ...item.warnings.map(
+                            (warning) => `${item.name}: ${warning}`,
+                        ),
                     );
                 }
 
@@ -371,8 +373,12 @@ class CodeQualityChecker {
             const auditor = new SEOAuditor(this.projectRoot);
             const auditResults = await auditor.runAllChecks();
 
-            const failures = auditResults.filter((item) => item.status === "fail");
-            const warnings = auditResults.filter((item) => item.status === "warning");
+            const failures = auditResults.filter(
+                (item) => item.status === "fail",
+            );
+            const warnings = auditResults.filter(
+                (item) => item.status === "warning",
+            );
 
             if (failures.length > 0) {
                 result.passed = false;
@@ -383,7 +389,9 @@ class CodeQualityChecker {
 
             if (warnings.length > 0) {
                 result.warnings.push(
-                    ...warnings.map((item) => `${item.name}: ${item.description}`),
+                    ...warnings.map(
+                        (item) => `${item.name}: ${item.description}`,
+                    ),
                 );
             }
 

@@ -369,15 +369,6 @@ async function autoFixDocIssue(issue) {
 }
 
 /**
- * 获取所有文档文件
- */
-async function getDocFiles() {
-    const projectRoot = process.cwd();
-    const files = await collectMarkdownFiles([projectRoot], { projectRoot });
-    return files.map((file) => file.relative);
-}
-
-/**
  * 计算文档质量评分
  */
 function calculateDocQualityScore(result) {

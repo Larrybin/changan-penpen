@@ -9,7 +9,20 @@ function resolveBinaryPath() {
         return process.env.BIOME_BINARY;
     }
 
-    const candidates = [
+    const orderedCandidates = prioritizeCandidates(getBinaryCandidates());
+
+    for (const candidate of orderedCandidates) {
+        const binaryPath = resolveCandidateBinary(candidate);
+        if (binaryPath) {
+            return binaryPath;
+        }
+    }
+
+    return null;
+}
+
+function getBinaryCandidates() {
+    return [
         {
             pkg: "@biomejs/cli-win32-x64",
             bin: "biome.exe",
@@ -59,37 +72,40 @@ function resolveBinaryPath() {
             arch: "x64",
         },
     ];
+}
 
-    const ordered = [];
+function prioritizeCandidates(candidates) {
+    const preferred = [];
+    const fallback = [];
+
     for (const candidate of candidates) {
         if (
             candidate.platform === process.platform &&
             candidate.arch === process.arch
         ) {
-            ordered.push(candidate);
-        }
-    }
-    for (const candidate of candidates) {
-        if (!ordered.includes(candidate)) {
-            ordered.push(candidate);
+            preferred.push(candidate);
+        } else {
+            fallback.push(candidate);
         }
     }
 
-    for (const candidate of ordered) {
-        try {
-            const packageJsonPath = require.resolve(
-                `${candidate.pkg}/package.json`,
-            );
-            const packageDir = path.dirname(packageJsonPath);
-            const binaryPath = path.join(packageDir, candidate.bin);
+    return [...preferred, ...fallback];
+}
 
-            if (fs.existsSync(binaryPath)) {
-                return binaryPath;
-            }
-        } catch (error) {
-            if (error && error.code !== "MODULE_NOT_FOUND") {
-                throw error;
-            }
+function resolveCandidateBinary(candidate) {
+    try {
+        const packageJsonPath = require.resolve(
+            `${candidate.pkg}/package.json`,
+        );
+        const packageDir = path.dirname(packageJsonPath);
+        const binaryPath = path.join(packageDir, candidate.bin);
+
+        if (fs.existsSync(binaryPath)) {
+            return binaryPath;
+        }
+    } catch (error) {
+        if (error && error.code !== "MODULE_NOT_FOUND") {
+            throw error;
         }
     }
 

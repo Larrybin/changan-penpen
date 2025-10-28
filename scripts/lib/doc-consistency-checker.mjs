@@ -86,49 +86,26 @@ class DocConsistencyChecker {
      * 收集所有文档文件
      */
     async collectDocFiles() {
-        const docFiles = [];
+        const projectRoot = path.join(__dirname, "../..");
+        const markdownFiles = await collectMarkdownFiles([projectRoot], {
+            projectRoot,
+            skip: (dirName) => this.shouldSkipDirectory(dirName),
+            extensions: [".md", ".mdx", ".txt", ".rst"],
+        });
 
-        // 定义文档文件扩展名
-        const docExtensions = [".md", ".mdx", ".txt", ".rst"];
+        const filesWithMetadata = await Promise.all(
+            markdownFiles.map(async (file) => {
+                const stats = await fs.stat(file.absolute).catch(() => null);
+                return {
+                    path: file.absolute,
+                    relativePath: file.relative,
+                    extension: path.extname(file.absolute),
+                    size: stats?.size ?? 0,
+                };
+            }),
+        );
 
-        // 递归搜索文档文件
-        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Directory traversal requires nuanced branching for skip lists and file collection
-        const searchDirectory = async (dir, baseDir = "") => {
-            try {
-                const entries = await fs.readdir(dir, { withFileTypes: true });
-
-                for (const entry of entries) {
-                    const fullPath = path.join(dir, entry.name);
-                    const relativePath = path.join(baseDir, entry.name);
-
-                    if (entry.isDirectory()) {
-                        // 跳过某些目录
-                        if (this.shouldSkipDirectory(entry.name)) {
-                            continue;
-                        }
-                        await searchDirectory(fullPath, relativePath);
-                    } else if (entry.isFile()) {
-                        const ext = path.extname(entry.name);
-                        if (docExtensions.includes(ext)) {
-                            docFiles.push({
-                                path: fullPath,
-                                relativePath,
-                                extension: ext,
-                                size: (await fs.stat(fullPath)).size,
-                            });
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn(`⚠️ 无法读取目录 ${dir}: ${error.message}`);
-            }
-        };
-
-        // 搜索项目根目录
-        await searchDirectory(path.join(__dirname, "../.."));
-
-        // 按文件大小排序，大文件优先检查
-        return docFiles.sort((a, b) => b.size - a.size);
+        return filesWithMetadata.sort((a, b) => b.size - a.size);
     }
 
     /**
@@ -229,7 +206,6 @@ class DocConsistencyChecker {
     /**
      * 检查链接一致性
      */
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Link validation coordinates multiple heuristics and failure modes
     async checkLinkConsistency(docFiles) {
         if (!this.options.checkLinks) {
             console.info("  🔗 跳过链接一致性检查");

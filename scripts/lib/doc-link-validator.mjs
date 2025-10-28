@@ -15,6 +15,10 @@ const DEFAULT_IGNORE_PROTOCOL = /^(https?:|mailto:|tel:|data:)/i;
 export async function collectMarkdownFiles(roots, options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const skip = options.skip || defaultSkip;
+    const extensions = options.extensions?.map((ext) => ext.toLowerCase()) || [
+        ".md",
+        ".mdx",
+    ];
     const results = [];
 
     for (const root of roots) {
@@ -31,14 +35,16 @@ export async function collectMarkdownFiles(roots, options = {}) {
             const dirName = path.basename(currentPath);
             if (skip(dirName, currentPath)) return;
 
-            const entries = await fs.readdir(currentPath, { withFileTypes: true });
+            const entries = await fs.readdir(currentPath, {
+                withFileTypes: true,
+            });
             for (const entry of entries) {
                 await traverse(path.join(currentPath, entry.name));
             }
             return;
         }
 
-        if (stats.isFile() && isMarkdown(currentPath)) {
+        if (stats.isFile() && hasAllowedExtension(currentPath, extensions)) {
             results.push({
                 absolute: currentPath,
                 relative: path.relative(projectRoot, currentPath),
@@ -56,7 +62,8 @@ export async function collectMarkdownFiles(roots, options = {}) {
  */
 export async function validateMarkdownLinks(files, options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
-    const shouldIgnore = options.ignore || ((link) => DEFAULT_IGNORE_PROTOCOL.test(link));
+    const shouldIgnore =
+        options.ignore || ((link) => DEFAULT_IGNORE_PROTOCOL.test(link));
     const missing = [];
     let inspected = 0;
 
@@ -69,7 +76,11 @@ export async function validateMarkdownLinks(files, options = {}) {
             if (!raw || raw.startsWith("#") || shouldIgnore(raw)) continue;
             if (raw.startsWith("/")) continue; // site-relative route
 
-            const missingLink = await resolveLocalLink(file.absolute, raw, projectRoot);
+            const missingLink = await resolveLocalLink(
+                file.absolute,
+                raw,
+                projectRoot,
+            );
             if (missingLink) {
                 missing.push({ file: file.relative, target: raw });
             }
@@ -79,8 +90,9 @@ export async function validateMarkdownLinks(files, options = {}) {
     return { missing, inspected };
 }
 
-function isMarkdown(filePath) {
-    return /\.(md|mdx)$/i.test(filePath);
+function hasAllowedExtension(filePath, extensions) {
+    const fileExtension = path.extname(filePath).toLowerCase();
+    return extensions.includes(fileExtension);
 }
 
 async function resolveLocalLink(baseFile, linkRaw, projectRoot) {
@@ -106,14 +118,9 @@ async function resolveLocalLink(baseFile, linkRaw, projectRoot) {
 }
 
 function defaultSkip(dirName) {
-    return [
-        "node_modules",
-        ".git",
-        ".next",
-        "dist",
-        "build",
-        "out",
-    ].includes(dirName);
+    return ["node_modules", ".git", ".next", "dist", "build", "out"].includes(
+        dirName,
+    );
 }
 
 async function exists(filePath) {

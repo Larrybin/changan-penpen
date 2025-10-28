@@ -229,7 +229,7 @@ if (SKIP_DOCS_CHECK) {
 // --- 8) 最终 Biome --------------------------------------------------------
 timeStart("biome-final");
 try {
-        run(formatCommand(getBiomeCheckCommand()));
+    run(formatCommand(getBiomeCheckCommand()));
     BIOME_FINAL_OK = true;
 } catch (error) {
     timeEnd("biome-final");
