@@ -1,7 +1,9 @@
-import type React from "react";
+import type { CSSProperties } from "react";
+import { Suspense } from "react";
 
 import { SkipLink } from "@/components/accessibility/skip-link";
 import { Card, CardContent } from "@/components/ui/card";
+import { createLogger } from "@/lib/observability/logger";
 import { serializeJsonLd } from "@/lib/seo/jsonld";
 import type { MarketingSection } from "@/lib/static-config";
 
@@ -54,6 +56,22 @@ type MarketingLandingPageProps = {
     >;
 };
 
+function PlaygroundFallback() {
+    return (
+        <div className="flex h-48 w-full items-center justify-center rounded-lg border border-border border-dashed text-muted-foreground">
+            Loading playground…
+        </div>
+    );
+}
+
+function SectionFallback({ label }: { label: string }) {
+    return (
+        <div className="rounded-lg border border-border/60 bg-muted/40 p-6 text-muted-foreground">
+            {label} is loading…
+        </div>
+    );
+}
+
 function toArray(value: unknown): Record<string, unknown>[] {
     return Array.isArray(value)
         ? (value as Record<string, unknown>[])
@@ -74,6 +92,7 @@ export default function MarketingLandingPage({
     whyTitle,
     variantSelections,
 }: MarketingLandingPageProps) {
+    const logger = createLogger({ source: "marketing.landing" });
     const headerMessages = marketingMessages.header as MarketingHeaderMessages;
     const playgroundMessages =
         marketingMessages.playground as PlaygroundMessages;
@@ -100,7 +119,7 @@ export default function MarketingLandingPage({
         .map(([section, info]) => `${section}:${info.value}(${info.source})`)
         .join(", ");
 
-    console.info(`[marketing] variant selection -> ${variantSummary}`);
+    logger.info("marketing.variant-selection", { variants: variantSummary });
 
     return (
         <div
@@ -120,7 +139,7 @@ export default function MarketingLandingPage({
                     "--accent": "var(--token-color-accent)",
                     "--accent-foreground": "#000",
                     fontFamily: "var(--token-font-family-sans)",
-                } as React.CSSProperties
+                } as CSSProperties
             }
         >
             <SkipLink />
@@ -140,11 +159,15 @@ export default function MarketingLandingPage({
                         </h2>
                     </header>
                     <main>
-                        <Playground messages={playgroundMessages} />
+                        <Suspense fallback={<PlaygroundFallback />}>
+                            <Playground messages={playgroundMessages} />
+                        </Suspense>
                     </main>
                 </section>
 
-                <FeaturesSection data={featuresData} />
+                <Suspense fallback={<SectionFallback label="Features" />}>
+                    <FeaturesSection data={featuresData} />
+                </Suspense>
 
                 <section
                     id="why"
@@ -172,9 +195,15 @@ export default function MarketingLandingPage({
                     </div>
                 </section>
 
-                <FaqSection data={faqData} />
-                <TrustSection data={trustData} />
-                <CtaSection data={ctaData} />
+                <Suspense fallback={<SectionFallback label="FAQ" />}>
+                    <FaqSection data={faqData} />
+                </Suspense>
+                <Suspense fallback={<SectionFallback label="Trust signals" />}>
+                    <TrustSection data={trustData} />
+                </Suspense>
+                <Suspense fallback={<SectionFallback label="Call to action" />}>
+                    <CtaSection data={ctaData} />
+                </Suspense>
             </main>
 
             <PublicFooter

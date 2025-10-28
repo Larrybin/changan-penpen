@@ -30,7 +30,9 @@
             "signUpSuccess": "Cadastro realizado com sucesso",
             "signOutSuccess": "Logout realizado com sucesso",
             "unknownError": "Ocorreu um erro desconhecido.",
-            "socialSignInError": "Falha no login com o Google. Tente novamente."
+            "socialSignInError": "Falha no login com o Google. Tente novamente.",
+            "captchaUnavailable": "O captcha está temporariamente indisponível. Tente novamente mais tarde.",
+            "captchaFailed": "A verificação do captcha falhou. Atualize a página e tente novamente."
         },
         "Shared": {
             "continueWith": "Ou continue com",
@@ -86,6 +88,10 @@
             "username": {
                 "required": "Nome de usuário é obrigatório",
                 "min": "O nome de usuário deve conter no mínimo {count} caracteres"
+            },
+            "captcha": {
+                "required": "Conclua o desafio captcha",
+                "error": "A verificação do captcha falhou. Tente novamente."
             }
         }
     },

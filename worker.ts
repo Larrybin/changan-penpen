@@ -54,6 +54,13 @@ const handler = toFetchHandler(appModule as MaybeFetchHandler<CloudflareEnv>);
 const MARKETING_CACHE_HEADER = "X-Marketing-Cache";
 const MARKETING_VARIANT_COOKIE_PREFIX = "marketing-variant-";
 
+type LinkHint = {
+    href: string;
+    rel: string;
+    as?: string;
+    crossOrigin?: string;
+};
+
 function isLocaleSegment(value: string): boolean {
     return /^[a-z]{2}(?:-[A-Z]{2})?$/.test(value);
 }
@@ -100,6 +107,57 @@ function shouldHandleMarketingCache(request: Request): boolean {
     return true;
 }
 
+function collectLinkHints(env: CloudflareEnv): LinkHint[] {
+    const hints: LinkHint[] = [
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+            rel: "preconnect",
+            href: "https://fonts.gstatic.com",
+            crossOrigin: "anonymous",
+        },
+    ];
+
+    const r2Url = env.CLOUDFLARE_R2_URL ?? process.env.CLOUDFLARE_R2_URL;
+    if (typeof r2Url === "string") {
+        try {
+            const origin = new URL(r2Url).origin;
+            hints.push({ rel: "preconnect", href: origin, crossOrigin: "anonymous" });
+        } catch {
+            // ignore invalid URL
+        }
+    }
+
+    return hints;
+}
+
+function appendLinkHeaders(headers: Headers, hints: LinkHint[]) {
+    if (!hints.length) {
+        return;
+    }
+    const serialized = hints
+        .map((hint) => {
+            const parts = [`<${hint.href}>`, `rel="${hint.rel}"`];
+            if (hint.as) {
+                parts.push(`as="${hint.as}"`);
+            }
+            if (hint.crossOrigin) {
+                parts.push(`crossorigin="${hint.crossOrigin}"`);
+            }
+            return parts.join("; ");
+        })
+        .join(", ");
+    if (!serialized) {
+        return;
+    }
+
+    const existing = headers.get("Link");
+    if (existing) {
+        headers.set("Link", `${existing}, ${serialized}`);
+    } else {
+        headers.set("Link", serialized);
+    }
+}
+
 export async function fetch(
     request: Request,
     env: CloudflareEnv,
@@ -144,6 +202,11 @@ export async function fetch(
         } else {
             await putPromise;
         }
+    }
+
+    const contentType = finalResponse.headers.get("content-type") ?? "";
+    if (contentType.includes("text/html")) {
+        appendLinkHeaders(finalResponse.headers, collectLinkHints(env));
     }
 
     return finalResponse;

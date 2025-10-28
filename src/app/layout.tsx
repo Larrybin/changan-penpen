@@ -1,4 +1,5 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { defaultLocale } from "@/i18n/config";
@@ -17,6 +18,50 @@ const jetBrainsMono = JetBrains_Mono({
     display: "swap",
     variable: "--font-geist-mono",
 });
+
+const fallbackAppUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://banana-generator.com";
+
+let metadataBase: URL | undefined;
+try {
+    metadataBase = new URL(fallbackAppUrl);
+} catch {
+    metadataBase = undefined;
+}
+
+const defaultDescription =
+    "Banana Generator is a production-ready Next.js starter optimized for Cloudflare Workers with PPR, SEO, and AI-ready tooling.";
+
+export const metadata: Metadata = {
+    metadataBase,
+    title: {
+        default: "Banana Generator",
+        template: "%s | Banana Generator",
+    },
+    description: defaultDescription,
+    alternates: {
+        canonical: metadataBase?.origin ?? fallbackAppUrl,
+    },
+    openGraph: {
+        type: "website",
+        siteName: "Banana Generator",
+        title: "Banana Generator",
+        description: defaultDescription,
+        url: metadataBase?.origin ?? fallbackAppUrl,
+        images: [
+            {
+                url: "/og-image.svg",
+                alt: "Banana Generator",
+            },
+        ],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Banana Generator",
+        description: defaultDescription,
+        images: ["/og-image.svg"],
+    },
+};
 
 export default function RootLayout({
     children,

@@ -58,7 +58,9 @@
             "signUpSuccess": "Signed up successfully",
             "signOutSuccess": "Signed out successfully",
             "unknownError": "An unknown error occurred.",
-            "socialSignInError": "Google sign-in failed. Please try again."
+            "socialSignInError": "Google sign-in failed. Please try again.",
+            "captchaUnavailable": "Captcha is temporarily unavailable. Please try again later.",
+            "captchaFailed": "Captcha verification failed. Please refresh and try again."
         },
         "Shared": {
             "continueWith": "Or continue with",
@@ -114,6 +116,10 @@
             "username": {
                 "required": "Username is required",
                 "min": "Username should contain minimum {count} characters"
+            },
+            "captcha": {
+                "required": "Please complete the captcha challenge",
+                "error": "Captcha verification failed. Please try again."
             }
         }
     },

@@ -1,4 +1,5 @@
-import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import {
     getDb,
     marketingContentAudit,
@@ -10,6 +11,7 @@ import {
     getDefaultLocale,
     getSupportedAppLocales,
 } from "@/i18n/config";
+import { CACHE_TAGS } from "@/lib/cache/cache-tags";
 import {
     clearStaticConfigCache,
     computeMarketingMetadataVersion,
@@ -531,6 +533,8 @@ export async function publishMarketingContent(
         metadata: JSON.stringify({ metadataVersion }),
     });
 
+    revalidateTag(CACHE_TAGS.staticConfig(locale));
+    revalidateTag(CACHE_TAGS.marketingSection(locale, section));
     clearStaticConfigCache();
 
     return {
@@ -550,7 +554,7 @@ export async function cleanupExpiredPreviewTokens() {
         .set({ previewToken: null, previewTokenExpiresAt: null })
         .where(
             and(
-                isNotNull(marketingContentDrafts.previewToken),
+                sql`${marketingContentDrafts.previewToken} IS NOT NULL`,
                 lt(marketingContentDrafts.previewTokenExpiresAt, now),
             ),
         );
