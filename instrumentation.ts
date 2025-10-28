@@ -2,7 +2,7 @@ import { logMetrics, recordMetric } from "@/lib/observability/metrics";
 
 export async function register() {
     // 在启动时输出残留指标，避免漏报。
-    logMetrics("startup");
+    await logMetrics("startup");
 }
 
 export function onRequestError(error: unknown, request: Request) {
@@ -12,5 +12,5 @@ export function onRequestError(error: unknown, request: Request) {
         url: details,
     });
     console.error("Next.js request error:", error, details);
-    logMetrics("request-error");
+    void logMetrics("request-error");
 }
