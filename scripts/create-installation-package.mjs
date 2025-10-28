@@ -87,7 +87,7 @@ async function installTrimmedDependencies() {
 
     await run(
         "pnpm",
-        ["install", "--prod", "--ignore-scripts", "--prefer-offline"],
+        ["install", "--prod", "--prefer-offline"],
         { cwd: outputDir, env },
     );
 }
