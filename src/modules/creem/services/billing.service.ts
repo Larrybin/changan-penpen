@@ -22,7 +22,16 @@ async function invalidateDashboardCacheForTenant(tenantId: string | null) {
         operations.push(invalidateDashboardMetricsCache({ tenantId }));
     }
 
-    await Promise.all(operations);
+    const results = await Promise.allSettled(operations);
+
+    for (const result of results) {
+        if (result.status === "rejected") {
+            console.warn("[Billing] Failed to invalidate dashboard cache", {
+                tenantId,
+                error: result.reason,
+            });
+        }
+    }
 }
 
 export async function createOrUpdateCustomer(
