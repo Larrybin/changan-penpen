@@ -24,4 +24,5 @@
 - [ ] Migrations reviewed and applied
 - [ ] Health checks green（自动 fast；严格模式如执行需确认）
 - [ ] Docs updated for user‑visible changes
+- [ ] 核对 `services.external_apis` 超时与熔断配置，并同步 Cloudflare/CI 环境变量（详见最新的 `docs/env-and-secrets.md`）
 
